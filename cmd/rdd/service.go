@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -75,8 +76,10 @@ func newServiceCreateCommand() *cobra.Command {
 	}
 
 	command.Flags().String("controllers", "*", "Controllers to enable. Use '*' for all, or specify comma-separated list. API groups: 'rdd' (configmapreplicaset,notary), 'app' (demo). Prefix with '-' to exclude, e.g., '*,-demo'")
+	command.Flags().Int("secure-port", 0, "The port on which to serve HTTPS with authentication and authorization (default: 6443 + instance index)")
 	if !developer.Mode() {
 		_ = command.Flags().MarkHidden("controllers")
+		_ = command.Flags().MarkHidden("secure-port")
 	}
 	return command
 }
@@ -91,6 +94,14 @@ func serviceCreateAction(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	args = append(args, "--controllers", controllers)
+	if cmd.Flags().Changed("secure-port") {
+		securePort, err := cmd.Flags().GetInt("secure-port")
+		if err != nil {
+			return err
+		}
+		args = append(args, "--secure-port", strconv.Itoa(securePort))
+	}
+
 	if err := service.Create(cmd.Context(), args); err != nil {
 		return err
 	}
@@ -108,8 +119,10 @@ func newServiceStartCommand() *cobra.Command {
 
 	// Add serve command flags to start command so they can be passed through
 	command.Flags().String("controllers", "", "Controllers to enable for this session (overrides create defaults)")
+	command.Flags().Int("secure-port", 0, "The port on which to serve HTTPS with authentication and authorization (overrides create defaults)")
 	if !developer.Mode() {
 		_ = command.Flags().MarkHidden("controllers")
+		_ = command.Flags().MarkHidden("secure-port")
 	}
 	return command
 }
@@ -127,8 +140,18 @@ func serviceStartAction(cmd *cobra.Command, args []string) error {
 		// Collect all provided flags as arguments for serve subprocess
 		var serveArgs []string
 		if cmd.Flags().Changed("controllers") {
-			controllers, _ := cmd.Flags().GetString("controllers")
+			controllers, err := cmd.Flags().GetString("controllers")
+			if err != nil {
+				return err
+			}
 			serveArgs = append(serveArgs, "--controllers", controllers)
+		}
+		if cmd.Flags().Changed("secure-port") {
+			securePort, err := cmd.Flags().GetInt("secure-port")
+			if err != nil {
+				return err
+			}
+			serveArgs = append(serveArgs, "--secure-port", strconv.Itoa(securePort))
 		}
 		serveArgs = append(serveArgs, args...)
 

@@ -157,6 +157,7 @@ func Create(ctx context.Context, args []string) error {
 	if err := os.MkdirAll(instance.Dir(), 0o700); err != nil {
 		return err
 	}
+	// Add default secure port first, then append user args (which may override it if specified).
 	desiredSecurePort := 6443 + instance.Index()
 	securePort, err := controllers.GetAvailablePort(ctx, desiredSecurePort)
 	if err != nil {
@@ -235,13 +236,11 @@ func Start(ctx context.Context, args []string) error {
 	}
 
 	cmdArgs := []string{"service", "serve"}
-	// If no args were provided, use saved args from create
-	if len(args) == 0 {
-		savedArgs := ServeArgs()
-		cmdArgs = append(cmdArgs, savedArgs...)
-	} else {
-		cmdArgs = append(cmdArgs, args...)
-	}
+	// Always start with saved args from create (contains --secure-port)
+	savedArgs := ServeArgs()
+	cmdArgs = append(cmdArgs, savedArgs...)
+	// Then add any additional args provided (e.g., --controllers override)
+	cmdArgs = append(cmdArgs, args...)
 
 	executable, err := os.Executable()
 	if err != nil {
@@ -547,7 +546,7 @@ func NewServeCommand() *cobra.Command {
 			}
 			cliflag.PrintFlags(fs)
 
-			completedOptions, err := s.Complete()
+			completedOptions, err := s.Complete(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -645,7 +644,14 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 	}
 
 	externalCACert, _ := completed.ControlPlane.Generic.SecureServing.Cert.CurrentCertKeyContent()
-	externalKubeConfigHost := fmt.Sprintf("https://%s", completed.ControlPlane.Generic.ExternalAddress)
+
+	// Use the actual bound port from the secure serving configuration
+	// Force kubeconfig to use localhost to avoid conflicts with Rancher Desktop
+	_, actualPort, err := completed.ControlPlane.Generic.SecureServing.HostPort()
+	if err != nil {
+		return fmt.Errorf("failed to get actual bound port: %w", err)
+	}
+	externalKubeConfigHost := fmt.Sprintf("https://127.0.0.1:%d", actualPort)
 
 	if err := storeKubeConfigToDisk(
 		completed.ExtraConfig.AdminToken,

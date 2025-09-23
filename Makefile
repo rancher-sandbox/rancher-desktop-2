@@ -110,6 +110,11 @@ check-bats:
 	fi
 .PHONY: check-bats
 
+# Run BATS tests for BATS helpers
+bats-helpers: check-bats
+	$(BATS_CORE) bats/helpers/
+.PHONY: bats-helpers
+
 # Run CLI tests
 bats-cli: check-bats build-rdd
 	PATH="$(PWD)/bin:$$PATH" RDD_INSTANCE=bats-cli $(BATS_CORE) bats/tests/10-cli/

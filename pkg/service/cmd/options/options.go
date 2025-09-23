@@ -6,9 +6,11 @@
 package options
 
 import (
+	"context"
 	cryptorand "crypto/rand"
 	"crypto/rsa"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -81,7 +83,6 @@ func NewOptions(rootDir string) *Options {
 		return tokengetter.NewGetterFromClient(factory.Core().V1().Secrets().Lister(), factory.Core().V1().ServiceAccounts().Lister())
 	}
 
-	o.ControlPlane.SecureServing.ServerCert.CertDirectory = instance.TLSDir()
 	// We use KCP form of the authentication options as it does not contain nodes and pods informers.
 	o.ControlPlane.Authentication = kubeoptions.NewBuiltInAuthenticationOptions().
 		WithAnonymous().
@@ -119,7 +120,7 @@ func (o *Options) AddFlags(fss *cliflag.NamedFlagSets) {
 }
 
 // Complete fills in any fields not set that are required to have valid data.
-func (o *Options) Complete() (*CompletedOptions, error) {
+func (o *Options) Complete(ctx context.Context) (*CompletedOptions, error) {
 	servers := o.ControlPlane.Etcd.StorageConfig.Transport.ServerList
 	if len(servers) > 0 && strings.HasPrefix(servers[0], "http") {
 		// use default etcd port instead of unix://kine.socket
@@ -165,6 +166,21 @@ func (o *Options) Complete() (*CompletedOptions, error) {
 	rddadmission.RegisterAllAdmissionPlugins(o.ControlPlane.Admission.GenericAdmission.Plugins)
 	o.ControlPlane.Admission.GenericAdmission.DisablePlugins = sets.List[string](rddadmission.DefaultOffAdmissionPlugins())
 	o.ControlPlane.Admission.GenericAdmission.RecommendedPluginOrder = rddadmission.AllOrderedPlugins
+
+	// Force external address to localhost to ensure certificate includes 127.0.0.1 in SAN list
+	o.ControlPlane.SecureServing.ExternalAddress = net.ParseIP("127.0.0.1")
+	o.ControlPlane.SecureServing.BindAddress = net.ParseIP("127.0.0.1")
+
+	// Handle port fallback mechanism - if the requested port is not available, find an alternative
+	if o.ControlPlane.SecureServing.BindPort != 0 {
+		actualPort, err := controllers.GetAvailablePort(ctx, o.ControlPlane.SecureServing.BindPort)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get available secure port: %w", err)
+		}
+		o.ControlPlane.SecureServing.BindPort = actualPort
+	}
+
+	o.ControlPlane.SecureServing.ServerCert.CertDirectory = instance.TLSDir()
 
 	var err error
 	if !filepath.IsAbs(o.ControlPlane.SecureServing.ServerCert.CertDirectory) {
