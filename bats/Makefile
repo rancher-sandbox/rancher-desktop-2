@@ -87,4 +87,7 @@ SC_EXCLUDES ?= SC1091,SC2034,SC2154
 lint: $(TEST_FILES)
 	shellcheck --shell=bats --exclude=$(SC_EXCLUDES) $(TEST_FILES)
 	shfmt --language-dialect=bats --indent=4 --diff $(TEST_FILES)
-.PHONY: lint
+lint-fix: $(TEST_FILES)
+	shellcheck --shell=bats --exclude=$(SC_EXCLUDES) $(TEST_FILES)
+	shfmt --language-dialect=bats --indent=4 --write $(TEST_FILES)
+.PHONY: lint lint-fix

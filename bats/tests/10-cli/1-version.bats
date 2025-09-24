@@ -38,7 +38,7 @@ assert_version() {
 @test 'rdd --version and rdd version produce same output' {
     run -0 rdd --version
     local version_flag_output="$output"
-    
+
     run -0 rdd version
     assert_output "$version_flag_output"
 }

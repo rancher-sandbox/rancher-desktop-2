@@ -48,7 +48,7 @@ local_setup_file() {
 }
 
 @test "invalid resource is rejected" {
-    cat > "${BATS_TMPDIR}/invalid-notary.yaml" << EOF
+    cat >"${BATS_TMPDIR}/invalid-notary.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -66,7 +66,7 @@ EOF
 
 @test "case-insensitive validation works" {
     # Test "Invalid" (capital I)
-    cat > "${BATS_TMPDIR}/invalid-case1.yaml" << EOF
+    cat >"${BATS_TMPDIR}/invalid-case1.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -83,7 +83,7 @@ EOF
 
 @test "edge case values are handled correctly" {
     # Test value that contains "invalid" but doesn't start with it
-    cat > "${BATS_TMPDIR}/contains-invalid.yaml" << EOF
+    cat >"${BATS_TMPDIR}/contains-invalid.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -97,7 +97,7 @@ EOF
     assert_output --partial "test-contains-invalid created"
 
     # Test empty value
-    cat > "${BATS_TMPDIR}/empty-value.yaml" << EOF
+    cat >"${BATS_TMPDIR}/empty-value.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -113,7 +113,7 @@ EOF
 
 @test "warnings are shown for long values" {
     # Create a resource with a value longer than 24 characters
-    cat > "${BATS_TMPDIR}/long-value-notary.yaml" << EOF
+    cat >"${BATS_TMPDIR}/long-value-notary.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -131,7 +131,7 @@ EOF
 
 @test "no warnings for short values" {
     # Create a resource with a value shorter than 24 characters
-    cat > "${BATS_TMPDIR}/short-value-notary.yaml" << EOF
+    cat >"${BATS_TMPDIR}/short-value-notary.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -149,7 +149,7 @@ EOF
 
 @test "dry-run=client validation works" {
     # Create a valid notary resource for dry-run testing
-    cat > "${BATS_TMPDIR}/dry-run-client-notary.yaml" << EOF
+    cat >"${BATS_TMPDIR}/dry-run-client-notary.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -169,7 +169,7 @@ EOF
 
 @test "dry-run=server validation works" {
     # Create a valid notary resource for dry-run testing
-    cat > "${BATS_TMPDIR}/dry-run-server-notary.yaml" << EOF
+    cat >"${BATS_TMPDIR}/dry-run-server-notary.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -190,7 +190,7 @@ EOF
 
 @test "dry-run=server rejects invalid values" {
     # Create an invalid notary resource for dry-run testing
-    cat > "${BATS_TMPDIR}/dry-run-server-invalid.yaml" << EOF
+    cat >"${BATS_TMPDIR}/dry-run-server-invalid.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -211,7 +211,7 @@ EOF
 
 @test "dry-run=server shows warnings for long values" {
     # Create a resource with a long value for dry-run testing
-    cat > "${BATS_TMPDIR}/dry-run-server-long.yaml" << EOF
+    cat >"${BATS_TMPDIR}/dry-run-server-long.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -232,7 +232,7 @@ EOF
 }
 
 @test "dry-run=client update validation works" {
-    cat > "${BATS_TMPDIR}/original-notary.yaml" << EOF
+    cat >"${BATS_TMPDIR}/original-notary.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -249,7 +249,7 @@ EOF
     run -0 rdd ctl get notary test-dry-run-update-client -o jsonpath='{.spec.value}'
     assert_output "original-value"
 
-    cat > "${BATS_TMPDIR}/updated-notary.yaml" << EOF
+    cat >"${BATS_TMPDIR}/updated-notary.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -269,7 +269,7 @@ EOF
 }
 
 @test "dry-run=server update validation works" {
-    cat > "${BATS_TMPDIR}/original-notary-server.yaml" << EOF
+    cat >"${BATS_TMPDIR}/original-notary-server.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -285,7 +285,7 @@ EOF
     run -0 rdd ctl get notary test-dry-run-update-server -o jsonpath='{.spec.value}'
     assert_output "original-server-value"
 
-    cat > "${BATS_TMPDIR}/updated-notary-server.yaml" << EOF
+    cat >"${BATS_TMPDIR}/updated-notary-server.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -306,7 +306,7 @@ EOF
 
 @test "dry-run=server update rejects invalid values" {
     # First create an actual resource with valid value
-    cat > "${BATS_TMPDIR}/valid-original.yaml" << EOF
+    cat >"${BATS_TMPDIR}/valid-original.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -323,7 +323,7 @@ EOF
     run -0 rdd ctl get notary test-dry-run-update-invalid -o jsonpath='{.spec.value}'
     assert_output "valid-original-value"
 
-    cat > "${BATS_TMPDIR}/invalid-update.yaml" << EOF
+    cat >"${BATS_TMPDIR}/invalid-update.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -345,7 +345,7 @@ EOF
 
 @test "dry-run=server update shows warnings for long values" {
     # First create an actual resource with short value
-    cat > "${BATS_TMPDIR}/short-original.yaml" << EOF
+    cat >"${BATS_TMPDIR}/short-original.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -361,7 +361,7 @@ EOF
     run -0 rdd ctl get notary test-dry-run-update-warn -o jsonpath='{.spec.value}'
     assert_output "short-value"
 
-    cat > "${BATS_TMPDIR}/long-update.yaml" << EOF
+    cat >"${BATS_TMPDIR}/long-update.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:

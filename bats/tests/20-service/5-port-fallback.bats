@@ -1,3 +1,6 @@
+#!/usr/bin/env bats
+# shellcheck disable=SC2030,SC2031 # Modifications to NETCAT_PIDS are not lost.
+
 load '../../helpers/load'
 
 # Port fallback testing to ensure RDD can run when ports are busy
@@ -12,6 +15,7 @@ local_teardown() {
 # Extract port from kubeconfig server URL
 get_kubeconfig_port() {
     run -0 rdd ctl config view --output='jsonpath={.clusters[0].cluster.server}'
+    # shellcheck disable=SC2001 # shell replace doesn't do captures.
     sed 's/.*127\.0\.0\.1:\([0-9]*\).*/\1/' <<<"$output"
 }
 
@@ -46,7 +50,7 @@ is_port_available() {
 
     rdd svc start
 
-   # Verify kubeconfig uses the expected port
+    # Verify kubeconfig uses the expected port
     run -0 get_kubeconfig_port
     assert_output "$expected_port"
 

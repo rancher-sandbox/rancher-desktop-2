@@ -69,18 +69,18 @@ wait_for_configmaps() {
     # Check first ConfigMap contains original data plus index
     run -0 rdd ctl get configmap basic-0 -o json
     local basic0_json="$output"
-    
+
     run -0 jq -r '.data | keys[]' <<<"$basic0_json"
     assert_line "config.yaml"
     assert_line "app.properties"
     assert_line "index"
-    
+
     run -0 jq -r '.data."config.yaml"' <<<"$basic0_json"
     assert_output --partial "test-app"
-    
+
     run -0 jq -r '.data."app.properties"' <<<"$basic0_json"
     assert_output --partial "server.port=8080"
-    
+
     run -0 rdd ctl get configmap basic-0 -o jsonpath='{.data.index}'
     assert_output "0"
 
@@ -92,18 +92,18 @@ wait_for_configmaps() {
 @test 'verify ConfigMap owner references are set' {
     run -0 rdd ctl get configmap basic-0 -o json
     local configmap_json="$output"
-    
+
     # Verify owner reference exists and has correct kind
     run -0 jq -r '.metadata.ownerReferences[0].kind' <<<"$configmap_json"
     assert_output "ConfigMapReplicaSet"
-    
+
     run -0 jq -r '.metadata.ownerReferences[0].name' <<<"$configmap_json"
     assert_output "basic"
 
     # Verify the controller reference is set for garbage collection
     run -0 jq -r '.metadata.ownerReferences[0].controller' <<<"$configmap_json"
     assert_output "true"
-    
+
     run -0 jq -r '.metadata.ownerReferences[0].blockOwnerDeletion' <<<"$configmap_json"
     assert_output "true"
 }
@@ -112,10 +112,10 @@ wait_for_configmaps() {
     # Extract and validate complete owner reference structure
     run -0 rdd ctl get cmrs basic -o json
     local parent_json="$output"
-    
+
     run -0 jq -r '.metadata.uid' <<<"$parent_json"
     local parent_uid=$output
-    
+
     run -0 jq -r '.apiVersion' <<<"$parent_json"
     local parent_apiversion=$output
 
@@ -200,62 +200,62 @@ wait_for_configmaps() {
     # Verify old ConfigMaps (0,1) still have original data
     run -0 rdd ctl get configmap basic-0 -o json
     local basic0_json="$output"
-    
+
     run -0 jq -r '.data."config.yaml"' <<<"$basic0_json"
     assert_output --partial "test-app"
     refute_output --partial "updated: true"
     refute_output --partial "version: 2.0.0"
-    
+
     run -0 jq -r '.data."app.properties"' <<<"$basic0_json"
     assert_output --partial "server.port=8080"
-    
+
     run -0 jq -r '.data.index' <<<"$basic0_json"
     assert_output "0"
-    
+
     run -0 jq -r '.data | has("new-file.txt")' <<<"$basic0_json"
     assert_output "false"
 
     run -0 rdd ctl get configmap basic-1 -o json
     local basic1_json="$output"
-    
+
     run -0 jq -r '.data."config.yaml"' <<<"$basic1_json"
     assert_output --partial "test-app"
     refute_output --partial "updated: true"
     refute_output --partial "version: 2.0.0"
-    
+
     run -0 jq -r '.data."app.properties"' <<<"$basic1_json"
     assert_output --partial "server.port=8080"
-    
+
     run -0 jq -r '.data.index' <<<"$basic1_json"
     assert_output "1"
-    
+
     run -0 jq -r '.data | has("new-file.txt")' <<<"$basic1_json"
     assert_output "false"
 
     # Verify new ConfigMaps (2,3) have updated data
     run -0 rdd ctl get configmap basic-2 -o json
     local basic2_json="$output"
-    
+
     run -0 jq -r '.data."config.yaml"' <<<"$basic2_json"
     assert_output --partial "updated: true"
     assert_output --partial "version: 2.0.0"
-    
+
     run -0 jq -r '.data."new-file.txt"' <<<"$basic2_json"
     assert_output "This is a new file"
-    
+
     run -0 jq -r '.data.index' <<<"$basic2_json"
     assert_output "2"
 
     run -0 rdd ctl get configmap basic-3 -o json
     local basic3_json="$output"
-    
+
     run -0 jq -r '.data."config.yaml"' <<<"$basic3_json"
     assert_output --partial "updated: true"
     assert_output --partial "version: 2.0.0"
-    
+
     run -0 jq -r '.data."new-file.txt"' <<<"$basic3_json"
     assert_output "This is a new file"
-    
+
     run -0 jq -r '.data.index' <<<"$basic3_json"
     assert_output "3"
 }

@@ -96,7 +96,7 @@ wait_for_events_after_timestamp() {
 get_latest_event_timestamp() {
     local resource_name=$1
 
-    run rdd ctl get events  --field-selector involvedObject.name="${resource_name}" -o json
+    run rdd ctl get events --field-selector involvedObject.name="${resource_name}" -o json
     if [ "$status" -ne 0 ]; then
         echo ""
         return 1

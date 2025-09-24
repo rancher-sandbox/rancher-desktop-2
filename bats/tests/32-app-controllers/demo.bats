@@ -88,16 +88,16 @@ local_setup_file() {
     # Processing condition might be True briefly or False if already completed
     # So just verify we have the Ready condition and some processing has occurred
     run -0 get_demo_status "processedCount"
-    [ "$output" -ge 0 ]  # Should have some status
+    [ "$output" -ge 0 ] # Should have some status
 }
 
 @test 'verify initial Demo status' {
     run -0 rdd ctl get demo demo -o json
     local demo_json="$output"
-    
+
     run -0 jq -r 'has("status")' <<<"$demo_json"
     assert_output "true"
-    
+
     run -0 jq -r '.status | has("processedCount")' <<<"$demo_json"
     assert_output "true"
 
@@ -132,7 +132,7 @@ local_setup_file() {
 @test 'verify Demo status after completion' {
     run -0 rdd ctl get demo demo -o json
     local demo_json="$output"
-    
+
     # Should have processed all 3 messages
     run -0 jq -r '.status.processedCount' <<<"$demo_json"
     assert_output "3"
@@ -232,10 +232,10 @@ EOF
     # Verify final state
     run -0 rdd ctl get demo demo -o json
     local demo_json="$output"
-    
+
     run -0 jq -r '.status.processedCount' <<<"$demo_json"
     assert_output "15"
-    
+
     run -0 jq -r '.spec.message' <<<"$demo_json"
     assert_output "Updated message"
 }
@@ -266,10 +266,10 @@ EOF
     # Verify it works
     run -0 rdd ctl get demo demo -o json
     local demo_json="$output"
-    
+
     run -0 jq -r '.status.processedCount' <<<"$demo_json"
     assert_output "2"
-    
+
     run -0 jq -r '.spec.message' <<<"$demo_json"
     assert_output "Recreation test"
 }
@@ -295,26 +295,26 @@ EOF
     # Check comprehensive status
     run -0 rdd ctl get demo demo -o json
     local demo_json="$output"
-    
+
     run -0 jq -r 'has("status")' <<<"$demo_json"
     assert_output "true"
-    
+
     run -0 jq -r '.status.processedCount' <<<"$demo_json"
     assert_output "2"
-    
+
     run -0 jq -r '.status | has("lastProcessed")' <<<"$demo_json"
     assert_output "true"
-    
+
     run -0 jq -r '.status | has("conditions")' <<<"$demo_json"
     assert_output "true"
 
     # Extract condition statuses using jq
     run -0 jq -r '.status.conditions[] | select(.type == "Ready") | .status' <<<"$demo_json"
     local ready_status="$output"
-    
+
     run -0 jq -r '.status.conditions[] | select(.type == "Processing") | .status' <<<"$demo_json"
     local processing_status="$output"
-    
+
     run -0 jq -r '.status.conditions[] | select(.type == "Completed") | .status' <<<"$demo_json"
     local completed_status="$output"
 

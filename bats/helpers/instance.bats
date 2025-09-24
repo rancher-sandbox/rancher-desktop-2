@@ -13,10 +13,10 @@ load 'load'
 
 @test 'get_instance_index calculates correct checksum for string instances' {
     RDD_INSTANCE=bats run get_instance_index
-    assert_output "126"  # 100 + (98+97+116+115) % 100 = 100 + 26 = 126
+    assert_output "126" # 100 + (98+97+116+115) % 100 = 100 + 26 = 126
 
-    RDD_INSTANCE=test run get_instance_index
-    assert_output "148"  # 100 + (116+101+115+116) % 100 = 100 + 48 = 148
+    RDD_INSTANCE="test" run get_instance_index
+    assert_output "148" # 100 + (116+101+115+116) % 100 = 100 + 48 = 148
 }
 
 @test 'get_instance_index handles edge cases' {
@@ -31,11 +31,11 @@ load 'load'
 
 @test 'get_expected_port calculates correct ports' {
     RDD_INSTANCE=bats run get_expected_port 6443
-    assert_output "6569"  # 6443 + 126 = 6569
+    assert_output "6569" # 6443 + 126 = 6569
 
     RDD_INSTANCE=5 run get_expected_port 6443
-    assert_output "6448"  # 6443 + 5 = 6448
+    assert_output "6448" # 6443 + 5 = 6448
 
     RDD_INSTANCE=5 run get_expected_port 8080
-    assert_output "8085"  # 8080 + 5 = 8085
+    assert_output "8085" # 8080 + 5 = 8085
 }

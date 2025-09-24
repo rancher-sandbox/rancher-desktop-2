@@ -25,4 +25,3 @@ local_setup_file() {
     run -0 env RDD_DEVELOPER_MODE=true /tmp/rdd svc status
     assert_line --partial "developer mode"
 }
-

@@ -32,7 +32,7 @@ assert_process_exited() {
     # Start external rdd-controller binary in background
     ../bin/rdd-controller &
     # Store PID to verify it auto-exits later
-    echo "$!" > "${BATS_FILE_TMPDIR}/controller_pid"
+    echo "$!" >"${BATS_FILE_TMPDIR}/controller_pid"
 
     # Wait for external controller to register in discovery system
     try --max 20 --delay 1 -- rdd ctl get configmap rdd-controller-manager -n rdd-system
@@ -49,19 +49,19 @@ assert_process_exited() {
     # Verify webhook configuration structure
     run -0 rdd ctl get validatingwebhookconfiguration notary-validator -o jsonpath='{.webhooks[0].name}'
     assert_output "notary.rdd.rancherdesktop.io"
-    
+
     run -0 rdd ctl get validatingwebhookconfiguration notary-validator -o json
     run -0 jq -r '.webhooks[0].clientConfig.url' <<<"$output"
     assert_output --partial "https://127.0.0.1:"
     assert_output --partial "/validate-rdd-rancherdesktop-io-v1alpha1-notary"
-    
+
     run -0 rdd ctl get validatingwebhookconfiguration notary-validator -o jsonpath='{.webhooks[0].failurePolicy}'
     assert_output "Fail"
 }
 
 @test "webhook rejects invalid resources" {
     # Test that validation works via webhook (external mode)
-    cat > "${BATS_TMPDIR}/external-invalid-notary.yaml" << EOF
+    cat >"${BATS_TMPDIR}/external-invalid-notary.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -81,7 +81,7 @@ EOF
 
 @test "webhook accepts valid resources" {
     # Test that valid resources work via webhook
-    cat > "${BATS_TMPDIR}/external-valid-notary.yaml" << EOF
+    cat >"${BATS_TMPDIR}/external-valid-notary.yaml" <<EOF
 apiVersion: rdd.rancherdesktop.io/v1alpha1
 kind: Notary
 metadata:
@@ -107,14 +107,14 @@ EOF
     run -0 rdd ctl get configmap test-config -o json
     run -0 jq -r '.data.change_000' <<<"$output"
     assert_output --partial "value=valid-external-test"
-    
+
     run -0 rdd ctl get configmap test-config -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}'
     assert_output "notary-controller"
 
     # Verify notary status is updated
     run -0 rdd ctl get notary test-external-valid -o jsonpath='{.status.lastRecordedValue}'
     assert_output "valid-external-test"
-    
+
     run -0 rdd ctl get notary test-external-valid -o jsonpath='{.status.configMapStatus}'
     assert_output "Updated"
 }

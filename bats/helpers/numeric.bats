@@ -39,4 +39,3 @@ local_setup() {
     run assert_output_lt 1
     assert_failure
 }
-
