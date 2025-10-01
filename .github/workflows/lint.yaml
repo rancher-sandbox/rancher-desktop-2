@@ -6,10 +6,33 @@ permissions:
   contents: read
 
 jobs:
+  get-pr-number:
+    name: Lookup Pull Request
+    outputs:
+      number: ${{ steps.lookup.outputs.number }}
+    runs-on: ubuntu-latest
+    steps:
+    - id: lookup
+      if: >-
+        github.event_name == 'push' &&
+        github.repository_owner == 'rancher-sandbox' &&
+        github.ref_type == 'branch' &&
+        !github.ref_protected
+      shell: bash
+      run: >-
+        printf "number=%s\n" >>"$GITHUB_OUTPUT"
+        $(gh pr list
+        --repo ${{ github.repository }}
+        --search ${{ github.sha }}
+        --json number
+        --jq '.[0].number')
+      env:
+        GH_TOKEN: ${{ github.token }}
   golangci-lint:
     name: golangci-lint
+    needs: get-pr-number
     runs-on: ubuntu-latest
-    if: ${{!(github.event_name == 'push' && github.repository_owner == 'rancher-sandbox' && github.ref_type == 'branch' && !github.ref_protected)}}
+    if: ${{ ! needs.get-pr-number.outputs.number }}
     strategy:
       matrix:
         os: [darwin, linux, windows]
@@ -25,8 +48,9 @@ jobs:
         GOOS: ${{ matrix.os }}
   bats:
     name: Lint BATS
+    needs: get-pr-number
     runs-on: ubuntu-latest
-    if: ${{!(github.event_name == 'push' && github.repository_owner == 'rancher-sandbox' && github.ref_type == 'branch' && !github.ref_protected)}}
+    if: ${{ ! needs.get-pr-number.outputs.number }}
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       with:
@@ -37,3 +61,18 @@ jobs:
     - name: Install shfmt
       run: go install mvdan.cc/sh/v3/cmd/shfmt@latest # spellchecker:ignore
     - run: make -C bats lint
+  spelling:
+    name: Check Spelling
+    needs: get-pr-number
+    runs-on: ubuntu-latest
+    if: ${{ ! needs.get-pr-number.outputs.number }}
+    steps:
+    - run: sudo apt install cpanminus
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      with:
+        persist-credentials: false
+        submodules: recursive
+    - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      with:
+        go-version-file: go.mod
+    - run: make spelling
