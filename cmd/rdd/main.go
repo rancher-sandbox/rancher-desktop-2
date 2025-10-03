@@ -66,6 +66,28 @@ func parseInstanceFlag() {
 	}
 }
 
+// setLogLevel sets the log level from command flags.
+func setLogLevel(cmd *cobra.Command, _ []string) error {
+	logLevel, err := cmd.Root().Flags().GetString("log-level")
+	if err != nil {
+		return err
+	}
+	if logLevel == "" {
+		// Default log level: warn for regular mode, debug for developer mode
+		if developer.Mode() {
+			logLevel = "debug"
+		} else {
+			logLevel = "warn"
+		}
+	}
+	level, err := logrus.ParseLevel(logLevel)
+	if err != nil {
+		return err
+	}
+	logrus.SetLevel(level)
+	return nil
+}
+
 func newVersionCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
@@ -86,12 +108,22 @@ func main() {
 		Long: help.Doc(`
 			RDD manages the Rancher Desktop 2 background services.
 		`),
-		SilenceUsage:  true,
-		SilenceErrors: true,
+		SilenceUsage:      true,
+		SilenceErrors:     true,
+		PersistentPreRunE: setLogLevel,
 	}
 
 	// Add version flag with verflag-compatible behavior
 	version.AddVersionFlag(cmd.Flags())
+
+	// Add global log-level flag
+	var levels []string
+	for _, level := range logrus.AllLevels {
+		if level != logrus.PanicLevel {
+			levels = append(levels, level.String())
+		}
+	}
+	cmd.PersistentFlags().String("log-level", "", "Log level: "+strings.Join(levels, ", "))
 
 	ctlCmd := newCtlCommand()
 	ctlCmd.Hidden = !developer.Mode()

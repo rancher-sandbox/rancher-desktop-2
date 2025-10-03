@@ -37,7 +37,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/cli/globalflag"
-	"k8s.io/component-base/logs"
 	logsapi "k8s.io/component-base/logs/api/v1"
 	// Justify blank import.
 	_ "k8s.io/component-base/metrics/prometheus/workqueue"
@@ -570,7 +569,7 @@ func NewServeCommand() *cobra.Command {
 	var namedFlagSets cliflag.NamedFlagSets
 	s.AddFlags(&namedFlagSets)
 	verflag.AddFlags(namedFlagSets.FlagSet("global"))
-	globalflag.AddGlobalFlags(namedFlagSets.FlagSet("global"), command.Name(), logs.SkipLoggingConfigurationFlags())
+	globalflag.AddGlobalFlags(namedFlagSets.FlagSet("global"), command.Name())
 
 	fs := command.Flags()
 	for _, f := range namedFlagSets.FlagSets {

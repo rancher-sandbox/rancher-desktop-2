@@ -16,6 +16,18 @@ import (
 	service "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/cmd"
 )
 
+// logrusLevelToKlog converts current logrus level to klog level.
+func logrusLevelToKlog() string {
+	switch logrus.GetLevel() {
+	case logrus.DebugLevel:
+		return "1"
+	case logrus.TraceLevel:
+		return "2"
+	default:
+		return "0"
+	}
+}
+
 func newServiceCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:           "service",
@@ -101,6 +113,7 @@ func serviceCreateAction(cmd *cobra.Command, args []string) error {
 		}
 		args = append(args, "--secure-port", strconv.Itoa(securePort))
 	}
+	args = append(args, "-v", logrusLevelToKlog())
 
 	if err := service.Create(cmd.Context(), args); err != nil {
 		return err
@@ -153,6 +166,7 @@ func serviceStartAction(cmd *cobra.Command, args []string) error {
 			}
 			serveArgs = append(serveArgs, "--secure-port", strconv.Itoa(securePort))
 		}
+		serveArgs = append(serveArgs, "-v", logrusLevelToKlog())
 		serveArgs = append(serveArgs, args...)
 
 		if err := service.Start(cmd.Context(), serveArgs); err != nil {
@@ -224,6 +238,7 @@ func newServiceStatusCommand() *cobra.Command {
 		Use:  "status",
 		Long: "Show control plane status",
 		RunE: func(*cobra.Command, []string) error {
+			logrus.SetLevel(logrus.InfoLevel)
 			logrus.Infof("%q control plane has been created: %v", instance.Name(), service.Exists())
 			logrus.Infof("%q control plane has been started: %v", instance.Name(), service.Running())
 			logrus.Infof("%q control plane PID is: %v", instance.Name(), service.PID())
