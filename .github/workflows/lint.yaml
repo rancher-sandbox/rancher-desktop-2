@@ -25,7 +25,7 @@ jobs:
         --repo ${{ github.repository }}
         --search ${{ github.sha }}
         --json number
-        --jq '.[0].number')
+        --jq '.[0].number // 0')
       env:
         GH_TOKEN: ${{ github.token }}
   golangci-lint:
@@ -76,3 +76,16 @@ jobs:
       with:
         go-version-file: go.mod
     - run: make spelling
+  ltag:
+    name: Check license tags
+    needs: get-pr-number
+    runs-on: ubuntu-latest
+    if: ${{ ! needs.get-pr-number.outputs.number }}
+    steps:
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      with:
+        persist-credentials: false
+    - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      with:
+        go-version-file: go.mod
+    - run: make check-ltag

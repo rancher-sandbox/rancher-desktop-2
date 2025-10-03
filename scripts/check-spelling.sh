@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: SUSE LLC
+# SPDX-FileCopyrightText: The Rancher Desktop Authors
+
+
 # This script runs check-spelling on the parent repository.
 
 set -o errexit -o nounset
