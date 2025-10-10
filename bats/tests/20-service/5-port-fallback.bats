@@ -72,7 +72,7 @@ is_port_available() {
     # Calculate expected port dynamically and occupy it
     expected_port=$(get_expected_port)
 
-    try --max 30 --delay 1 is_port_available "$expected_port"
+    try --max 30 --delay 1 is_port_available "$expected_port" || :
     if ! is_port_available "$expected_port"; then
         skip "Port $expected_port is not available for testing"
     fi

@@ -15,6 +15,7 @@ aarch
 
 # Linux
 distros
+kvm
 opensuse
 pids
 tarball
@@ -25,11 +26,14 @@ zypper
 # Windows
 APPDATA
 cygwin
+ERRORLEVEL
 LOCALAPPDATA
 msys
 PROGRAMFILES
 netsh
+pwsh
 SYSTEMROOT
+usebackq
 winver
-WSL
+wsl
 wslpath

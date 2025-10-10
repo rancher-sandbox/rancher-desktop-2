@@ -104,9 +104,9 @@ jobs:
         Get-ItemPropertyValue -Path bin -Name FullName | Out-File -Encoding UTF8 -Append "$env:GITHUB_PATH"
 
         # Set up git configuration
-        git config --global --replace-all core.autocrlf false
-        git config --global --replace-all core.eol lf
-        git config --global --replace-all core.longpath true
+        git config --global --replace-all core.autocrlf false # spellchecker:ignore
+        git config --global --replace-all core.eol lf # spellchecker:ignore
+        git config --global --replace-all core.longpath true #spellchecker:ignore
 
     - name: "Windows: write wrapper script"
       # This is a separate step so that we can just set up the script as an
