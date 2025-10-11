@@ -129,6 +129,10 @@ func main() {
 	ctlCmd.Hidden = !developer.Mode()
 	cmd.AddCommand(ctlCmd)
 
+	limaCmd := newLimaCommand()
+	limaCmd.Hidden = !developer.Mode()
+	cmd.AddCommand(limaCmd)
+
 	cmd.AddCommand(
 		newKubectlCommand(),
 		newServiceCommand(),

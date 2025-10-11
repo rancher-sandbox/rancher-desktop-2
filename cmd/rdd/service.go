@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -58,18 +59,25 @@ func newServiceConfigCommand() *cobra.Command {
 	return command
 }
 
-func serviceConfigAction(cmd *cobra.Command, _ []string) error {
+func ensureServiceRunning(ctx context.Context) error {
 	if !service.Exists() {
-		if err := service.Create(cmd.Context(), nil); err != nil {
+		if err := service.Create(ctx, nil); err != nil {
 			return err
 		}
 	}
 	if !service.Running() {
-		if err := service.Start(cmd.Context(), nil); err != nil {
+		if err := service.Start(ctx, nil); err != nil {
 			return err
 		}
 	}
-	if err := service.WaitWithTimeout(cmd.Context()); err != nil {
+	if err := service.WaitWithTimeout(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
+func serviceConfigAction(cmd *cobra.Command, _ []string) error {
+	if err := ensureServiceRunning(cmd.Context()); err != nil {
 		return err
 	}
 	contents, err := service.GetKubeconfig()
