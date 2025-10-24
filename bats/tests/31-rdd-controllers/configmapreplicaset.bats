@@ -266,9 +266,9 @@ wait_for_configmaps() {
     run -0 rdd ctl get configmap basic-0 -o jsonpath='{.metadata.finalizers}'
     refute_output
 
-    # Check parent resource finalizers (should have cleanup finalizer)
+    # Check parent resource finalizers (should have shared cleanup finalizer)
     run -0 rdd ctl get ConfigMapReplicaSet basic -o jsonpath='{.metadata.finalizers}'
-    assert_output --partial "rdd.rancherdesktop.io/configmapreplicaset-cleanup"
+    assert_output --partial "rdd.rancherdesktop.io/cleanup"
 }
 
 @test 'delete ConfigMapReplicaSet' {

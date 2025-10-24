@@ -205,18 +205,23 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 			return fmt.Errorf("failed to register controller %s: %w", registration.GetName(), err)
 		}
 
-		// Start webhook setup immediately if this controller has one
+		// Start webhook setup immediately if this controller has webhooks
 		if webhookController, ok := registration.(base.WebhookController); ok {
-			if manager := webhookController.GetWebhookManager(); manager != nil {
+			managers := webhookController.GetWebhookManagers()
+			for i, manager := range managers {
+				if manager == nil {
+					continue
+				}
 				name := registration.GetName()
+				webhookIndex := i
 				webhookWaitGroup.Add(1)
-				go func() {
+				go func(mgr *base.WebhookManager, idx int) {
 					defer webhookWaitGroup.Done()
-					klog.Infof("Starting webhook setup for controller %s", name)
-					if err := manager.Setup(); err != nil {
-						webhookErrors <- fmt.Errorf("controller %s: %w", name, err)
+					klog.Infof("Starting webhook setup for controller %s (webhook %d)", name, idx)
+					if err := mgr.Setup(); err != nil {
+						webhookErrors <- fmt.Errorf("controller %s webhook %d: %w", name, idx, err)
 					}
-				}()
+				}(manager, webhookIndex)
 			}
 		}
 	}

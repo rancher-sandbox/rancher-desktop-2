@@ -42,6 +42,7 @@ source "$PATH_BATS_HELPERS/os.bash"
 source "$PATH_BATS_HELPERS/utils.bash"
 source "$PATH_BATS_HELPERS/controller.bash"
 source "$PATH_BATS_HELPERS/instance.bash"
+source "$PATH_BATS_HELPERS/logs.bash"
 source "$PATH_BATS_HELPERS/numeric.bash"
 
 # defaults.bash uses is_windows() from os.bash and

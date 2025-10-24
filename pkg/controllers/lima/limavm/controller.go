@@ -9,7 +9,11 @@ import (
 	_ "embed"
 	"fmt"
 
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,19 +36,27 @@ const APIGroup = "lima"
 
 // Webhook configuration constants.
 const (
-	// webhookName is the name used for the webhook configuration.
-	webhookName = "limavm.lima.rancherdesktop.io"
-	// validatorConfigName is the name of the ValidatingWebhookConfiguration.
-	validatorConfigName = "limavm-validator"
+	// limaVMDefaulterWebhookName is the name used for the LimaVM defaulting webhook.
+	limaVMDefaulterWebhookName = "limavm-defaulter.lima.rancherdesktop.io"
+	// limaVMDefaulterConfigName is the name of the LimaVM MutatingWebhookConfiguration.
+	limaVMDefaulterConfigName = "limavm-defaulter"
+
+	// configMapValidatorWebhookName is the name used for the ConfigMap validation webhook.
+	configMapValidatorWebhookName = "limavm-configmap-validator.lima.rancherdesktop.io"
+	// configMapValidatorConfigName is the name of the ConfigMap ValidatingWebhookConfiguration.
+	configMapValidatorConfigName = "limavm-configmap-validator"
 )
+
+// templateKey is the key used to store the template in the ConfigMap
+const templateKey = "template"
 
 //go:embed crd.yaml
 var limaCRD string
 
 // Controller implements the base.Controller interface for limavm.
 type Controller struct {
-	webhookPort    int                  // The actual webhook port allocated by SharedControllerManager
-	webhookManager *base.WebhookManager // WebhookManager for parallel setup
+	webhookPort     int                    // The actual webhook port allocated by SharedControllerManager
+	webhookManagers []*base.WebhookManager // WebhookManagers for parallel setup
 }
 
 // Verify that Controller implements base.Controller and base.WebhookController interfaces.
@@ -75,12 +87,12 @@ func (c *Controller) SetWebhookPort(port int) {
 
 // GetWebhookServiceName returns the DNS service name for webhook certificates.
 func (c *Controller) GetWebhookServiceName() string {
-	return "limavm-webhook"
+	return ControllerName + "-webhook"
 }
 
-// GetWebhookManager returns the WebhookManager for parallel setup.
-func (c *Controller) GetWebhookManager() *base.WebhookManager {
-	return c.webhookManager
+// GetWebhookManagers returns all WebhookManagers for parallel setup.
+func (c *Controller) GetWebhookManagers() []*base.WebhookManager {
+	return c.webhookManagers
 }
 
 // GetCRDData returns the embedded CRD YAML data.
@@ -91,39 +103,56 @@ func (c *Controller) GetCRDData() string {
 // setupReconciler sets up the LimaVMReconciler with the manager.
 func (c *Controller) setupReconciler(mgr ctrl.Manager) error {
 	return (&controllers.LimaVMReconciler{
-		Client:          mgr.GetClient(),
-		Scheme:          mgr.GetScheme(),
-		FinalizerHelper: base.NewFinalizerHelper(mgr.GetClient(), mgr.GetScheme(), controllers.FinalizerName),
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr)
 }
 
-// setupWebhookWithRuntimeConfig sets up webhook with shared certificate configuration.
+// setupWebhookWithRuntimeConfig sets up webhooks with shared certificate configuration.
 func (c *Controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
-	webhookConfig := base.WebhookConfig{
-		Name:        validatorConfigName,
-		WebhookName: webhookName,
-		WebhookPath: base.GenerateValidatingWebhookPath(
-			v1alpha1.GroupVersion.Group,
-			v1alpha1.GroupVersion.Version,
-			ControllerName,
-		),
-		APIGroup:    v1alpha1.GroupVersion.Group,
-		APIVersion:  v1alpha1.GroupVersion.Version,
-		Resource:    "limavms",
+	// Set up LimaVM mutating webhook (validates uniqueness and creates template ConfigMap during admission)
+	sideEffectsNoneOnDryRun := admissionregistrationv1.SideEffectClassNoneOnDryRun
+	mutatingConfig := base.WebhookConfig{
+		Name:        limaVMDefaulterConfigName,
+		WebhookName: limaVMDefaulterWebhookName,
 		WebhookPort: c.webhookPort,
+		Operations: []admissionregistrationv1.OperationType{
+			admissionregistrationv1.Create, // Only on CREATE - UPDATE doesn't need to create ConfigMap again
+		},
+		SideEffects: &sideEffectsNoneOnDryRun, // Creates ConfigMap normally, but not during dry-run
+		Defaulter:   &LimaVMDefaulter{Client: mgr.GetClient()},
 	}
 
-	manager, err := base.SetupWebhookForResource(
-		mgr,
-		&v1alpha1.LimaVM{},
-		&LimaVMValidator{Client: mgr.GetClient()},
-		webhookConfig,
-	)
+	managers, err := base.SetupWebhookForResource(mgr, &v1alpha1.LimaVM{}, mutatingConfig)
 	if err != nil {
 		return err
 	}
+	c.webhookManagers = append(c.webhookManagers, managers...)
 
-	c.webhookManager = manager
+	// Set up ConfigMap webhook for template ConfigMaps
+	configMapWebhookConfig := base.WebhookConfig{
+		Name:        configMapValidatorConfigName,
+		WebhookName: configMapValidatorWebhookName,
+		WebhookPort: c.webhookPort,
+		ObjectSelector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				controllers.TemplateConfigMapLabel: "true",
+			},
+		},
+		Operations: []admissionregistrationv1.OperationType{
+			admissionregistrationv1.Create,
+			admissionregistrationv1.Update,
+			admissionregistrationv1.Delete,
+		},
+		Validator: &ConfigMapValidator{Client: mgr.GetClient()},
+	}
+
+	managers, err = base.SetupWebhookForResource(mgr, &corev1.ConfigMap{}, configMapWebhookConfig)
+	if err != nil {
+		return err
+	}
+	c.webhookManagers = append(c.webhookManagers, managers...)
+
 	return nil
 }
 
@@ -139,41 +168,159 @@ func (c *Controller) RegisterWithManager(mgr ctrl.Manager) error {
 	return c.setupWebhookWithRuntimeConfig(mgr)
 }
 
-// LimaVMValidator validates LimaVM resources via webhook (for external controllers).
-type LimaVMValidator struct {
+// LimaVMDefaulter handles LimaVM mutation via webhook.
+// It validates cross-namespace name uniqueness, then creates the template ConfigMap synchronously during admission.
+type LimaVMDefaulter struct {
 	Client client.Client
 }
 
-// ValidateCreate implements ctrlwebhookadmission.CustomValidator.
-func (v *LimaVMValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (ctrlwebhookadmission.Warnings, error) {
+var _ ctrlwebhookadmission.CustomDefaulter = &LimaVMDefaulter{}
+
+// Default is called during CREATE operations to add finalizer and create the template ConfigMap.
+func (d *LimaVMDefaulter) Default(ctx context.Context, obj runtime.Object) error {
 	limavm, ok := obj.(*v1alpha1.LimaVM)
 	if !ok {
-		return nil, fmt.Errorf("expected a LimaVM object but got %T", obj)
+		return fmt.Errorf("expected a LimaVM object but got %T", obj)
 	}
-	return v.validateLimaVM(ctx, limavm)
+
+	// Add finalizer if not present
+	if !base.HasFinalizer(limavm) {
+		limavm.Finalizers = append(limavm.Finalizers, base.FinalizerName)
+	}
+
+	// Validate name uniqueness BEFORE creating ConfigMap
+	// This prevents orphaned ConfigMaps when validation fails
+	if _, err := ValidateLimaVM(ctx, d.Client, limavm); err != nil {
+		return err
+	}
+
+	// Check if this is a dry-run request
+	if base.IsDryRun(ctx) {
+		klog.V(1).Infof("[DryRun] Webhook validating LimaVM %s/%s (skipping ConfigMap creation)\n", limavm.Namespace, limavm.Name)
+
+		// During dry-run, validate the source templateRef ConfigMap directly
+		// since we won't create the owned ConfigMap copy
+		templateData, err := d.fetchTemplateRefData(ctx, limavm)
+		if err != nil {
+			return fmt.Errorf("failed to fetch template data for validation: %w", err)
+		}
+
+		// Validate the template data
+		if _, err := validateTemplateData(map[string]string{templateKey: templateData}); err != nil {
+			return fmt.Errorf("template validation failed: %w", err)
+		}
+
+		// Don't create ConfigMap in dry-run mode
+		return nil
+	}
+
+	// Fetch template data from templateRef
+	templateData, err := d.fetchTemplateRefData(ctx, limavm)
+	if err != nil {
+		return fmt.Errorf("failed to fetch template data: %w", err)
+	}
+
+	// Create template ConfigMap with label
+	templateConfigMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      limavm.GetTemplateConfigMapName(),
+			Namespace: limavm.Namespace,
+			Labels: map[string]string{
+				controllers.TemplateConfigMapLabel: "true",
+			},
+			Finalizers: []string{
+				base.FinalizerName,
+			},
+		},
+		Data: map[string]string{
+			templateKey: templateData,
+		},
+	}
+
+	// Create the ConfigMap (this triggers ConfigMap admission webhook for validation)
+	if err := d.Client.Create(ctx, templateConfigMap); err != nil {
+		return fmt.Errorf("failed to create template ConfigMap: %w", err)
+	}
+
+	klog.Infof("Created template ConfigMap %s/%s for LimaVM %s/%s",
+		limavm.Namespace, limavm.GetTemplateConfigMapName(), limavm.Namespace, limavm.Name)
+
+	// Note: The reconciler will set owner reference and status after LimaVM creation:
+	// - Owner reference requires LimaVM UID (not available during admission)
+	// - Status subresource cannot be modified by mutating webhooks
+	return nil
 }
 
-// ValidateUpdate implements ctrlwebhookadmission.CustomValidator.
-func (v *LimaVMValidator) ValidateUpdate(ctx context.Context, _, newObj runtime.Object) (ctrlwebhookadmission.Warnings, error) {
-	limavm, ok := newObj.(*v1alpha1.LimaVM)
+// fetchTemplateRefData fetches the template data from the templateRef ConfigMap.
+func (d *LimaVMDefaulter) fetchTemplateRefData(ctx context.Context, limavm *v1alpha1.LimaVM) (string, error) {
+	configMapKey := types.NamespacedName{
+		Name:      limavm.Spec.TemplateRef.Name,
+		Namespace: limavm.Spec.TemplateRef.Namespace,
+	}
+	if configMapKey.Namespace == "" {
+		configMapKey.Namespace = limavm.Namespace
+	}
+	configMap := &corev1.ConfigMap{}
+	if err := d.Client.Get(ctx, configMapKey, configMap); err != nil {
+		return "", fmt.Errorf("failed to get templateRef ConfigMap %q in namespace %q: %w", configMapKey.Name, configMapKey.Namespace, err)
+	}
+	return configMap.Data[templateKey], nil
+}
+
+// ConfigMapValidator validates ConfigMap resources that are template ConfigMaps for LimaVM resources
+// (identified by label selector controllers.TemplateConfigMapLabel set to "true").
+type ConfigMapValidator struct {
+	Client client.Client
+}
+
+var _ ctrlwebhookadmission.CustomValidator = &ConfigMapValidator{}
+
+func (v *ConfigMapValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (ctrlwebhookadmission.Warnings, error) {
+	return v.validateTemplateConfigMap(ctx, obj)
+}
+
+func (v *ConfigMapValidator) ValidateUpdate(ctx context.Context, _, newObj runtime.Object) (ctrlwebhookadmission.Warnings, error) {
+	return v.validateTemplateConfigMap(ctx, newObj)
+}
+
+func (v *ConfigMapValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (ctrlwebhookadmission.Warnings, error) {
+	configMap, ok := obj.(*corev1.ConfigMap)
 	if !ok {
-		return nil, fmt.Errorf("expected a LimaVM object but got %T", newObj)
+		return nil, fmt.Errorf("expected a ConfigMap object but got %T", obj)
 	}
-	return v.validateLimaVM(ctx, limavm)
-}
-
-// ValidateDelete implements ctrlwebhookadmission.CustomValidator.
-func (v *LimaVMValidator) ValidateDelete(context.Context, runtime.Object) (ctrlwebhookadmission.Warnings, error) {
-	// Allow all deletions
+	if base.IsDryRun(ctx) {
+		klog.V(1).Infof("[DryRun] Webhook validating ConfigMap deletion %s/%s\n", configMap.Namespace, configMap.Name)
+	}
+	if base.HasFinalizer(configMap) {
+		return nil, fmt.Errorf("cannot delete template ConfigMap %q: it is protected by the LimaVM controller; delete the owning LimaVM resource instead", configMap.Name)
+	}
 	return nil, nil
 }
 
-// validateLimaVM performs the actual validation logic.
-func (v *LimaVMValidator) validateLimaVM(ctx context.Context, limavm *v1alpha1.LimaVM) (ctrlwebhookadmission.Warnings, error) {
-	if req, err := ctrlwebhookadmission.RequestFromContext(ctx); err == nil {
-		if req.DryRun != nil && *req.DryRun {
-			klog.V(1).Infof("[DryRun] Webhook validating LimaVM %s/%s\n", req.Namespace, req.Name)
-		}
+// validateTemplateConfigMap validates the template data in a ConfigMap.
+func (v *ConfigMapValidator) validateTemplateConfigMap(ctx context.Context, obj runtime.Object) (ctrlwebhookadmission.Warnings, error) {
+	configMap, ok := obj.(*corev1.ConfigMap)
+	if !ok {
+		return nil, fmt.Errorf("expected a ConfigMap object but got %T", obj)
 	}
-	return validateLimaVM(ctx, v.Client, limavm)
+	if base.IsDryRun(ctx) {
+		klog.V(1).Infof("[DryRun] Webhook validating template ConfigMap %s/%s\n", configMap.Namespace, configMap.Name)
+	}
+	return validateTemplateData(configMap.Data)
+}
+
+// validateTemplateData validates the template data map from a ConfigMap.
+func validateTemplateData(data map[string]string) (ctrlwebhookadmission.Warnings, error) {
+	templateData, exists := data[templateKey]
+	if !exists {
+		return nil, fmt.Errorf("template ConfigMap must have a %q data entry", templateKey)
+	}
+	if templateData == "" {
+		return nil, fmt.Errorf("%q data cannot be empty", templateKey)
+	}
+
+	// TODO: Add more specific template validation logic here
+	// For now, we just ensure the template entry exists and is not empty
+
+	return nil, nil
 }

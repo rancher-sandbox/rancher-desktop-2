@@ -22,9 +22,8 @@ import (
 // DemoReconciler reconciles a Demo object.
 type DemoReconciler struct {
 	client.Client
-	Scheme          *runtime.Scheme
-	Recorder        record.EventRecorder
-	FinalizerHelper *base.FinalizerHelper
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=app.rancherdesktop.io,resources=demos,verbs=get;list;watch;create;update;patch;delete
@@ -61,16 +60,9 @@ func (r *DemoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// Handle deletion - Demo controller doesn't create child resources, so this is a no-op
-	if r.FinalizerHelper.IsBeingDeleted(&demo) {
-		return r.handleDeletion(ctx, &demo)
-	}
-
-	// Add finalizer if not present - will be a no-op for Demo controller since no finalizer name is set
-	if added, err := r.FinalizerHelper.EnsureFinalizer(ctx, &demo); err != nil {
-		log.Error(err, "Failed to add finalizer")
-		return ctrl.Result{}, err
-	} else if added {
+	// Handle deletion - Demo controller doesn't create child resources or use finalizers
+	if base.IsBeingDeleted(&demo) {
+		log.Info("Demo deletion handled successfully")
 		return ctrl.Result{}, nil
 	}
 
@@ -109,22 +101,6 @@ func (r *DemoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return ctrl.Result{}, nil
 }
 
-// handleDeletion handles cleanup when a Demo is being deleted.
-// Since Demo doesn't create child resources, this just removes the finalizer.
-func (r *DemoReconciler) handleDeletion(ctx context.Context, demo *appv1alpha1.Demo) (ctrl.Result, error) {
-	log := logf.FromContext(ctx)
-
-	// No child resources to clean up for Demo controller
-	// Just remove the finalizer (no-op if finalizer helper is disabled)
-	if err := r.FinalizerHelper.RemoveFinalizer(ctx, demo); err != nil {
-		log.Error(err, "Failed to remove finalizer")
-		return ctrl.Result{}, err
-	}
-
-	log.Info("Demo deletion handled successfully")
-	return ctrl.Result{}, nil
-}
-
 // setCondition sets or updates a condition in the demo status.
 func (r *DemoReconciler) setCondition(demo *appv1alpha1.Demo, conditionType string, status metav1.ConditionStatus, reason, message string) {
 	now := metav1.NewTime(time.Now())
@@ -157,6 +133,5 @@ func (r *DemoReconciler) setCondition(demo *appv1alpha1.Demo, conditionType stri
 func (r *DemoReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&appv1alpha1.Demo{}).
-		Named("demo").
 		Complete(r)
 }

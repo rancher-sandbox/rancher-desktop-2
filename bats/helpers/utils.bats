@@ -563,6 +563,22 @@ get_json_test_data() {
     fi
 }
 
+@test 'try --until-fail succeeds when command fails immediately' {
+    run try --max 3 --delay 10 --until-fail false
+    assert_success
+    # Should stop immediately without sleeping
+    ((SECONDS < 2))
+}
+
+@test 'try --until-fail fails when command never fails (timeout)' {
+    # Use short delays to keep test fast
+    run try --max 2 --delay 2 --until-fail true
+    assert_failure
+    # Should have slept once (between try 1 and try 2)
+    ((SECONDS >= 2))
+    ((SECONDS < 4))
+}
+
 ########################################################################
 
 @test 'json_string' {

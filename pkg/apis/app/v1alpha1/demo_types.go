@@ -27,6 +27,12 @@ type DemoSpec struct {
 	Message string `json:"message,omitempty"`
 	// Count is the number of times to process the message
 	Count int32 `json:"count,omitempty"`
+	// Namespace is the namespace where this cluster-scoped Demo resource
+	// creates and manages its owned namespaced resources (e.g., LimaVMs).
+	// Defaults to "default" if not specified.
+	// +optional
+	// +kubebuilder:default="default"
+	Namespace string `json:"namespace,omitempty"`
 }
 
 // DemoStatus defines the observed state of Demo.
@@ -69,4 +75,14 @@ type DemoList struct {
 
 func init() {
 	SchemeBuilder.Register(&Demo{}, &DemoList{})
+}
+
+// GetResourceNamespace implements the base.ResourceNamespace interface.
+// It returns the namespace where this cluster-scoped Demo resource creates
+// and manages its owned namespaced resources.
+func (d *Demo) GetResourceNamespace() string {
+	if d.Spec.Namespace != "" {
+		return d.Spec.Namespace
+	}
+	return "default"
 }

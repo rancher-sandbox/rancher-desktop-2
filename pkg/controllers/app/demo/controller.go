@@ -62,9 +62,8 @@ func (c *Controller) RegisterWithManager(mgr ctrl.Manager) error {
 
 	// Create and set up the controller with the manager
 	return (&controller.DemoReconciler{
-		Client:          mgr.GetClient(),
-		Scheme:          mgr.GetScheme(),
-		Recorder:        mgr.GetEventRecorderFor("demo-controller"),
-		FinalizerHelper: base.NewNoOpFinalizerHelper(), // Demo doesn't need finalizers
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor(ControllerName + "-controller"),
 	}).SetupWithManager(mgr)
 }

@@ -51,6 +51,29 @@ spec:
                 default: false
                 description: running specifies whether the VM should be running
                 type: boolean
+              templateRef:
+                description: |-
+                  templateRef is a reference to a ConfigMap containing the VM template.
+                  This field is immutable after creation.
+                properties:
+                  name:
+                    description: |-
+                      name is the name of the ConfigMap containing the VM template.
+                      The ConfigMap must have a "template" key.
+                    type: string
+                  namespace:
+                    description: |-
+                      namespace is the namespace of the ConfigMap.
+                      If not specified, defaults to the namespace of the LimaVM resource.
+                    type: string
+                required:
+                - name
+                type: object
+                x-kubernetes-validations:
+                - message: templateRef is immutable
+                  rule: self == oldSelf
+            required:
+            - templateRef
             type: object
           status:
             description: status defines the observed state of LimaVM
@@ -124,6 +147,12 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              templateConfigMap:
+                description: |-
+                  templateConfigMap is the name of the ConfigMap containing the validated template.
+                  This ConfigMap is created and managed by the controller and is owned by this LimaVM resource.
+                  An admission controller validates any updates to the ConfigMap.
+                type: string
             type: object
         required:
         - spec

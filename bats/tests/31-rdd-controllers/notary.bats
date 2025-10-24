@@ -209,7 +209,7 @@ wait_for_notary_status() {
 
 @test 'verify Notary has finalizer for cleanup' {
     run -0 rdd ctl get notary basic -o jsonpath='{.metadata.finalizers}'
-    assert_output --partial "rdd.rancherdesktop.io/notary-cleanup"
+    assert_output --partial "rdd.rancherdesktop.io/cleanup"
 }
 
 @test 'delete Notary resource' {

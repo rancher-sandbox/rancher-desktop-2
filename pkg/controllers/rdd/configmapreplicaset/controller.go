@@ -62,8 +62,7 @@ func (c *Controller) RegisterWithManager(mgr ctrl.Manager) error {
 
 	// Create and set up the controller with the manager
 	return (&controllers.ConfigMapReplicaSetReconciler{
-		Client:          mgr.GetClient(),
-		Scheme:          mgr.GetScheme(),
-		FinalizerHelper: base.NewFinalizerHelper(mgr.GetClient(), mgr.GetScheme(), controllers.FinalizerName),
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr)
 }

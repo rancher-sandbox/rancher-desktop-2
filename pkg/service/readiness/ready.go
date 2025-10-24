@@ -12,8 +12,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
+
+	"github.com/go-logr/logr"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -31,9 +32,10 @@ import (
 // WaitForReady waits for the control plane to be ready.
 func WaitForReady(ctx context.Context, config *rest.Config, logging bool) error {
 	logger := klog.FromContext(ctx)
-	if logging {
-		logger.Info("Waiting for /readyz to succeed")
+	if !logging {
+		logger = logr.Discard()
 	}
+	logger.Info("Waiting for /readyz to succeed")
 	lastSeenUnready := sets.New[string]()
 
 	client, err := kubernetes.NewForConfig(config)
@@ -71,9 +73,7 @@ func WaitForReady(ctx context.Context, config *rest.Config, logging bool) error 
 		var rc int
 		res.StatusCode(&rc)
 		if rc == http.StatusOK {
-			if logging {
-				logger.Info("Control plane is ready")
-			}
+			logger.Info("Control plane is ready")
 			break
 		}
 
@@ -87,61 +87,51 @@ func WaitForReady(ctx context.Context, config *rest.Config, logging bool) error 
 // WaitForReadyWithCRDs waits for the control plane to be ready and all expected CRDs to be established.
 func WaitForReadyWithCRDs(ctx context.Context, config *rest.Config, expectedControllers []base.Controller, logging bool) error {
 	logger := klog.FromContext(ctx)
+	if !logging {
+		logger = logr.Discard()
+	}
 
 	// First wait for basic readiness
-	if logging {
-		logger.Info("Waiting for basic control plane readiness")
-	}
+	logger.Info("Waiting for basic control plane readiness")
 	if err := WaitForReady(ctx, config, logging); err != nil {
 		return err
 	}
-
-	if logging {
-		logger.Info("Control plane ready, now checking CRDs", "controllers", len(expectedControllers))
-	}
+	logger.Info("Control plane ready, now checking CRDs", "controllers", len(expectedControllers))
 
 	// Then wait for CRDs to be established
 	if err := waitForCRDsEstablished(ctx, config, expectedControllers, logging); err != nil {
 		logger.Error(err, "CRD establishment failed")
 		return err
 	}
-
-	if logging {
-		logger.Info("CRDs established, now checking webhook configurations")
-	}
+	logger.Info("CRDs established, now checking webhook configurations")
 
 	// Finally wait for webhook configurations to be created
 	if err := waitForWebhookConfigurations(ctx, config, expectedControllers, logging); err != nil {
 		logger.Error(err, "Webhook configuration check failed")
 		return err
 	}
-
-	if logging {
-		logger.Info("All readiness checks completed successfully")
-	}
+	logger.Info("All readiness checks completed successfully")
 	return nil
 }
 
 // waitForCRDsEstablished waits for all CRDs from the given controllers to be established.
 func waitForCRDsEstablished(ctx context.Context, config *rest.Config, controllers []base.Controller, logging bool) error {
+	logger := klog.FromContext(ctx)
+	if !logging {
+		logger = logr.Discard()
+	}
+
 	if len(controllers) == 0 {
-		if logging {
-			klog.FromContext(ctx).Info("No controllers specified, skipping CRD readiness check")
-		}
+		logger.Info("No controllers specified, skipping CRD readiness check")
 		return nil
 	}
 
-	logger := klog.FromContext(ctx)
-	if logging {
-		logger.Info("Waiting for CRDs to be established", "controllers", len(controllers))
-	}
+	logger.Info("Waiting for CRDs to be established", "controllers", len(controllers))
 
 	apiextensionsClient, err := apiextensionsclientset.NewForConfig(config)
 	if err != nil {
 		return fmt.Errorf("failed to create apiextensions client: %w", err)
 	}
-
-	crdClient := apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions()
 
 	// Extract CRD names from controllers
 	var expectedCRDNames []string
@@ -159,49 +149,36 @@ func waitForCRDsEstablished(ctx context.Context, config *rest.Config, controller
 	}
 
 	if len(expectedCRDNames) == 0 {
-		if logging {
-			logger.Info("No CRDs found in controllers, skipping CRD readiness check")
-		}
+		logger.Info("No CRDs found in controllers, skipping CRD readiness check")
 		return nil
 	}
 
-	if logging {
-		logger.Info("Checking CRD establishment", "expectedCRDs", expectedCRDNames)
-	}
+	logger.Info("Checking CRD establishment", "expectedCRDs", expectedCRDNames)
+
+	crdClient := apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions()
 
 	expectedCRDs := sets.New(expectedCRDNames...)
 	establishedCRDs := sets.New[string]()
-	var mu sync.Mutex
 
 	// First, check if any CRDs are already established
 	for _, crdName := range expectedCRDNames {
 		crd, err := crdClient.Get(ctx, crdName, metav1.GetOptions{})
 		if err != nil {
-			if logging {
-				logger.V(2).Info("CRD not yet available, will watch for it", "crd", crdName)
-			}
+			logger.V(2).Info("CRD not yet available, will watch for it", "crd", crdName)
 			continue // Will catch it in the watch
 		}
 
 		if isCRDEstablished(crd) {
-			mu.Lock()
 			establishedCRDs.Insert(crdName)
-			mu.Unlock()
-			if logging {
-				logger.V(1).Info("CRD already established", "crd", crdName)
-			}
+			logger.V(1).Info("CRD already established", "crd", crdName)
 		}
 	}
 
 	// Check if all are already established
-	mu.Lock()
 	allEstablished := establishedCRDs.Equal(expectedCRDs)
-	mu.Unlock()
 
 	if allEstablished {
-		if logging {
-			logger.Info("All CRDs are already established")
-		}
+		logger.Info("All CRDs are already established")
 		return nil
 	}
 
@@ -230,20 +207,16 @@ func waitForCRDsEstablished(ctx context.Context, config *rest.Config, controller
 		}
 
 		if isCRDEstablished(crd) {
-			mu.Lock()
 			wasNew := !establishedCRDs.Has(crdName)
 			establishedCRDs.Insert(crdName)
 			allEstablished = establishedCRDs.Equal(expectedCRDs)
-			mu.Unlock()
 
-			if logging && wasNew {
+			if wasNew {
 				logger.Info("CRD became established during watch setup", "crd", crdName)
 			}
 
 			if allEstablished {
-				if logging {
-					logger.Info("All CRDs are established after watch setup")
-				}
+				logger.Info("All CRDs are established after watch setup")
 				return nil
 			}
 		}
@@ -252,10 +225,8 @@ func waitForCRDsEstablished(ctx context.Context, config *rest.Config, controller
 	for {
 		select {
 		case <-watchCtx.Done():
-			mu.Lock()
 			established := sets.List(establishedCRDs)
 			missing := expectedCRDs.Difference(establishedCRDs)
-			mu.Unlock()
 			klog.ErrorS(watchCtx.Err(), "CRD establishment timeout", "established", established, "missing", sets.List(missing), "expected", expectedCRDNames)
 			return errors.New("timeout waiting for CRDs to be established")
 		case event, ok := <-watcher.ResultChan():
@@ -275,20 +246,16 @@ func waitForCRDsEstablished(ctx context.Context, config *rest.Config, controller
 
 			if event.Type == watch.Added || event.Type == watch.Modified {
 				if isCRDEstablished(crd) {
-					mu.Lock()
 					wasNew := !establishedCRDs.Has(crd.Name)
 					establishedCRDs.Insert(crd.Name)
 					allEstablished := establishedCRDs.Equal(expectedCRDs)
-					mu.Unlock()
 
-					if logging && wasNew {
+					if wasNew {
 						logger.Info("CRD became established", "crd", crd.Name)
 					}
 
 					if allEstablished {
-						if logging {
-							logger.Info("All CRDs are established")
-						}
+						logger.Info("All CRDs are established")
 						return nil
 					}
 				}
@@ -309,76 +276,86 @@ func isCRDEstablished(crd *apiextensionsv1.CustomResourceDefinition) bool {
 
 // waitForWebhookConfigurations waits for all webhook configurations from the given controllers to be created.
 func waitForWebhookConfigurations(ctx context.Context, config *rest.Config, controllers []base.Controller, logging bool) error {
+	logger := klog.FromContext(ctx)
+	if !logging {
+		logger = logr.Discard()
+	}
+
 	if len(controllers) == 0 {
-		if logging {
-			klog.FromContext(ctx).Info("No controllers specified, skipping webhook configuration readiness check")
-		}
+		logger.Info("No controllers specified, skipping webhook configuration readiness check")
 		return nil
 	}
 
-	logger := klog.FromContext(ctx)
-	if logging {
-		logger.Info("Waiting for webhook configurations", "controllers", len(controllers))
-	}
+	logger.Info("Waiting for webhook configurations", "controllers", len(controllers))
 
 	// Check which controllers need webhook configurations
-	var expectedWebhookNames []string
+	type webhookInfo struct {
+		name        string
+		webhookType base.WebhookType
+	}
+	var expectedWebhooks []webhookInfo
 	for _, controller := range controllers {
 		// Check if controller implements WebhookController interface
-		if _, ok := controller.(base.WebhookController); ok {
-			controllerName := controller.GetName()
-			webhookName := getWebhookConfigurationName(controllerName)
-			expectedWebhookNames = append(expectedWebhookNames, webhookName)
-			if logging {
-				logger.Info("Controller has webhook configuration", "controller", controllerName, "webhook", webhookName)
+		webhookController, ok := controller.(base.WebhookController)
+		if !ok {
+			continue
+		}
+		controllerName := controller.GetName()
+		webhookManagers := webhookController.GetWebhookManagers()
+		for _, mgr := range webhookManagers {
+			if mgr == nil {
+				continue
 			}
+			webhookName := mgr.GetConfigName()
+			webhookType := mgr.GetWebhookType()
+			expectedWebhooks = append(expectedWebhooks, webhookInfo{
+				name:        webhookName,
+				webhookType: webhookType,
+			})
+			logger.Info("Controller has webhook configuration", "controller", controllerName, "webhook", webhookName, "type", webhookType)
 		}
 	}
-
-	if len(expectedWebhookNames) == 0 {
-		if logging {
-			logger.Info("No webhook configurations expected, skipping webhook readiness check")
-		}
+	if len(expectedWebhooks) == 0 {
+		logger.Info("No webhook configurations expected, skipping webhook readiness check")
 		return nil
 	}
 
-	if logging {
-		logger.Info("Waiting for webhook configurations to be created", "webhooks", expectedWebhookNames)
+	var webhookNames []string
+	for _, wh := range expectedWebhooks {
+		webhookNames = append(webhookNames, wh.name)
 	}
+	logger.Info("Waiting for webhook configurations to be created", "webhooks", webhookNames)
 
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return fmt.Errorf("failed to create kubernetes client: %w", err)
 	}
 
-	webhookClient := client.AdmissionregistrationV1().ValidatingWebhookConfigurations()
+	validatingClient := client.AdmissionregistrationV1().ValidatingWebhookConfigurations()
+	mutatingClient := client.AdmissionregistrationV1().MutatingWebhookConfigurations()
 
-	expectedWebhooks := sets.New(expectedWebhookNames...)
+	expectedWebhookSet := sets.New(webhookNames...)
 	foundWebhooks := sets.New[string]()
-	var mu sync.Mutex
 
 	// First, check if any webhooks are already created
-	for _, webhookName := range expectedWebhookNames {
-		_, err := webhookClient.Get(ctx, webhookName, metav1.GetOptions{})
+	for _, webhook := range expectedWebhooks {
+		var err error
+		if webhook.webhookType == base.MutatingWebhook {
+			_, err = mutatingClient.Get(ctx, webhook.name, metav1.GetOptions{})
+		} else {
+			_, err = validatingClient.Get(ctx, webhook.name, metav1.GetOptions{})
+		}
 		if err == nil {
-			mu.Lock()
-			foundWebhooks.Insert(webhookName)
-			mu.Unlock()
-			if logging {
-				logger.V(1).Info("Webhook configuration already exists", "webhook", webhookName)
-			}
+			foundWebhooks.Insert(webhook.name)
+			logger.V(1).Info("Webhook configuration already exists", "webhook", webhook.name, "type", webhook.webhookType)
 		}
 	}
 
 	// Check if all are already created
-	mu.Lock()
-	allFound := foundWebhooks.Equal(expectedWebhooks)
-	mu.Unlock()
+	allFound := foundWebhooks.Equal(expectedWebhookSet)
 
 	if allFound {
-		if logging {
-			logger.Info("All webhook configurations already exist")
-		}
+		logger.Info("All webhook configurations already exist")
 		return nil
 	}
 
@@ -387,9 +364,7 @@ func waitForWebhookConfigurations(ctx context.Context, config *rest.Config, cont
 	waitCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	if logging {
-		logger.Info("Polling for webhook configuration creation")
-	}
+	logger.Info("Polling for webhook configuration creation")
 
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
@@ -397,36 +372,31 @@ func waitForWebhookConfigurations(ctx context.Context, config *rest.Config, cont
 	for {
 		select {
 		case <-waitCtx.Done():
-			mu.Lock()
-			missing := expectedWebhooks.Difference(foundWebhooks)
-			mu.Unlock()
+			missing := expectedWebhookSet.Difference(foundWebhooks)
 			return fmt.Errorf("timeout waiting for webhook configurations to be created: missing %v", sets.List(missing))
 		case <-ticker.C:
 			// Check for any missing webhook configurations
-			for _, webhookName := range expectedWebhookNames {
-				mu.Lock()
-				alreadyFound := foundWebhooks.Has(webhookName)
-				mu.Unlock()
+			for _, webhook := range expectedWebhooks {
+				alreadyFound := foundWebhooks.Has(webhook.name)
 
 				if alreadyFound {
 					continue
 				}
 
-				_, err := webhookClient.Get(ctx, webhookName, metav1.GetOptions{})
+				var err error
+				if webhook.webhookType == base.MutatingWebhook {
+					_, err = mutatingClient.Get(ctx, webhook.name, metav1.GetOptions{})
+				} else {
+					_, err = validatingClient.Get(ctx, webhook.name, metav1.GetOptions{})
+				}
 				if err == nil {
-					mu.Lock()
-					foundWebhooks.Insert(webhookName)
-					allFound := foundWebhooks.Equal(expectedWebhooks)
-					mu.Unlock()
+					foundWebhooks.Insert(webhook.name)
+					allFound := foundWebhooks.Equal(expectedWebhookSet)
 
-					if logging {
-						logger.Info("Webhook configuration became available", "webhook", webhookName)
-					}
+					logger.Info("Webhook configuration became available", "webhook", webhook.name, "type", webhook.webhookType)
 
 					if allFound {
-						if logging {
-							logger.Info("All webhook configurations are ready")
-						}
+						logger.Info("All webhook configurations are ready")
 						return nil
 					}
 				}
@@ -435,13 +405,8 @@ func waitForWebhookConfigurations(ctx context.Context, config *rest.Config, cont
 	}
 }
 
-// getWebhookConfigurationName returns the expected webhook configuration name for a controller.
-func getWebhookConfigurationName(controllerName string) string {
-	// Based on the notary controller pattern: "notary-validator"
-	return controllerName + "-validator"
-}
-
-// there doesn't seem to be any simple way to get a metav1.Status from the Go client, so we get
+// unreadyComponentsFromError extracts unready component names from a control plane error.
+// There doesn't seem to be any simple way to get a metav1.Status from the Go client, so we get
 // the content in a string-formatted error, unfortunately.
 func unreadyComponentsFromError(err error) sets.Set[string] {
 	innerErr := strings.TrimPrefix(strings.TrimSuffix(err.Error(), `") has prevented the request from succeeding`), `an error on the server ("`)

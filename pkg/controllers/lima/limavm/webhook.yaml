@@ -3,7 +3,7 @@
 # dynamically by the admission controller with proper TLS certificates.
 # See controller.go for the runtime webhook configuration implementation.
 apiVersion: admissionregistration.k8s.io/v1
-kind: ValidatingWebhookConfiguration
+kind: MutatingWebhookConfiguration
 metadata:
   name: limavm-validator
   labels:
@@ -14,7 +14,7 @@ webhooks:
 - name: limavm.lima.rancherdesktop.io
   clientConfig:
     # URL is dynamically determined based on server IP
-    url: "https://SERVER_IP:9443/validate-lima-rancherdesktop-io-v1alpha1-limavm"
+    url: "https://SERVER_IP:9443/mutate-lima-rancherdesktop-io-v1alpha1-limavm"
     # CA bundle is dynamically populated from RDD's certificate infrastructure
     caBundle: CA_BUNDLE_BASE64
   rules:

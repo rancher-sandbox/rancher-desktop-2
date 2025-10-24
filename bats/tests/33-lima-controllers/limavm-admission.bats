@@ -9,20 +9,24 @@ local_setup_file() {
     rdd ctl create namespace "test-ns1"
     rdd ctl create namespace "test-ns2"
     rdd ctl create namespace "test-ns3"
+
+    rdd ctl create configmap "test-template" -n "test-ns1" --from-literal=template='{"vmType":"vz"}'
+    rdd ctl create configmap "test-template" -n "test-ns2" --from-literal=template='{"vmType":"vz"}'
+    rdd ctl create configmap "test-template" -n "test-ns3" --from-literal=template='{"vmType":"vz"}'
 }
 
 @test "webhook configuration has correct structure" {
-    # Wait for the webhook configuration to be created
-    try --max 20 --delay 3 -- rdd ctl get ValidatingWebHookConfiguration "limavm-validator"
+    # Wait for the mutating webhook configuration to be created
+    try --max 20 --delay 3 -- rdd ctl get MutatingWebhookConfiguration "limavm-defaulter"
 
-    run -0 rdd ctl get ValidatingWebHookConfiguration limavm-validator -o jsonpath='{.webhooks[0]}'
+    run -0 rdd ctl get MutatingWebhookConfiguration limavm-defaulter -o jsonpath='{.webhooks[0]}'
     local json=$output
 
     run -0 jq_raw '.failurePolicy' "$json"
     assert_output "Fail"
 
     run -0 jq_raw '.name' "$json"
-    assert_output "limavm.lima.rancherdesktop.io"
+    assert_output "limavm-defaulter.lima.rancherdesktop.io"
 
     run -0 jq_raw '.rules[0].apiGroups[0]' "$json"
     assert_output "lima.rancherdesktop.io"
@@ -33,13 +37,12 @@ local_setup_file() {
     run -0 jq_raw '.rules[0].resources[0]' "$json"
     assert_output "limavms"
 
-    run -0 jq_raw '.rules[0].operations[]' "$json"
-    assert_line "CREATE"
-    assert_line "UPDATE"
+    run -0 jq_raw '.rules[0].operations[0]' "$json"
+    assert_output "CREATE"
 }
 
 @test "create LimaVM in first namespace succeeds" {
-    run -0 rdd lima create "my-vm" -n "test-ns1"
+    run -0 rdd lima create "my-vm" "test-template" -n "test-ns1"
     assert_output --partial "created"
 
     # Verify the LimaVM was created
@@ -49,7 +52,7 @@ local_setup_file() {
 
 @test "duplicate LimaVM name in different namespace is rejected" {
     # Try to create LimaVM with same name in test-ns2
-    run -1 rdd lima create "my-vm" -n "test-ns2"
+    run -1 rdd lima create "my-vm" "test-template" -n "test-ns2"
     assert_output --partial "denied the request"
     assert_output --partial "already used"
     assert_output --partial "unique across all namespaces"
@@ -67,13 +70,45 @@ kind: LimaVM
 metadata:
   name: my-vm
   namespace: test-ns2
-spec: {}
+spec:
+  templateRef:
+    name: test-template
+    namespace: test-ns2
+  running: false
 EOF
     assert_output --partial "Forbidden"
     assert_output --partial "already used"
 
     # Verify the resource was not created (dry-run should never create)
     run -1 rdd ctl get limavm "my-vm" -n "test-ns2"
+    assert_output --partial "not found"
+}
+
+@test "dry-run validates template data without creating ConfigMap copy" {
+    # Create a ConfigMap with empty template data (invalid)
+    run -0 rdd ctl create configmap "invalid-template" -n "test-ns3" --from-literal=template=''
+
+    # Try to create LimaVM with empty template using dry-run=server
+    run -1 rdd ctl apply --dry-run=server -f - <<EOF
+apiVersion: lima.rancherdesktop.io/v1alpha1
+kind: LimaVM
+metadata:
+  name: test-invalid-vm
+  namespace: test-ns3
+spec:
+  templateRef:
+    name: invalid-template
+  running: false
+EOF
+    assert_output --partial "template validation failed"
+    assert_output --partial '"template" data cannot be empty'
+
+    # Verify the LimaVM was not created (dry-run should never create)
+    run -1 rdd ctl get limavm "test-invalid-vm" -n "test-ns3"
+    assert_output --partial "not found"
+
+    # Verify that no ConfigMap copy was created during dry-run
+    run -1 rdd ctl get configmap "test-invalid-vm-template" -n "test-ns3"
     assert_output --partial "not found"
 }
 
@@ -87,7 +122,7 @@ EOF
     assert_output --partial "not found"
 
     # Now we should be able to create a LimaVM with the same name in test-ns2
-    run -0 rdd lima create "my-vm" -n "test-ns2"
+    run -0 rdd lima create "my-vm" "test-template" -n "test-ns2"
     assert_output --partial "created"
 
     # Verify the LimaVM was created in test-ns2
@@ -97,13 +132,13 @@ EOF
 
 @test "multiple unique VMs across namespaces are allowed" {
     # Create several LimaVMs with unique names across different namespaces
-    run -0 rdd lima create "vm1" -n "test-ns1"
+    run -0 rdd lima create "vm1" "test-template" -n "test-ns1"
     assert_output --partial "created"
 
-    run -0 rdd lima create "vm2" -n "test-ns2"
+    run -0 rdd lima create "vm2" "test-template" -n "test-ns2"
     assert_output --partial "created"
 
-    run -0 rdd lima create "vm3" -n "test-ns3"
+    run -0 rdd lima create "vm3" "test-template" -n "test-ns3"
     assert_output --partial "created"
 
     # Verify all VMs exist

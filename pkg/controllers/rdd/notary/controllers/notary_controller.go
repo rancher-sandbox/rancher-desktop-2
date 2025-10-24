@@ -24,17 +24,11 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 )
 
-const (
-	// FinalizerName is the finalizer name used for Notary cleanup.
-	FinalizerName = "rdd.rancherdesktop.io/notary-cleanup"
-)
-
 // NotaryReconciler reconciles a Notary object.
 type NotaryReconciler struct {
 	client.Client
-	Scheme          *runtime.Scheme
-	Recorder        record.EventRecorder
-	FinalizerHelper *base.FinalizerHelper
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=rdd.rancherdesktop.io,resources=notaries,verbs=get;list;watch;create;update;patch;delete
@@ -66,12 +60,12 @@ func (r *NotaryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Handle deletion
-	if r.FinalizerHelper.IsBeingDeleted(&notary) {
+	if base.IsBeingDeleted(&notary) {
 		return r.handleDeletion(ctx, &notary)
 	}
 
 	// Add finalizer if not present
-	if added, err := r.FinalizerHelper.EnsureFinalizer(ctx, &notary); err != nil {
+	if added, err := base.EnsureFinalizer(ctx, r.Client, &notary); err != nil {
 		log.Error(err, "Failed to add finalizer")
 		return ctrl.Result{}, err
 	} else if added {
@@ -122,22 +116,20 @@ func (r *NotaryReconciler) handleDeletion(ctx context.Context, notary *v1alpha1.
 
 	// Clean up all owned ConfigMaps using the helper
 	cleanupOpts := base.CleanupOptions{
-		ResourceType: &corev1.ConfigMapList{},
-		Namespace:    notary.Namespace,
+		ResourceLists: []client.ObjectList{&corev1.ConfigMapList{}},
 		LabelSelector: map[string]string{
 			"app.kubernetes.io/managed-by": "notary-controller",
 			"app.kubernetes.io/instance":   notary.Name,
 		},
-		OwnerVerifier: base.CreateOwnerVerifier(v1alpha1.GroupVersion.String(), "Notary"),
 	}
 
-	if err := r.FinalizerHelper.CleanupOwnedResources(ctx, notary, cleanupOpts); err != nil {
-		log.Error(err, "Failed to cleanup owned ConfigMaps")
+	if err := base.DeleteOwnedResources(ctx, r.Client, notary, cleanupOpts); err != nil {
+		log.Error(err, "Failed to delete owned ConfigMaps")
 		return ctrl.Result{}, err
 	}
 
 	// Remove finalizer to allow deletion
-	if err := r.FinalizerHelper.RemoveFinalizer(ctx, notary); err != nil {
+	if err := base.RemoveFinalizer(ctx, r.Client, notary); err != nil {
 		log.Error(err, "Failed to remove finalizer")
 		return ctrl.Result{}, err
 	}
@@ -210,6 +202,5 @@ func (r *NotaryReconciler) recordValueChange(ctx context.Context, notary *v1alph
 func (r *NotaryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Notary{}).
-		Named("notary").
 		Complete(r)
 }

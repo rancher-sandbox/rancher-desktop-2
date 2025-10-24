@@ -36,9 +36,9 @@ apply_notary() {
 
 @test "webhook configuration has correct structure" {
     # Wait for the webhook configuration to be created
-    try --max 20 --delay 3 -- rdd ctl get ValidatingWebHookConfiguration notary-validator
+    try --max 20 --delay 3 -- rdd ctl get ValidatingWebhookConfiguration notary-validator
 
-    run -0 rdd ctl get ValidatingWebHookConfiguration notary-validator -o jsonpath='{.webhooks[0]}'
+    run -0 rdd ctl get ValidatingWebhookConfiguration notary-validator -o jsonpath='{.webhooks[0]}'
     local json=$output
 
     run -0 jq_raw '.failurePolicy' "$json"

@@ -30,7 +30,7 @@ assert_process_exited() {
 
 @test "external controller starts and registers" {
     # Start external rdd-controller binary in background
-    "../bin/rdd-controller${EXE}" &
+    "rdd-controller${EXE}" &
     # Store PID to verify it auto-exits later
     echo "$!" >"${BATS_FILE_TMPDIR}/controller_pid"
 

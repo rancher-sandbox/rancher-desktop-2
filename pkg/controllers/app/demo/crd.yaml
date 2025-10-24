@@ -52,6 +52,13 @@ spec:
               message:
                 description: Message is the message to process
                 type: string
+              namespace:
+                default: default
+                description: |-
+                  Namespace is the namespace where this cluster-scoped Demo resource
+                  creates and manages its owned namespaced resources (e.g., LimaVMs).
+                  Defaults to "default" if not specified.
+                type: string
             type: object
           status:
             description: DemoStatus defines the observed state of Demo.

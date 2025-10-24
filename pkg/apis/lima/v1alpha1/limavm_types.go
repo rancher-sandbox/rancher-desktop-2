@@ -8,15 +8,26 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// TemplateReference specifies a reference to a ConfigMap containing a VM template.
+type TemplateReference struct {
+	// name is the name of the ConfigMap containing the VM template.
+	// The ConfigMap must have a "template" key.
+	// +required
+	Name string `json:"name"`
+
+	// namespace is the namespace of the ConfigMap.
+	// If not specified, defaults to the namespace of the LimaVM resource.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+}
 
 // LimaVMSpec defines the desired state of LimaVM.
 type LimaVMSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	// The following markers will use OpenAPI v3 schema to validate the value
-	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
+	// templateRef is a reference to a ConfigMap containing the VM template.
+	// This field is immutable after creation.
+	// +required
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="templateRef is immutable"
+	TemplateRef TemplateReference `json:"templateRef"`
 
 	// running specifies whether the VM should be running
 	// +optional
@@ -26,12 +37,6 @@ type LimaVMSpec struct {
 
 // LimaVMStatus defines the observed state of LimaVM.
 type LimaVMStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// For Kubernetes API conventions, see:
-	// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
-
 	// conditions represent the current state of the LimaVM resource.
 	// Each condition has a unique type and reflects the status of a specific aspect of the resource.
 	//
@@ -45,6 +50,13 @@ type LimaVMStatus struct {
 	// +listMapKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// templateConfigMap is the name of the ConfigMap containing the validated template.
+	// This ConfigMap is created and managed by the controller and is owned by this LimaVM resource.
+	// An admission controller validates any updates to the ConfigMap.
+	// This field is informational - internal code should use GetTemplateConfigMapName() instead.
+	// +optional
+	TemplateConfigMap string `json:"templateConfigMap,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -66,6 +78,12 @@ type LimaVM struct {
 	// status defines the observed state of LimaVM
 	// +optional
 	Status LimaVMStatus `json:"status,omitempty,omitzero"`
+}
+
+// GetTemplateConfigMapName returns the name of the template ConfigMap for this LimaVM.
+// This is the single source of truth for the naming convention.
+func (vm *LimaVM) GetTemplateConfigMapName() string {
+	return vm.Name + "-template"
 }
 
 // +kubebuilder:object:root=true

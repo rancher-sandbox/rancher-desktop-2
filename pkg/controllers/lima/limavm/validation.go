@@ -24,14 +24,14 @@ func validateLimaVMUniqueName(ctx context.Context, c client.Client, limavm *v1al
 		return fmt.Errorf("failed to list LimaVMs for uniqueness check: %w", err)
 	}
 
-	// Check for name conflicts in other namespaces
+	// Check for name conflicts across all namespaces
 	for _, existingVM := range limavmList.Items {
-		// Skip if it's an update to the existing resource (or a different name)
-		if existingVM.Namespace == limavm.Namespace {
+		// Skip if it's the same resource (UPDATE operation)
+		if existingVM.UID == limavm.UID {
 			continue
 		}
 
-		// Check if an instance with the same name exists in a different namespace
+		// Check if another instance with the same name exists
 		if existingVM.Name == limavm.Name {
 			return fmt.Errorf("LimaVM name %q is already used in namespace %q; LimaVM names must be unique across all namespaces",
 				limavm.Name, existingVM.Namespace)
@@ -41,13 +41,22 @@ func validateLimaVMUniqueName(ctx context.Context, c client.Client, limavm *v1al
 	return nil
 }
 
-// validateLimaVM validates a complete LimaVM object and returns warnings.
-func validateLimaVM(ctx context.Context, c client.Client, limavm *v1alpha1.LimaVM) ([]string, error) {
+// ValidateLimaVM validates a complete LimaVM object and returns warnings.
+// Template validation is now handled by the ConfigMap admission webhook,
+// so we only validate LimaVM-specific concerns here (like cross-namespace name uniqueness).
+func ValidateLimaVM(ctx context.Context, c client.Client, limavm *v1alpha1.LimaVM) ([]string, error) {
 	if limavm == nil {
 		return nil, errors.New("limavm object cannot be nil")
 	}
 
 	var warnings []string
+
+	// Skip validation if the object is being deleted
+	// During deletion, the controller removes finalizers and may have already deleted owned resources
+	if limavm.DeletionTimestamp != nil {
+		return warnings, nil
+	}
+
 	if err := validateLimaVMUniqueName(ctx, c, limavm); err != nil {
 		return warnings, err
 	}

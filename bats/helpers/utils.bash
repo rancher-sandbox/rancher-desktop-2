@@ -25,6 +25,10 @@ bool() {
     fi
 }
 
+run_e() {
+    run --separate-stderr "$@"
+}
+
 # Ensure that the variable contains a valid value, e.g.
 # `validate_enum VAR value1 value2`
 validate_enum() {
@@ -258,6 +262,7 @@ trace() {
 
 # try runs the specified command until it either succeeds, or --max attempts
 # have been made (with a --delay seconds sleep in between).
+# With --until-fail, waits until the command fails instead of succeeds.
 #
 # Right now the command is **always** run with --separate-stderr, and stderr
 # is output after all of stdout. This is subject to change, if we can figure
@@ -265,6 +270,7 @@ trace() {
 try() {
     local max=24
     local delay=5
+    local until_fail=0
 
     while [[ $# -gt 0 ]] && [[ $1 == -* ]]; do
         case "$1" in
@@ -275,6 +281,9 @@ try() {
         --delay)
             delay=$2
             shift
+            ;;
+        --until-fail)
+            until_fail=1
             ;;
         --)
             shift
@@ -291,7 +300,13 @@ try() {
     local count=0
     while true; do
         run --separate-stderr "$@"
-        if ((status == 0 || ++count >= max)); then
+        local success
+        if ((until_fail)); then
+            success=$((status != 0))
+        else
+            success=$((status == 0))
+        fi
+        if ((success || ++count >= max)); then
             trace "$count/$max tries: $*"
             break
         fi
@@ -300,6 +315,10 @@ try() {
     echo "$output"
     if [ -n "${stderr:-}" ]; then
         echo "$stderr" >&2
+    fi
+    # When using --until-fail, return 0 if we successfully waited for failure, 1 if we timed out
+    if ((until_fail)); then
+        return $((success ? 0 : 1))
     fi
     return "$status"
 }

@@ -23,11 +23,6 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 )
 
-const (
-	// FinalizerName is the finalizer name used for ConfigMapReplicaSet cleanup.
-	FinalizerName = "rdd.rancherdesktop.io/configmapreplicaset-cleanup"
-)
-
 // ConfigMapReplicaSetReconciler reconciles a ConfigMapReplicaSet object.
 // This reconciler implements the core logic for managing ConfigMap replicas
 // based on the desired state specified in ConfigMapReplicaSet resources.
@@ -35,8 +30,7 @@ const (
 // minimalist controller pattern.
 type ConfigMapReplicaSetReconciler struct {
 	client.Client
-	Scheme          *runtime.Scheme
-	FinalizerHelper *base.FinalizerHelper
+	Scheme *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=rdd.rancherdesktop.io,resources=configmapreplicasets,verbs=get;list;watch;create;update;patch;delete
@@ -72,12 +66,12 @@ func (r *ConfigMapReplicaSetReconciler) Reconcile(ctx context.Context, req ctrl.
 	}
 
 	// Handle deletion
-	if r.FinalizerHelper.IsBeingDeleted(&configMapReplicaSet) {
+	if base.IsBeingDeleted(&configMapReplicaSet) {
 		return r.handleDeletion(ctx, &configMapReplicaSet)
 	}
 
 	// Add finalizer if not present
-	if added, err := r.FinalizerHelper.EnsureFinalizer(ctx, &configMapReplicaSet); err != nil {
+	if added, err := base.EnsureFinalizer(ctx, r.Client, &configMapReplicaSet); err != nil {
 		logger.Error(err, "Failed to add finalizer")
 		return ctrl.Result{}, err
 	} else if added {
@@ -160,19 +154,17 @@ func (r *ConfigMapReplicaSetReconciler) handleDeletion(ctx context.Context, conf
 
 	// Clean up all owned ConfigMaps using the helper
 	cleanupOpts := base.CleanupOptions{
-		ResourceType:  &corev1.ConfigMapList{},
-		Namespace:     configMapReplicaSet.Namespace,
+		ResourceLists: []client.ObjectList{&corev1.ConfigMapList{}},
 		LabelSelector: labelsForConfigMap(configMapReplicaSet.Name),
-		OwnerVerifier: base.CreateOwnerVerifier(v1alpha1.GroupVersion.String(), "ConfigMapReplicaSet"),
 	}
 
-	if err := r.FinalizerHelper.CleanupOwnedResources(ctx, configMapReplicaSet, cleanupOpts); err != nil {
-		logger.Error(err, "Failed to cleanup owned ConfigMaps")
+	if err := base.DeleteOwnedResources(ctx, r.Client, configMapReplicaSet, cleanupOpts); err != nil {
+		logger.Error(err, "Failed to delete owned ConfigMaps")
 		return ctrl.Result{}, err
 	}
 
 	// Remove finalizer to allow deletion
-	if err := r.FinalizerHelper.RemoveFinalizer(ctx, configMapReplicaSet); err != nil {
+	if err := base.RemoveFinalizer(ctx, r.Client, configMapReplicaSet); err != nil {
 		logger.Error(err, "Failed to remove finalizer")
 		return ctrl.Result{}, err
 	}

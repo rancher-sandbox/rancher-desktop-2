@@ -15,7 +15,7 @@ import (
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,40 +24,57 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 )
 
-// GenerateValidatingWebhookPath generates the webhook path that controller-runtime uses
-// when registering a validating webhook for a given API group, version, and kind.
-// This follows controller-runtime's convention: /validate-{group}-{version}-{kind}
-// For core resources (empty group), the path becomes: /validate--{version}-{kind}.
-// Dots in the API group are replaced with dashes.
-//
-// Example: GenerateValidatingWebhookPath("lima.rancherdesktop.io", "v1alpha1", "limavm")
-// Returns: "/validate-lima-rancherdesktop-io-v1alpha1-limavm".
-func GenerateValidatingWebhookPath(apiGroup, apiVersion, kind string) string {
-	group := strings.ReplaceAll(apiGroup, ".", "-")
-	return fmt.Sprintf("/validate-%s-%s-%s", group, apiVersion, kind)
+// IsDryRun checks if the current admission request is a dry-run.
+// It returns true if the request context contains a dry-run admission request.
+func IsDryRun(ctx context.Context) bool {
+	req, err := admission.RequestFromContext(ctx)
+	if err != nil {
+		return false
+	}
+	return req.DryRun != nil && *req.DryRun
 }
 
-// WebhookConfig contains configuration for creating a ValidatingWebhookConfiguration.
+// GenerateWebhookPath generates the webhook path that controller-runtime uses
+// when registering a webhook for a given GroupVersionKind and webhook type.
+// This follows controller-runtime's conventions:
+// - Validating: /validate-{group}-{version}-{kind}
+// - Mutating: /mutate-{group}-{version}-{kind}
+// For core resources (empty group), the path becomes: /validate--{version}-{kind} or /mutate--{version}-{kind}.
+// Dots in the API group are replaced with dashes, and Kind is lowercased.
+//
+// Example: GenerateWebhookPath(schema.GroupVersionKind{Group: "lima.rancherdesktop.io", Version: "v1alpha1", Kind: "LimaVM"}, MutatingWebhook)
+// Returns: "/mutate-lima-rancherdesktop-io-v1alpha1-limavm".
+func GenerateWebhookPath(gvk schema.GroupVersionKind, webhookType WebhookType) string {
+	group := strings.ReplaceAll(gvk.Group, ".", "-")
+	kind := strings.ToLower(gvk.Kind)
+
+	var prefix string
+	if webhookType == MutatingWebhook {
+		prefix = "mutate"
+	} else {
+		prefix = "validate"
+	}
+
+	return fmt.Sprintf("/%s-%s-%s-%s", prefix, group, gvk.Version, kind)
+}
+
+// WebhookType indicates whether this is a validating or mutating webhook.
+type WebhookType string
+
+const (
+	// ValidatingWebhook indicates this is a validating admission webhook
+	ValidatingWebhook WebhookType = "validating"
+	// MutatingWebhook indicates this is a mutating admission webhook
+	MutatingWebhook WebhookType = "mutating"
+)
+
+// WebhookConfig contains configuration for creating a webhook configuration.
 type WebhookConfig struct {
-	// Name is the name of the ValidatingWebhookConfiguration resource
+	// Name is the name of the webhook configuration resource
 	Name string
 
 	// WebhookName is the name field within the webhook configuration
 	WebhookName string
-
-	// WebhookPath is the URL path for the webhook endpoint (e.g., "/validate-rdd-rancherdesktop-io-v1alpha1-notary")
-	WebhookPath string
-
-	// APIGroup is the API group for the webhook rules (e.g., "rdd.rancherdesktop.io")
-	APIGroup string
-
-	// APIVersion is the API version for the webhook rules (e.g., "v1alpha1")
-	APIVersion string
-
-	// Resource is the resource type for the webhook rules (e.g., "notaries")
-	// TODO: Consider deriving this automatically from the CRD or RESTMapper to maintain
-	// a single source of truth. Currently must match the plural name in the CRD.
-	Resource string
 
 	// WebhookPort is the port the webhook server is listening on
 	WebhookPort int
@@ -65,36 +82,92 @@ type WebhookConfig struct {
 	// FailurePolicy determines how the API server handles webhook failures
 	// Default is Fail if not specified
 	FailurePolicy *admissionregistrationv1.FailurePolicyType
+
+	// ObjectSelector filters which objects the webhook should intercept based on labels
+	// If specified, only objects matching the selector will trigger the webhook
+	ObjectSelector *metav1.LabelSelector
+
+	// Operations specifies which operations the webhook should intercept
+	// Default is Create and Update if not specified
+	Operations []admissionregistrationv1.OperationType
+
+	// SideEffects declares whether this webhook has side effects
+	// Default is None if not specified
+	SideEffects *admissionregistrationv1.SideEffectClass
+
+	// Validator is the custom validator for validating admission webhooks
+	Validator admission.CustomValidator
+
+	// Defaulter is the custom defaulter for mutating admission webhooks
+	Defaulter admission.CustomDefaulter
 }
 
-// WebhookManager handles the creation and management of ValidatingWebhookConfigurations.
+// WebhookManager handles the creation and management of webhook configurations.
 type WebhookManager struct {
-	config WebhookConfig
-	mgr    ctrl.Manager
+	config      WebhookConfig
+	webhookType WebhookType // Validating or Mutating - set by SetupWebhookForResource
+	mgr         ctrl.Manager
+
+	// GVK information - used to derive webhook path and API group/version
+	gvk schema.GroupVersionKind
+	// Plural resource name (e.g., "limavms", "configmaps") - looked up during Setup() via REST mapper
+	resources string
 }
 
-// newWebhookManager creates a new WebhookManager with the given configuration.
-func newWebhookManager(config WebhookConfig, mgr ctrl.Manager) *WebhookManager {
-	return &WebhookManager{
-		config: config,
-		mgr:    mgr,
+// GetConfigName returns the name of the webhook configuration resource.
+func (wm *WebhookManager) GetConfigName() string {
+	return wm.config.Name
+}
+
+// GetWebhookType returns the type of webhook (Validating or Mutating).
+func (wm *WebhookManager) GetWebhookType() WebhookType {
+	return wm.webhookType
+}
+
+// SetupWebhookForResource sets up webhook(s) for a resource type.
+// It registers the webhook(s) with controller-runtime and creates WebhookManager(s) for later setup.
+//
+// The config must specify either a validator, a defaulter, or both. The function will create the
+// appropriate webhook manager(s) based on which are provided.
+func SetupWebhookForResource(mgr ctrl.Manager, obj client.Object, config WebhookConfig) ([]*WebhookManager, error) {
+	if config.Validator == nil && config.Defaulter == nil {
+		return nil, fmt.Errorf("config must specify either Validator or Defaulter (or both)")
 	}
-}
 
-// SetupWebhookForResource is a helper function that sets up a webhook for a resource type.
-// It registers the webhook with controller-runtime and creates a WebhookManager for later setup.
-// The validator parameter must implement the admission.CustomValidator interface.
-// Returns the created WebhookManager for storage in the controller.
-func SetupWebhookForResource(mgr ctrl.Manager, obj client.Object, validator admission.CustomValidator, config WebhookConfig) (*WebhookManager, error) {
-	// Register webhook validation with controller-runtime
-	builder := ctrl.NewWebhookManagedBy(mgr).For(obj).WithValidator(validator)
+	// Extract GVK from the resource object
+	gvks, _, err := mgr.GetScheme().ObjectKinds(obj)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get object kinds: %w", err)
+	}
+	if len(gvks) == 0 {
+		return nil, fmt.Errorf("no GVK found for object type %T", obj)
+	}
+	gvk := gvks[0]
 
+	// Build webhook registration with controller-runtime
+	builder := ctrl.NewWebhookManagedBy(mgr).For(obj).WithValidator(config.Validator).WithDefaulter(config.Defaulter)
 	if err := builder.Complete(); err != nil {
 		return nil, err
 	}
 
-	// Create and return webhook manager for parallel setup
-	return newWebhookManager(config, mgr), nil
+	var managers []*WebhookManager
+	if config.Validator != nil {
+		managers = append(managers, &WebhookManager{
+			config:      config,
+			webhookType: ValidatingWebhook,
+			mgr:         mgr,
+			gvk:         gvk,
+		})
+	}
+	if config.Defaulter != nil {
+		managers = append(managers, &WebhookManager{
+			config:      config,
+			webhookType: MutatingWebhook,
+			mgr:         mgr,
+			gvk:         gvk,
+		})
+	}
+	return managers, nil
 }
 
 // Setup creates the webhook configuration with retry logic.
@@ -104,8 +177,29 @@ func (wm *WebhookManager) Setup() error {
 	klog.Info("Starting webhook configuration creation...")
 
 	const maxAttempts = 20
-	const retryDelay = 3 * time.Second
+	const retryDelay = 200 * time.Millisecond
 
+	// Resolve the plural resource name from the REST mapper with retry logic
+	// This happens here (not during registration) because the API server
+	// discovery endpoints may not be ready yet even after manager registration
+	if wm.resources == "" {
+		klog.Infof("Looking up plural resource name for %s", wm.gvk.String())
+		for attempt := 1; ; attempt++ {
+			mapping, err := wm.mgr.GetRESTMapper().RESTMapping(wm.gvk.GroupKind(), wm.gvk.Version)
+			if err == nil {
+				wm.resources = mapping.Resource.Resource
+				klog.Infof("Resolved plural resource name: %s (attempt %d)", wm.resources, attempt)
+				break
+			}
+			if attempt >= maxAttempts {
+				return fmt.Errorf("failed to get REST mapping for %s after %d attempts: %w", wm.gvk.String(), maxAttempts, err)
+			}
+			klog.V(2).Infof("REST mapper not ready yet (attempt %d/%d): %v, retrying in %v", attempt, maxAttempts, err, retryDelay)
+			time.Sleep(retryDelay)
+		}
+	}
+
+	// Create the webhook configuration with retry logic for transient API server issues
 	for attempt := 1; ; attempt++ {
 		klog.Infof("Webhook configuration creation attempt %d/%d", attempt, maxAttempts)
 		err := wm.createWebhookConfiguration()
@@ -122,10 +216,14 @@ func (wm *WebhookManager) Setup() error {
 	}
 }
 
-// createWebhookConfiguration creates the ValidatingWebhookConfiguration.
+// createWebhookConfiguration creates the webhook configuration (Validating or Mutating).
 func (wm *WebhookManager) createWebhookConfiguration() error {
-	klog.Info("Creating webhook configuration...")
+	klog.Infof("Creating %s webhook configuration...", wm.webhookType)
 	ctx := context.Background()
+
+	webhookPath := GenerateWebhookPath(wm.gvk, wm.webhookType)
+	webhookURL := fmt.Sprintf("https://127.0.0.1:%d%s", wm.config.WebhookPort, webhookPath)
+	klog.Infof("Webhook URL: %s", webhookURL)
 
 	// Read CA bundle directly without creating a new certificate manager.
 	// The certificates were already created by SharedControllerManager.
@@ -137,73 +235,113 @@ func (wm *WebhookManager) createWebhookConfiguration() error {
 		return fmt.Errorf("failed to read CA bundle file %s: %w", caBundlePath, err)
 	}
 
-	webhookURL := fmt.Sprintf("https://127.0.0.1:%d%s", wm.config.WebhookPort, wm.config.WebhookPath)
-	klog.Infof("Webhook URL: %s", webhookURL)
-
 	// Set default failure policy if not specified
 	failurePolicy := admissionregistrationv1.Fail
 	if wm.config.FailurePolicy != nil {
 		failurePolicy = *wm.config.FailurePolicy
 	}
+	// Set default side effects if not specified
 	sideEffects := admissionregistrationv1.SideEffectClassNone
-
-	webhook := &admissionregistrationv1.ValidatingWebhookConfiguration{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: wm.config.Name,
-		},
-		Webhooks: []admissionregistrationv1.ValidatingWebhook{
-			{
-				Name: wm.config.WebhookName,
-				ClientConfig: admissionregistrationv1.WebhookClientConfig{
-					URL:      &webhookURL,
-					CABundle: caBundleBytes,
-				},
-				Rules: []admissionregistrationv1.RuleWithOperations{
-					{
-						Operations: []admissionregistrationv1.OperationType{
-							admissionregistrationv1.Create,
-							admissionregistrationv1.Update,
-						},
-						Rule: admissionregistrationv1.Rule{
-							APIGroups:   []string{wm.config.APIGroup},
-							APIVersions: []string{wm.config.APIVersion},
-							Resources:   []string{wm.config.Resource},
-						},
-					},
-				},
-				FailurePolicy:           &failurePolicy,
-				SideEffects:             &sideEffects,
-				AdmissionReviewVersions: []string{"v1", "v1beta1"},
+	if wm.config.SideEffects != nil {
+		sideEffects = *wm.config.SideEffects
+	}
+	// Set default operations if not specified
+	operations := wm.config.Operations
+	if len(operations) == 0 {
+		operations = []admissionregistrationv1.OperationType{
+			admissionregistrationv1.Create,
+			admissionregistrationv1.Update,
+		}
+	}
+	clientConfig := admissionregistrationv1.WebhookClientConfig{
+		URL:      &webhookURL,
+		CABundle: caBundleBytes,
+	}
+	rules := []admissionregistrationv1.RuleWithOperations{
+		{
+			Operations: operations,
+			Rule: admissionregistrationv1.Rule{
+				APIGroups:   []string{wm.gvk.Group},
+				APIVersions: []string{wm.gvk.Version},
+				Resources:   []string{wm.resources},
 			},
 		},
 	}
 
 	// Try to create or update the webhook configuration
-	client := wm.mgr.GetClient()
-	if client == nil {
+	c := wm.mgr.GetClient()
+	if c == nil {
 		return errors.New("manager client is nil")
 	}
 
-	klog.Info("Checking if webhook configuration already exists...")
-	existingWebhook := &admissionregistrationv1.ValidatingWebhookConfiguration{}
-	err = client.Get(ctx, types.NamespacedName{Name: wm.config.Name}, existingWebhook)
-	if err != nil {
-		klog.Infof("Webhook configuration does not exist (error: %v), creating new one...", err)
-		if err := client.Create(ctx, webhook); err != nil {
-			klog.Errorf("Failed to create webhook configuration: %v", err)
-			return fmt.Errorf("failed to create webhook configuration: %w", err)
-		}
-		klog.Infof("Successfully created webhook configuration for %s", webhookURL)
-	} else {
-		klog.Info("Webhook configuration already exists, updating...")
-		existingWebhook.Webhooks = webhook.Webhooks
-		if err := client.Update(ctx, existingWebhook); err != nil {
-			klog.Errorf("Failed to update webhook configuration: %v", err)
-			return fmt.Errorf("failed to update webhook configuration: %w", err)
-		}
-		klog.Infof("Successfully updated webhook configuration for %s", webhookURL)
+	switch wm.webhookType {
+	case MutatingWebhook:
+		return wm.createMutatingWebhook(ctx, c, webhookURL, clientConfig, rules, failurePolicy, sideEffects)
+	case ValidatingWebhook:
+		return wm.createValidatingWebhook(ctx, c, webhookURL, clientConfig, rules, failurePolicy, sideEffects)
+	default:
+		return fmt.Errorf("invalid webhook type: %s", wm.webhookType)
+	}
+}
+
+func (wm *WebhookManager) createValidatingWebhook(ctx context.Context, c client.Client, webhookURL string, clientConfig admissionregistrationv1.WebhookClientConfig, rules []admissionregistrationv1.RuleWithOperations, failurePolicy admissionregistrationv1.FailurePolicyType, sideEffects admissionregistrationv1.SideEffectClass) error {
+	webhook := &admissionregistrationv1.ValidatingWebhookConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "admissionregistration.k8s.io/v1",
+			Kind:       "ValidatingWebhookConfiguration",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: wm.config.Name,
+		},
+		Webhooks: []admissionregistrationv1.ValidatingWebhook{
+			{
+				Name:                    wm.config.WebhookName,
+				ClientConfig:            clientConfig,
+				Rules:                   rules,
+				FailurePolicy:           &failurePolicy,
+				SideEffects:             &sideEffects,
+				AdmissionReviewVersions: []string{"v1", "v1beta1"},
+				ObjectSelector:          wm.config.ObjectSelector,
+			},
+		},
 	}
 
-	klog.Info("Webhook configuration operation completed successfully")
+	klog.Infof("Applying webhook configuration %s...", wm.config.Name)
+	if err := c.Patch(ctx, webhook, client.Apply, client.ForceOwnership, client.FieldOwner("rdd-webhook-manager")); err != nil {
+		klog.Errorf("Failed to apply webhook configuration: %v", err)
+		return fmt.Errorf("failed to apply webhook configuration: %w", err)
+	}
+	klog.Infof("Successfully applied webhook configuration for %s", webhookURL)
+	return nil
+}
+
+func (wm *WebhookManager) createMutatingWebhook(ctx context.Context, c client.Client, webhookURL string, clientConfig admissionregistrationv1.WebhookClientConfig, rules []admissionregistrationv1.RuleWithOperations, failurePolicy admissionregistrationv1.FailurePolicyType, sideEffects admissionregistrationv1.SideEffectClass) error {
+	webhook := &admissionregistrationv1.MutatingWebhookConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "admissionregistration.k8s.io/v1",
+			Kind:       "MutatingWebhookConfiguration",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: wm.config.Name,
+		},
+		Webhooks: []admissionregistrationv1.MutatingWebhook{
+			{
+				Name:                    wm.config.WebhookName,
+				ClientConfig:            clientConfig,
+				Rules:                   rules,
+				FailurePolicy:           &failurePolicy,
+				SideEffects:             &sideEffects,
+				AdmissionReviewVersions: []string{"v1", "v1beta1"},
+				ObjectSelector:          wm.config.ObjectSelector,
+			},
+		},
+	}
+
+	klog.Infof("Applying webhook configuration %s...", wm.config.Name)
+	if err := c.Patch(ctx, webhook, client.Apply, client.ForceOwnership, client.FieldOwner("rdd-webhook-manager")); err != nil {
+		klog.Errorf("Failed to apply webhook configuration: %v", err)
+		return fmt.Errorf("failed to apply webhook configuration: %w", err)
+	}
+	klog.Infof("Successfully applied webhook configuration for %s", webhookURL)
 	return nil
 }

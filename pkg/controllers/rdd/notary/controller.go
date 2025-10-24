@@ -42,8 +42,8 @@ var notaryCRD string
 
 // Controller implements the base.Controller interface for notary.
 type Controller struct {
-	webhookPort    int                  // The actual webhook port allocated by SharedControllerManager
-	webhookManager *base.WebhookManager // WebhookManager for parallel setup
+	webhookPort     int                    // The actual webhook port allocated by SharedControllerManager
+	webhookManagers []*base.WebhookManager // WebhookManagers for parallel setup
 }
 
 // Verify that Controller implements base.Controller and base.WebhookController interfaces.
@@ -74,12 +74,12 @@ func (c *Controller) SetWebhookPort(port int) {
 
 // GetWebhookServiceName returns the DNS service name for webhook certificates.
 func (c *Controller) GetWebhookServiceName() string {
-	return "notary-webhook"
+	return ControllerName + "-webhook"
 }
 
-// GetWebhookManager returns the WebhookManager for parallel setup.
-func (c *Controller) GetWebhookManager() *base.WebhookManager {
-	return c.webhookManager
+// GetWebhookManagers returns all WebhookManagers for parallel setup.
+func (c *Controller) GetWebhookManagers() []*base.WebhookManager {
+	return c.webhookManagers
 }
 
 // GetCRDData returns the embedded CRD YAML data.
@@ -90,10 +90,9 @@ func (c *Controller) GetCRDData() string {
 // setupReconciler sets up the NotaryReconciler with the manager.
 func (c *Controller) setupReconciler(mgr ctrl.Manager) error {
 	return (&controllers.NotaryReconciler{
-		Client:          mgr.GetClient(),
-		Scheme:          mgr.GetScheme(),
-		Recorder:        mgr.GetEventRecorderFor("notary-controller"),
-		FinalizerHelper: base.NewFinalizerHelper(mgr.GetClient(), mgr.GetScheme(), controllers.FinalizerName),
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor(ControllerName + "-controller"),
 	}).SetupWithManager(mgr)
 }
 
@@ -102,28 +101,16 @@ func (c *Controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 	webhookConfig := base.WebhookConfig{
 		Name:        validatorConfigName,
 		WebhookName: webhookName,
-		WebhookPath: base.GenerateValidatingWebhookPath(
-			v1alpha1.GroupVersion.Group,
-			v1alpha1.GroupVersion.Version,
-			ControllerName,
-		),
-		APIGroup:    v1alpha1.GroupVersion.Group,
-		APIVersion:  v1alpha1.GroupVersion.Version,
-		Resource:    "notaries",
 		WebhookPort: c.webhookPort,
+		Validator:   &NotaryValidator{},
 	}
 
-	manager, err := base.SetupWebhookForResource(
-		mgr,
-		&v1alpha1.Notary{},
-		&NotaryValidator{},
-		webhookConfig,
-	)
+	managers, err := base.SetupWebhookForResource(mgr, &v1alpha1.Notary{}, webhookConfig)
 	if err != nil {
 		return err
 	}
 
-	c.webhookManager = manager
+	c.webhookManagers = append(c.webhookManagers, managers...)
 	return nil
 }
 
@@ -142,7 +129,8 @@ func (c *Controller) RegisterWithManager(mgr ctrl.Manager) error {
 // NotaryValidator validates Notary resources via webhook (for external controllers).
 type NotaryValidator struct{}
 
-// ValidateCreate implements ctrlwebhookadmission.CustomValidator.
+var _ ctrlwebhookadmission.CustomValidator = &NotaryValidator{}
+
 func (v *NotaryValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (ctrlwebhookadmission.Warnings, error) {
 	notary, ok := obj.(*v1alpha1.Notary)
 	if !ok {
@@ -151,7 +139,6 @@ func (v *NotaryValidator) ValidateCreate(ctx context.Context, obj runtime.Object
 	return v.validateNotary(ctx, notary)
 }
 
-// ValidateUpdate implements ctrlwebhookadmission.CustomValidator.
 func (v *NotaryValidator) ValidateUpdate(ctx context.Context, _, newObj runtime.Object) (ctrlwebhookadmission.Warnings, error) {
 	notary, ok := newObj.(*v1alpha1.Notary)
 	if !ok {
@@ -160,7 +147,6 @@ func (v *NotaryValidator) ValidateUpdate(ctx context.Context, _, newObj runtime.
 	return v.validateNotary(ctx, notary)
 }
 
-// ValidateDelete implements ctrlwebhookadmission.CustomValidator.
 func (v *NotaryValidator) ValidateDelete(context.Context, runtime.Object) (ctrlwebhookadmission.Warnings, error) {
 	// Allow all deletions
 	return nil, nil
@@ -169,10 +155,8 @@ func (v *NotaryValidator) ValidateDelete(context.Context, runtime.Object) (ctrlw
 // validateNotary performs the actual validation logic.
 func (v *NotaryValidator) validateNotary(ctx context.Context, notary *v1alpha1.Notary) (ctrlwebhookadmission.Warnings, error) {
 	// Check if this is a dry run request
-	if req, err := ctrlwebhookadmission.RequestFromContext(ctx); err == nil {
-		if req.DryRun != nil && *req.DryRun {
-			klog.V(1).Infof("[DryRun] Webhook validating Notary %s/%s\n", req.Namespace, req.Name)
-		}
+	if base.IsDryRun(ctx) {
+		klog.V(1).Infof("[DryRun] Webhook validating Notary %s/%s\n", notary.Namespace, notary.Name)
 	}
 	return ValidateNotary(notary)
 }

@@ -47,9 +47,9 @@ type WebhookController interface {
 	// "service.default.svc", "service.default.svc.cluster.local").
 	GetWebhookServiceName() string
 
-	// GetWebhookManager returns the WebhookManager for parallel setup.
-	// Returns nil if the controller doesn't use webhooks.
-	GetWebhookManager() *WebhookManager
+	// GetWebhookManagers returns all WebhookManagers for parallel setup.
+	// Returns nil or empty slice if the controller doesn't use webhooks.
+	GetWebhookManagers() []*WebhookManager
 }
 
 // Registry holds all registered controllers.
