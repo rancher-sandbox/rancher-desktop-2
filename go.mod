@@ -6,7 +6,6 @@ toolchain go1.24.4
 
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
-	github.com/go-logr/logr v1.4.3
 	github.com/google/uuid v1.6.0
 	github.com/k3s-io/kine v1.14.2
 	github.com/muesli/reflow v0.3.0
@@ -26,7 +25,7 @@ require (
 	k8s.io/kube-aggregator v0.34.0
 	k8s.io/kubectl v0.0.0
 	k8s.io/kubernetes v1.34.1
-	sigs.k8s.io/controller-runtime v0.22.2
+	sigs.k8s.io/controller-runtime v0.22.3
 	sigs.k8s.io/yaml v1.6.0
 )
 
@@ -60,6 +59,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
+	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
