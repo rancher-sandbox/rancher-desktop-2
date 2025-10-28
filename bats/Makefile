@@ -98,8 +98,8 @@ TEST_FILES := $(shell find helpers tests -name '*.bash' -o -name '*.bats')
 SC_EXCLUDES ?= SC1091,SC2034,SC2154
 lint: $(TEST_FILES)
 	shellcheck --shell=bats --exclude=$(SC_EXCLUDES) $(TEST_FILES)
-	shfmt --language-dialect=bats --indent=4 --diff $(TEST_FILES)
+	go tool shfmt --language-dialect=bats --indent=4 --diff $(TEST_FILES)
 lint-fix: $(TEST_FILES)
 	shellcheck --shell=bats --exclude=$(SC_EXCLUDES) $(TEST_FILES)
-	shfmt --language-dialect=bats --indent=4 --write $(TEST_FILES)
+	go tool shfmt --language-dialect=bats --indent=4 --write $(TEST_FILES)
 .PHONY: lint lint-fix

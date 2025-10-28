@@ -64,9 +64,8 @@ jobs:
         persist-credentials: false
     - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
       with:
+        cache: false
         go-version-file: go.mod
-    - name: Install shfmt
-      run: go install mvdan.cc/sh/v3/cmd/shfmt@latest # spellchecker:ignore
     - run: make -C bats lint
   spelling:
     name: Check Spelling
@@ -81,6 +80,7 @@ jobs:
         submodules: recursive
     - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
       with:
+        cache: false
         go-version-file: go.mod
     - run: make spelling
   ltag:
@@ -94,5 +94,6 @@ jobs:
         persist-credentials: false
     - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
       with:
+        cache: false
         go-version-file: go.mod
     - run: make check-ltag

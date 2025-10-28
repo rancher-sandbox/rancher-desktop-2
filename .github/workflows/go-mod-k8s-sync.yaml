@@ -26,6 +26,7 @@ jobs:
         ref: ${{ github.head_ref || github.ref }}
     - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
       with:
+        cache: false
         go-version-file: go.mod
     - run: go run scripts/go-module-k8s-bump/main.go
     - run: go mod tidy
