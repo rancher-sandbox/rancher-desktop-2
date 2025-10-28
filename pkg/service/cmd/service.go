@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	apiextensionapiserver "k8s.io/apiextensions-apiserver/pkg/apiserver"
@@ -403,13 +404,13 @@ func cleanupDiscoveryConfigMap() error {
 	// Try to get kubeconfig, but ignore errors since control plane might be stopped
 	config, err := GetKubeRestConfig()
 	if err != nil {
-		klog.V(2).InfoS("Could not get kubeconfig for discovery cleanup, control plane likely stopped", "error", err)
+		logrus.WithError(err).Debug("Could not get kubeconfig for discovery cleanup, control plane likely stopped")
 		return nil // Not an error, just means control plane is already stopped
 	}
 
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		klog.V(2).InfoS("Could not create kubernetes client for discovery cleanup", "error", err)
+		logrus.WithError(err).Debug("Could not create kubernetes client for discovery cleanup")
 		return nil // Not a critical error during shutdown
 	}
 
@@ -419,12 +420,12 @@ func cleanupDiscoveryConfigMap() error {
 	err = configMapClient.Delete(context.TODO(), discoveryConfigMapName, metav1.DeleteOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
-			klog.V(2).InfoS("Failed to delete discovery configmap", "configmap", discoveryConfigMapName, "error", err)
+			logrus.WithError(err).WithField("configmap", discoveryConfigMapName).Debug("Failed to delete discovery configmap")
 		} else {
-			klog.V(2).InfoS("Discovery configmap not found, nothing to clean up", "configmap", discoveryConfigMapName)
+			logrus.WithField("configmap", discoveryConfigMapName).Debug("Discovery configmap not found, nothing to clean up")
 		}
 	} else {
-		klog.InfoS("Successfully deleted stale discovery configmap", "configmap", discoveryConfigMapName)
+		logrus.WithField("configmap", discoveryConfigMapName).Debug("Successfully deleted stale discovery configmap")
 	}
 
 	return nil // Don't fail stop operation due to discovery cleanup issues
