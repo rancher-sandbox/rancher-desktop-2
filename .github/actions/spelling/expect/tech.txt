@@ -31,6 +31,7 @@ APPDATA
 cygwin
 ERRORLEVEL
 LOCALAPPDATA
+mnt
 msys
 PROGRAMFILES
 netsh
@@ -39,4 +40,5 @@ SYSTEMROOT
 usebackq
 winver
 wsl
+WSLENV
 wslpath

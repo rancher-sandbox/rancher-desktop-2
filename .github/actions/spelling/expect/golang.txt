@@ -1,5 +1,6 @@
 # Generic golang
 deepcopy
+gomod
 
 # Generic Kubernetes
 apigroup
@@ -12,6 +13,7 @@ groupversion
 healthz
 KCP
 kerrors
+Klogr
 omitzero
 protobuf
 readyz

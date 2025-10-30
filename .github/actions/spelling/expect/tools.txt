@@ -64,6 +64,7 @@ addsuffix
 DBSTAT
 DSQLITE
 endef
+ifneq
 notdir
 VTAB
 
