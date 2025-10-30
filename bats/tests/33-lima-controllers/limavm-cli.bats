@@ -12,7 +12,7 @@ local_setup_file() {
 # assert_running verifies the "test-vm" running state, must be "true" or "false"
 assert_running() {
     local state=$1
-    run -0 rdd ctl get limavm "test-vm" -n "$LIMA_TEST_NS" -o jsonpath='{.spec.running}'
+    run -0 rdd ctl get limavm "test-vm" --namespace "$LIMA_TEST_NS" -o jsonpath='{.spec.running}'
     assert_output "$state"
 }
 
@@ -30,14 +30,14 @@ assert_created() {
 
 @test "lima create/start/stop/delete with ConfigMap template" {
     # Create a template ConfigMap first
-    rdd ctl create configmap "test-template" -n "$LIMA_TEST_NS" --from-literal=template='{"vmType":"vz"}'
+    rdd ctl create configmap "test-template" --namespace "$LIMA_TEST_NS" --from-literal=template='{"vmType":"vz"}'
 
     # Create VM with ConfigMap template
-    run_e -0 rdd limavm create "test-vm" "test-template" -n "$LIMA_TEST_NS"
+    run_e -0 rdd limavm create "test-vm" "test-template" --namespace "$LIMA_TEST_NS"
     assert_created "test-vm" "$LIMA_TEST_NS" "test-template"
     assert_running "false"
 
-    # Start the VM (cross-namespace lookup: no -n flag needed)
+    # Start the VM (cross-namespace lookup: no --namespace flag needed)
     run -0 rdd limavm start "test-vm"
     assert_output --partial 'started'
     assert_running "true"
@@ -50,11 +50,11 @@ assert_created() {
     # Delete the VM
     run -0 rdd limavm delete "test-vm"
     assert_output --partial 'deleted'
-    run -1 rdd ctl get limavm "test-vm" -n "$LIMA_TEST_NS"
+    run -1 rdd ctl get limavm "test-vm" --namespace "$LIMA_TEST_NS"
     assert_output --partial "not found"
 
     # Clean up the template ConfigMap
-    rdd ctl delete configmap "test-template" -n "$LIMA_TEST_NS"
+    rdd ctl delete configmap "test-template" --namespace "$LIMA_TEST_NS"
 }
 
 @test "lima create with file template" {
@@ -63,16 +63,16 @@ assert_created() {
     echo '{"vmType":"vz"}' >"$template_file"
 
     # Create VM with file template
-    run_e -0 rdd limavm create "test-vm-file" "$template_file" -n "$LIMA_TEST_NS"
+    run_e -0 rdd limavm create "test-vm-file" "$template_file" --namespace "$LIMA_TEST_NS"
     # Generated ConfigMap has the same name as the LimaVM
     assert_created "test-vm-file" "$LIMA_TEST_NS" "test-vm-file"
 
     # Verify the ConfigMap was created
-    run -0 rdd ctl get configmap "test-vm-file" -n "$LIMA_TEST_NS" -o jsonpath='{.data.template}'
+    run -0 rdd ctl get configmap "test-vm-file" --namespace "$LIMA_TEST_NS" -o jsonpath='{.data.template}'
     assert_output '{"vmType":"vz"}'
 
     # Try creating another VM with same name - should fail because ConfigMap exists
-    run -1 rdd limavm create "test-vm-file" "$template_file" -n "$LIMA_TEST_NS"
+    run -1 rdd limavm create "test-vm-file" "$template_file" --namespace "$LIMA_TEST_NS"
     assert_output --partial 'already exists'
 
     # Delete the LimaVM
@@ -80,10 +80,10 @@ assert_created() {
     assert_output --partial 'deleted'
 
     # Wait for LimaVM to be fully deleted
-    rdd ctl wait --for=delete "limavm/test-vm-file" -n "$LIMA_TEST_NS" --timeout="30s"
+    rdd ctl wait --for=delete "limavm/test-vm-file" --namespace "$LIMA_TEST_NS" --timeout="30s"
 
     # Verify ConfigMap was auto-deleted by controller finalizer
-    run -1 rdd ctl get configmap "test-vm-file" -n "$LIMA_TEST_NS"
+    run -1 rdd ctl get configmap "test-vm-file" --namespace "$LIMA_TEST_NS"
     assert_output --partial "not found"
 }
 
@@ -91,18 +91,18 @@ assert_created() {
     # Create a LimaVM in the default namespace to trigger uniqueness constraint
     local template_file="${BATS_TEST_TMPDIR}/test-template.yaml"
     echo '{"vmType":"vz"}' >"$template_file"
-    rdd limavm create duplicate-vm "$template_file" -n "default"
+    rdd limavm create duplicate-vm "$template_file" --namespace "default"
 
     # Try to create another LimaVM with the same name in a different namespace
     # This should fail due to cross-namespace uniqueness enforcement by admission webhook
     local template_file2="${BATS_TEST_TMPDIR}/test-template2.yaml"
     echo '{"vmType":"qemu"}' >"$template_file2"
-    run -1 rdd limavm create duplicate-vm "$template_file2" -n "$LIMA_TEST_NS"
+    run -1 rdd limavm create duplicate-vm "$template_file2" --namespace "$LIMA_TEST_NS"
     assert_output --partial "admission webhook"
     assert_output --partial "Cleaning up created ConfigMap"
 
     # Verify the ConfigMap was cleaned up (should not exist in $LIMA_TEST_NS)
-    run -1 rdd ctl get configmap "duplicate-vm" -n "$LIMA_TEST_NS"
+    run -1 rdd ctl get configmap "duplicate-vm" --namespace "$LIMA_TEST_NS"
     assert_output --partial "not found"
 
     # Clean up the first LimaVM
@@ -110,7 +110,7 @@ assert_created() {
 }
 
 @test "lima create fails with non-existent file" {
-    run -1 rdd limavm create "test-vm" "/nonexistent/template.yaml" -n "$LIMA_TEST_NS"
+    run -1 rdd limavm create "test-vm" "/nonexistent/template.yaml" --namespace "$LIMA_TEST_NS"
     assert_output --partial 'failed to read template file'
 }
 

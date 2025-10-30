@@ -24,7 +24,7 @@ assert_process_exited() {
     assert_line namespace/default
 
     # Verify that no embedded controller manager is running (fresh control plane)
-    run -1 rdd ctl get configmap rdd-controller-manager -n rdd-system
+    run -1 rdd ctl get configmap rdd-controller-manager --namespace rdd-system
     assert_output --partial "not found"
 }
 
@@ -35,10 +35,10 @@ assert_process_exited() {
     echo "$!" >"${BATS_FILE_TMPDIR}/controller_pid"
 
     # Wait for external controller to register in discovery system
-    try --max 20 --delay 1 -- rdd ctl get configmap rdd-controller-manager -n rdd-system
+    try --max 20 --delay 1 -- rdd ctl get configmap rdd-controller-manager --namespace rdd-system
 
     # Verify the discovery ConfigMap contains notary controller
-    run -0 rdd ctl get configmap rdd-controller-manager -n rdd-system -o jsonpath='{.data.enabledControllers}'
+    run -0 rdd ctl get configmap rdd-controller-manager --namespace rdd-system -o jsonpath='{.data.enabledControllers}'
     assert_output --partial "notary"
 }
 

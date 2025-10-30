@@ -34,10 +34,10 @@ EOF
 }
 
 @test "create source-template ConfigMap" {
-    rdd ctl create configmap "source-template" -n "$NAMESPACE" --from-literal="template=${TEMPLATE}"
+    rdd ctl create configmap "source-template" --namespace "$NAMESPACE" --from-literal="template=${TEMPLATE}"
 
     # Verify the template was created
-    run -0 rdd ctl get configmap "source-template" -n "$NAMESPACE" -o jsonpath='{.data.template}'
+    run -0 rdd ctl get configmap "source-template" --namespace "$NAMESPACE" -o jsonpath='{.data.template}'
     assert_output "$TEMPLATE"
 }
 
@@ -45,38 +45,38 @@ EOF
     create_limavm "$VM_NAME" "source-template"
 
     # Verify the LimaVM was created
-    run -0 rdd ctl get limavm "$VM_NAME" -n "$NAMESPACE" -o name
+    run -0 rdd ctl get limavm "$VM_NAME" --namespace "$NAMESPACE" -o name
     assert_output "limavm.lima.rancherdesktop.io/${VM_NAME}"
 }
 
 @test "verify LimaVM has finalizer for cleanup" {
-    run -0 rdd ctl get limavm "$VM_NAME" -n "$NAMESPACE" -o jsonpath='{.metadata.finalizers}'
+    run -0 rdd ctl get limavm "$VM_NAME" --namespace "$NAMESPACE" -o jsonpath='{.metadata.finalizers}'
     assert_output --partial "rdd.rancherdesktop.io/cleanup"
 }
 
 @test "wait for template ConfigMap to be created" {
     rdd ctl wait --for=jsonpath='{.status.templateConfigMap}' \
-        "limavm/${VM_NAME}" -n "$NAMESPACE" --timeout="30s"
+        "limavm/${VM_NAME}" --namespace "$NAMESPACE" --timeout="30s"
 }
 
 @test "verify copied ConfigMap has correct data" {
-    run -0 rdd ctl get configmap "$TEMPLATE_NAME" -n "$NAMESPACE" -o jsonpath='{.data.template}'
+    run -0 rdd ctl get configmap "$TEMPLATE_NAME" --namespace "$NAMESPACE" -o jsonpath='{.data.template}'
     assert_output "$TEMPLATE"
 }
 
 @test "verify template ConfigMap has correct label" {
-    run -0 rdd ctl get configmap "$TEMPLATE_NAME" -n "$NAMESPACE" \
+    run -0 rdd ctl get configmap "$TEMPLATE_NAME" --namespace "$NAMESPACE" \
         -o jsonpath='{.metadata.labels.lima\.rancherdesktop\.io/template-configmap}'
     assert_output "true"
 }
 
 @test "verify template ConfigMap has protection finalizer" {
-    run -0 rdd ctl get configmap "$TEMPLATE_NAME" -n "$NAMESPACE" -o jsonpath='{.metadata.finalizers}'
+    run -0 rdd ctl get configmap "$TEMPLATE_NAME" --namespace "$NAMESPACE" -o jsonpath='{.metadata.finalizers}'
     assert_output --partial "rdd.rancherdesktop.io/cleanup"
 }
 
 @test "verify template ConfigMap has owner reference" {
-    run -0 rdd ctl get configmap "$TEMPLATE_NAME" -n "$NAMESPACE" -o json
+    run -0 rdd ctl get configmap "$TEMPLATE_NAME" --namespace "$NAMESPACE" -o json
     local json=$output
 
     run -0 jq -r '.metadata.ownerReferences[0].kind' <<<"$json"
@@ -90,73 +90,73 @@ EOF
 }
 
 @test "verify LimaVM status has template ConfigMap name" {
-    run -0 rdd ctl get limavm "$VM_NAME" -n "$NAMESPACE" -o jsonpath='{.status.templateConfigMap}'
+    run -0 rdd ctl get limavm "$VM_NAME" --namespace "$NAMESPACE" -o jsonpath='{.status.templateConfigMap}'
     assert_output "$TEMPLATE_NAME"
 }
 
 @test "template ConfigMap modification is allowed if template key exists" {
-    run -0 rdd ctl patch configmap "$TEMPLATE_NAME" -n $NAMESPACE --type='merge' \
+    run -0 rdd ctl patch configmap "$TEMPLATE_NAME" --namespace $NAMESPACE --type='merge' \
         --patch='{"data":{"template":"{\"vmType\":\"vz\",\"memory\":\"4GB\"}"}}'
 
-    run -0 rdd ctl get configmap "$TEMPLATE_NAME" -n "$NAMESPACE" -o jsonpath='{.data.template}'
+    run -0 rdd ctl get configmap "$TEMPLATE_NAME" --namespace "$NAMESPACE" -o jsonpath='{.data.template}'
     assert_output '{"vmType":"vz","memory":"4GB"}'
 }
 
 @test "template ConfigMap modification without template key is rejected" {
-    run -1 rdd ctl patch configmap "$TEMPLATE_NAME" -n "$NAMESPACE" --type='json' \
+    run -1 rdd ctl patch configmap "$TEMPLATE_NAME" --namespace "$NAMESPACE" --type='json' \
         --patch='[{"op":"remove","path":"/data/template"}]'
     assert_output --partial "Forbidden"
     assert_output --partial 'template ConfigMap must have a "template" data entry'
 
     # Verify the template key still exists
-    run -0 rdd ctl get configmap "$TEMPLATE_NAME" -n "$NAMESPACE" -o jsonpath='{.data.template}'
+    run -0 rdd ctl get configmap "$TEMPLATE_NAME" --namespace "$NAMESPACE" -o jsonpath='{.data.template}'
     assert_output '{"vmType":"vz","memory":"4GB"}'
 }
 
 @test "template ConfigMap modification with empty template is rejected" {
-    run -1 rdd ctl patch configmap "$TEMPLATE_NAME" -n "$NAMESPACE" --type='merge' \
+    run -1 rdd ctl patch configmap "$TEMPLATE_NAME" --namespace "$NAMESPACE" --type='merge' \
         --patch='{"data":{"template":""}}'
     assert_output --partial "Forbidden"
     assert_output --partial '"template" data cannot be empty'
 
     # Verify the template data is unchanged
-    run -0 rdd ctl get configmap "$TEMPLATE_NAME" -n "$NAMESPACE" -o jsonpath='{.data.template}'
+    run -0 rdd ctl get configmap "$TEMPLATE_NAME" --namespace "$NAMESPACE" -o jsonpath='{.data.template}'
     assert_output '{"vmType":"vz","memory":"4GB"}'
 }
 
 @test "template ConfigMap cannot be deleted independently" {
-    run -1 rdd ctl delete configmap "$TEMPLATE_NAME" -n "$NAMESPACE" --grace-period=0
+    run -1 rdd ctl delete configmap "$TEMPLATE_NAME" --namespace "$NAMESPACE" --grace-period=0
     assert_output --partial "Forbidden"
     assert_output --partial "cannot delete template ConfigMap"
     assert_output --partial "protected by the LimaVM controller"
     assert_output --partial "delete the owning LimaVM resource instead"
 
     # Verify the ConfigMap still exists
-    run -0 rdd ctl get configmap "$TEMPLATE_NAME" -n "$NAMESPACE"
+    run -0 rdd ctl get configmap "$TEMPLATE_NAME" --namespace "$NAMESPACE"
     assert_output --partial "$TEMPLATE_NAME"
 }
 
 @test "dry-run deletion of template ConfigMap is also rejected" {
-    run -1 rdd ctl delete configmap "$TEMPLATE_NAME" -n "$NAMESPACE" --dry-run=server
+    run -1 rdd ctl delete configmap "$TEMPLATE_NAME" --namespace "$NAMESPACE" --dry-run=server
     assert_output --partial "Forbidden"
     assert_output --partial "cannot delete template ConfigMap"
 
     # Verify the ConfigMap still exists
-    run -0 rdd ctl get configmap "$TEMPLATE_NAME" -n "$NAMESPACE"
+    run -0 rdd ctl get configmap "$TEMPLATE_NAME" --namespace "$NAMESPACE"
     assert_output --partial "$TEMPLATE_NAME"
 }
 
 @test "delete LimaVM resource" {
-    rdd ctl delete limavm "$VM_NAME" -n "$NAMESPACE" --grace-period=0
+    rdd ctl delete limavm "$VM_NAME" --namespace "$NAMESPACE" --grace-period=0
 }
 
 @test "verify LimaVM is deleted" {
-    run -1 rdd ctl get limavm "$VM_NAME" -n "$NAMESPACE"
+    run -1 rdd ctl get limavm "$VM_NAME" --namespace "$NAMESPACE"
     assert_output --partial "not found"
 }
 
 @test "wait for template ConfigMap to be automatically deleted" {
-    try --max 30 --delay 1 --until-fail -- rdd ctl get configmap "$TEMPLATE_NAME" -n "$NAMESPACE"
+    try --max 30 --delay 1 --until-fail -- rdd ctl get configmap "$TEMPLATE_NAME" --namespace "$NAMESPACE"
 }
 
 @test "create LimaVM with nonexistent template ConfigMap fails" {
@@ -165,7 +165,7 @@ EOF
 }
 
 @test "create LimaVM with ConfigMap missing template key fails" {
-    rdd ctl create configmap "invalid-template" -n "$NAMESPACE" --from-literal="foo=bar"
+    rdd ctl create configmap "invalid-template" --namespace "$NAMESPACE" --from-literal="foo=bar"
 
     run -1 create_limavm "test-vm-invalid" "invalid-template"
     # Mutating webhook tries to create template ConfigMap, ConfigMap webhook validates and rejects
@@ -177,12 +177,12 @@ EOF
 
     # Wait for template ConfigMap to be created
     rdd ctl wait --for=jsonpath='{.status.templateConfigMap}' \
-        "limavm/test-vm-running" -n "$NAMESPACE" --timeout="30s"
+        "limavm/test-vm-running" --namespace "$NAMESPACE" --timeout="30s"
 
     # Update the running state
-    run -0 rdd ctl patch limavm "test-vm-running" -n "$NAMESPACE" --type='merge' --patch='{"spec":{"running":true}}'
+    run -0 rdd ctl patch limavm "test-vm-running" --namespace "$NAMESPACE" --type='merge' --patch='{"spec":{"running":true}}'
 
     # Verify the template ConfigMap still exists and is unchanged
-    run -0 rdd ctl get configmap test-vm-running-template -n "$NAMESPACE" -o jsonpath='{.data.template}'
+    run -0 rdd ctl get configmap test-vm-running-template --namespace "$NAMESPACE" -o jsonpath='{.data.template}'
     assert_output "$TEMPLATE"
 }

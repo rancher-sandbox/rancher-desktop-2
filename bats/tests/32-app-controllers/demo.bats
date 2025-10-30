@@ -79,7 +79,7 @@ local_setup_file() {
 
     # Cluster-scoped resources in kubectl can be accessed with or without namespace
     # So this test just verifies it's accessible both ways
-    run -0 rdd ctl get demo demo -n default
+    run -0 rdd ctl get demo demo --namespace default
 }
 
 @test 'wait for Demo processing to start' {
