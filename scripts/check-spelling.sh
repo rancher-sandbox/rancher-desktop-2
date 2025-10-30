@@ -80,7 +80,7 @@ warnings=(
 
 INPUTS=$(yq --output-format=json <<EOF
     suppress_push_for_open_pull_request: 1
-    checkout: true
+    checkout: false
     check_file_names: 1
     post_comment: 0
     use_magic_file: 1
