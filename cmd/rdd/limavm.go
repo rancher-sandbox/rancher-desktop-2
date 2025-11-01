@@ -44,6 +44,7 @@ func newLimaVMCommand() *cobra.Command {
 
 func newLimaVMCreateCommand() *cobra.Command {
 	var namespace string
+	var dryRun bool
 	command := &cobra.Command{
 		Use:   "create NAME TEMPLATE",
 		Short: "Create a new LimaVM resource",
@@ -54,10 +55,11 @@ TEMPLATE can be one of:
 - A file path (if it's not a valid ConfigMap name) - creates a ConfigMap with the VM name`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return limaVMCreateAction(cmd.Context(), args[0], args[1], namespace)
+			return limaVMCreateAction(cmd.Context(), args[0], args[1], namespace, dryRun)
 		},
 	}
 	command.Flags().StringVarP(&namespace, "namespace", "n", metav1.NamespaceDefault, "Namespace for the LimaVM resource")
+	command.Flags().BoolVar(&dryRun, "dry-run", false, "If set, do not commit any changes to the cluster")
 	return command
 }
 
@@ -185,7 +187,7 @@ func takeOwnership(ctx context.Context, c client.Client, limaVM *limav1alpha1.Li
 	return nil
 }
 
-func limaVMCreateAction(ctx context.Context, name, template, namespace string) error {
+func limaVMCreateAction(ctx context.Context, name, template, namespace string, dryRun bool) error {
 	c, err := getKubeClient(ctx)
 	if err != nil {
 		return err
@@ -205,6 +207,14 @@ func limaVMCreateAction(ctx context.Context, name, template, namespace string) e
 		}
 	}
 
+	// Delete createdConfigMap unless limaVM has been created and taken ownership of it.
+	defer func() {
+		if createdConfigMap != nil {
+			logrus.Warnf("Cleaning up created ConfigMap %q", createdConfigMap.Name)
+			_ = c.Delete(ctx, createdConfigMap)
+		}
+	}()
+
 	// Create the LimaVM resource with the template reference
 	running := false
 	limaVM := &limav1alpha1.LimaVM{
@@ -220,24 +230,23 @@ func limaVMCreateAction(ctx context.Context, name, template, namespace string) e
 		},
 	}
 
-	// Delete createdConfigMap unless limaVM has been created and taken ownership of it.
-	defer func() {
-		if createdConfigMap != nil {
-			logrus.Warnf("Cleaning up created ConfigMap %q", createdConfigMap.Name)
-			_ = c.Delete(ctx, createdConfigMap)
-		}
-	}()
+	var opts []client.CreateOption
+	if dryRun {
+		opts = append(opts, client.DryRunAll)
+	}
 
 	// Create LimaVM resource.
-	if err := c.Create(ctx, limaVM); err != nil {
+	if err := c.Create(ctx, limaVM, opts...); err != nil {
 		return fmt.Errorf("failed to create LimaVM: %w", err)
 	}
 	logrus.Infof("LimaVM %q created in namespace %q with template ConfigMap %q", name, namespace, configMapName)
 
 	// If we created a ConfigMap, set the LimaVM as its owner for auto-cleanup
-	if err := takeOwnership(ctx, c, limaVM, createdConfigMap); err == nil {
-		// Keep createdConfigMap until limaVM itself is deleted.
-		createdConfigMap = nil
+	if !dryRun {
+		if err := takeOwnership(ctx, c, limaVM, createdConfigMap); err == nil {
+			// Keep createdConfigMap until limaVM itself is deleted.
+			createdConfigMap = nil
+		}
 	}
 	return nil
 }

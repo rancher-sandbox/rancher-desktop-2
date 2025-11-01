@@ -100,7 +100,7 @@ spec:
     name: invalid-template
   running: false
 EOF
-    assert_output --partial "template validation failed"
+    assert_output --partial "denied the request"
     assert_output --partial '"template" data cannot be empty'
 
     # Verify the LimaVM was not created (dry-run should never create)

@@ -11,7 +11,6 @@ import (
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -196,33 +195,6 @@ func (d *LimaVMDefaulter) Default(ctx context.Context, obj runtime.Object) error
 		return fmt.Errorf("failed to fetch template data: %w", err)
 	}
 
-	// Check if this is a dry-run request
-	if base.IsDryRun(ctx) {
-		klog.V(1).Infof("[DryRun] Webhook validating LimaVM %s/%s (skipping ConfigMap creation)\n", limavm.Namespace, limavm.Name)
-
-		// Check if ConfigMap already exists (to match actual create behavior)
-		existingConfigMap := &corev1.ConfigMap{}
-		configMapKey := types.NamespacedName{
-			Name:      limavm.GetTemplateConfigMapName(),
-			Namespace: limavm.Namespace,
-		}
-		err := d.Client.Get(ctx, configMapKey, existingConfigMap)
-		if err == nil {
-			return fmt.Errorf("template ConfigMap %q already exists", configMapKey.Name)
-		}
-		if !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to check for existing ConfigMap: %w", err)
-		}
-
-		// Validate the template data
-		if _, err := validateTemplateData(map[string]string{v1alpha1.TemplateConfigMapKey: templateData}); err != nil {
-			return fmt.Errorf("template validation failed: %w", err)
-		}
-
-		// Don't create ConfigMap in dry-run mode
-		return nil
-	}
-
 	// Create template ConfigMap with label
 	templateConfigMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -240,13 +212,20 @@ func (d *LimaVMDefaulter) Default(ctx context.Context, obj runtime.Object) error
 		},
 	}
 
+	var options []client.CreateOption
+	var dryRunText string
+	if base.IsDryRun(ctx) {
+		options = append(options, client.DryRunAll)
+		dryRunText = "[DryRun] "
+	}
+
 	// Create the ConfigMap (this triggers ConfigMap admission webhook for validation)
-	if err := d.Client.Create(ctx, templateConfigMap); err != nil {
+	if err := d.Client.Create(ctx, templateConfigMap, options...); err != nil {
 		return fmt.Errorf("failed to create template ConfigMap: %w", err)
 	}
 
-	klog.Infof("Created template ConfigMap %s/%s for LimaVM %s/%s",
-		limavm.Namespace, limavm.GetTemplateConfigMapName(), limavm.Namespace, limavm.Name)
+	klog.Infof("%sCreated template ConfigMap %s/%s for LimaVM %s/%s",
+		dryRunText, limavm.Namespace, limavm.GetTemplateConfigMapName(), limavm.Namespace, limavm.Name)
 
 	// Note: The reconciler will set owner reference and status after LimaVM creation:
 	// - Owner reference requires LimaVM UID (not available during admission)

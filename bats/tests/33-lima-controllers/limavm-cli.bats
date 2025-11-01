@@ -29,6 +29,21 @@ assert_created() {
     assert_info "${msg}"
 }
 
+@test "lima create with missing ConfigMap template" {
+    # Create VM with ConfigMap template
+    run_e -1 rdd limavm create "test-missing-vm" "test-missing-template" --namespace "${LIMA_TEST_NS}"
+    assert_stderr_line --partial 'denied the request'
+    assert_stderr_line --partial 'ConfigMap \"test-missing-template\" not found'
+
+    # Verify the ConfigMap was not created, or at least deleted after.
+    run -1 rdd ctl get configmap "test-missing-template" --namespace "${LIMA_TEST_NS}" --output=name
+    assert_output --partial NotFound
+
+    # Verify the VM was not created
+    run -0 rdd ctl get limavm --namespace "${LIMA_TEST_NS}" --output=name
+    refute_output # There should be no output at all
+}
+
 @test "lima create/start/stop/delete with ConfigMap template" {
     # Create a template ConfigMap first
     rdd ctl create configmap "test-template" --namespace "${LIMA_TEST_NS}" --from-literal=template='{}'
@@ -62,6 +77,19 @@ assert_created() {
     # Create a temporary template file
     local template_file="${BATS_TEST_TMPDIR}/test-template.yaml"
     echo '{}' >"${template_file}"
+
+    # Create VM with file template (dry run)
+    run_e -0 rdd limavm create "test-vm-file" "${template_file}" --namespace "${LIMA_TEST_NS}" --dry-run
+    # Generated ConfigMap has the same name as the LimaVM
+    assert_created "test-vm-file" "${LIMA_TEST_NS}" "test-vm-file"
+
+    # Verify the ConfigMap was not created, or at least deleted after.
+    run -1 rdd ctl get configmap "test-vm-file" --namespace "${LIMA_TEST_NS}" --output=name
+    assert_output --partial NotFound
+
+    # Verify the VM was not created
+    run -0 rdd ctl get limavm --namespace "${LIMA_TEST_NS}" --output=name
+    refute_output # There should be no output at all
 
     # Create VM with file template
     run_e -0 rdd limavm create "test-vm-file" "${template_file}" --namespace "${LIMA_TEST_NS}"
