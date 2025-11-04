@@ -102,7 +102,7 @@ func (c *Controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 		Name:        validatorConfigName,
 		WebhookName: webhookName,
 		WebhookPort: c.webhookPort,
-		Validator:   &NotaryValidator{},
+		Validator:   &validator{},
 	}
 
 	managers, err := base.SetupWebhookForResource(mgr, &v1alpha1.Notary{}, webhookConfig)
@@ -126,12 +126,12 @@ func (c *Controller) RegisterWithManager(mgr ctrl.Manager) error {
 	return c.setupWebhookWithRuntimeConfig(mgr)
 }
 
-// NotaryValidator validates Notary resources via webhook (for external controllers).
-type NotaryValidator struct{}
+// validator validates Notary resources via webhook (for external controllers).
+type validator struct{}
 
-var _ ctrlwebhookadmission.CustomValidator = &NotaryValidator{}
+var _ ctrlwebhookadmission.CustomValidator = &validator{}
 
-func (v *NotaryValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (ctrlwebhookadmission.Warnings, error) {
+func (v *validator) ValidateCreate(ctx context.Context, obj runtime.Object) (ctrlwebhookadmission.Warnings, error) {
 	notary, ok := obj.(*v1alpha1.Notary)
 	if !ok {
 		return nil, fmt.Errorf("expected a Notary object but got %T", obj)
@@ -139,7 +139,7 @@ func (v *NotaryValidator) ValidateCreate(ctx context.Context, obj runtime.Object
 	return v.validateNotary(ctx, notary)
 }
 
-func (v *NotaryValidator) ValidateUpdate(ctx context.Context, _, newObj runtime.Object) (ctrlwebhookadmission.Warnings, error) {
+func (v *validator) ValidateUpdate(ctx context.Context, _, newObj runtime.Object) (ctrlwebhookadmission.Warnings, error) {
 	notary, ok := newObj.(*v1alpha1.Notary)
 	if !ok {
 		return nil, fmt.Errorf("expected a Notary object but got %T", newObj)
@@ -147,13 +147,13 @@ func (v *NotaryValidator) ValidateUpdate(ctx context.Context, _, newObj runtime.
 	return v.validateNotary(ctx, notary)
 }
 
-func (v *NotaryValidator) ValidateDelete(context.Context, runtime.Object) (ctrlwebhookadmission.Warnings, error) {
+func (v *validator) ValidateDelete(context.Context, runtime.Object) (ctrlwebhookadmission.Warnings, error) {
 	// Allow all deletions
 	return nil, nil
 }
 
 // validateNotary performs the actual validation logic.
-func (v *NotaryValidator) validateNotary(ctx context.Context, notary *v1alpha1.Notary) (ctrlwebhookadmission.Warnings, error) {
+func (v *validator) validateNotary(ctx context.Context, notary *v1alpha1.Notary) (ctrlwebhookadmission.Warnings, error) {
 	// Check if this is a dry run request
 	if base.IsDryRun(ctx) {
 		klog.V(1).Infof("[DryRun] Webhook validating Notary %s/%s\n", notary.Namespace, notary.Name)

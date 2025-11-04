@@ -118,7 +118,7 @@ func (c *Controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 			admissionregistrationv1.Create, // Only on CREATE - UPDATE doesn't need to create ConfigMap again
 		},
 		SideEffects: &sideEffectsNoneOnDryRun, // Creates ConfigMap normally, but not during dry-run
-		Defaulter:   &LimaVMDefaulter{Client: mgr.GetClient()},
+		Defaulter:   &defaulter{Client: mgr.GetClient()},
 	}
 
 	managers, err := base.SetupWebhookForResource(mgr, &v1alpha1.LimaVM{}, mutatingConfig)
@@ -166,16 +166,16 @@ func (c *Controller) RegisterWithManager(mgr ctrl.Manager) error {
 	return c.setupWebhookWithRuntimeConfig(mgr)
 }
 
-// LimaVMDefaulter handles LimaVM mutation via webhook.
+// defaulter handles LimaVM mutation via webhook.
 // It validates cross-namespace name uniqueness, then creates the template ConfigMap synchronously during admission.
-type LimaVMDefaulter struct {
+type defaulter struct {
 	Client client.Client
 }
 
-var _ ctrlwebhookadmission.CustomDefaulter = &LimaVMDefaulter{}
+var _ ctrlwebhookadmission.CustomDefaulter = &defaulter{}
 
 // Default is called during CREATE operations to add finalizer and create the template ConfigMap.
-func (d *LimaVMDefaulter) Default(ctx context.Context, obj runtime.Object) error {
+func (d *defaulter) Default(ctx context.Context, obj runtime.Object) error {
 	limavm, ok := obj.(*v1alpha1.LimaVM)
 	if !ok {
 		return fmt.Errorf("expected a LimaVM object but got %T", obj)
@@ -234,7 +234,7 @@ func (d *LimaVMDefaulter) Default(ctx context.Context, obj runtime.Object) error
 }
 
 // fetchTemplateRefData fetches the template data from the templateRef ConfigMap.
-func (d *LimaVMDefaulter) fetchTemplateRefData(ctx context.Context, limavm *v1alpha1.LimaVM) (string, error) {
+func (d *defaulter) fetchTemplateRefData(ctx context.Context, limavm *v1alpha1.LimaVM) (string, error) {
 	configMapKey := types.NamespacedName{
 		Name:      limavm.Spec.TemplateRef.Name,
 		Namespace: limavm.Spec.TemplateRef.Namespace,
