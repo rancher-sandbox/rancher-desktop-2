@@ -94,8 +94,7 @@ jobs:
         wsl --set-default-version 2
 
         # Install WSL2 Distribution
-        # TODO: switch to Leap 16 once that is available
-        wsl --install --no-launch --version 2 --name openSUSE openSUSE-Tumbleweed
+        wsl --install --no-launch --version 2 --name openSUSE openSUSE-Leap-16.0
         # Disable first-boot script
         wsl --distribution openSUSE --exec sed -i '/^command =/d' /etc/wsl-distribution.conf
 
