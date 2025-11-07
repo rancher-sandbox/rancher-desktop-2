@@ -61,18 +61,12 @@ func TestDeleteOwnedResources(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
+	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("delete owned config map %s", tc.name), func(t *testing.T) {
-			// Clean up all the created config maps
-			defer assert.Check(
-				t,
-				cmp.ErrorIs(c.DeleteAllOf(t.Context(), &corev1.ConfigMap{}, client.InNamespace(metav1.NamespaceDefault)), nil),
-				"failed to delete all config maps")
-
 			// Create a new config map that will be the owner
 			owner := &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "owner",
+					Name:      fmt.Sprintf("owner-%d", i),
 					Namespace: metav1.NamespaceDefault,
 				},
 			}
@@ -83,7 +77,7 @@ func TestDeleteOwnedResources(t *testing.T) {
 			// Create a new config map that will be owned by the owner
 			owned := &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "owned",
+					Name:      fmt.Sprintf("owned-%d", i),
 					Namespace: metav1.NamespaceDefault,
 				},
 			}
@@ -100,7 +94,7 @@ func TestDeleteOwnedResources(t *testing.T) {
 
 			unrelated := &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "unrelated",
+					Name:      fmt.Sprintf("unrelated-%d", i),
 					Namespace: metav1.NamespaceDefault,
 				},
 			}
@@ -128,7 +122,7 @@ func TestDeleteOwnedResources(t *testing.T) {
 			assert.Check(t, apierrors.IsNotFound(err), "owned config map was not deleted: %s", err)
 			err = c.Get(t.Context(), client.ObjectKeyFromObject(owner), owner)
 			assert.Check(t, cmp.ErrorIs(err, nil), "failed to get owner object")
-			err = c.Get(t.Context(), client.ObjectKeyFromObject(unrelated), owner)
+			err = c.Get(t.Context(), client.ObjectKeyFromObject(unrelated), unrelated)
 			assert.Check(t, cmp.ErrorIs(err, nil), "failed to get unrelated object")
 		})
 	}
