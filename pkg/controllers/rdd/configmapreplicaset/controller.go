@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	base.RegisterController(NewController())
+	base.RegisterController(&controller{})
 }
 
 // ControllerName is the name of this controller.
@@ -27,34 +27,29 @@ const APIGroup = "rdd"
 //go:embed crd.yaml
 var configMapReplicaSetCRD string
 
-// Controller implements the base.Controller interface for configmapreplicaset.
-type Controller struct{}
+// controller implements the base.Controller interface for configmapreplicaset.
+type controller struct{}
 
-// Verify that Controller implements base.Controller interface.
-var _ base.Controller = &Controller{}
-
-// NewController creates a new Controller instance.
-func NewController() *Controller {
-	return &Controller{}
-}
+// Verify that controller implements base.Controller interface.
+var _ base.Controller = &controller{}
 
 // GetName returns the controller name.
-func (c *Controller) GetName() string {
+func (c *controller) GetName() string {
 	return ControllerName
 }
 
 // GetAPIGroup returns the API group this controller belongs to.
-func (c *Controller) GetAPIGroup() string {
+func (c *controller) GetAPIGroup() string {
 	return APIGroup
 }
 
 // GetCRDData returns the embedded CRD YAML data.
-func (c *Controller) GetCRDData() string {
+func (c *controller) GetCRDData() string {
 	return configMapReplicaSetCRD
 }
 
 // RegisterWithManager implements the complete controller registration for both embedded and external modes.
-func (c *Controller) RegisterWithManager(mgr ctrl.Manager) error {
+func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
 	// Register the CRD types with the scheme
 	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return err

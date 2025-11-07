@@ -124,6 +124,8 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 	// Create and register scheme with required types
 	managerScheme := runtime.NewScheme()
 	utilruntime.Must(scheme.AddToScheme(managerScheme))
+	// Add CRD types to support dynamic resource discovery
+	utilruntime.Must(apiextensionsv1.AddToScheme(managerScheme))
 
 	// Modify kubeconfig to force JSON content type to avoid protobuf issues
 	configCopy := *scm.kubeConfig
@@ -291,8 +293,19 @@ func (scm *SharedControllerManager) hasWebhookControllers() bool {
 
 // registerDiscovery registers the controller manager information in the cluster.
 func (scm *SharedControllerManager) registerDiscovery(ctx context.Context) error {
-	// Get controller names
-	controllerNames := scm.GetRegisteredControllers()
+	// Get controller names, filtering out builtin controllers.
+	// Builtin controllers are internal system controllers and should not be registered in discovery.
+	var controllerNames []string
+	for _, registration := range scm.registrations {
+		if registration.GetAPIGroup() != "builtin" {
+			controllerNames = append(controllerNames, registration.GetName())
+		}
+	}
+
+	// Only register if there are non-builtin controllers.
+	if len(controllerNames) == 0 {
+		return nil
+	}
 
 	return scm.discovery.RegisterControllerManager(ctx, scm.healthPort, scm.metricsPort, controllerNames)
 }
@@ -322,6 +335,12 @@ func (scm *SharedControllerManager) installControllerCRDs(ctx context.Context) e
 	for _, controller := range scm.registrations {
 		controllerName := controller.GetName()
 		crdData := controller.GetCRDData()
+
+		// Skip controllers without CRDs (e.g., built-in controllers for Kubernetes resources)
+		if crdData == "" {
+			klog.V(2).InfoS("Controller has no CRD, skipping CRD installation", "controller", controllerName)
+			continue
+		}
 
 		var crd apiextensionsv1.CustomResourceDefinition
 		if err := yaml.Unmarshal([]byte(crdData), &crd); err != nil {

@@ -56,7 +56,7 @@ build-rdd: bin/rdd$(EXE)
 .PHONY: build-rdd
 
 # API Group Controller management - Auto-discovery of API groups
-API_GROUPS := $(notdir $(shell find pkg/controllers -mindepth 1 -maxdepth 1 -type d -not -name base))
+API_GROUPS := $(notdir $(shell find pkg/controllers -mindepth 1 -maxdepth 1 -type d -not -name base -not -name builtin))
 
 # Generate build targets for API group controllers
 define API_GROUP_CONTROLLER_TARGETS

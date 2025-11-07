@@ -6,7 +6,14 @@ LIMA_TEST_NS="lima-test-ns"
 
 local_setup_file() {
     setup_rdd_control_plane "lima"
+}
+
+local_setup() {
     rdd ctl create namespace "${LIMA_TEST_NS}"
+}
+
+local_teardown() {
+    rdd ctl delete namespace "${LIMA_TEST_NS}"
 }
 
 # assert_running verifies the "test-vm" running state, must be "true" or "false"
@@ -68,9 +75,6 @@ assert_created() {
     assert_output --partial 'deleted'
     run -1 rdd ctl get limavm "test-vm" --namespace "${LIMA_TEST_NS}"
     assert_output --partial "not found"
-
-    # Clean up the template ConfigMap
-    rdd ctl delete configmap "test-template" --namespace "${LIMA_TEST_NS}"
 }
 
 @test "lima create with file template" {
@@ -133,9 +137,6 @@ assert_created() {
     # Verify the ConfigMap was cleaned up (should not exist in $LIMA_TEST_NS)
     run -1 rdd ctl get configmap "duplicate-vm" --namespace "${LIMA_TEST_NS}"
     assert_output --partial "not found"
-
-    # Clean up the first LimaVM
-    rdd limavm delete "duplicate-vm"
 }
 
 @test "lima create fails with non-existent file" {

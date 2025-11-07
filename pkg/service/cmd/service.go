@@ -55,6 +55,8 @@ import (
 	// Import controller packages to trigger init() functions for embedded mode.
 	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/demo"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
+	// Import built-in system controllers.
+	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/builtin/namespace"
 	// Import controller packages to trigger init() functions for embedded mode.
 	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/lima/limavm"
 	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/rdd/configmapreplicaset"
@@ -458,7 +460,10 @@ func ServeArgs() []string {
 
 // shouldEnableController determines if a controller should be enabled based on the controller's specification.
 func shouldEnableController(controller base.Controller, spec string) bool {
-	// Handle empty spec - no controllers should be enabled
+	if controller.GetAPIGroup() == "builtin" {
+		return true
+	}
+	// Empty spec: only builtin controllers are enabled
 	if spec == "" {
 		return false
 	}
@@ -687,9 +692,9 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 
 	// Get all registered controllers from the registry
 	allControllers := base.GetAllControllers()
-
-	// Get enabled controllers from the --controllers flag directly
 	controllersSpec := completed.Controllers.Controllers
+
+	// Enable controllers: builtin controllers are always enabled, others based on --controllers flag
 	for _, controller := range allControllers {
 		if shouldEnableController(controller, controllersSpec) {
 			enabledControllers = append(enabledControllers, controller)

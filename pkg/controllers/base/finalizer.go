@@ -93,7 +93,7 @@ func DeleteOwnedResources(ctx context.Context, c client.Client, owner client.Obj
 	}
 
 	// Discover all namespaced resource types dynamically
-	resourceTypes, err := discoverNamespacedResources(ctx, mgr)
+	resourceTypes, err := DiscoverNamespacedResources(ctx, mgr)
 	if err != nil {
 		return fmt.Errorf("failed to discover namespaced resources: %w", err)
 	}
@@ -155,9 +155,9 @@ func DeleteOwnedResources(ctx context.Context, c client.Client, owner client.Obj
 	return errors.Join(errs...)
 }
 
-// discoverNamespacedResources discovers all namespaced resource types in the cluster.
+// DiscoverNamespacedResources discovers all namespaced resource types in the cluster.
 // Uses the Kubernetes discovery API to find all available namespaced resources dynamically.
-func discoverNamespacedResources(ctx context.Context, mgr ctrl.Manager) ([]schema.GroupVersionKind, error) {
+func DiscoverNamespacedResources(ctx context.Context, mgr ctrl.Manager) ([]schema.GroupVersionKind, error) {
 	logger := log.FromContext(ctx)
 
 	// Create discovery client from manager's config

@@ -20,7 +20,7 @@ import (
 )
 
 func init() {
-	base.RegisterController(NewController())
+	base.RegisterController(&controller{})
 }
 
 // ControllerName is the name of this controller.
@@ -40,55 +40,50 @@ const (
 //go:embed crd.yaml
 var notaryCRD string
 
-// Controller implements the base.Controller interface for notary.
-type Controller struct {
+// controller implements the base.Controller interface for notary.
+type controller struct {
 	webhookPort     int                    // The actual webhook port allocated by SharedControllerManager
 	webhookManagers []*base.WebhookManager // WebhookManagers for parallel setup
 }
 
-// Verify that Controller implements base.Controller and base.WebhookController interfaces.
+// Verify that controller implements base.Controller and base.WebhookController interfaces.
 var (
-	_ base.Controller        = &Controller{}
-	_ base.WebhookController = &Controller{}
+	_ base.Controller        = &controller{}
+	_ base.WebhookController = &controller{}
 )
 
-// NewController creates a new Controller instance.
-func NewController() *Controller {
-	return &Controller{}
-}
-
 // GetName returns the controller name.
-func (c *Controller) GetName() string {
+func (c *controller) GetName() string {
 	return ControllerName
 }
 
 // GetAPIGroup returns the API group this controller belongs to.
-func (c *Controller) GetAPIGroup() string {
+func (c *controller) GetAPIGroup() string {
 	return APIGroup
 }
 
 // SetWebhookPort sets the webhook port allocated by SharedControllerManager.
-func (c *Controller) SetWebhookPort(port int) {
+func (c *controller) SetWebhookPort(port int) {
 	c.webhookPort = port
 }
 
 // GetWebhookServiceName returns the DNS service name for webhook certificates.
-func (c *Controller) GetWebhookServiceName() string {
+func (c *controller) GetWebhookServiceName() string {
 	return ControllerName + "-webhook"
 }
 
 // GetWebhookManagers returns all WebhookManagers for parallel setup.
-func (c *Controller) GetWebhookManagers() []*base.WebhookManager {
+func (c *controller) GetWebhookManagers() []*base.WebhookManager {
 	return c.webhookManagers
 }
 
 // GetCRDData returns the embedded CRD YAML data.
-func (c *Controller) GetCRDData() string {
+func (c *controller) GetCRDData() string {
 	return notaryCRD
 }
 
 // setupReconciler sets up the NotaryReconciler with the manager.
-func (c *Controller) setupReconciler(mgr ctrl.Manager) error {
+func (c *controller) setupReconciler(mgr ctrl.Manager) error {
 	return (&controllers.NotaryReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
@@ -98,7 +93,7 @@ func (c *Controller) setupReconciler(mgr ctrl.Manager) error {
 }
 
 // setupWebhookWithRuntimeConfig sets up webhook with shared certificate configuration.
-func (c *Controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
+func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 	webhookConfig := base.WebhookConfig{
 		Name:        validatorConfigName,
 		WebhookName: webhookName,
@@ -116,7 +111,7 @@ func (c *Controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 }
 
 // RegisterWithManager implements the complete controller registration for both embedded and external modes.
-func (c *Controller) RegisterWithManager(mgr ctrl.Manager) error {
+func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
 	// Register the CRD types with the scheme
 	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return err

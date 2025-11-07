@@ -43,6 +43,11 @@ bats-service: check-bats build-rdd
 	RDD_INSTANCE=bats-service $(BATS_CORE) tests/20-service/
 .PHONY: bats-service
 
+# Run builtin controller tests
+bats-builtin: check-bats build-rdd
+	RDD_INSTANCE=bats-builtin-controller $(BATS_CORE) tests/30-builtin-controllers/
+.PHONY: bats-builtin
+
 # Run rdd API group controller tests
 bats-rdd: check-bats build-rdd build-rdd-controller
 	RDD_INSTANCE=bats-rdd-controller $(BATS_CORE) tests/31-rdd-controllers/
@@ -59,7 +64,7 @@ bats-lima: check-bats build-rdd
 .PHONY: bats-lima
 
 # Run all controller tests
-bats-controllers: bats-rdd bats-app bats-lima
+bats-controllers: bats-builtin bats-rdd bats-app bats-lima
 .PHONY: bats-controllers
 
 # Run all BATS tests
