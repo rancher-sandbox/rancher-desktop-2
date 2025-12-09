@@ -31,8 +31,8 @@ jobs:
         --jq '.[0].number // 0')
       env:
         GH_TOKEN: ${{ github.token }}
-  golangci-lint:
-    name: golangci-lint
+  lint-rdd:
+    name: Lint RDD
     needs: get-pr-number
     strategy:
       matrix:
@@ -52,7 +52,7 @@ jobs:
     - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
       with:
         go-version-file: go.mod
-    - uses: golangci/golangci-lint-action@e7fa5ac41e1cf5b7d48e45e42232ce7ada589601 # v9.1.0
+    - run: make lint-rdd
   test:
     name: Unit tests
     needs: get-pr-number
@@ -69,7 +69,7 @@ jobs:
       with:
         go-version-file: go.mod
     - run: make test
-  bats:
+  lint-bats:
     name: Lint BATS
     needs: get-pr-number
     runs-on: ubuntu-latest
@@ -82,7 +82,7 @@ jobs:
       with:
         cache: false
         go-version-file: go.mod
-    - run: make -C bats lint
+    - run: make lint-bats
   spelling:
     name: Check Spelling
     needs: get-pr-number

@@ -32,6 +32,7 @@ func RunControllers(apiGroupName string) int {
 	flag.IntVar(&desiredHealthPort, "health-port", 8081, "The desired port the health probe endpoint binds to.")
 
 	klog.InitFlags(nil)
+	//revive:disable-next-line:deep-exit
 	flag.Parse()
 
 	log := klog.NewKlogr()

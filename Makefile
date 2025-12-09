@@ -109,13 +109,19 @@ test: $(GOLANG_SOURCES)
 	go$(EXE) test ./...
 .PHONY: test
 
-lint:
+lint-bats:
 	$(MAKE) -C bats lint
-	golangci-lint$(EXE) run
+.PHONY: lint-bats
+
+lint-rdd:
+	go$(EXE) tool golangci-lint run
+.PHONY: lint-rdd
+
+lint: lint-bats lint-rdd
 .PHONY: lint
 
 format:
-	golangci-lint$(EXE) fmt
+	go$(EXE) tool golangci-lint fmt
 .PHONY: format
 
 .github/actions/spelling/expect/golang-generated.txt: scripts/spell-check-generate-golang-expect.go $(GOLANG_SOURCES)
