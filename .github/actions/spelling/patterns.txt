@@ -14,3 +14,6 @@
 
 # K3s Versions; but it must include the "k" to prevent silly typos.
 [^[:alnum:]][Kk]3s[Vv]ersions?\b
+
+# \n and \t printf markers
+(?<!\\)\\[tn](?=[a-z]{2,})
