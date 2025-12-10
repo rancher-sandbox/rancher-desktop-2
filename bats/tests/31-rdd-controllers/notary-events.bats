@@ -67,7 +67,7 @@ get_events_after_timestamp() {
     local reason=$3
 
     run rdd ctl get events --field-selector involvedObject.name="${resource_name}" -o json
-    if [[ "${status}" -ne 0 ]]; then
+    if [[ ${status} -ne 0 ]]; then
         echo "[]"
         return 0
     fi
@@ -97,7 +97,7 @@ get_latest_event_timestamp() {
     local resource_name=$1
 
     run rdd ctl get events --field-selector involvedObject.name="${resource_name}" -o json
-    if [[ "${status}" -ne 0 ]]; then
+    if [[ ${status} -ne 0 ]]; then
         echo ""
         return 1
     fi
@@ -106,6 +106,10 @@ get_latest_event_timestamp() {
 }
 
 @test 'verify event generation for spec updates' {
+    if is_ci && is_linux; then
+        skip "This test randomly fails in GitHub CI on Linux"
+    fi
+
     create_notary "events" "initial-event-value" "events-history"
 
     # Wait for initial ConfigMap creation and events

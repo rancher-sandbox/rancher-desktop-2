@@ -25,6 +25,10 @@ bool() {
     fi
 }
 
+is_ci() {
+    is_true "${CI:-}"
+}
+
 run_e() {
     run --separate-stderr "$@"
 }
