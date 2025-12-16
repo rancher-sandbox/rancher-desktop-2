@@ -7,9 +7,9 @@
 set -o errexit -o nounset
 
 API_GROUPS=$(
-	cd pkg/controllers
+	cd pkg/apis
 	# shellcheck disable=SC2012
-	ls -d -- */ | tr -d / | grep -v base
+	ls -d -- */ | tr -d /
 )
 
 # Generate deepcopy for each API group

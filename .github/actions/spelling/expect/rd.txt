@@ -3,6 +3,7 @@ ctl
 ctrctl
 devmode
 eio
+mountpoint
 nerdctl
 nochange
 rancherdesktop
