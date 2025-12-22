@@ -16,7 +16,7 @@ check-bats:
 .PHONY: check-bats
 
 # Targets for the top level
-TOPLEVEL_TARGETS := build-rdd build-rdd-controller build-all-controllers
+TOPLEVEL_TARGETS := build-rdd build-rdd-controller build-mock-controller build-all-controllers
 $(TOPLEVEL_TARGETS):
 	@$(MAKE) -C .. $@
 .PHONY: $(TOPLEVEL_TARGETS)
@@ -63,7 +63,7 @@ bats-lima: check-bats build-rdd
 	RDD_INSTANCE=bats-lima-controller $(BATS_CORE) tests/33-lima-controllers/
 .PHONY: bats-lima
 
-bats-containers: check-bats build-rdd
+bats-containers: check-bats build-rdd build-mock-controller
 	RDD_INSTANCE=bats-containers-controller $(BATS_CORE) tests/34-containers-controllers/
 .PHONY: bats-containers
 
