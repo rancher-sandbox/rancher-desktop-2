@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"runtime"
 	"testing"
+	"time"
 
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
@@ -24,7 +25,8 @@ import (
 
 func TestDeleteOwnedResources(t *testing.T) {
 	env := &envtest.Environment{
-		DownloadBinaryAssets: true,
+		DownloadBinaryAssets:    true,
+		ControlPlaneStopTimeout: time.Minute,
 	}
 	cfg, err := env.Start()
 	assert.NilError(t, err, "failed to start environment")
