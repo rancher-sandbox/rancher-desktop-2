@@ -5,9 +5,10 @@ package base
 
 import (
 	"fmt"
+	"os"
 	"runtime"
+	"strings"
 	"testing"
-	"time"
 
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
@@ -25,8 +26,7 @@ import (
 
 func TestDeleteOwnedResources(t *testing.T) {
 	env := &envtest.Environment{
-		DownloadBinaryAssets:    true,
-		ControlPlaneStopTimeout: time.Minute,
+		DownloadBinaryAssets: true,
 	}
 	cfg, err := env.Start()
 	assert.NilError(t, err, "failed to start environment")
@@ -35,8 +35,13 @@ func TestDeleteOwnedResources(t *testing.T) {
 		err := env.Stop()
 		// On Windows, `env.Stop()` will return an error because it can't kill
 		// etcd gracefully; this is not an issue for this test.
-		if runtime.GOOS != "windows" {
-			assert.NilError(t, err, "failed to stop environment")
+		// Also, in CI only, ignore failure to stop kube-apiserver.
+		if runtime.GOOS != "windows" && err != nil {
+			checkError := os.Getenv("CI") == ""
+			checkError = checkError || !strings.Contains(err.Error(), "timeout waiting for process kube-apiserver to stop")
+			if checkError {
+				assert.NilError(t, err, "failed to stop environment")
+			}
 		}
 	}()
 
