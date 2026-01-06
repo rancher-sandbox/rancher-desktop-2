@@ -12,7 +12,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
-	go.etcd.io/etcd/api/v3 v3.6.6
+	go.etcd.io/etcd/api/v3 v3.6.7
 	golang.org/x/mod v0.31.0
 	golang.org/x/sync v0.18.0
 	golang.org/x/sys v0.39.0
