@@ -39,9 +39,9 @@ status:
   ports:
     - name: 80/tcp
       bindings:
-      - hostIp: 0.0.0.0
+      - hostIP: 0.0.0.0
         hostPort: 32768
-      - hostIp: '::'
+      - hostIP: '::'
         hostPort: 32768
   labels:
     org.opensuse.base.vendor: openSUSE Project
@@ -98,6 +98,7 @@ spec:
         hostPort: 32768
   labels: # merged with image labels
     org.opensuse.base.vendor: openSUSE Project
+  state: running # initial desired state, either `running` or `created`; defaults to `running`.
 status:
   # Resulting .metadata.name, which is the container ID.  It must be in the
   # same Kubernetes namespace as the ContainerCreateRequest.
@@ -145,10 +146,19 @@ metadata:
   labels:
     # If an image is untagged, `name` and `namespace` are missing.
     name: 'registry.opensuse.org/opensuse/leap:latest' # image tag
+    id: 'sha256:999adf320e40662dc96119a14f07459af9959a081d10ccab7c405257030ab96b' # image ID
     namespace: moby # containerd namespace
 spec:
   push: false
 status:
+  repoDigests:
+  - registry.opensuse.org/opensuse/leap@sha256:999adf320e40662dc96119a14f07459af9959a081d10ccab7c405257030ab96b
+  createdAt: "2025-11-17T03:14:16Z"
+  architecture: arm64
+  os: linux
+  size: 45150437
+  labels:
+    org.opensuse.base.vendor: openSUSE Project
   conditions:
   - type: PullStarted
     status: True
