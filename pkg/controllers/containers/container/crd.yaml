@@ -8,6 +8,136 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.19.0
+    rdd.rancherdesktop.io/controller: container
+  name: containercreaterequests.containers.rancherdesktop.io
+spec:
+  group: containers.rancherdesktop.io
+  names:
+    kind: ContainerCreateRequest
+    listKind: ContainerCreateRequestList
+    plural: containercreaterequests
+    singular: containercreaterequest
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          ContainerCreateRequest defines a request to create a new container.
+          After a container has been created, the ContainerCreateRequest object will
+          be deleted after a short delay.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: spec defines the desired state of Container
+            properties:
+              args:
+                description: args is the arguments to the executable.
+                items:
+                  type: string
+                type: array
+              image:
+                description: |-
+                  image is the image the container was created with.
+                  May be either a tag or a digest.
+                type: string
+              labels:
+                additionalProperties:
+                  type: string
+                description: labels are the container labels.  They are merged with
+                  the image labels.
+                type: object
+              path:
+                description: |-
+                  path is the path to the executable (within the image) for the process.
+                  Defaults to the image's default command if not specified.
+                type: string
+              ports:
+                description: ports describes the exposed ports of the container.
+                items:
+                  description: ContainerPort defines a single exposed port in a container.
+                  properties:
+                    bindings:
+                      description: |-
+                        bindings to the host port; can contain multiple entries to e.g. express
+                        IPv4 and IPv6 bindings.
+                      items:
+                        description: ContainerPortBinding describes one host port
+                          for the container to bind to.
+                        properties:
+                          hostIP:
+                            description: hostIP is the host IP address that the container's
+                              port is mapped to.
+                            type: string
+                          hostPort:
+                            description: hostPort is the host port number that the
+                              container's port is mapped to.
+                            type: string
+                        required:
+                        - hostIP
+                        - hostPort
+                        type: object
+                      type: array
+                    name:
+                      description: name of the port; in the form [port]/[protocol],
+                        e.g. "80/tcp".
+                      type: string
+                  required:
+                  - bindings
+                  - name
+                  type: object
+                type: array
+              state:
+                allOf:
+                - enum:
+                  - created
+                  - running
+                  - pausing
+                  - paused
+                  - restarting
+                  - removing
+                  - exited
+                  - dead
+                  - unknown
+                - enum:
+                  - created
+                  - running
+                default: running
+                description: state is the desired state of the container.
+                type: string
+            required:
+            - image
+            - state
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: containers.containers.rancherdesktop.io
 spec:
   group: containers.rancherdesktop.io
@@ -19,7 +149,7 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.running
+    - jsonPath: .status.conditions[?(@.type=="Running")].status
       name: Running
       type: boolean
     name: v1alpha1
@@ -47,80 +177,35 @@ spec:
           spec:
             description: spec defines the desired state of Container
             properties:
+              state:
+                allOf:
+                - enum:
+                  - created
+                  - running
+                  - pausing
+                  - paused
+                  - restarting
+                  - removing
+                  - exited
+                  - dead
+                  - unknown
+                - enum:
+                  - created
+                  - running
+                default: running
+                description: state is the desired state of the container.
+                type: string
+            required:
+            - state
+            type: object
+          status:
+            description: status defines the observed state of Container
+            properties:
               args:
                 description: args is the arguments to the executable.
                 items:
                   type: string
                 type: array
-                x-kubernetes-validations:
-                - message: args is immutable
-                  rule: self == oldSelf
-              image:
-                description: image is the image the container was created with.
-                type: string
-                x-kubernetes-validations:
-                - message: image is immutable
-                  rule: self == oldSelf
-              labels:
-                additionalProperties:
-                  type: string
-                description: labels are the container labels.
-                type: object
-                x-kubernetes-validations:
-                - message: labels is immutable
-                  rule: self == oldSelf
-              path:
-                description: path is the path to the executable (within the image)
-                  for the process.
-                type: string
-                x-kubernetes-validations:
-                - message: path is immutable
-                  rule: self == oldSelf
-              ports:
-                description: ports describes the exposed ports of the container.
-                items:
-                  description: ContainerPort defines a single exposed port in a container.
-                  properties:
-                    bindings:
-                      description: |-
-                        bindings to the host port; can contain multiple entries to e.g. express
-                        IPv4 and IPv6 bindings.
-                      items:
-                        description: ContainerPortBinding describes one host port
-                          for the container to bind to.
-                        properties:
-                          hostIP:
-                            description: hostIp is the host IP address that the container's
-                              port is mapped to.
-                            type: string
-                          hostPort:
-                            description: hostPort is the host port number that the
-                              container's port is mapped to.
-                            type: string
-                        required:
-                        - hostIP
-                        - hostPort
-                        type: object
-                      type: array
-                    name:
-                      description: name of the port; in the form [port]/[protocol],
-                        e.g. "80/tcp".
-                      type: string
-                  required:
-                  - bindings
-                  - name
-                  type: object
-                type: array
-                x-kubernetes-validations:
-                - message: ports is immutable
-                  rule: self == oldSelf
-            required:
-            - image
-            - path
-            type: object
-          status:
-            description: status defines the observed state of Container
-            properties:
               conditions:
                 description: |-
                   conditions represent the calculated state of the container.
@@ -210,11 +295,58 @@ spec:
                   unset if the container never ran.
                 format: date-time
                 type: string
+              image:
+                description: image is the image the container was created with.
+                type: string
+              labels:
+                additionalProperties:
+                  type: string
+                description: labels are the container labels.
+                type: object
+              path:
+                description: path is the path to the executable (within the image)
+                  for the process.
+                type: string
               pid:
                 description: pid is the process identifier for the main process in
                   the container.
                 format: int32
                 type: integer
+              ports:
+                description: ports describes the exposed ports of the container.
+                items:
+                  description: ContainerPort defines a single exposed port in a container.
+                  properties:
+                    bindings:
+                      description: |-
+                        bindings to the host port; can contain multiple entries to e.g. express
+                        IPv4 and IPv6 bindings.
+                      items:
+                        description: ContainerPortBinding describes one host port
+                          for the container to bind to.
+                        properties:
+                          hostIP:
+                            description: hostIP is the host IP address that the container's
+                              port is mapped to.
+                            type: string
+                          hostPort:
+                            description: hostPort is the host port number that the
+                              container's port is mapped to.
+                            type: string
+                        required:
+                        - hostIP
+                        - hostPort
+                        type: object
+                      type: array
+                    name:
+                      description: name of the port; in the form [port]/[protocol],
+                        e.g. "80/tcp".
+                      type: string
+                  required:
+                  - bindings
+                  - name
+                  type: object
+                type: array
               startedAt:
                 description: startedAt is the time this container was started; unset
                   if the container is stopped.
@@ -235,6 +367,8 @@ spec:
                 - unknown
                 type: string
             required:
+            - image
+            - path
             - pid
             - status
             type: object

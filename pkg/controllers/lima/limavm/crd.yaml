@@ -152,6 +152,7 @@ spec:
                   templateConfigMap is the name of the ConfigMap containing the validated template.
                   This ConfigMap is created and managed by the controller and is owned by this LimaVM resource.
                   An admission controller validates any updates to the ConfigMap.
+                  This field is informational - internal code should use GetTemplateConfigMapName() instead.
                 type: string
             type: object
         required:

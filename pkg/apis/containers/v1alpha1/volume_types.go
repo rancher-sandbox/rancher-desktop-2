@@ -8,8 +8,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// VolumeSpec defines the configuration the volume was created with.
-type VolumeSpec struct {
+// VolumeStatus describes the configuration the volume was created with.
+type VolumeStatus struct {
 	// createdAt is the time the volume was created.
 	// +required
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="createdAt is immutable"
@@ -37,7 +37,8 @@ type VolumeSpec struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:printcolumn:name="Driver",type=string,JSONPath=`.spec.driver`
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Driver",type=string,JSONPath=`.status.driver`
 
 // Volume is the Schema for the volumes API.
 type Volume struct {
@@ -47,9 +48,9 @@ type Volume struct {
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty,omitzero"`
 
-	// spec defines the desired state of Volume
-	// +required
-	Spec VolumeSpec `json:"spec"`
+	// status describes the observed state of the volume.
+	// +optional
+	Status VolumeStatus `json:"status"`
 }
 
 // +kubebuilder:object:root=true
@@ -61,6 +62,58 @@ type VolumeList struct {
 	Items           []Volume `json:"items"`
 }
 
+type VolumeCreateSpec struct {
+	// driver the volume should use.
+	// +required
+	Driver string `json:"driver"`
+}
+
+type VolumeCreateStatus struct {
+	// conditions represent the state of the volume creation request.
+	// Current known condition types include:
+	// - "Processed": the volume creation request has been completed.
+	// The status of each condition is one of True, False, or Unknown.
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:metadata:annotations=rdd.rancherdesktop.io/controller=volume
+
+// VolumeCreateRequest defines a request to create a new volume.
+// After a volume has been created, the VolumeCreateRequest object will
+// be deleted after a short delay.
+type VolumeCreateRequest struct {
+	metav1.TypeMeta `json:",inline"`
+
+	// metadata is a standard object metadata
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitempty,omitzero"`
+
+	// spec defines the desired state of VolumeCreateRequest
+	// +required
+	Spec VolumeCreateSpec `json:"spec"`
+
+	// status represents the current state of the VolumeCreateRequest
+	// +optional
+	Status VolumeCreateStatus `json:"status,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// VolumeCreateRequestList contains a list of VolumeCreateRequest.
+type VolumeCreateRequestList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []VolumeCreateRequest `json:"items"`
+}
+
 func init() {
-	SchemeBuilder.Register(&Volume{}, &VolumeList{})
+	SchemeBuilder.Register(
+		&Volume{}, &VolumeList{},
+		&VolumeCreateRequest{}, &VolumeCreateRequestList{},
+	)
 }

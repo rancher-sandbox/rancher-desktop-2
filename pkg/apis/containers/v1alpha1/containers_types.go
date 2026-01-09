@@ -26,7 +26,7 @@ const (
 
 // ContainerPortBinding describes one host port for the container to bind to.
 type ContainerPortBinding struct {
-	// hostIp is the host IP address that the container's port is mapped to.
+	// hostIP is the host IP address that the container's port is mapped to.
 	// +required
 	HostIP string `json:"hostIP"`
 	// hostPort is the host port number that the container's port is mapped to.
@@ -47,30 +47,30 @@ type ContainerPort struct {
 
 // ContainerSpec defines the configuration the container was created with.
 type ContainerSpec struct {
-	// path is the path to the executable (within the image) for the process.
+	// state is the desired state of the container.
 	// +required
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="path is immutable"
-	Path string `json:"path"`
-	// args is the arguments to the executable.
-	// +optional
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="args is immutable"
-	Args []string `json:"args"`
-	// image is the image the container was created with.
-	// +required
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="image is immutable"
-	Image string `json:"image"`
-	// ports describes the exposed ports of the container.
-	// +optional
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="ports is immutable"
-	Ports []ContainerPort `json:"ports,omitempty"`
-	// labels are the container labels.
-	// +optional
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="labels is immutable"
-	Labels map[string]string `json:"labels"`
+	// +kubebuilder:default:=running
+	// +kubebuilder:validation:Enum=created;running
+	State ContainerStatusValue `json:"state"`
 }
 
 // ContainerStatus defines the observed state of the container.
 type ContainerStatus struct {
+	// path is the path to the executable (within the image) for the process.
+	// +required
+	Path string `json:"path"`
+	// args is the arguments to the executable.
+	// +optional
+	Args []string `json:"args"`
+	// image is the image the container was created with.
+	// +required
+	Image string `json:"image"`
+	// ports describes the exposed ports of the container.
+	// +optional
+	Ports []ContainerPort `json:"ports,omitempty"`
+	// labels are the container labels.
+	// +optional
+	Labels map[string]string `json:"labels"`
 	// status of the container.
 	// +required
 	// +kubebuilder:default:=unknown
@@ -113,7 +113,7 @@ type ContainerStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Running",type=boolean,JSONPath=`.spec.running`
+// +kubebuilder:printcolumn:name="Running",type=boolean,JSONPath=`.status.conditions[?(@.type=="Running")].status`
 
 // Container is the Schema for the containers API.
 type Container struct {
@@ -141,6 +141,78 @@ type ContainerList struct {
 	Items           []Container `json:"items"`
 }
 
+type ContainerCreateSpec struct {
+	// path is the path to the executable (within the image) for the process.
+	// Defaults to the image's default command if not specified.
+	// +optional
+	Path string `json:"path"`
+	// args is the arguments to the executable.
+	// +optional
+	Args []string `json:"args"`
+	// image is the image the container was created with.
+	// May be either a tag or a digest.
+	// +required
+	Image string `json:"image"`
+	// ports describes the exposed ports of the container.
+	// +optional
+	Ports []ContainerPort `json:"ports,omitempty"`
+	// labels are the container labels.  They are merged with the image labels.
+	// +optional
+	Labels map[string]string `json:"labels"`
+
+	// state is the desired state of the container.
+	// +required
+	// +kubebuilder:default:=running
+	// +kubebuilder:validation:Enum=created;running
+	State ContainerStatusValue `json:"state"`
+}
+
+type ContainerCreateStatus struct {
+	// name is the name of the created container; this is the container ID.
+	// +required
+	Name string `json:"name"`
+
+	// conditions represent the state of the container creation request.
+	// Current known condition types include:
+	// - "Finished": the container creation request has been completed.
+	// The status of each condition is one of True, False, or Unknown.
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:metadata:annotations=rdd.rancherdesktop.io/controller=container
+
+// ContainerCreateRequest defines a request to create a new container.
+// After a container has been created, the ContainerCreateRequest object will
+// be deleted after a short delay.
+type ContainerCreateRequest struct {
+	metav1.TypeMeta `json:",inline"`
+
+	// metadata is a standard object metadata
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitempty,omitzero"`
+
+	// spec defines the desired state of Container
+	// +required
+	Spec ContainerCreateSpec `json:"spec"`
+}
+
+// +kubebuilder:object:root=true
+
+// ContainerCreateRequestList contains a list of ContainerCreateRequest.
+type ContainerCreateRequestList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []ContainerCreateRequest `json:"items"`
+}
+
 func init() {
-	SchemeBuilder.Register(&Container{}, &ContainerList{})
+	SchemeBuilder.Register(
+		&Container{}, &ContainerList{},
+		&ContainerCreateRequest{}, &ContainerCreateRequestList{},
+	)
 }
