@@ -22,12 +22,6 @@ import (
 )
 
 const (
-	// DefaultWebhookCertFileName is the default filename for webhook server certificates.
-	// Uses controller-runtime's expected filename for automatic discovery.
-	DefaultWebhookCertFileName = "tls.crt"
-	// DefaultWebhookKeyFileName is the default filename for webhook server private keys.
-	// Uses controller-runtime's expected filename for automatic discovery.
-	DefaultWebhookKeyFileName = "tls.key"
 	// DefaultWebhookCACertFileName is the default filename for webhook CA certificates.
 	DefaultWebhookCACertFileName = "webhook-ca.crt"
 )
@@ -36,14 +30,18 @@ const (
 // for multiple controllers sharing the same webhook server infrastructure.
 type SharedWebhookCertificateManager struct {
 	certDir      string
+	certName     string
+	keyName      string
 	serverIP     string
 	serviceNames []string // DNS names for all webhook services
 }
 
 // NewSharedWebhookCertificateManager creates a new shared certificate manager.
-func NewSharedWebhookCertificateManager(certDir, serverIP string, serviceNames []string) *SharedWebhookCertificateManager {
+func NewSharedWebhookCertificateManager(certDir, certName, keyName, serverIP string, serviceNames []string) *SharedWebhookCertificateManager {
 	return &SharedWebhookCertificateManager{
 		certDir:      certDir,
+		certName:     certName,
+		keyName:      keyName,
 		serverIP:     serverIP,
 		serviceNames: serviceNames,
 	}
@@ -138,13 +136,13 @@ func (cm *SharedWebhookCertificateManager) GenerateWebhookCertificates() error {
 	}
 
 	// Save webhook certificate
-	webhookCertPath := filepath.Join(cm.certDir, DefaultWebhookCertFileName)
+	webhookCertPath := filepath.Join(cm.certDir, cm.certName)
 	if err := cm.saveCertificate(webhookCertPath, webhookCertDER); err != nil {
 		return fmt.Errorf("failed to save webhook certificate: %w", err)
 	}
 
 	// Save webhook private key
-	webhookKeyPath := filepath.Join(cm.certDir, DefaultWebhookKeyFileName)
+	webhookKeyPath := filepath.Join(cm.certDir, cm.keyName)
 	if err := cm.savePrivateKey(webhookKeyPath, webhookKey); err != nil {
 		return fmt.Errorf("failed to save webhook private key: %w", err)
 	}
@@ -211,8 +209,8 @@ func (cm *SharedWebhookCertificateManager) GetCABundle() ([]byte, error) {
 
 // CertificatesExist checks if webhook certificates already exist and are valid.
 func (cm *SharedWebhookCertificateManager) CertificatesExist() bool {
-	certPath := filepath.Join(cm.certDir, DefaultWebhookCertFileName)
-	keyPath := filepath.Join(cm.certDir, DefaultWebhookKeyFileName)
+	certPath := filepath.Join(cm.certDir, cm.certName)
+	keyPath := filepath.Join(cm.certDir, cm.keyName)
 
 	// Check if both files exist
 	if _, err := os.Stat(certPath); os.IsNotExist(err) {
@@ -274,8 +272,8 @@ func (cm *SharedWebhookCertificateManager) certificateIncludesAllServiceNames(ce
 
 // GetWebhookCertPaths returns the file paths for webhook certificate and key.
 func (cm *SharedWebhookCertificateManager) GetWebhookCertPaths() (certPath, keyPath string) {
-	certPath = filepath.Join(cm.certDir, DefaultWebhookCertFileName)
-	keyPath = filepath.Join(cm.certDir, DefaultWebhookKeyFileName)
+	certPath = filepath.Join(cm.certDir, cm.certName)
+	keyPath = filepath.Join(cm.certDir, cm.keyName)
 	return certPath, keyPath
 }
 

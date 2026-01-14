@@ -17,10 +17,8 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -34,8 +32,14 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 )
 
+const (
+	// crdOwnerLabel is the label used to identify the SharedControllerManager that owns a CRD.
+	crdOwnerLabel = "org.rancherdesktop.rdd/shared-controller-manager"
+)
+
 // SharedControllerManager manages all embedded RDD controllers using a single controller-runtime manager.
 type SharedControllerManager struct {
+	name          string
 	manager       ctrl.Manager
 	registrations []base.Controller
 	kubeConfig    *rest.Config
@@ -43,23 +47,26 @@ type SharedControllerManager struct {
 	healthPort    int
 	webhookPort   int
 	started       bool
-	discovery     *ControllerManagerDiscovery
+	discovery     *ControllerManagerDiscoveryGroup
 }
 
 // NewSharedControllerManager creates a new shared controller manager.
-func NewSharedControllerManager(ctx context.Context, kubeConfig *rest.Config, metricsPort, healthPort int) *SharedControllerManager {
+func NewSharedControllerManager(ctx context.Context, name string, kubeConfig *rest.Config, metricsPort, healthPort int) (*SharedControllerManager, error) {
 	// Create discovery service (errors handled in Start method)
-	discovery, _ := NewControllerManagerDiscovery(kubeConfig)
+	discovery, err := NewControllerManagerDiscoveryGroup(kubeConfig, name)
+	if err != nil {
+		return nil, err
+	}
 
 	// Calculate webhook port with instance offset
 	desiredWebhookPort := 9443 + instance.Index()
 	webhookPort, err := GetAvailablePort(ctx, desiredWebhookPort)
 	if err != nil {
-		// Fallback to original port if GetAvailablePort fails
-		webhookPort = desiredWebhookPort
+		return nil, fmt.Errorf("failed to get available webhook port: %w", err)
 	}
 
 	return &SharedControllerManager{
+		name:          name,
 		kubeConfig:    kubeConfig,
 		metricsPort:   metricsPort,
 		healthPort:    healthPort,
@@ -67,7 +74,7 @@ func NewSharedControllerManager(ctx context.Context, kubeConfig *rest.Config, me
 		registrations: make([]base.Controller, 0),
 		started:       false,
 		discovery:     discovery,
-	}
+	}, nil
 }
 
 // RegisterController registers a controller with the shared manager.
@@ -76,7 +83,7 @@ func (scm *SharedControllerManager) RegisterController(registration base.Control
 		return fmt.Errorf("cannot register controller %s: shared manager already started", registration.GetName())
 	}
 
-	klog.V(2).InfoS("Registering controller with shared manager", "controller", registration.GetName())
+	klog.V(2).InfoS("Registering controller with shared manager", "controller", registration.GetName(), "shared manager", scm.name)
 	scm.registrations = append(scm.registrations, registration)
 	return nil
 }
@@ -84,7 +91,7 @@ func (scm *SharedControllerManager) RegisterController(registration base.Control
 // Start initializes the shared manager and starts all registered controllers.
 func (scm *SharedControllerManager) Start(ctx context.Context) error {
 	if scm.started {
-		return errors.New("shared controller manager already started")
+		return fmt.Errorf("shared controller manager %s already started", scm.name)
 	}
 
 	log := klog.FromContext(ctx)
@@ -95,7 +102,7 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 	}
 
 	// Clean up stale discovery configmap to prevent readiness check confusion
-	if err := scm.cleanupStaleDiscovery(ctx); err != nil {
+	if err := scm.discovery.UnregisterControllerManager(ctx); err != nil {
 		log.Error(err, "Failed to cleanup stale discovery configmap, continuing with startup")
 	}
 
@@ -105,27 +112,18 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to install controller CRDs: %w", err)
 	}
 
-	// Check if any controllers require webhooks before setting up certificates
-	var webhookCertDir string
-	hasWebhookControllers := scm.hasWebhookControllers()
-	if hasWebhookControllers {
-		// Use instance TLS directory for webhook certificates (persistent storage)
-		webhookCertDir = instance.TLSDir()
-
-		// Generate shared webhook certificates
-		if err := scm.setupSharedWebhookCertificates(webhookCertDir); err != nil {
-			return fmt.Errorf("failed to setup shared webhook certificates: %w", err)
-		}
-	}
-
 	// Configure controller-runtime to use klog
-	ctrllog.SetLogger(log.WithName("controller-runtime"))
+	ctrllog.SetLogger(log.WithName(fmt.Sprintf("controller-runtime-%s", scm.name)))
 
 	// Create and register scheme with required types
 	managerScheme := runtime.NewScheme()
-	utilruntime.Must(scheme.AddToScheme(managerScheme))
+	if err := scheme.AddToScheme(managerScheme); err != nil {
+		return fmt.Errorf("failed to add core scheme: %w", err)
+	}
 	// Add CRD types to support dynamic resource discovery
-	utilruntime.Must(apiextensionsv1.AddToScheme(managerScheme))
+	if err := apiextensionsv1.AddToScheme(managerScheme); err != nil {
+		return fmt.Errorf("failed to add apiextensions scheme: %w", err)
+	}
 
 	// Modify kubeconfig to force JSON content type to avoid protobuf issues
 	configCopy := *scm.kubeConfig
@@ -135,18 +133,31 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 	managerOptions := ctrl.Options{
 		Scheme: managerScheme,
 		Metrics: server.Options{
-			BindAddress: ":" + strconv.Itoa(scm.metricsPort),
+			BindAddress: "127.0.0.1:" + strconv.Itoa(scm.metricsPort),
 		},
-		HealthProbeBindAddress: ":" + strconv.Itoa(scm.healthPort),
+		HealthProbeBindAddress: "127.0.0.1:" + strconv.Itoa(scm.healthPort),
 		LeaderElection:         false, // RDD controllers are single-instance
 	}
 
 	// Only configure webhook server if controllers require it
-	if hasWebhookControllers {
-		managerOptions.WebhookServer = webhook.NewServer(webhook.Options{
-			Port:    scm.webhookPort,
-			CertDir: webhookCertDir,
-		})
+	if scm.hasWebhookControllers() {
+		// Use instance TLS directory for webhook certificates (persistent storage)
+		webhookCertDir := instance.TLSDir()
+
+		opts := webhook.Options{
+			Host:     "127.0.0.1",
+			Port:     scm.webhookPort,
+			CertDir:  webhookCertDir,
+			CertName: fmt.Sprintf("webhook-%s.crt", scm.name),
+			KeyName:  fmt.Sprintf("webhook-%s.key", scm.name),
+		}
+
+		// Generate shared webhook certificates
+		if err := scm.setupSharedWebhookCertificates(opts); err != nil {
+			return fmt.Errorf("failed to setup shared webhook certificates: %w", err)
+		}
+
+		managerOptions.WebhookServer = webhook.NewServer(opts)
 	}
 
 	mgr, err := ctrl.NewManager(&configCopy, managerOptions)
@@ -164,30 +175,19 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to set up ready check: %w", err)
 	}
 
-	// Register controller manager in cluster for service discovery FIRST
-	// Initialize discovery client now that the cluster is running
-	if scm.discovery == nil {
-		discovery, err := NewControllerManagerDiscovery(scm.kubeConfig)
-		if err != nil {
-			log.Error(err, "Failed to create controller manager discovery client")
-		} else {
-			scm.discovery = discovery
-		}
+	// Register controller manager in cluster for service discovery before
+	// running the controllers.
+	if err := scm.registerDiscovery(ctx); err != nil {
+		log.Error(err, "Failed to register controller manager for discovery")
+		// Don't fail startup for discovery registration errors
 	}
 
-	if scm.discovery != nil {
-		if err := scm.registerDiscovery(ctx); err != nil {
-			log.Error(err, "Failed to register controller manager for discovery")
-			// Don't fail startup for discovery registration errors
+	// Ensure cleanup on shutdown
+	defer func() {
+		if err := scm.discovery.UnregisterControllerManager(context.Background()); err != nil {
+			log.Error(err, "Failed to unregister controller manager")
 		}
-
-		// Ensure cleanup on shutdown
-		defer func() {
-			if err := scm.discovery.UnregisterControllerManager(context.Background()); err != nil {
-				log.Error(err, "Failed to unregister controller manager")
-			}
-		}()
-	}
+	}()
 
 	// Track webhook setup goroutines
 	var webhookWaitGroup sync.WaitGroup
@@ -244,6 +244,7 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 	scm.started = true
 
 	klog.InfoS("Starting shared controller manager",
+		"name", scm.name,
 		"controllers", len(scm.registrations),
 		"metricsPort", scm.metricsPort,
 		"healthPort", scm.healthPort)
@@ -360,6 +361,10 @@ func (scm *SharedControllerManager) installControllerCRDs(ctx context.Context) e
 
 		// Create the CRD
 		klog.Infof("Installing %s CRD", controllerName)
+		if crd.Labels == nil {
+			crd.Labels = make(map[string]string)
+		}
+		crd.Labels[crdOwnerLabel] = scm.name
 		if _, err := crdClient.Create(ctx, &crd, metav1.CreateOptions{}); err != nil {
 			return fmt.Errorf("failed to create CRD for controller %s: %w", controllerName, err)
 		}
@@ -469,8 +474,17 @@ func (scm *SharedControllerManager) cleanupUnusedCRDs(ctx context.Context, contr
 			continue
 		}
 
+		existingCRD, err := crdClient.Get(ctx, crd.Name, metav1.GetOptions{})
+		if err == nil && existingCRD.Labels != nil {
+			existingOwner := existingCRD.Labels[crdOwnerLabel]
+			if existingOwner != scm.name {
+				klog.V(2).InfoS("Skipping CRD owned by different controller manager", "crd", crd.Name, "manager", existingOwner)
+				continue
+			}
+		}
+
 		klog.InfoS("Deleting unused CRD", "crd", crd.Name, "controller", controller.GetName())
-		err := crdClient.Delete(ctx, crd.Name, metav1.DeleteOptions{})
+		err = crdClient.Delete(ctx, crd.Name, metav1.DeleteOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			klog.ErrorS(err, "Failed to delete unused CRD", "crd", crd.Name, "controller", controller.GetName())
 		}
@@ -479,33 +493,8 @@ func (scm *SharedControllerManager) cleanupUnusedCRDs(ctx context.Context, contr
 	return nil
 }
 
-// cleanupStaleDiscovery removes the discovery configmap to prevent readiness check confusion.
-func (scm *SharedControllerManager) cleanupStaleDiscovery(ctx context.Context) error {
-	client, err := kubernetes.NewForConfig(scm.kubeConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create kubernetes client: %w", err)
-	}
-
-	configMapClient := client.CoreV1().ConfigMaps("rdd-system")
-
-	// Delete the discovery configmap if it exists
-	discoveryConfigMapName := "rdd-controller-manager"
-
-	err = configMapClient.Delete(ctx, discoveryConfigMapName, metav1.DeleteOptions{})
-	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to delete discovery configmap %s: %w", discoveryConfigMapName, err)
-		}
-		klog.InfoS("Discovery configmap not found, nothing to clean up", "configmap", discoveryConfigMapName)
-	} else {
-		klog.InfoS("Successfully deleted stale discovery configmap", "configmap", discoveryConfigMapName)
-	}
-
-	return nil
-}
-
 // setupSharedWebhookCertificates generates webhook certificates for all controllers that need them.
-func (scm *SharedControllerManager) setupSharedWebhookCertificates(webhookCertDir string) error {
+func (scm *SharedControllerManager) setupSharedWebhookCertificates(opts webhook.Options) error {
 	// Check if any controller requires webhook certificates
 	needsCertificates := false
 	serviceNames := []string{}
@@ -524,10 +513,16 @@ func (scm *SharedControllerManager) setupSharedWebhookCertificates(webhookCertDi
 		return nil
 	}
 
-	klog.InfoS("Setting up shared webhook certificates", "certDir", webhookCertDir, "serviceNames", serviceNames)
+	klog.InfoS("Setting up shared webhook certificates", "certDir", opts.CertDir, "serviceNames", serviceNames)
 
 	// Use the shared webhook certificate manager to generate certificates
-	certManager := base.NewSharedWebhookCertificateManager(webhookCertDir, "127.0.0.1", serviceNames)
+	certManager := base.NewSharedWebhookCertificateManager(
+		opts.CertDir,
+		opts.CertName,
+		opts.KeyName,
+		"127.0.0.1",
+		serviceNames,
+	)
 
 	// Skip certificate generation if valid certificates already exist
 	if certManager.CertificatesExist() {

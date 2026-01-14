@@ -56,10 +56,10 @@ build-rdd: bin/rdd$(EXE)
 .PHONY: build-rdd
 
 # API Group Controller management - Auto-discovery of API groups
-API_GROUPS := $(notdir $(shell find pkg/controllers -mindepth 1 -maxdepth 1 -type d -not -name base -not -name builtin))
+CONTROLLERS := $(patsubst cmd/%-controller,%,$(wildcard cmd/*-controller))
 
 # Generate build targets for API group controllers
-define API_GROUP_CONTROLLER_TARGETS
+define CONTROLLER_TARGETS
 bin/$(1)-controller$$(EXE): $$(GOLANG_SOURCES)
 	WSLENV=${WSLENV}:CGO_ENABLED CGO_ENABLED=0 \
 	go$$(EXE) build -tags="$(TAGS)" -gcflags="all=$${GCFLAGS}" -ldflags="$(LDFLAGS)" -o $$@ ./cmd/$(1)-controller
@@ -77,16 +77,16 @@ run-$(1)-controller: bin/$(1)-controller$$(EXE)
 endef
 
 # Generate targets for each API group
-$(foreach apigroup,$(API_GROUPS),$(eval $(call API_GROUP_CONTROLLER_TARGETS,$(apigroup))))
+$(foreach controller,$(CONTROLLERS),$(eval $(call CONTROLLER_TARGETS,$(controller))))
 
 # Meta targets
-build-all-controllers: $(addprefix build-,$(addsuffix -controller,$(API_GROUPS)))
+build-all-controllers: $(addprefix build-,$(addsuffix -controller,$(CONTROLLERS)))
 .PHONY: build-all-controllers
 
-test-all-controllers: $(addprefix test-,$(addsuffix -controllers,$(API_GROUPS)))
+test-all-controllers: $(addprefix test-,$(addsuffix -controllers,$(CONTROLLERS)))
 .PHONY: test-all-controllers
 
-run-all-controllers: $(addprefix run-,$(addsuffix -controller,$(API_GROUPS)))
+run-all-controllers: $(addprefix run-,$(addsuffix -controller,$(CONTROLLERS)))
 .PHONY: run-all-controllers
 
 # Code generation targets
@@ -102,7 +102,7 @@ generate: generate-deepcopy generate-crds
 .PHONY: generate
 
 run: bin/rdd$(EXE)
-	$< start
+	$< service start
 .PHONY: run
 
 test: $(GOLANG_SOURCES)

@@ -38,8 +38,9 @@ assert_process_exited() {
     try --max 20 --delay 1 -- rdd ctl get configmap rdd-controller-manager --namespace rdd-system
 
     # Verify the discovery ConfigMap contains notary controller
-    run -0 rdd ctl get configmap rdd-controller-manager --namespace rdd-system -o jsonpath='{.data.enabledControllers}'
-    assert_output --partial "notary"
+    run_e -0 rdd ctl get configmap rdd-controller-manager --namespace rdd-system -o jsonpath='{.data.rdd}'
+    run -0 jq_output '.enabledControllers[]'
+    assert_line "notary"
 }
 
 @test "webhook configuration is created" {
@@ -128,6 +129,60 @@ EOF
 
     # Stop the control plane - this should trigger auto-cleanup of external controllers
     run -0 rdd svc stop
+
+    # Wait for external controller to detect control plane shutdown and exit
+    # External controllers check every 2 seconds, allow up to 3 failures (6 seconds), plus buffer
+    try --max 15 --delay 1 -- assert_process_exited "${controller_pid}"
+}
+
+@test "control plane starts with different controller" {
+    rdd service delete
+    rdd service create --controllers="lima"
+    rdd service start
+}
+
+@test "control plane starts without rdd controller" {
+    # Confirm apiserver is working
+    run -0 rdd ctl get namespaces -o name
+    assert_line namespace/default
+
+    # Verify that the embedded lima controller is running
+    run -0 rdd ctl get configmap rdd-controller-manager --namespace rdd-system --output jsonpath='{.data.embedded}'
+    assert_output
+    jq_output '.enabledControllers[]'
+    assert_line "limavm"
+    refute_line "notary"
+
+    # Verify that the external rdd controller is not running
+    run -0 rdd ctl get configmap rdd-controller-manager --namespace rdd-system --output jsonpath='{.data.rdd}'
+    refute_output
+}
+
+@test "external controller runs and registers" {
+    # Start external rdd-controller binary in background
+    "rdd-controller${EXE}" &
+    # Store PID to verify it auto-exits later
+    echo "$!" >"${BATS_FILE_TMPDIR}/controller_pid"
+
+    # Wait for external controller to register in discovery system
+    try --max 20 --delay 1 -- rdd ctl get configmap rdd-controller-manager --namespace rdd-system --allow-missing-template-keys=false --output jsonpath='{.data.rdd}'
+
+    # Verify the discovery ConfigMap contains notary controller
+    run -0 --separate-stderr rdd ctl get configmap rdd-controller-manager --namespace rdd-system --output jsonpath='{.data.rdd}'
+    run -0 jq_output '.enabledControllers[]'
+    assert_output
+    assert_line "notary"
+}
+
+@test "shut down external controller" {
+    # Get the stored PID from the controller start test
+    controller_pid=$(cat "${BATS_FILE_TMPDIR}/controller_pid")
+
+    # Verify the external controller process is currently running
+    kill -0 "${controller_pid}"
+
+    # Stop the control plane - this should trigger auto-cleanup of external controllers
+    rdd service stop
 
     # Wait for external controller to detect control plane shutdown and exit
     # External controllers check every 2 seconds, allow up to 3 failures (6 seconds), plus buffer

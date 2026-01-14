@@ -66,6 +66,7 @@ DSQLITE
 endef
 ifneq
 notdir
+patsubst
 VTAB
 
 # check-spelling

@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -23,8 +24,6 @@ import (
 	"github.com/spf13/cobra"
 
 	apiextensionapiserver "k8s.io/apiextensions-apiserver/pkg/apiserver"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -76,9 +75,6 @@ var requiredAPIGroups = sets.NewString(
 	"admissionregistration.k8s.io", // Admission
 	"coordination.k8s.io",          // Coordination (for controller-runtime compatibility)
 )
-
-// ErrControllerManagerNotFound is returned when no controller manager is found.
-var ErrControllerManagerNotFound = errors.New("no running controller manager found")
 
 // GetKubeconfig returns the kubeconfig by reading it directly from disk.
 func GetKubeconfig() ([]byte, error) {
@@ -179,7 +175,7 @@ func Create(ctx context.Context, args []string) error {
 	return os.WriteFile(instance.ArgsFile(), data, 0o600)
 }
 
-// getRuntimeControllersFromCluster retrieves the actual running controller configuration from the cluster.
+// getRuntimeControllersFromCluster retrieves all enabled controllers from the cluster.
 func getRuntimeControllersFromCluster(ctx context.Context) ([]string, error) {
 	// Try to get the running controller configuration from the cluster
 	config, err := GetKubeRestConfig()
@@ -197,19 +193,12 @@ func getRuntimeControllersFromCluster(ctx context.Context) ([]string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
-	info, err := discovery.DiscoverControllerManager(ctx)
+	enabledControllers, err := discovery.GetEnabledControllers(ctx)
 	if err != nil {
 		klog.V(2).Infof("getRuntimeControllersFromCluster: discovery error: %v", err)
-		return nil, fmt.Errorf("could not discover running controllers: %w", err)
+		return nil, fmt.Errorf("could not discover enabled controllers: %w", err)
 	}
-
-	if info == nil {
-		klog.V(2).Info("getRuntimeControllersFromCluster: no controller manager found")
-		return nil, ErrControllerManagerNotFound
-	}
-
-	klog.V(2).Infof("getRuntimeControllersFromCluster: found controllers: %v", info.EnabledControllers)
-	return info.EnabledControllers, nil
+	return enabledControllers, nil
 }
 
 func Start(ctx context.Context, args []string) error {
@@ -267,75 +256,60 @@ func checkReadiness(ctx context.Context) error {
 	// Wait for the controller manager to register with the actual running controllers
 	runtimeControllers, err := getRuntimeControllersFromCluster(ctx)
 	if err != nil {
-		// Check if this is a "no controller manager found" error, which indicates --controllers=""
-		if errors.Is(err, ErrControllerManagerNotFound) {
-			klog.V(2).Info("No controller manager found - checking if this is truly no-controllers mode")
-
-			// Check the original command args to see if --controllers="" was specified
-			serveArgs := ServeArgs()
-			isNoControllersMode := false
-			for i, arg := range serveArgs {
-				if arg == "--controllers" && i+1 < len(serveArgs) && serveArgs[i+1] == "" {
-					isNoControllersMode = true
-					break
-				}
-			}
-
-			if isNoControllersMode {
-				// Check if API server is ready for basic operations
-				if err := readiness.WaitForReady(ctx, config, false); err == nil {
-					klog.V(2).Info("API server ready and no controllers expected - no controllers mode")
-					return readiness.WaitForReadyWithCRDs(ctx, config, []base.Controller{}, false)
-				}
-				klog.V(2).Info("API server not ready yet, continuing to wait...")
-			} else {
-				klog.V(2).Info("Controllers expected but discovery configmap not found yet - waiting for external controllers to register...")
-			}
-		} else {
-			klog.V(2).Infof("getRuntimeControllersFromCluster: %v", err)
-		}
+		klog.V(2).Infof("getRuntimeControllersFromCluster: %v", err)
 		return err
 	}
-	klog.V(2).Infof("Waiting for %d runtime controllers to be ready", len(runtimeControllers))
+
 	if len(runtimeControllers) == 0 {
-		// This shouldn't happen since we handle it above, but keeping as fallback
-		// Check if API server is ready for basic operations
-		if err := readiness.WaitForReady(ctx, config, false); err == nil {
-			klog.V(2).Info("API server ready but no controllers registered - assuming no controllers mode")
-			return readiness.WaitForReadyWithCRDs(ctx, config, []base.Controller{}, false)
+		// If we found no controllers, check to see if we just need to wait longer
+		// for the controller manager to register.
+		klog.V(2).Info("No controller manager found - checking if this is truly no-controllers mode")
+
+		// Check the original command args to see if --controllers="" was specified
+		serveArgs := ServeArgs()
+		argIndex := slices.Index(serveArgs, "--controllers")
+		isNoControllersMode := argIndex >= 0 && argIndex+1 < len(serveArgs) && serveArgs[argIndex+1] == ""
+
+		if isNoControllersMode {
+			// Check if API server is ready for basic operations
+			if err := readiness.WaitForReady(ctx, config, false); err == nil {
+				klog.V(2).Info("API server ready and no controllers expected - no controllers mode")
+				return readiness.WaitForReadyWithCRDs(ctx, config, []base.Controller{}, false)
+			}
+			klog.V(2).Info("API server not ready yet, continuing to wait...")
+		} else {
+			klog.V(2).Info("Controllers expected but discovery configmap not found yet - waiting for external controllers to register...")
 		}
-		klog.V(2).Info("Waiting for controller manager to register in cluster...")
-		return errors.New("waiting for controller manager to register")
+		return errors.New("waiting for controller manager registration")
 	}
+
+	klog.V(2).Infof("Waiting for %d runtime controllers to be ready", len(runtimeControllers))
 
 	// Get the controller objects for the actually running controllers
 	allControllers := base.GetAllControllers()
 	var enabledControllers []base.Controller
 
 	for _, controller := range allControllers {
-		for _, enabledName := range runtimeControllers {
-			if controller.GetName() == enabledName {
-				enabledControllers = append(enabledControllers, controller)
-				break
-			}
+		if slices.Contains(runtimeControllers, controller.GetName()) {
+			enabledControllers = append(enabledControllers, controller)
 		}
 	}
 
-	klog.V(2).Infof("Discovery service found running controllers: %v", runtimeControllers)
+	klog.V(2).InfoS("Discovery service found running controllers", "controllers", runtimeControllers)
 
 	// Debug: Log all available controllers
 	allControllerNames := make([]string, len(allControllers))
 	for i, c := range allControllers {
 		allControllerNames[i] = c.GetName()
 	}
-	klog.V(2).Infof("All available controllers: %v", allControllerNames)
+	klog.V(2).InfoS("All available controllers", "controllers", allControllerNames)
 
 	// Debug: Log enabled controllers
 	enabledControllerNames := make([]string, len(enabledControllers))
 	for i, c := range enabledControllers {
 		enabledControllerNames[i] = c.GetName()
 	}
-	klog.V(2).Infof("Enabled controllers for readiness: %v", enabledControllerNames)
+	klog.V(2).InfoS("Enabled controllers for readiness", "controllers", enabledControllerNames)
 
 	return readiness.WaitForReadyWithCRDs(ctx, config, enabledControllers, false)
 }
@@ -422,18 +396,9 @@ func cleanupDiscoveryConfigMap() error {
 		return nil // Not a critical error during shutdown
 	}
 
-	configMapClient := client.CoreV1().ConfigMaps(controllers.RDDSystemNamespace)
-	discoveryConfigMapName := controllers.ControllerManagerConfigMapName
-
-	err = configMapClient.Delete(context.TODO(), discoveryConfigMapName, metav1.DeleteOptions{})
+	err = controllers.CleanupDiscovery(context.TODO(), client)
 	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			logrus.WithError(err).WithField("configmap", discoveryConfigMapName).Debug("Failed to delete discovery configmap")
-		} else {
-			logrus.WithField("configmap", discoveryConfigMapName).Debug("Discovery configmap not found, nothing to clean up")
-		}
-	} else {
-		logrus.WithField("configmap", discoveryConfigMapName).Debug("Successfully deleted stale discovery configmap")
+		logrus.WithError(err).Debug("Failed to delete discovery configmap")
 	}
 
 	return nil // Don't fail stop operation due to discovery cleanup issues
@@ -721,12 +686,17 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 			}
 
 			// Create shared controller manager with dynamic ports
-			sharedManager := controllers.NewSharedControllerManager(
+			sharedManager, err := controllers.NewSharedControllerManager(
 				ctx,
+				"embedded",
 				completed.ControlPlane.Generic.LoopbackClientConfig,
 				metricsPort,
 				healthPort,
 			)
+			if err != nil {
+				klog.Error(err, "Failed to create shared controller manager")
+				return
+			}
 
 			// Register all enabled controllers
 			for _, controller := range enabledControllers {
