@@ -9,7 +9,7 @@ require (
 	github.com/k3s-io/kine v1.14.2
 	github.com/muesli/reflow v0.3.0
 	github.com/pulumi/pulumi/sdk/v3 v3.215.0
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	go.etcd.io/etcd/api/v3 v3.6.7
