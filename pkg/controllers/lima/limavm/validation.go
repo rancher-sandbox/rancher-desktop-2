@@ -9,7 +9,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/lima-vm/lima/v2/pkg/limayaml"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	ctrlwebhookadmission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
 )
@@ -41,10 +44,10 @@ func validateLimaVMUniqueName(ctx context.Context, c client.Client, limavm *v1al
 	return nil
 }
 
-// ValidateLimaVM validates a complete LimaVM object and returns warnings.
+// validateLimaVM validates a complete LimaVM object and returns warnings.
 // Template validation is now handled by the ConfigMap admission webhook,
 // so we only validate LimaVM-specific concerns here (like cross-namespace name uniqueness).
-func ValidateLimaVM(ctx context.Context, c client.Client, limavm *v1alpha1.LimaVM) ([]string, error) {
+func validateLimaVM(ctx context.Context, c client.Client, limavm *v1alpha1.LimaVM) ([]string, error) {
 	if limavm == nil {
 		return nil, errors.New("limavm object cannot be nil")
 	}
@@ -62,4 +65,27 @@ func ValidateLimaVM(ctx context.Context, c client.Client, limavm *v1alpha1.LimaV
 	}
 
 	return warnings, nil
+}
+
+// validateTemplateData validates the template data map from a ConfigMap.
+func validateTemplateData(ctx context.Context, data map[string]string) (ctrlwebhookadmission.Warnings, error) {
+	templateData, exists := data[v1alpha1.TemplateConfigMapKey]
+	if !exists {
+		return nil, fmt.Errorf("template ConfigMap must have a %q data entry", v1alpha1.TemplateConfigMapKey)
+	}
+	if templateData == "" {
+		return nil, fmt.Errorf("%q data cannot be empty", v1alpha1.TemplateConfigMapKey)
+	}
+
+	// Call the Lima validator
+	y, err := limayaml.Load(ctx, []byte(templateData), "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse template: %w", err)
+	}
+	// Second parameter controls whether to log warnings via logrus.Warn
+	if err := limayaml.Validate(y, false); err != nil {
+		return nil, fmt.Errorf("failed to validate template: %w", err)
+	}
+
+	return nil, nil
 }

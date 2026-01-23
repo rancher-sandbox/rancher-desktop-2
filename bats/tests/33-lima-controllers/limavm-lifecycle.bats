@@ -7,7 +7,9 @@ load '../../helpers/load'
 NAMESPACE="lifecycle-test-ns"
 VM_NAME="test-vm"
 TEMPLATE_NAME="${VM_NAME}-template"
-TEMPLATE='{"memory":"2GB"}'
+
+# non-functional template, but passes Lima validation
+TEMPLATE='images: [{"location":"https://foo"}]'
 
 local_setup_file() {
     setup_rdd_control_plane "lima"
@@ -96,32 +98,39 @@ EOF
 
 @test "template ConfigMap modification is allowed if template key exists" {
     run -0 rdd ctl patch configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" --type='merge' \
-        --patch='{"data":{"template":"{\"memory\":\"4GB\"}"}}'
-
+        --patch='{"data":{"template":"images: [{\"location\":\"https://bar\"}]"}}'
     run -0 rdd ctl get configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" -o jsonpath='{.data.template}'
-    assert_output '{"memory":"4GB"}'
+    assert_output 'images: [{"location":"https://bar"}]'
 }
 
 @test "template ConfigMap modification without template key is rejected" {
+    # Capture current state before attempting invalid modification
+    run -0 rdd ctl get configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" -o jsonpath='{.data.template}'
+    local template_before="${output}"
+
     run -1 rdd ctl patch configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" --type='json' \
         --patch='[{"op":"remove","path":"/data/template"}]'
     assert_output --partial "Forbidden"
     assert_output --partial 'template ConfigMap must have a "template" data entry'
 
-    # Verify the template key still exists
+    # Verify template data is unchanged after rejected patch
     run -0 rdd ctl get configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" -o jsonpath='{.data.template}'
-    assert_output '{"memory":"4GB"}'
+    assert_output "${template_before}"
 }
 
 @test "template ConfigMap modification with empty template is rejected" {
+    # Capture current state before attempting invalid modification
+    run -0 rdd ctl get configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" -o jsonpath='{.data.template}'
+    local template_before="${output}"
+
     run -1 rdd ctl patch configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" --type='merge' \
         --patch='{"data":{"template":""}}'
     assert_output --partial "Forbidden"
     assert_output --partial '"template" data cannot be empty'
 
-    # Verify the template data is unchanged
+    # Verify template data is unchanged after rejected patch
     run -0 rdd ctl get configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" -o jsonpath='{.data.template}'
-    assert_output '{"memory":"4GB"}'
+    assert_output "${template_before}"
 }
 
 @test "template ConfigMap cannot be deleted independently" {
@@ -170,6 +179,23 @@ EOF
     run -1 create_limavm "test-vm-invalid" "invalid-template"
     # Mutating webhook tries to create template ConfigMap, ConfigMap webhook validates and rejects
     assert_output --partial '"template" data cannot be empty'
+}
+
+@test "create LimaVM with invalid YAML template fails" {
+    rdd ctl create configmap "bad-yaml" --namespace "${NAMESPACE}" --from-literal='template=invalid: yaml: {'
+
+    run -1 create_limavm "test-vm-bad-yaml" "bad-yaml"
+    assert_output --partial "failed to parse template"
+}
+
+@test "create LimaVM with invalid Lima schema fails" {
+    # arch parses fine as a string but fails Lima validation (not a valid architecture)
+    rdd ctl create configmap "bad-lima" --namespace "${NAMESPACE}" --from-literal='template=arch: "cray-1"'
+
+    run -1 create_limavm "test-vm-bad-lima" "bad-lima"
+    assert_output --partial "failed to validate template"
+    assert_output --partial "field \`arch\`"
+    assert_output --partial 'got "cray-1"'
 }
 
 @test "updating LimaVM spec.running does not affect template ConfigMap" {

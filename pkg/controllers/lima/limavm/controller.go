@@ -181,7 +181,7 @@ func (d *defaulter) Default(ctx context.Context, obj runtime.Object) error {
 
 	// Validate name uniqueness BEFORE creating ConfigMap
 	// This prevents orphaned ConfigMaps when validation fails
-	if _, err := ValidateLimaVM(ctx, d.Client, limavm); err != nil {
+	if _, err := validateLimaVM(ctx, d.Client, limavm); err != nil {
 		return err
 	}
 
@@ -284,21 +284,5 @@ func (v *ConfigMapValidator) validateTemplateConfigMap(ctx context.Context, obj 
 	if base.IsDryRun(ctx) {
 		klog.V(1).Infof("[DryRun] Webhook validating template ConfigMap %s/%s\n", configMap.Namespace, configMap.Name)
 	}
-	return validateTemplateData(configMap.Data)
-}
-
-// validateTemplateData validates the template data map from a ConfigMap.
-func validateTemplateData(data map[string]string) (ctrlwebhookadmission.Warnings, error) {
-	templateData, exists := data[v1alpha1.TemplateConfigMapKey]
-	if !exists {
-		return nil, fmt.Errorf("template ConfigMap must have a %q data entry", v1alpha1.TemplateConfigMapKey)
-	}
-	if templateData == "" {
-		return nil, fmt.Errorf("%q data cannot be empty", v1alpha1.TemplateConfigMapKey)
-	}
-
-	// TODO: Add more specific template validation logic here
-	// For now, we just ensure the template entry exists and is not empty
-
-	return nil, nil
+	return validateTemplateData(ctx, configMap.Data)
 }

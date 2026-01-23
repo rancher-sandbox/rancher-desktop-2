@@ -4,6 +4,9 @@ load '../../helpers/load'
 
 LIMA_TEST_NS="lima-test-ns"
 
+# non-functional template, but passes Lima validation
+TEMPLATE='images: [{"location":"https://foo"}]'
+
 local_setup_file() {
     setup_rdd_control_plane "lima"
 }
@@ -53,7 +56,7 @@ assert_created() {
 
 @test "lima create/start/stop/delete with ConfigMap template" {
     # Create a template ConfigMap first
-    rdd ctl create configmap "test-template" --namespace "${LIMA_TEST_NS}" --from-literal=template='{}'
+    rdd ctl create configmap "test-template" --namespace "${LIMA_TEST_NS}" --from-literal="template=${TEMPLATE}"
 
     # Create VM with ConfigMap template
     run_e -0 rdd limavm create "test-vm" "test-template" --namespace "${LIMA_TEST_NS}"
@@ -80,7 +83,7 @@ assert_created() {
 @test "lima create with file template" {
     # Create a temporary template file
     local template_file="${BATS_TEST_TMPDIR}/test-template.yaml"
-    echo '{}' >"${template_file}"
+    echo "${TEMPLATE}" >"${template_file}"
 
     # Create VM with file template (dry run)
     run_e -0 rdd limavm create "test-vm-file" "${template_file}" --namespace "${LIMA_TEST_NS}" --dry-run
@@ -102,7 +105,7 @@ assert_created() {
 
     # Verify the ConfigMap was created
     run -0 rdd ctl get configmap "test-vm-file" --namespace "${LIMA_TEST_NS}" -o jsonpath='{.data.template}'
-    assert_output '{}'
+    assert_output "${TEMPLATE}"
 
     # Try creating another VM with same name - should fail because ConfigMap exists
     run -1 rdd limavm create "test-vm-file" "${template_file}" --namespace "${LIMA_TEST_NS}"
@@ -123,13 +126,13 @@ assert_created() {
 @test "lima create cleans up ConfigMap on LimaVM creation failure" {
     # Create a LimaVM in the default namespace to trigger uniqueness constraint
     local template_file="${BATS_TEST_TMPDIR}/test-template.yaml"
-    echo '{}' >"${template_file}"
+    echo "${TEMPLATE}" >"${template_file}"
     rdd limavm create duplicate-vm "${template_file}" --namespace "default"
 
     # Try to create another LimaVM with the same name in a different namespace
     # This should fail due to cross-namespace uniqueness enforcement by admission webhook
     local template_file2="${BATS_TEST_TMPDIR}/test-template2.yaml"
-    echo '{}' >"${template_file2}"
+    echo "${TEMPLATE}" >"${template_file2}"
     run -1 rdd limavm create duplicate-vm "${template_file2}" --namespace "${LIMA_TEST_NS}"
     assert_output --partial "admission webhook"
     assert_output --partial "Cleaning up created ConfigMap"
