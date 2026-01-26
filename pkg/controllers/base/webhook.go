@@ -95,10 +95,10 @@ type WebhookConfig struct {
 	SideEffects *admissionregistrationv1.SideEffectClass
 
 	// Validator is the custom validator for validating admission webhooks
-	Validator admission.CustomValidator
+	Validator admission.CustomValidator //nolint:staticcheck // CustomValidator is a type alias for Validator[runtime.Object]
 
 	// Defaulter is the custom defaulter for mutating admission webhooks
-	Defaulter admission.CustomDefaulter
+	Defaulter admission.CustomDefaulter //nolint:staticcheck // CustomDefaulter is a type alias for Defaulter[runtime.Object]
 }
 
 // WebhookManager handles the creation and management of webhook configurations.
@@ -145,7 +145,7 @@ func SetupWebhookForResource(mgr ctrl.Manager, obj client.Object, config Webhook
 	gvk := gvks[0]
 
 	// Build webhook registration with controller-runtime
-	builder := ctrl.NewWebhookManagedBy(mgr, obj).WithCustomValidator(config.Validator).WithCustomDefaulter(config.Defaulter)
+	builder := ctrl.NewWebhookManagedBy(mgr, obj).WithCustomValidator(config.Validator).WithCustomDefaulter(config.Defaulter) //nolint:staticcheck // CustomValidator/CustomDefaulter are type aliases
 	if err := builder.Complete(); err != nil {
 		return nil, err
 	}
@@ -307,6 +307,7 @@ func (wm *WebhookManager) createValidatingWebhook(ctx context.Context, c client.
 	}
 
 	klog.Infof("Applying webhook configuration %s...", wm.config.Name)
+	//nolint:staticcheck // client.Apply with Patch is simpler than ApplyConfiguration builders
 	if err := c.Patch(ctx, webhook, client.Apply, client.ForceOwnership, client.FieldOwner("rdd-webhook-manager")); err != nil {
 		klog.Errorf("Failed to apply webhook configuration: %v", err)
 		return fmt.Errorf("failed to apply webhook configuration: %w", err)
@@ -338,6 +339,7 @@ func (wm *WebhookManager) createMutatingWebhook(ctx context.Context, c client.Cl
 	}
 
 	klog.Infof("Applying webhook configuration %s...", wm.config.Name)
+	//nolint:staticcheck // client.Apply with Patch is simpler than ApplyConfiguration builders
 	if err := c.Patch(ctx, webhook, client.Apply, client.ForceOwnership, client.FieldOwner("rdd-webhook-manager")); err != nil {
 		klog.Errorf("Failed to apply webhook configuration: %v", err)
 		return fmt.Errorf("failed to apply webhook configuration: %w", err)

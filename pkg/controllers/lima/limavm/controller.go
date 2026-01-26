@@ -168,6 +168,7 @@ type defaulter struct {
 	Client client.Client
 }
 
+//nolint:staticcheck // CustomDefaulter is a type alias for Defaulter[runtime.Object]
 var _ ctrlwebhookadmission.CustomDefaulter = &defaulter{}
 
 // Default is called during CREATE operations to add finalizer and create the template ConfigMap.
@@ -251,6 +252,7 @@ type ConfigMapValidator struct {
 	Client client.Client
 }
 
+//nolint:staticcheck // CustomValidator is a type alias for Validator[runtime.Object]
 var _ ctrlwebhookadmission.CustomValidator = &ConfigMapValidator{}
 
 func (v *ConfigMapValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (ctrlwebhookadmission.Warnings, error) {

@@ -87,7 +87,7 @@ func (c *controller) setupReconciler(mgr ctrl.Manager) error {
 	return (&controllers.NotaryReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor(ControllerName + "-controller"),
+		Recorder: mgr.GetEventRecorderFor(ControllerName + "-controller"), //nolint:staticcheck // new API requires events.k8s.io
 		Manager:  mgr,
 	}).SetupWithManager(mgr)
 }
@@ -125,6 +125,7 @@ func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
 // validator validates Notary resources via webhook (for external controllers).
 type validator struct{}
 
+//nolint:staticcheck // CustomValidator is a type alias for Validator[runtime.Object]
 var _ ctrlwebhookadmission.CustomValidator = &validator{}
 
 func (v *validator) ValidateCreate(ctx context.Context, obj runtime.Object) (ctrlwebhookadmission.Warnings, error) {
