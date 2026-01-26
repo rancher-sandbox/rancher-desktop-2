@@ -38,7 +38,7 @@ if is_windows; then
     PATH_APP_HOME="${LOCALAPPDATA}/rancher-desktop-${RDD_INSTANCE}"
     PATH_CONFIG="${LOCALAPPDATA}/rancher-desktop-${RDD_INSTANCE}"
     PATH_CACHE="${PATH_APP_HOME}/cache"
-    PATH_LOGS="${PATH_APP_HOME}/logs"
+    PATH_LOGS="${PATH_APP_HOME}"
     PATH_DISTRO="${PATH_APP_HOME}/distro"
     PATH_DISTRO_DATA="${PATH_APP_HOME}/distro-data"
 fi
