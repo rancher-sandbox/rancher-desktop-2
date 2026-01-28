@@ -154,3 +154,20 @@ jobs:
 
     - run: make -C bats
       shell: run-in-wsl {0}
+
+    - name: Collect RDD service logs
+      if: always()
+      shell: run-in-wsl {0}
+      run: |
+        mkdir -p rdd-logs
+        for instance in $(make --no-print-directory -C bats bats-instances); do
+          RDD_INSTANCE="$instance" bin/rdd svc log > "rdd-logs/${instance}.log" 2>&1 || true
+        done
+
+    - name: Upload RDD service logs
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: rdd-logs-${{ matrix.runs-on }}
+        path: rdd-logs/
+        if-no-files-found: ignore
