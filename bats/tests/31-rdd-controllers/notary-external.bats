@@ -29,8 +29,8 @@ assert_process_exited() {
 }
 
 @test "external controller starts and registers" {
-    # Start external rdd-controller binary in background
-    "rdd-controller${EXE}" &
+    # Start external rdd-controller binary in background, capturing logs for debugging
+    "rdd-controller${EXE}" >"${BATS_FILE_TMPDIR}/controller.log" 2>&1 &
     # Store PID to verify it auto-exits later
     echo "$!" >"${BATS_FILE_TMPDIR}/controller_pid"
 
@@ -128,11 +128,19 @@ EOF
     run -0 kill -0 "${controller_pid}"
 
     # Stop the control plane - this should trigger auto-cleanup of external controllers
+    echo "# Stopping control plane at $(date +%T || true)" >&3
     run -0 rdd svc stop
+    echo "# Control plane stopped at $(date +%T || true), waiting for controller exit" >&3
 
     # Wait for external controller to detect control plane shutdown and exit
-    # Worst case: 9s detection + manager shutdown + 5s cleanup timeout
-    try --max 25 --delay 1 -- assert_process_exited "${controller_pid}"
+    # Worst case: 2s tick wait + 4s detection (2×2s intervals) + 10s manager shutdown + 5s cleanup = 21s
+    # Use 30s to provide margin for slow CI machines
+    if ! try --max 30 --delay 1 -- assert_process_exited "${controller_pid}"; then
+        echo "# Controller did not exit in time. Log contents:" >&3
+        cat "${BATS_FILE_TMPDIR}/controller.log" >&3 || true
+        return 1
+    fi
+    echo "# Controller exited at $(date +%T || true)" >&3
 }
 
 @test "control plane starts with different controller" {
@@ -159,8 +167,8 @@ EOF
 }
 
 @test "external controller runs and registers" {
-    # Start external rdd-controller binary in background
-    "rdd-controller${EXE}" &
+    # Start external rdd-controller binary in background, capturing logs for debugging
+    "rdd-controller${EXE}" >"${BATS_FILE_TMPDIR}/controller2.log" 2>&1 &
     # Store PID to verify it auto-exits later
     echo "$!" >"${BATS_FILE_TMPDIR}/controller_pid"
 
@@ -182,9 +190,17 @@ EOF
     kill -0 "${controller_pid}"
 
     # Stop the control plane - this should trigger auto-cleanup of external controllers
+    echo "# Stopping control plane at $(date +%T || true)" >&3
     rdd service stop
+    echo "# Control plane stopped at $(date +%T || true), waiting for controller exit" >&3
 
     # Wait for external controller to detect control plane shutdown and exit
-    # Worst case: 9s detection + manager shutdown + 5s cleanup timeout
-    try --max 25 --delay 1 -- assert_process_exited "${controller_pid}"
+    # Worst case: 2s tick wait + 4s detection (2×2s intervals) + 10s manager shutdown + 5s cleanup = 21s
+    # Use 30s to provide margin for slow CI machines
+    if ! try --max 30 --delay 1 -- assert_process_exited "${controller_pid}"; then
+        echo "# Controller did not exit in time. Log contents:" >&3
+        cat "${BATS_FILE_TMPDIR}/controller2.log" >&3 || true
+        return 1
+    fi
+    echo "# Controller exited at $(date +%T || true)" >&3
 }

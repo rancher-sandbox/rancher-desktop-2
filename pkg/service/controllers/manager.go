@@ -132,6 +132,7 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 	configCopy.ContentType = "application/json"
 
 	// Create the shared controller-runtime manager
+	gracefulShutdownTimeout := 10 * time.Second
 	managerOptions := ctrl.Options{
 		Scheme: managerScheme,
 		Metrics: server.Options{
@@ -139,6 +140,9 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 		},
 		HealthProbeBindAddress: "127.0.0.1:" + strconv.Itoa(scm.healthPort),
 		LeaderElection:         false, // RDD controllers are single-instance
+		// Limit graceful shutdown time to avoid blocking external controller exit.
+		// Default is 30s which is too long when control plane disappears.
+		GracefulShutdownTimeout: &gracefulShutdownTimeout,
 	}
 
 	// Only configure webhook server if controllers require it
