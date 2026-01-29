@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
@@ -49,7 +48,7 @@ func sanitizeKubernetesObjectName(input string) string {
 }
 
 // Reconcile implements [reconcile.TypedReconciler].
-func (r *imageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (reconcile.Result, error) {
+func (r *imageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
 	var errs []error
@@ -78,9 +77,10 @@ func (r *imageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (reco
 	gvk, err := r.Client.GroupVersionKindFor(&rddNamespace)
 	if err != nil {
 		log.Error(err, "Failed to get GVK for namespace", "namespace", &rddNamespace)
+		return ctrl.Result{}, err
 	}
 
-	var reconcileResult reconcile.Result
+	var reconcileResult ctrl.Result
 	for _, inspect := range r.inspects {
 		imageName := inspect.ID
 		if len(inspect.RepoTags) > 0 {
@@ -115,23 +115,31 @@ func (r *imageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (reco
 				targetImage.Labels["namespace"] = "moby"
 				targetImage.Status.RepoTag = tag
 				if err := r.upsertImage(ctx, targetImage); err != nil {
-					errs = append(errs, err)
-					reconcileResult.RequeueAfter = time.Second
+					if apierrors.IsConflict(err) {
+						log.V(5).Info("Conflict updating image, will retry on next reconcile", "image", tag)
+						reconcileResult.RequeueAfter = time.Second
+					} else {
+						errs = append(errs, err)
+					}
 				}
 			}
 		} else {
 			// No tags; create a single dangling image.
 			templateImage.ObjectMeta.Name = sanitizeKubernetesObjectName(inspect.ID)
 			if err := r.upsertImage(ctx, &templateImage); err != nil {
-				errs = append(errs, err)
-				reconcileResult.RequeueAfter = time.Second
+				if apierrors.IsConflict(err) {
+					log.V(5).Info("Conflict updating image, will retry on next reconcile", "image", imageName)
+					reconcileResult.RequeueAfter = time.Second
+				} else {
+					errs = append(errs, err)
+				}
 			}
 		}
 	}
 
 	if len(errs) > 0 {
 		log.V(9).Info("Reconciled with errors", "count", len(r.inspects), "errors", len(errs))
-		return reconcileResult, errors.Join(errs...)
+		return ctrl.Result{}, errors.Join(errs...)
 	}
 
 	return reconcileResult, nil

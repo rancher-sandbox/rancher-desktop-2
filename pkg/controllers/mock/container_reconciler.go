@@ -145,13 +145,18 @@ func (r *containerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 		if canUpdateStatus {
 			if err := r.Status().Update(ctx, &targetContainer); err != nil {
-				errs = append(errs, fmt.Errorf("failed to update status for static container %s: %w", namespacedName, err))
+				if apierrors.IsConflict(err) {
+					log.V(5).Info("Conflict updating container status, will retry on next reconcile", "name", namespacedName)
+					reconcileResult.RequeueAfter = time.Second
+				} else {
+					errs = append(errs, fmt.Errorf("failed to update status for static container %s: %w", namespacedName, err))
+				}
 			}
 		}
 	}
 
 	if len(errs) > 0 {
-		return reconcileResult, errors.Join(errs...)
+		return ctrl.Result{}, errors.Join(errs...)
 	}
 
 	return reconcileResult, nil

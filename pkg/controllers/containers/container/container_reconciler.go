@@ -87,7 +87,7 @@ func (r *ContainerReconciler) setCondition(container *containersv1alpha1.Contain
 		if condition.Type != conditionType {
 			continue
 		}
-		// Update existing condition if status changed
+		// Update existing condition if parameters changed.
 		changed := false
 		if condition.Status != status {
 			container.Status.Conditions[i].Status = status
@@ -100,7 +100,7 @@ func (r *ContainerReconciler) setCondition(container *containersv1alpha1.Contain
 			changed = true
 		}
 		if changed {
-			r.Recorder.Eventf(container, nil, corev1.EventTypeNormal, "StatusChanged", conditionType, message)
+			r.Recorder.Eventf(container, nil, corev1.EventTypeNormal, "ConditionChanged", conditionType, message)
 		}
 		return
 	}
@@ -113,7 +113,7 @@ func (r *ContainerReconciler) setCondition(container *containersv1alpha1.Contain
 		Reason:             reason,
 		Message:            message,
 	})
-	r.Recorder.Eventf(container, nil, corev1.EventTypeNormal, "StatusChanged", conditionType, message)
+	r.Recorder.Eventf(container, nil, corev1.EventTypeNormal, "ConditionChanged", conditionType, message)
 }
 
 // SetupWithManager sets up the controller with the Manager.

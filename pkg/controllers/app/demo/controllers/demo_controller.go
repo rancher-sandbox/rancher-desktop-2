@@ -8,6 +8,7 @@ import (
 	"context"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -110,7 +111,7 @@ func (r *DemoReconciler) setCondition(demo *appv1alpha1.Demo, conditionType stri
 		if condition.Type != conditionType {
 			continue
 		}
-		// Update existing condition if status changed
+		// Update existing condition if parameters changed.
 		changed := false
 		if condition.Status != status {
 			demo.Status.Conditions[i].Status = status
@@ -123,7 +124,7 @@ func (r *DemoReconciler) setCondition(demo *appv1alpha1.Demo, conditionType stri
 			changed = true
 		}
 		if changed {
-			r.Recorder.Event(demo, "Normal", "StatusChanged", message)
+			r.Recorder.Eventf(demo, corev1.EventTypeNormal, "ConditionChanged", conditionType, message)
 		}
 		return
 	}
@@ -136,6 +137,7 @@ func (r *DemoReconciler) setCondition(demo *appv1alpha1.Demo, conditionType stri
 		Reason:             reason,
 		Message:            message,
 	})
+	r.Recorder.Eventf(demo, corev1.EventTypeNormal, "ConditionChanged", conditionType, message)
 }
 
 // SetupWithManager sets up the controller with the Manager.
