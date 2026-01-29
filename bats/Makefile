@@ -96,11 +96,20 @@ bats-trace: check-bats build-rdd build-all-controllers
 	RDD_TRACE=true $(BATS_CORE) "$(FILE)"
 .PHONY: bats-trace
 
+# List all RDD_INSTANCE names used by test targets (for CI log collection)
+bats-instances:
+	@grep -E '^[[:space:]]*RDD_INSTANCE=' $(MAKEFILE_LIST) | \
+		sed 's/.*RDD_INSTANCE=//' | \
+		cut -d' ' -f1 | \
+		sort -u
+.PHONY: bats-instances
+
 # https://www.shellcheck.net/wiki/SC1091 -- Not following: xxx was not specified as input (see shellcheck -x)
 # https://www.shellcheck.net/wiki/SC2034 -- xxx appears unused. Verify use (or export if used externally)
 # https://www.shellcheck.net/wiki/SC2154 -- xxx is referenced but not assigned
+# https://www.shellcheck.net/wiki/SC2312 -- Consider invoking this command separately to avoid masking its return value
 TEST_FILES := $(shell find helpers tests -name '*.bash' -o -name '*.bats')
-SC_EXCLUDES ?= SC1091,SC2034,SC2154
+SC_EXCLUDES ?= SC1091,SC2034,SC2154,SC2312
 lint: $(TEST_FILES)
 	shellcheck --shell=bats --enable=all --exclude=$(SC_EXCLUDES) $(TEST_FILES)
 	go tool shfmt --language-dialect=bats --indent=4 --diff $(TEST_FILES)

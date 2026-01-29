@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"k8s.io/client-go/rest"
@@ -74,11 +75,16 @@ func RunControllers(apiGroupName string) int {
 	defer cancelMonitor()
 
 	// Start control plane monitoring in background
+	var shutdownStartTime atomic.Int64
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		monitorControlPlane(monitorCtx, apiGroupName, config, setupLog, cancelMonitor)
+		monitorControlPlane(monitorCtx, apiGroupName, config, setupLog, func() {
+			// Track when shutdown is initiated for timing logs
+			shutdownStartTime.Store(time.Now().UnixNano())
+			cancelMonitor()
+		})
 	}()
 
 	// Get available ports for metrics and health endpoints
@@ -117,6 +123,12 @@ func RunControllers(apiGroupName string) int {
 		return 1
 	}
 
+	// Log shutdown duration if we have a start time (monitor initiated shutdown)
+	if startNanos := shutdownStartTime.Load(); startNanos > 0 {
+		shutdownDuration := time.Since(time.Unix(0, startNanos))
+		setupLog.Info("Manager shutdown completed", "duration", shutdownDuration.Round(time.Millisecond))
+	}
+
 	// Wait for monitoring goroutine to finish
 	wg.Wait()
 	setupLog.Info("External controller manager shutting down")
@@ -128,8 +140,9 @@ func RunControllers(apiGroupName string) int {
 // This allows external controllers to automatically exit when `rdd svc stop` or `rdd svc delete` is called.
 func monitorControlPlane(ctx context.Context, apiGroupName string, config *rest.Config, log klog.Logger, cancel context.CancelFunc) {
 	// Use a short timeout for monitoring so we detect shutdown quickly.
+	// 1 second is sufficient for local API server connections.
 	monitorConfig := rest.CopyConfig(config)
-	monitorConfig.Timeout = 3 * time.Second
+	monitorConfig.Timeout = time.Second
 
 	discovery, err := controllers.NewControllerManagerDiscoveryGroup(monitorConfig, apiGroupName)
 	if err != nil {
@@ -142,6 +155,9 @@ func monitorControlPlane(ctx context.Context, apiGroupName string, config *rest.
 	log.V(1).Info("Waiting for external controller to register in discovery system")
 
 	registered := false
+	registrationFailures := 0
+	const maxRegistrationFailures = 3 // Exit if API server appears down during registration
+
 	for range 60 { // Wait up to 2 minutes for registration
 		select {
 		case <-ctx.Done():
@@ -155,6 +171,22 @@ func monitorControlPlane(ctx context.Context, apiGroupName string, config *rest.
 			registered = true
 			break
 		}
+
+		// Track consecutive failures - if API server is down, exit quickly
+		if err != nil {
+			registrationFailures++
+			log.V(2).Info("Registration check failed",
+				"consecutiveFailures", registrationFailures,
+				"error", err)
+			if registrationFailures >= maxRegistrationFailures {
+				log.Info("Control plane appears unavailable during registration - shutting down")
+				cancel()
+				return
+			}
+		} else {
+			// info == nil but no error means not registered yet, reset counter
+			registrationFailures = 0
+		}
 	}
 
 	if !registered {
@@ -165,7 +197,7 @@ func monitorControlPlane(ctx context.Context, apiGroupName string, config *rest.
 	defer ticker.Stop()
 
 	consecutiveFailures := 0
-	const maxFailures = 3 // 6 seconds of failures (3 * 2 seconds) - sufficient for local connections
+	const maxFailures = 2 // 4 seconds of failures (2 * 2 seconds) - sufficient for local connections
 
 	log.V(1).Info("Starting control plane monitoring")
 
@@ -185,7 +217,7 @@ func monitorControlPlane(ctx context.Context, apiGroupName string, config *rest.
 					"error", err)
 
 				if consecutiveFailures >= maxFailures {
-					log.Info("Control plane appears to have stopped - shutting down external controller")
+					log.Info("Control plane appears to have stopped - initiating external controller shutdown")
 					cancel()
 					return
 				}
