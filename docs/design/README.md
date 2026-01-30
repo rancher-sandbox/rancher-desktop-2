@@ -10,7 +10,7 @@ RDD is based on the Kubernetes control plane. It uses the kube API machinery and
 
 ### Directories
 
-The control plane has both a [service directory](cmd_service.md#service-directory) `$APPDATA/rancher-desktop-2` and a [path directory](cmd_service.md#path-directory) `~/.rd2`[^lima]. `$APPDATA` is the platform-specific application data directory, e.g. `~/Library/Application Support` on macOS.
+The control plane has both a [service directory](cmd_service.md#service-directory) `$APPDATA/rancher-desktop-2` and a [short directory](cmd_service.md#short-directory) `~/.rd2`[^lima]. `$APPDATA` is the platform-specific application data directory, e.g. `~/Library/Application Support` on macOS.
 
 [^lima]: RDD will set `LIMA_HOME` to `~/.rd2/lima` instead of `$APPDATA/rancher-desktop-2/lima` because of socket name length constraints.
 
@@ -30,7 +30,7 @@ Supporting multiple RDD instances in parallel allows developers to run BATS inte
 
 It also makes it possible to compare 2 different configurations running concurrently without having to switch back and forth using snapshots. This makes it easy to test a new release without affecting the current "production" version.
 
-This is controlled by the `RDD_INSTANCE` environment variable (defaults to `2`) or the global `--instance` flag. With `RDD_INSTANCE=bats` or `rdd --instance=bats` the service directory becomes `$APPDATA/rancher-desktop-bats` and the path directory becomes `~/.rdbats`. <!-- spellchecker:ignore -->
+This is controlled by the `RDD_INSTANCE` environment variable (defaults to `2`) or the global `--instance` flag. With `RDD_INSTANCE=bats` or `rdd --instance=bats` the service directory becomes `$APPDATA/rancher-desktop-bats` and the short directory becomes `~/.rdbats`. <!-- spellchecker:ignore -->
 
 Similarly the docker and kube contexts (normally `rancher-desktop-2`) become `rancher-desktop-bats`.
 

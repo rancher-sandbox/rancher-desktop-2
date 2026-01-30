@@ -18,9 +18,9 @@ This service directory contains the following files:
 
 "Runs `rdd service ...`" means that the command performs the functionality in-progress, with the exception of `rdd service serve`, which will launch a background process.
 
-### Path Directory
+### Short Directory
 
-The path directory contains the following files and directories:
+The short directory contains the following files and directories:
 
 | File | Description |
 | --- | --- |
