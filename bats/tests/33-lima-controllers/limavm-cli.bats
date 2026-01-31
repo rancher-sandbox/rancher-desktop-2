@@ -74,7 +74,7 @@ assert_created() {
     assert_running "false"
 
     # Delete the VM
-    run -0 rdd limavm delete "test-vm"
+    run -0 rdd limavm delete --wait "test-vm"
     assert_output --partial 'deleted'
     run -1 rdd ctl get limavm "test-vm" --namespace "${LIMA_TEST_NS}"
     assert_output --partial "not found"

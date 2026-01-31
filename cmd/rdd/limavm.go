@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -88,14 +89,16 @@ func newLimaVMStopCommand() *cobra.Command {
 }
 
 func newLimaVMDeleteCommand() *cobra.Command {
+	var wait bool
 	command := &cobra.Command{
 		Use:   "delete NAME",
 		Short: "Delete a LimaVM resource",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return limaVMDeleteAction(cmd.Context(), args[0])
+			return limaVMDeleteAction(cmd.Context(), args[0], wait)
 		},
 	}
+	command.Flags().BoolVar(&wait, "wait", false, "Wait for the VM to be deleted before returning")
 	return command
 }
 
@@ -277,7 +280,7 @@ func limaVMSetRunningAction(ctx context.Context, name string, running bool) erro
 	return nil
 }
 
-func limaVMDeleteAction(ctx context.Context, name string) error {
+func limaVMDeleteAction(ctx context.Context, name string, wait bool) error {
 	c, err := getKubeClient(ctx)
 	if err != nil {
 		return err
@@ -291,6 +294,26 @@ func limaVMDeleteAction(ctx context.Context, name string) error {
 	if err := c.Delete(ctx, limaVM); err != nil {
 		return fmt.Errorf("failed to delete LimaVM: %w", err)
 	}
+
+	if wait {
+		// Wait for the LimaVM to be deleted
+		for {
+			var vm limav1alpha1.LimaVM
+			time.Sleep(time.Second)
+			err := c.Get(ctx, client.ObjectKeyFromObject(limaVM), &vm)
+			if apierrors.IsNotFound(err) {
+				break
+			}
+			if err == nil {
+				if vm.UID != limaVM.UID {
+					break
+				}
+				continue
+			}
+			return fmt.Errorf("failed to wait for LimaVM deletion: %w", err)
+		}
+	}
+
 	logrus.Infof("LimaVM %q deleted from namespace %q", name, limaVM.Namespace)
 	return nil
 }
