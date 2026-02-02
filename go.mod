@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/k3s-io/kine v1.14.2
 	github.com/lima-vm/lima/v2 v2.0.3
-	github.com/moby/moby/api v1.52.0
+	github.com/moby/moby/api v1.53.0
 	github.com/muesli/reflow v0.3.0
 	github.com/pulumi/pulumi/sdk/v3 v3.216.0
 	github.com/sirupsen/logrus v1.9.4
