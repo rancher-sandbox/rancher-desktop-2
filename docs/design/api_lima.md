@@ -35,6 +35,10 @@ status:
     status: "True"
     reason: Created
     message: Lima instance created successfully
+  - type: InstanceRunning
+    status: "True"
+    reason: Started
+    message: Lima instance started successfully
 ```
 
 - **metadata.annotations**: Can be used to request "actions" from the reconciler, like resetting (deleting and recreating with the same settings), or restarting the instance. The `status.conditions` can be used to store the state machine information.
@@ -62,79 +66,86 @@ status:
     | `InstanceCreated` | `Unknown` | `Pending` | Reconciler has seen the resource; creation not yet attempted |
     | `InstanceCreated` | `True` | `Created` | Lima instance exists on disk and is ready |
     | `InstanceCreated` | `False` | `CreateFailed` | Instance creation or preparation failed |
+    | `InstanceRunning` | `True` | `Started` | Lima instance is running |
+    | `InstanceRunning` | `False` | `Stopped` | Lima instance is stopped |
+    | `InstanceRunning` | `False` | `StartFailed` | Lima instance failed to start |
+    | `InstanceRunning` | `False` | `StopFailed` | Lima instance failed to stop cleanly |
 
-Deleting a `LimaVM` object triggers the finalizer to delete the Lima instance from disk and remove the template ConfigMap.
+Deleting a `LimaVM` object triggers the finalizer to stop the running instance, delete the Lima instance from disk, and remove the template ConfigMap.
 
-### LimaVM Reconciler
+#### Future: Grace Period Support
 
-The reconciler creates and manages Lima instances on disk. Each reconcile performs at most one mutation, then returns to let the next reconcile proceed with fresh state.
+Similar to pod deletion, `LimaVM` deletion could honor `metadata.deletionGracePeriodSeconds`:
+
+1. `rdd ctl delete limavm foo --grace-period=30` sets the grace period on the resource
+2. The reconciler starts a graceful shutdown (similar to SIGTERM for containers)
+3. After the grace period expires, the reconciler forces shutdown (similar to SIGKILL)
+4. `--grace-period=0` would skip graceful shutdown entirely
+
+A similar mechanism should apply to stopping instances via `spec.running = false`. An annotation like `lima.rancherdesktop.io/stopGracePeriod` could control how long to wait before forcing the stop.
+
+The `rdd limavm` commands would support:
+- `rdd limavm stop foo --force` - skip graceful shutdown (equivalent to `--grace-period=0`)
+- `rdd limavm delete foo --force` - skip graceful shutdown before deletion
+- `rdd limavm stop foo --grace-period=30` - wait up to 30 seconds before forcing
+- `rdd limavm delete foo --grace-period=30` - wait up to 30 seconds before forcing deletion
+
+Currently, the reconciler attempts graceful shutdown first, then falls back to forced shutdown if graceful shutdown fails or times out (~6 minutes, controlled by Lima).
+
+### LimaVM Component Interactions
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant MW as Mutating Webhook
+    participant VW as ConfigMap Validator
+    participant R as Reconciler
+    participant F as Finalizer
+    participant Lima as Lima Instance
+
+    User->>MW: Create LimaVM
+    MW->>MW: Validate name uniqueness
+    MW->>VW: Create template ConfigMap
+    VW->>VW: Validate template YAML
+    MW->>MW: Add finalizer to LimaVM
+    MW-->>User: LimaVM created
+
+    R->>R: Set InstanceCreated=Unknown
+    R->>R: Set owner ref on ConfigMap
+    R->>R: Set status.templateConfigMap
+    R->>Lima: Create instance
+    R->>Lima: Prepare (download, disks)
+    R->>R: Set InstanceCreated=True
+
+    User->>R: Set spec.running=true
+    R->>Lima: Launch hostagent
+    R->>R: Set InstanceRunning=False (Starting)
+    R->>Lima: Poll status
+    R->>R: Set InstanceRunning=True
+
+    User->>R: Set spec.running=false
+    R->>Lima: Stop
+    R->>R: Set InstanceRunning=False
+
+    User->>R: Delete LimaVM
+    R->>F: Run finalizer
+    F->>Lima: Stop and delete
+    F->>F: Delete owned ConfigMap
+    F->>F: Remove finalizer
+```
+
+| Component | Responsibility | Hands off to |
+|-----------|---------------|--------------|
+| **Mutating Webhook** | Creates template ConfigMap, adds finalizer, validates name uniqueness | ConfigMap Validator |
+| **ConfigMap Validator** | Validates template YAML, blocks deletion of in-use templates | Reconciler |
+| **Reconciler** | Sets owner reference, creates Lima instance, manages running state | Finalizer (on deletion) |
+| **Finalizer** | Stops and deletes Lima instance, cleans up owned resources | — |
+
+The mutating webhook creates the ConfigMap during admission, but cannot set an owner reference because Kubernetes has not yet assigned the LimaVM a UID. The reconciler sets the owner reference on its first run. This two-phase setup enables the finalizer to discover and clean up owned resources automatically.
 
 A `.preparing` sentinel file marks preparation in progress. If a reconcile fails after creating the instance but before updating the status, the next reconcile detects the sentinel and cleans up the incomplete instance.
 
-```mermaid
-flowchart TD
-    Start([Reconcile]) --> GetResource[Get LimaVM resource]
-    GetResource --> Deleted{Being deleted?}
-
-    Deleted -->|Yes| DeleteInstance[Delete Lima instance]
-    DeleteInstance --> DeleteOwned[Delete owned resources]
-    DeleteOwned --> RemoveFinalizer[Remove finalizer]
-    RemoveFinalizer --> Done([Done])
-
-    Deleted -->|No| CheckCondition{Condition exists?}
-    CheckCondition -->|No| SetUnknown[Set InstanceCreated = Unknown]
-    SetUnknown --> Done
-
-    CheckCondition -->|Yes| CheckSentinel{Sentinel file exists?}
-    CheckSentinel -->|Yes| SentinelCreated{InstanceCreated = True?}
-    SentinelCreated -->|Yes| RemoveSentinel[Remove sentinel]
-    SentinelCreated -->|No| DeleteIncomplete[Delete instance directory]
-    RemoveSentinel --> Requeue([Requeue])
-    DeleteIncomplete --> Requeue
-
-    CheckSentinel -->|No| CheckLeftover{TemplateConfigMap empty?}
-    CheckLeftover -->|Yes| CleanLeftover[Delete leftover instance]
-    CleanLeftover --> GetConfigMap
-    CheckLeftover -->|No| GetConfigMap[Get template ConfigMap]
-
-    GetConfigMap --> CheckOwner{Owner reference set?}
-    CheckOwner -->|No| SetOwner[Set owner reference]
-    SetOwner --> Done
-
-    CheckOwner -->|Yes| CheckStatus{status.templateConfigMap set?}
-    CheckStatus -->|No| SetStatus[Set status.templateConfigMap]
-    SetStatus --> Done
-
-    CheckStatus -->|Yes| CheckCondition{InstanceCreated = True?}
-    CheckCondition -->|Yes| Done
-
-    CheckCondition -->|No| CheckExists{Instance exists on disk?}
-    CheckExists -->|Yes| SetConditionTrue[Set InstanceCreated = True]
-    SetConditionTrue --> Done
-
-    CheckExists -->|No| ValidateTemplate{Template data valid?}
-    ValidateTemplate -->|No| FailTemplate[Set InstanceCreated = False]
-    FailTemplate --> Done
-
-    ValidateTemplate -->|Yes| CreateInstance[Create Lima instance]
-    CreateInstance -->|Fail| FailCreate[Set InstanceCreated = False]
-    FailCreate --> Done
-
-    CreateInstance -->|OK| CreateSentinel[Create sentinel file]
-    CreateSentinel -->|Fail| CleanupSentinel[Delete instance]
-    CleanupSentinel --> Done
-
-    CreateSentinel -->|OK| PrepareInstance[Prepare instance]
-    PrepareInstance -->|Fail| CleanupPrepare[Delete instance]
-    CleanupPrepare --> FailPrepare[Set InstanceCreated = False]
-    FailPrepare --> Done
-
-    PrepareInstance -->|OK| SetCreated[Set InstanceCreated = True]
-    SetCreated --> RemoveSentinelEnd[Remove sentinel]
-    RemoveSentinelEnd --> Done
-```
-
-The mutating webhook handles initial validation and ConfigMap creation. The reconciler sets the owner reference after the LimaVM resource is persisted (when UID is available).
+If Lima reports the instance as "Broken" (e.g., hostagent crashed leaving stale PID files, or process mismatch between hostagent and VM driver), the reconciler attempts automatic recovery via force stop. If recovery succeeds, the instance returns to the Stopped state. If recovery fails, the `InstanceRunning` condition is set to `False` with reason `Broken` and a message describing the error.
 
 ## LimaDisk
 

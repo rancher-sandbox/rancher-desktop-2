@@ -229,7 +229,7 @@ func limaVMCreateAction(ctx context.Context, name, template, namespace string, d
 			TemplateRef: limav1alpha1.TemplateReference{
 				Name: configMapName,
 			},
-			Running: &running,
+			Running: running,
 		},
 	}
 
@@ -266,7 +266,7 @@ func limaVMSetRunningAction(ctx context.Context, name string, running bool) erro
 
 	// Create a patch to update the running field
 	patch := client.MergeFrom(limaVM.DeepCopy())
-	limaVM.Spec.Running = &running
+	limaVM.Spec.Running = running
 
 	if err := c.Patch(ctx, limaVM, patch); err != nil {
 		return fmt.Errorf("failed to update LimaVM: %w", err)

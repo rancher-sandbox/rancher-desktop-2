@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
-package service
+
+// Package process provides cross-platform process utilities.
+package process
 
 import (
 	"fmt"
@@ -11,7 +13,13 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func killProcess(pid int) error {
+// SetGroup configures the command to run in its own process group.
+func SetGroup(*exec.Cmd) {
+	// Not implemented on Windows.
+}
+
+// Kill terminates the process with the given PID.
+func Kill(pid int) error {
 	hProcess, err := windows.OpenProcess(
 		windows.PROCESS_TERMINATE|windows.SYNCHRONIZE,
 		false,
@@ -31,8 +39,4 @@ func killProcess(pid int) error {
 	}
 
 	return nil
-}
-
-func setCommandGroup(*exec.Cmd) {
-	// TODO: implement
 }

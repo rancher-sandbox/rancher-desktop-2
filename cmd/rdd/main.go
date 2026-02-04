@@ -21,6 +21,7 @@ import (
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/help"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/developer"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/hostagent"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/version"
 )
 
@@ -135,6 +136,7 @@ func main() {
 	cmd.AddCommand(limaCmd)
 
 	cmd.AddCommand(
+		hostagent.NewCommand(),
 		newKubectlCommand(),
 		newServiceCommand(context.Background()),
 		newVersionCommand(),

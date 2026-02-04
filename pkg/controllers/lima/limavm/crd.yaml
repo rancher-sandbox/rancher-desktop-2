@@ -73,6 +73,7 @@ spec:
                 - message: templateRef is immutable
                   rule: self == oldSelf
             required:
+            - running
             - templateRef
             type: object
           status:

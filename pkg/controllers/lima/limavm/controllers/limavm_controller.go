@@ -9,6 +9,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 	"time"
 
 	limainstance "github.com/lima-vm/lima/v2/pkg/instance"
@@ -36,6 +37,9 @@ const (
 	// ConditionInstanceCreated indicates whether the Lima instance has been created on disk.
 	ConditionInstanceCreated = "InstanceCreated"
 
+	// ConditionInstanceRunning indicates whether the Lima instance is running.
+	ConditionInstanceRunning = "InstanceRunning"
+
 	// ReasonCreated is used when the Lima instance was successfully created.
 	ReasonCreated = "Created"
 
@@ -45,10 +49,40 @@ const (
 	// ReasonPending is used when the reconciler has seen the resource but not yet created the instance.
 	ReasonPending = "Pending"
 
+	// ReasonStarting is used when the Lima instance is starting but not yet running.
+	ReasonStarting = "Starting"
+
+	// ReasonStarted is used when the Lima instance was successfully started.
+	ReasonStarted = "Started"
+
+	// ReasonStartFailed is used when the Lima instance failed to start.
+	ReasonStartFailed = "StartFailed"
+
+	// ReasonStopped is used when the Lima instance was successfully stopped.
+	ReasonStopped = "Stopped"
+
+	// ReasonStopFailed is used when the Lima instance failed to stop.
+	ReasonStopFailed = "StopFailed"
+
+	// ReasonBroken is used when the Lima instance is in an inconsistent state.
+	ReasonBroken = "Broken"
+
 	// preparingSentinel is a marker file created during instance preparation.
 	// Its presence indicates that preparation is in progress or failed.
 	preparingSentinel = ".preparing"
 )
+
+// guestAgentPath returns the path to the Lima guest agent binary for the current architecture.
+// TODO This is just a temporary hack until the guestagent binary can be embedded into rdd.
+func guestAgentPath() string {
+	arch := goruntime.GOARCH
+	if arch == "amd64" {
+		arch = "x86_64"
+	} else if arch == "arm64" {
+		arch = "aarch64"
+	}
+	return "/usr/local/share/lima/lima-guestagent.Linux-" + arch + ".gz"
+}
 
 // sentinelPath returns the path to the preparing sentinel file for an instance.
 func sentinelPath(instanceName string) string {
@@ -199,12 +233,13 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, nil
 	}
 
-	// Instance already created
+	// Instance already created - proceed to handle running state
 	if r.hasCondition(&limaVM, ConditionInstanceCreated, metav1.ConditionTrue) {
-		return ctrl.Result{}, nil
+		return r.handleRunningState(ctx, &limaVM)
 	}
 
 	// Instance exists on disk (perhaps from a previous reconcile); record the condition
+	// and return to let the next reconcile handle running state (one mutation per reconcile).
 	existingInst, err := store.Inspect(ctx, limaVM.Name)
 	if err == nil && existingInst != nil {
 		logger.Info("Lima instance already exists", "instance", limaVM.Name)
@@ -277,6 +312,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	// Return and let the next reconcile handle running state (one mutation per reconcile)
 	return ctrl.Result{}, nil
 }
 
@@ -285,6 +321,16 @@ func (r *LimaVMReconciler) hasCondition(limaVM *v1alpha1.LimaVM, conditionType s
 	for _, condition := range limaVM.Status.Conditions {
 		if condition.Type == conditionType {
 			return condition.Status == status
+		}
+	}
+	return false
+}
+
+// hasConditionWithReason reports whether the given condition type has the given status and reason.
+func (r *LimaVMReconciler) hasConditionWithReason(limaVM *v1alpha1.LimaVM, conditionType string, status metav1.ConditionStatus, reason string) bool {
+	for _, condition := range limaVM.Status.Conditions {
+		if condition.Type == conditionType {
+			return condition.Status == status && condition.Reason == reason
 		}
 	}
 	return false
@@ -320,7 +366,7 @@ func (r *LimaVMReconciler) setCondition(limaVM *v1alpha1.LimaVM, conditionType s
 			limaVM.Status.Conditions[i].Message = message
 			changed = true
 		}
-		if changed {
+		if changed && r.Recorder != nil {
 			r.Recorder.Eventf(limaVM, nil, corev1.EventTypeNormal, "ConditionChanged", conditionType, message)
 		}
 		return
@@ -335,38 +381,10 @@ func (r *LimaVMReconciler) setCondition(limaVM *v1alpha1.LimaVM, conditionType s
 	})
 }
 
-// handleDeletion cleans up when a LimaVM is being deleted.
-func (r *LimaVMReconciler) handleDeletion(ctx context.Context, limaVM *v1alpha1.LimaVM) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
-
-	// Delete the Lima instance
-	existingInst, err := store.Inspect(ctx, limaVM.Name)
-	if err != nil {
-		logger.Error(err, "Failed to inspect Lima instance for deletion")
-	}
-	if existingInst != nil {
-		logger.Info("Deleting Lima instance", "instance", limaVM.Name)
-		if err := limainstance.Delete(ctx, existingInst, true); err != nil {
-			logger.Error(err, "Failed to delete Lima instance")
-			return ctrl.Result{}, err
-		}
-		logger.Info("Deleted Lima instance", "instance", limaVM.Name)
-	}
-
-	// Delete owned resources
-	if err := base.DeleteOwnedResources(ctx, r.Client, limaVM, r.Manager); err != nil {
-		logger.Error(err, "Failed to delete owned resources")
-		return ctrl.Result{}, err
-	}
-
-	// Remove finalizer
-	if err := base.RemoveFinalizer(ctx, r.Client, limaVM); err != nil {
-		logger.Error(err, "Failed to remove finalizer")
-		return ctrl.Result{}, err
-	}
-
-	logger.Info("Deleted Lima instance, owned resources, and finalizer")
-	return ctrl.Result{}, nil
+// updateCondition sets a condition and updates the status in one call.
+func (r *LimaVMReconciler) updateCondition(ctx context.Context, limaVM *v1alpha1.LimaVM, conditionType string, status metav1.ConditionStatus, reason, message string) error {
+	r.setCondition(limaVM, conditionType, status, reason, message)
+	return r.Status().Update(ctx, limaVM)
 }
 
 // SetupWithManager sets up the controller with the Manager.

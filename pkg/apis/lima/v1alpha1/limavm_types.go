@@ -33,9 +33,8 @@ type LimaVMSpec struct {
 	TemplateRef TemplateReference `json:"templateRef"`
 
 	// running specifies whether the VM should be running
-	// +optional
 	// +kubebuilder:default=false
-	Running *bool `json:"running,omitempty"`
+	Running bool `json:"running"`
 }
 
 // LimaVMStatus defines the observed state of LimaVM.

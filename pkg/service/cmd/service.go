@@ -67,6 +67,7 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/datastore"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/readiness"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/process"
 )
 
 // API groups that RDD requires and enables.
@@ -242,7 +243,7 @@ func Start(ctx context.Context, args []string) error {
 		return err
 	}
 	cmd := exec.CommandContext(ctx, executable, cmdArgs...)
-	setCommandGroup(cmd)
+	process.SetGroup(cmd)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	return cmd.Start()
@@ -352,7 +353,7 @@ func StopWithWait(wait bool) error {
 	_ = cleanupDiscoveryConfigMap() // Clean up discovery configmap to prevent stale controller info
 
 	pid := PID()
-	if err := killProcess(pid); err != nil {
+	if err := process.Kill(pid); err != nil {
 		return fmt.Errorf("failed to stop %q control plane with pid %d: %w", instance.Name(), pid, err)
 	}
 
