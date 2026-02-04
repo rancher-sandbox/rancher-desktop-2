@@ -14,9 +14,10 @@ import (
 	"time"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	admissionregistrationv1apply "k8s.io/client-go/applyconfigurations/admissionregistration/v1"
+	metav1apply "k8s.io/client-go/applyconfigurations/meta/v1"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -85,7 +86,7 @@ type WebhookConfig[T runtime.Object] struct {
 
 	// ObjectSelector filters which objects the webhook should intercept based on labels
 	// If specified, only objects matching the selector will trigger the webhook
-	ObjectSelector *metav1.LabelSelector
+	ObjectSelector *metav1apply.LabelSelectorApplyConfiguration
 
 	// Operations specifies which operations the webhook should intercept
 	// Default is Create and Update if not specified
@@ -268,19 +269,15 @@ func (wm *webhookManagerImpl[T]) createWebhookConfiguration() error {
 			admissionregistrationv1.Update,
 		}
 	}
-	clientConfig := admissionregistrationv1.WebhookClientConfig{
-		URL:      &webhookURL,
-		CABundle: caBundleBytes,
-	}
-	rules := []admissionregistrationv1.RuleWithOperations{
-		{
-			Operations: operations,
-			Rule: admissionregistrationv1.Rule{
-				APIGroups:   []string{wm.gvk.Group},
-				APIVersions: []string{wm.gvk.Version},
-				Resources:   []string{wm.resources},
-			},
-		},
+	clientConfig := admissionregistrationv1apply.WebhookClientConfig().
+		WithURL(webhookURL).
+		WithCABundle(caBundleBytes...)
+	rules := []*admissionregistrationv1apply.RuleWithOperationsApplyConfiguration{
+		admissionregistrationv1apply.RuleWithOperations().
+			WithOperations(operations...).
+			WithAPIGroups(wm.gvk.Group).
+			WithAPIVersions(wm.gvk.Version).
+			WithResources(wm.resources),
 	}
 
 	// Try to create or update the webhook configuration
@@ -299,31 +296,21 @@ func (wm *webhookManagerImpl[T]) createWebhookConfiguration() error {
 	}
 }
 
-func (wm *webhookManagerImpl[T]) createValidatingWebhook(ctx context.Context, c client.Client, webhookURL string, clientConfig admissionregistrationv1.WebhookClientConfig, rules []admissionregistrationv1.RuleWithOperations, failurePolicy admissionregistrationv1.FailurePolicyType, sideEffects admissionregistrationv1.SideEffectClass) error {
-	webhook := &admissionregistrationv1.ValidatingWebhookConfiguration{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "admissionregistration.k8s.io/v1",
-			Kind:       "ValidatingWebhookConfiguration",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: wm.config.Name,
-		},
-		Webhooks: []admissionregistrationv1.ValidatingWebhook{
-			{
-				Name:                    wm.config.WebhookName,
-				ClientConfig:            clientConfig,
-				Rules:                   rules,
-				FailurePolicy:           &failurePolicy,
-				SideEffects:             &sideEffects,
-				AdmissionReviewVersions: []string{"v1", "v1beta1"},
-				ObjectSelector:          wm.config.ObjectSelector,
-			},
-		},
-	}
+func (wm *webhookManagerImpl[T]) createValidatingWebhook(ctx context.Context, c client.Client, webhookURL string, clientConfig *admissionregistrationv1apply.WebhookClientConfigApplyConfiguration, rules []*admissionregistrationv1apply.RuleWithOperationsApplyConfiguration, failurePolicy admissionregistrationv1.FailurePolicyType, sideEffects admissionregistrationv1.SideEffectClass) error {
+	applyConfig := admissionregistrationv1apply.ValidatingWebhookConfiguration(wm.config.Name).
+		WithWebhooks(
+			admissionregistrationv1apply.ValidatingWebhook().
+				WithName(wm.config.WebhookName).
+				WithClientConfig(clientConfig).
+				WithRules(rules...).
+				WithFailurePolicy(failurePolicy).
+				WithSideEffects(sideEffects).
+				WithAdmissionReviewVersions("v1", "v1beta1").
+				WithObjectSelector(wm.config.ObjectSelector),
+		)
 
 	klog.Infof("Applying webhook configuration %s...", wm.config.Name)
-	//nolint:staticcheck // client.Apply with Patch is simpler than ApplyConfiguration builders
-	if err := c.Patch(ctx, webhook, client.Apply, client.ForceOwnership, client.FieldOwner("rdd-webhook-manager")); err != nil {
+	if err := c.Apply(ctx, applyConfig, client.ForceOwnership, client.FieldOwner("rdd-webhook-manager")); err != nil {
 		klog.Errorf("Failed to apply webhook configuration: %v", err)
 		return fmt.Errorf("failed to apply webhook configuration: %w", err)
 	}
@@ -331,31 +318,21 @@ func (wm *webhookManagerImpl[T]) createValidatingWebhook(ctx context.Context, c 
 	return nil
 }
 
-func (wm *webhookManagerImpl[T]) createMutatingWebhook(ctx context.Context, c client.Client, webhookURL string, clientConfig admissionregistrationv1.WebhookClientConfig, rules []admissionregistrationv1.RuleWithOperations, failurePolicy admissionregistrationv1.FailurePolicyType, sideEffects admissionregistrationv1.SideEffectClass) error {
-	webhook := &admissionregistrationv1.MutatingWebhookConfiguration{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "admissionregistration.k8s.io/v1",
-			Kind:       "MutatingWebhookConfiguration",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: wm.config.Name,
-		},
-		Webhooks: []admissionregistrationv1.MutatingWebhook{
-			{
-				Name:                    wm.config.WebhookName,
-				ClientConfig:            clientConfig,
-				Rules:                   rules,
-				FailurePolicy:           &failurePolicy,
-				SideEffects:             &sideEffects,
-				AdmissionReviewVersions: []string{"v1", "v1beta1"},
-				ObjectSelector:          wm.config.ObjectSelector,
-			},
-		},
-	}
+func (wm *webhookManagerImpl[T]) createMutatingWebhook(ctx context.Context, c client.Client, webhookURL string, clientConfig *admissionregistrationv1apply.WebhookClientConfigApplyConfiguration, rules []*admissionregistrationv1apply.RuleWithOperationsApplyConfiguration, failurePolicy admissionregistrationv1.FailurePolicyType, sideEffects admissionregistrationv1.SideEffectClass) error {
+	applyConfig := admissionregistrationv1apply.MutatingWebhookConfiguration(wm.config.Name).
+		WithWebhooks(
+			admissionregistrationv1apply.MutatingWebhook().
+				WithName(wm.config.WebhookName).
+				WithClientConfig(clientConfig).
+				WithRules(rules...).
+				WithFailurePolicy(failurePolicy).
+				WithSideEffects(sideEffects).
+				WithAdmissionReviewVersions("v1", "v1beta1").
+				WithObjectSelector(wm.config.ObjectSelector),
+		)
 
 	klog.Infof("Applying webhook configuration %s...", wm.config.Name)
-	//nolint:staticcheck // client.Apply with Patch is simpler than ApplyConfiguration builders
-	if err := c.Patch(ctx, webhook, client.Apply, client.ForceOwnership, client.FieldOwner("rdd-webhook-manager")); err != nil {
+	if err := c.Apply(ctx, applyConfig, client.ForceOwnership, client.FieldOwner("rdd-webhook-manager")); err != nil {
 		klog.Errorf("Failed to apply webhook configuration: %v", err)
 		return fmt.Errorf("failed to apply webhook configuration: %w", err)
 	}

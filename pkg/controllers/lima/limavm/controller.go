@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	metav1apply "k8s.io/client-go/applyconfigurations/meta/v1"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -130,11 +131,10 @@ func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 		Name:        configMapValidatorConfigName,
 		WebhookName: configMapValidatorWebhookName,
 		WebhookPort: c.webhookPort,
-		ObjectSelector: &metav1.LabelSelector{
-			MatchLabels: map[string]string{
+		ObjectSelector: metav1apply.LabelSelector().
+			WithMatchLabels(map[string]string{
 				controllers.TemplateConfigMapLabel: "true",
-			},
-		},
+			}),
 		Operations: []admissionregistrationv1.OperationType{
 			admissionregistrationv1.Create,
 			admissionregistrationv1.Update,
