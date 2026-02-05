@@ -6,6 +6,7 @@ package base
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -50,6 +51,30 @@ type WebhookController interface {
 	// GetWebhookManagers returns all WebhookManagers for parallel setup.
 	// Returns nil or empty slice if the controller doesn't use webhooks.
 	GetWebhookManagers() []WebhookManager
+}
+
+// PassthroughController is an optional interface that controllers can implement
+// to provide custom HTTP handlers.  These handlers will be exposed on the API
+// server under the `/passthrough/<controller>/<endpoint>` path.
+//
+// This is intended for controllers that need to provide more complex HTTP
+// functionality that cannot be provided using custom resources, such as
+// handling WebSocket connections to stream data.
+type PassthroughController interface {
+	// GetPassthroughEndpoints returns the list of HTTP endpoints provided by
+	// this controller.  These endpoints will be exposed on the API server under
+	// the `/passthrough/<controller>/<endpoint>/` path; for example, an
+	// endpoint named "logs" on the "example" controller will be accessible at
+	// `/passthrough/example/logs/`.  The endpoint names returned must not
+	// contain duplicates, and must be a valid path segment (i.e., no slashes).
+	GetPassthroughEndpoints() []string
+
+	// GetPassthroughHandler returns the HTTP handler for the given endpoint.
+	// The handler does not get the `/passthrough/<controller>/<endpoint>`
+	// prefix; for example, for an endpoint "logs" on the "example" controller,
+	// if the client requests `/passthrough/example/logs/id` the handler will
+	// receive requests to `/id`.
+	GetPassthroughHandler(endpoint string) http.Handler
 }
 
 // Registry holds all registered controllers.

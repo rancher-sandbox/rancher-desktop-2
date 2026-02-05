@@ -6,6 +6,13 @@ package demo
 
 import (
 	_ "embed"
+	"fmt"
+	"io"
+	"maps"
+	"net/http"
+	"slices"
+
+	"github.com/gorilla/websocket"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -15,7 +22,7 @@ import (
 )
 
 func init() {
-	base.RegisterController(&controller{})
+	base.RegisterController(newController())
 }
 
 // ControllerName is the name of this controller.
@@ -28,10 +35,24 @@ const APIGroup = "app"
 var demoCRD string
 
 // controller implements the base.Controller interface for demo.
-type controller struct{}
+type controller struct {
+	passthroughs map[string]http.Handler
+}
+
+func newController() base.Controller {
+	c := &controller{}
+	c.passthroughs = map[string]http.Handler{
+		"hello":     http.HandlerFunc(c.handleHello),
+		"websocket": http.HandlerFunc(c.handleWebSocket),
+	}
+	return c
+}
 
 // Verify that controller implements base.Controller interface.
-var _ base.Controller = &controller{}
+var (
+	_ base.Controller            = &controller{}
+	_ base.PassthroughController = &controller{}
+)
 
 // GetName returns the controller name.
 func (c *controller) GetName() string {
@@ -46,6 +67,41 @@ func (c *controller) GetAPIGroup() string {
 // GetCRDData returns the embedded CRD YAML data.
 func (c *controller) GetCRDData() string {
 	return demoCRD
+}
+
+func (c *controller) GetPassthroughEndpoints() []string {
+	return slices.Collect(maps.Keys(c.passthroughs))
+}
+
+func (c *controller) GetPassthroughHandler(endpoint string) http.Handler {
+	return c.passthroughs[endpoint]
+}
+
+func (c *controller) handleHello(w http.ResponseWriter, r *http.Request) {
+	_, _ = io.WriteString(w, "Hello, world!\n")
+	for k, v := range r.Header {
+		_, _ = fmt.Fprintf(w, "%s = %q\n", k, v)
+	}
+	_, _ = fmt.Fprintf(w, "Path = %q\n", r.URL.Path)
+}
+
+func (c *controller) handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	log := ctrl.LoggerFrom(r.Context())
+	upgrader := &websocket.Upgrader{
+		CheckOrigin: func(_ *http.Request) bool { return true },
+	}
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.V(5).Info("Failed to upgrade to WebSocket", "error", err)
+		http.Error(w, "Failed to upgrade to WebSocket: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer conn.Close()
+
+	err = conn.WriteMessage(websocket.TextMessage, []byte("hello from websocket\n"))
+	if err != nil {
+		log.V(5).Info("Failed to write WebSocket message", "error", err)
+	}
 }
 
 // RegisterWithManager implements the complete controller registration for both embedded and external modes.

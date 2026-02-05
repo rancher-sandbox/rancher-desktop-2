@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -733,8 +734,13 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 
 // createServerChain creates the apiserver instances connected via delegation.
 func createServerChain(config options.CompletedConfig) (*aggregatorapiserver.APIAggregator, error) {
-	// 1. Basic not found handler
+	// Basic not found handler
 	notFoundHandler := notfoundhandler.New(config.ControlPlane.Generic.Serializer, genericapifilters.NoMuxAndDiscoveryIncompleteKey)
+
+	// Mux exists so we can set up [base.PassthroughController] controllers later
+	// if needed; see the documentation for that interface.
+	mux := http.NewServeMux()
+	mux.Handle("/", notFoundHandler)
 
 	var aggregatorServer *aggregatorapiserver.APIAggregator
 	var apiExtensionsServer *apiextensionapiserver.CustomResourceDefinitions
@@ -742,7 +748,7 @@ func createServerChain(config options.CompletedConfig) (*aggregatorapiserver.API
 	var err error
 
 	// CRDs are always enabled - create extension server
-	apiExtensionsServer, err = config.APIExtensions.New(genericapiserver.NewEmptyDelegateWithCustomHandler(notFoundHandler))
+	apiExtensionsServer, err = config.APIExtensions.New(genericapiserver.NewEmptyDelegateWithCustomHandler(mux))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create apiextensions-apiserver: %w", err)
 	}
@@ -778,13 +784,20 @@ func createServerChain(config options.CompletedConfig) (*aggregatorapiserver.API
 		klog.Infof("Serving %s", storageProvider.GroupName())
 	}
 
-	// 3. Aggregator for APIServices, discovery and OpenAPI
+	// Aggregator for APIServices, discovery and OpenAPI
 	// CRDs are always enabled - wire in aggregator server
 	aggregatorServer, err = controlplaneapiserver.CreateAggregatorServer(config.Aggregator, nativeAPIs.GenericAPIServer, apiExtensionsServer.Informers.Apiextensions().V1().CustomResourceDefinitions(), false, controlplaneapiserver.DefaultGenericAPIServicePriorities())
 	if err != nil {
 		// we don't need special handling for innerStopCh because the aggregator server doesn't create any go routines
 		return nil, fmt.Errorf("failed to create kube-aggregator: %w", err)
 	}
+
+	// Set up the passthrough handler
+	discovery, err := controllers.NewControllerManagerDiscovery(config.ControlPlane.Generic.LoopbackClientConfig)
+	if err != nil {
+		return nil, fmt.Errorf("could not create discovery client: %w", err)
+	}
+	mux.Handle("/passthrough/", http.StripPrefix("/passthrough", controllers.NewPassthroughHandler(discovery)))
 
 	return aggregatorServer, nil
 }

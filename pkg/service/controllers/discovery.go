@@ -29,14 +29,22 @@ const (
 	RDDSystemNamespace = "rdd-system"
 )
 
+// ControllerManagerInput contains the input parameters for registering a controller manager.
+type ControllerManagerInput struct {
+	HealthPort          int                 `json:"healthPort"`
+	MetricsPort         int                 `json:"metricsPort"`
+	PassthroughPort     int                 `json:"-"`
+	EnabledControllers  []string            `json:"enabledControllers"`
+	EnabledPassthroughs map[string][]string `json:"enabledPassthroughs"`
+}
+
 // ControllerManagerInfo contains discovered information about a running controller manager.
 type ControllerManagerInfo struct {
-	HealthPort         int         `json:"healthPort"`
-	MetricsPort        int         `json:"metricsPort"`
-	EnabledControllers []string    `json:"enabledControllers"`
-	StartTime          metav1.Time `json:"startTime"`
-	HealthEndpoint     string      `json:"healthEndpoint"`
-	MetricsEndpoint    string      `json:"metricsEndpoint"`
+	ControllerManagerInput `json:",inline"`
+	StartTime              metav1.Time `json:"startTime"`
+	HealthEndpoint         string      `json:"healthEndpoint"`
+	MetricsEndpoint        string      `json:"metricsEndpoint"`
+	PassthroughEndpoint    string      `json:"passthroughEndpoint"`
 }
 
 // ControllerManagerDiscovery handles service discovery for the shared controller manager.
@@ -83,24 +91,23 @@ func NewControllerManagerDiscoveryGroup(config *rest.Config, apiGroupName string
 }
 
 // RegisterControllerManager creates or updates the ConfigMap with controller manager information.
-func (d *ControllerManagerDiscoveryGroup) RegisterControllerManager(ctx context.Context, healthPort, metricsPort int, controllers []string) error {
-	return d.registerControllerManagerImpl(ctx, healthPort, metricsPort, controllers, true)
+func (d *ControllerManagerDiscoveryGroup) RegisterControllerManager(ctx context.Context, input ControllerManagerInput) error {
+	return d.registerControllerManagerImpl(ctx, input, true)
 }
 
 // registerControllerManagerImpl is the internal implementation of RegisterControllerManager,
 // with an option to retry on conflict.
-func (d *ControllerManagerDiscoveryGroup) registerControllerManagerImpl(ctx context.Context, healthPort, metricsPort int, controllers []string, allowRetry bool) error {
+func (d *ControllerManagerDiscoveryGroup) registerControllerManagerImpl(ctx context.Context, input ControllerManagerInput, allowRetry bool) error {
 	if err := d.ensureNamespace(ctx); err != nil {
 		return fmt.Errorf("failed to ensure namespace: %w", err)
 	}
 
 	info := ControllerManagerInfo{
-		HealthPort:         healthPort,
-		MetricsPort:        metricsPort,
-		EnabledControllers: controllers,
-		StartTime:          metav1.NewTime(time.Now().UTC()),
-		HealthEndpoint:     fmt.Sprintf("http://localhost:%d/healthz", healthPort),
-		MetricsEndpoint:    fmt.Sprintf("http://localhost:%d/metrics", metricsPort),
+		ControllerManagerInput: input,
+		StartTime:              metav1.NewTime(time.Now().UTC()),
+		HealthEndpoint:         fmt.Sprintf("http://localhost:%d/healthz", input.HealthPort),
+		MetricsEndpoint:        fmt.Sprintf("http://localhost:%d/metrics", input.MetricsPort),
+		PassthroughEndpoint:    fmt.Sprintf("http://localhost:%d/", input.PassthroughPort),
 	}
 	serializedInfo, err := json.Marshal(info)
 	if err != nil {
@@ -128,7 +135,7 @@ func (d *ControllerManagerDiscoveryGroup) registerControllerManagerImpl(ctx cont
 			"namespace", d.namespace,
 			"configmap", controllerManagerConfigMapName,
 			"name", d.name,
-			"controllers", len(controllers))
+			"controllers", len(info.EnabledControllers))
 		return nil
 	}
 	if !errors.IsNotFound(err) {
@@ -155,7 +162,7 @@ func (d *ControllerManagerDiscoveryGroup) registerControllerManagerImpl(ctx cont
 			// We hit a race condition, and somebody else created it first.  Try again.
 			// We're not expecting to recurse more than once, because if the config map
 			// exists then we won't hit IsNotFound on the patch attempt.
-			return d.registerControllerManagerImpl(ctx, healthPort, metricsPort, controllers, false)
+			return d.registerControllerManagerImpl(ctx, input, false)
 		}
 		return fmt.Errorf("failed to register controller manager: %w", err)
 	}
@@ -164,7 +171,7 @@ func (d *ControllerManagerDiscoveryGroup) registerControllerManagerImpl(ctx cont
 		"namespace", d.namespace,
 		"configmap", controllerManagerConfigMapName,
 		"name", d.name,
-		"controllers", len(controllers))
+		"controllers", len(info.EnabledControllers))
 
 	return nil
 }
@@ -301,6 +308,38 @@ func (d *ControllerManagerDiscovery) IsControllerRunning(ctx context.Context, co
 	}
 
 	return false, nil, nil // Controller not found in any controller manager.
+}
+
+// LookupPassthroughEndpoint looks up the endpoint URL for a given passthrough
+// endpoint name across all controller managers.  If the endpoint is not found,
+// an empty string is returned.
+func (d *ControllerManagerDiscovery) LookupPassthroughEndpoint(ctx context.Context, controllerName, endpointName string) (string, error) {
+	configMap, err := d.client.CoreV1().ConfigMaps(d.namespace).Get(ctx, controllerManagerConfigMapName, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return "", nil // No controller manager running
+		}
+		return "", fmt.Errorf("failed to discover controller manager: %w", err)
+	}
+
+	for _, serializedInfo := range configMap.Data {
+		var info ControllerManagerInfo
+		if err := json.Unmarshal([]byte(serializedInfo), &info); err != nil {
+			return "", fmt.Errorf("failed to parse controller manager info: %w", err)
+		}
+
+		enabledPassthroughs := info.EnabledPassthroughs[controllerName]
+		if !slices.Contains(enabledPassthroughs, endpointName) {
+			continue
+		}
+
+		// Check if the controller manager is actually accessible
+		if d.isControllerManagerHealthy(ctx, &info) {
+			return info.PassthroughEndpoint, nil
+		}
+	}
+
+	return "", nil // Endpoint not found in any controller manager.
 }
 
 // isControllerManagerHealthy checks if the controller manager is responding to health checks.

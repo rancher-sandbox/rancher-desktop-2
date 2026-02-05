@@ -1,4 +1,6 @@
 cooldown #https://en.wiktionary.org/wiki/cooldown#English
+passthrough #https://en.wiktionary.org/wiki/passthrough
+passthroughs #https://en.wiktionary.org/wiki/passthrough
 routable #https://en.wiktionary.org/wiki/routable#English
 standalone #https://en.wiktionary.org/wiki/standalone#English
 startable #https://en.wiktionary.org/wiki/startable
