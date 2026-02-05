@@ -288,15 +288,19 @@ func (wm *webhookManagerImpl[T]) createWebhookConfiguration() error {
 
 	switch wm.webhookType {
 	case MutatingWebhook:
-		return wm.createMutatingWebhook(ctx, c, webhookURL, clientConfig, rules, failurePolicy, sideEffects)
+		err = wm.createMutatingWebhook(ctx, c, clientConfig, rules, failurePolicy, sideEffects)
 	case ValidatingWebhook:
-		return wm.createValidatingWebhook(ctx, c, webhookURL, clientConfig, rules, failurePolicy, sideEffects)
+		err = wm.createValidatingWebhook(ctx, c, clientConfig, rules, failurePolicy, sideEffects)
 	default:
-		return fmt.Errorf("invalid webhook type: %s", wm.webhookType)
+		err = fmt.Errorf("invalid webhook type: %s", wm.webhookType)
 	}
+	if err == nil {
+		klog.Infof("Successfully applied webhook configuration for %s", webhookURL)
+	}
+	return err
 }
 
-func (wm *webhookManagerImpl[T]) createValidatingWebhook(ctx context.Context, c client.Client, webhookURL string, clientConfig *admissionregistrationv1apply.WebhookClientConfigApplyConfiguration, rules []*admissionregistrationv1apply.RuleWithOperationsApplyConfiguration, failurePolicy admissionregistrationv1.FailurePolicyType, sideEffects admissionregistrationv1.SideEffectClass) error {
+func (wm *webhookManagerImpl[T]) createValidatingWebhook(ctx context.Context, c client.Client, clientConfig *admissionregistrationv1apply.WebhookClientConfigApplyConfiguration, rules []*admissionregistrationv1apply.RuleWithOperationsApplyConfiguration, failurePolicy admissionregistrationv1.FailurePolicyType, sideEffects admissionregistrationv1.SideEffectClass) error {
 	applyConfig := admissionregistrationv1apply.ValidatingWebhookConfiguration(wm.config.Name).
 		WithWebhooks(
 			admissionregistrationv1apply.ValidatingWebhook().
@@ -314,11 +318,10 @@ func (wm *webhookManagerImpl[T]) createValidatingWebhook(ctx context.Context, c 
 		klog.Errorf("Failed to apply webhook configuration: %v", err)
 		return fmt.Errorf("failed to apply webhook configuration: %w", err)
 	}
-	klog.Infof("Successfully applied webhook configuration for %s", webhookURL)
 	return nil
 }
 
-func (wm *webhookManagerImpl[T]) createMutatingWebhook(ctx context.Context, c client.Client, webhookURL string, clientConfig *admissionregistrationv1apply.WebhookClientConfigApplyConfiguration, rules []*admissionregistrationv1apply.RuleWithOperationsApplyConfiguration, failurePolicy admissionregistrationv1.FailurePolicyType, sideEffects admissionregistrationv1.SideEffectClass) error {
+func (wm *webhookManagerImpl[T]) createMutatingWebhook(ctx context.Context, c client.Client, clientConfig *admissionregistrationv1apply.WebhookClientConfigApplyConfiguration, rules []*admissionregistrationv1apply.RuleWithOperationsApplyConfiguration, failurePolicy admissionregistrationv1.FailurePolicyType, sideEffects admissionregistrationv1.SideEffectClass) error {
 	applyConfig := admissionregistrationv1apply.MutatingWebhookConfiguration(wm.config.Name).
 		WithWebhooks(
 			admissionregistrationv1apply.MutatingWebhook().
@@ -336,6 +339,5 @@ func (wm *webhookManagerImpl[T]) createMutatingWebhook(ctx context.Context, c cl
 		klog.Errorf("Failed to apply webhook configuration: %v", err)
 		return fmt.Errorf("failed to apply webhook configuration: %w", err)
 	}
-	klog.Infof("Successfully applied webhook configuration for %s", webhookURL)
 	return nil
 }
