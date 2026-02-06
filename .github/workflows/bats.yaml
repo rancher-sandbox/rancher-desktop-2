@@ -57,11 +57,19 @@ jobs:
         if test $(cat /proc/sys/net/ipv4/ip_unprivileged_port_start) -gt 80; then
           sudo sh -c 'echo 80 > /proc/sys/net/ipv4/ip_unprivileged_port_start'
         fi
-
-        # Install qemu-img for Lima disk operations
+        
+        # Install QEMU for Lima VM operations
         sudo apt-get update
-        sudo apt-get install --yes qemu-utils
+        sudo apt-get install --yes qemu-system-x86 qemu-utils
 
+        # Install Lima (provides guestagent needed by VM running tests)
+        # This should be removed once RDD bundles the guestagent binary.
+        LIMA_VERSION=2.0.3
+        curl --fail --location --output lima.tar.gz \
+          "https://github.com/lima-vm/lima/releases/download/v${LIMA_VERSION}/lima-${LIMA_VERSION}-Linux-x86_64.tar.gz"
+        sudo tar --extract --gzip --file=lima.tar.gz --directory=/usr/local
+        rm lima.tar.gz
+    
         # Set up run-in-wsl helper script (as a symlink to bash)
         mkdir -p bin
         ln -s $(which bash) bin/run-in-wsl
@@ -75,7 +83,11 @@ jobs:
       if: runner.os == 'macOS'
       working-directory: ${{ runner.temp }}
       run: |
-        brew install bash lima
+        brew install bash
+
+        # Install Lima (provides guestagent needed by VM running tests)
+        # This should be removed once RDD bundles the guestagent binary.
+        brew install lima
 
         # Set up run-in-wsl helper script (as a symlink to bash)
         mkdir -p bin

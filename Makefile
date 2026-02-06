@@ -49,11 +49,11 @@ build: build-rdd build-all-controllers
 # On macOS, sign binaries with virtualization entitlement using ad-hoc signature
 # On other platforms, this is a no-op
 ifeq ($(shell uname -s),Darwin)
-define SIGN_BINARY
+define ATTACH_ENTITLEMENTS
 codesign --force --verbose --entitlements macos-entitlements.plist --sign - $(1)
 endef
 else
-define SIGN_BINARY
+define ATTACH_ENTITLEMENTS
 @true
 endef
 endif
@@ -64,7 +64,7 @@ bin/rdd$(EXE): $(GOLANG_SOURCES)
 	WSLENV=${WSLENV}:CGO_CFLAGS:CGO_ENABLED \
 	CGO_CFLAGS="-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_USE_ALLOCA=1" CGO_ENABLED=1 \
 	go$(EXE) build -tags="$(TAGS)" -gcflags="all=${GCFLAGS}" -ldflags="$(LDFLAGS)" -o $@ ./cmd/rdd
-	$(call SIGN_BINARY,$@)
+	$(call ATTACH_ENTITLEMENTS,$@)
 	ls -lh $@
 build-rdd: bin/rdd$(EXE)
 .PHONY: build-rdd
@@ -83,7 +83,7 @@ define CONTROLLER_TARGETS
 bin/$(1)-controller$$(EXE): $$(GOLANG_SOURCES)
 	WSLENV=${WSLENV}:CGO_ENABLED CGO_ENABLED=$$(or $$(CGO_ENABLED_$(1)),0) \
 	go$$(EXE) build -tags="$(TAGS)" -gcflags="all=$${GCFLAGS}" -ldflags="$(LDFLAGS)" -o $$@ ./cmd/$(1)-controller
-	$$(call SIGN_BINARY,$$@)
+	$$(call ATTACH_ENTITLEMENTS,$$@)
 	ls -lh $$@
 build-$(1)-controller: bin/$(1)-controller$$(EXE)
 .PHONY: build-$(1)-controller
