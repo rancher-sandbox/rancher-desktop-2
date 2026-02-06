@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/admission"
+	genericfeatures "k8s.io/apiserver/pkg/features"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/util/keyutil"
@@ -82,6 +83,9 @@ func NewOptions(ctx context.Context, rootDir string) *Options {
 	// Disable node related features to prevent the need for informers.
 	_ = utilfeature.DefaultMutableFeatureGate.OverrideDefault(features.ServiceAccountTokenNodeBindingValidation, false)
 	_ = utilfeature.DefaultMutableFeatureGate.OverrideDefault(features.ServiceAccountTokenNodeBinding, false)
+
+	// Disable apiserver identity leases because this is a single-instance control plane.
+	_ = utilfeature.DefaultMutableFeatureGate.OverrideDefault(genericfeatures.APIServerIdentity, false)
 
 	factory := func(factory informers.SharedInformerFactory) serviceaccount.ServiceAccountTokenGetter {
 		return tokengetter.NewGetterFromClient(factory.Core().V1().Secrets().Lister(), factory.Core().V1().ServiceAccounts().Lister())

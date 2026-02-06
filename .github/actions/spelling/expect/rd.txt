@@ -4,6 +4,7 @@ ctl
 ctrctl
 devmode
 eio
+genericfeatures
 goruntime
 mountpoint
 nerdctl
