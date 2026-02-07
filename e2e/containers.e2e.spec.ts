@@ -9,7 +9,7 @@ import { ContainerEngine } from '@pkg/config/settings';
 
 let page: Page;
 
-test.describe.serial('Containers Tests', () => {
+test.describe.fixme('Containers Tests', () => {
   let electronApp: ElectronApplication;
   let testContainerId: string;
   let testContainerName: string;

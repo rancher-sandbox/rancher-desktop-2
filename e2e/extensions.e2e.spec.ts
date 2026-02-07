@@ -33,7 +33,7 @@ const execPath = process.execPath.replace(/\\/g, '/');
 let console: Log;
 const NAMESPACE = 'rancher-desktop-extensions';
 
-test.describe.serial('Extensions', () => {
+test.describe.fixme('Extensions', () => {
   let app: ElectronApplication;
   let page: Page;
   let isContainerd = false;

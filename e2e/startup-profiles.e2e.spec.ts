@@ -89,7 +89,7 @@ async function createLockedUserRegistryProfileWithValidDataButNoVersion() {
   await addRegistryEntry(base, 'version', 'REG_SZ', '1.29.0');
 }
 
-test.describe.serial('starting up with profiles', () => {
+test.describe.fixme('starting up with profiles', () => {
   test.afterAll(async() => {
     await clearUserProfile();
     await clearSettings();

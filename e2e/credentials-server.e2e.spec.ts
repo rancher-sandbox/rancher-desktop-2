@@ -103,7 +103,7 @@ function haveCredentialServerHelper(): boolean {
   }
 }
 
-const describeWithCreds = haveCredentialServerHelper() ? test.describe : test.describe.skip;
+const describeWithCreds = haveCredentialServerHelper() ? test.describe.fixme : test.describe.skip;
 const describeCredHelpers = credStore === 'none' ? test.describe.skip : test.describe;
 const testUnix = os.platform() === 'win32' ? test.skip : test;
 

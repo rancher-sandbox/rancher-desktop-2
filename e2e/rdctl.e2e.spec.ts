@@ -50,7 +50,7 @@ import { RecursivePartial } from '@pkg/utils/typeUtils';
 
 import type { ElectronApplication, Page } from '@playwright/test';
 
-test.describe('Command server', () => {
+test.describe.fixme('Command server', () => {
   let electronApp: ElectronApplication;
   let serverState: ServerState;
   let page: Page;

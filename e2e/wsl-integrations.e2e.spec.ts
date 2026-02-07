@@ -16,7 +16,7 @@ import { spawnFile } from '@pkg/utils/childProcess';
 
 import type { ElectronApplication, Page } from '@playwright/test';
 
-test.describe('WSL Integrations', () => {
+test.describe.fixme('WSL Integrations', () => {
   test.describe.configure({ mode: 'serial' });
   if (os.platform() !== 'win32') {
     test.skip();

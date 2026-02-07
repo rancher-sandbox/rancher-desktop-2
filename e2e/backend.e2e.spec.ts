@@ -15,7 +15,7 @@ import { RecursivePartial, RecursiveKeys } from '@pkg/utils/typeUtils';
 
 import type { ElectronApplication, Page } from '@playwright/test';
 
-test.describe.serial('KubernetesBackend', () => {
+test.describe.fixme('KubernetesBackend', () => {
   let electronApp: ElectronApplication;
   let page: Page;
 

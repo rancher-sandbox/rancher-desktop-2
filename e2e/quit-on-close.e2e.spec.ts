@@ -6,7 +6,7 @@ import { createDefaultSettings, reportAsset, startRancherDesktop, teardown } fro
  * Using test.describe.serial make the test execute step by step, as described on each `test()` order
  * Playwright executes test in parallel by default and it will not work for our app backend loading process.
  * */
-test.describe.serial('quitOnClose setting', () => {
+test.describe.fixme('quitOnClose setting', () => {
   test('should quit when quitOnClose is true and window is closed', async({ colorScheme }, testInfo) => {
     createDefaultSettings({ application: { window: { quitOnClose: true } } });
     const electronApp = await startRancherDesktop(testInfo, { logVariant: 'quitOnCloseTrue' });

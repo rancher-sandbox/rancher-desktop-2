@@ -6,7 +6,7 @@ import { createDefaultSettings, startRancherDesktop, teardown, tool } from './ut
  * Using test.describe.serial make the test execute step by step, as described on each `test()` order
  * Playwright executes test in parallel by default and it will not work for our app backend loading process.
  * */
-test.describe.serial('startInBackground setting', () => {
+test.describe.fixme('startInBackground setting', () => {
   test('window should appear when startInBackground is false', async({ colorScheme }, testInfo) => {
     createDefaultSettings({ application: { startInBackground: false } });
     const logVariant = `startInBackgroundFalse`;

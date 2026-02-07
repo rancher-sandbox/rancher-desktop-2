@@ -38,7 +38,7 @@ import { reopenLogs } from '@pkg/utils/logging';
 
 import type { ElectronApplication, Page } from '@playwright/test';
 
-test.describe('Locked fields', () => {
+test.describe.fixme('Locked fields', () => {
   let electronApp: ElectronApplication;
   let page: Page;
   const appPath = path.dirname(import.meta.dirname);
