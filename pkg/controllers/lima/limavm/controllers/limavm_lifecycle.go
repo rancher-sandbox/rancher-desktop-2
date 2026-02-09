@@ -136,7 +136,7 @@ func (r *LimaVMReconciler) handleRunningState(ctx context.Context, limaVM *v1alp
 		if _, err := os.Stat(haPIDPath); err == nil {
 			// PID file exists, hostagent is starting
 			logger.Info("Lima instance is starting, waiting for it to be running")
-			if !r.hasConditionWithReason(limaVM, ConditionInstanceRunning, metav1.ConditionFalse, ReasonStarting) {
+			if !base.HasConditionWithReason(limaVM.Status.Conditions, ConditionInstanceRunning, metav1.ConditionFalse, ReasonStarting) {
 				if err := r.updateCondition(ctx, limaVM, ConditionInstanceRunning, metav1.ConditionFalse, ReasonStarting, "Lima instance is starting"); err != nil {
 					logger.Error(err, "Failed to update starting condition")
 					return ctrl.Result{}, err
@@ -152,14 +152,14 @@ func (r *LimaVMReconciler) handleRunningState(ctx context.Context, limaVM *v1alp
 
 	// Update condition to reflect current state (including reason, so StartFailed/Starting gets updated)
 	if isRunning {
-		if !r.hasConditionWithReason(limaVM, ConditionInstanceRunning, metav1.ConditionTrue, ReasonStarted) {
+		if !base.HasConditionWithReason(limaVM.Status.Conditions, ConditionInstanceRunning, metav1.ConditionTrue, ReasonStarted) {
 			if err := r.updateCondition(ctx, limaVM, ConditionInstanceRunning, metav1.ConditionTrue, ReasonStarted, "Lima instance is running"); err != nil {
 				logger.Error(err, "Failed to update running condition")
 				return ctrl.Result{}, err
 			}
 		}
 	} else {
-		if !r.hasConditionWithReason(limaVM, ConditionInstanceRunning, metav1.ConditionFalse, ReasonStopped) {
+		if !base.HasConditionWithReason(limaVM.Status.Conditions, ConditionInstanceRunning, metav1.ConditionFalse, ReasonStopped) {
 			if err := r.updateCondition(ctx, limaVM, ConditionInstanceRunning, metav1.ConditionFalse, ReasonStopped, "Lima instance is stopped"); err != nil {
 				logger.Error(err, "Failed to update running condition")
 				return ctrl.Result{}, err

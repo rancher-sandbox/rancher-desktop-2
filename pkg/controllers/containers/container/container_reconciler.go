@@ -6,10 +6,10 @@ package container
 
 import (
 	"context"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/events"
@@ -80,40 +80,15 @@ func (r *ContainerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 // setCondition sets or updates a condition in the container status.
 func (r *ContainerReconciler) setCondition(container *containersv1alpha1.Container, conditionType string, status metav1.ConditionStatus, reason, message string) {
-	now := metav1.NewTime(time.Now())
-
-	// Find existing condition of this type
-	for i, condition := range container.Status.Conditions {
-		if condition.Type != conditionType {
-			continue
-		}
-		// Update existing condition if parameters changed.
-		changed := false
-		if condition.Status != status {
-			container.Status.Conditions[i].Status = status
-			container.Status.Conditions[i].LastTransitionTime = now
-			changed = true
-		}
-		if condition.Reason != reason || condition.Message != message {
-			container.Status.Conditions[i].Reason = reason
-			container.Status.Conditions[i].Message = message
-			changed = true
-		}
-		if changed {
-			r.Recorder.Eventf(container, nil, corev1.EventTypeNormal, "ConditionChanged", conditionType, message)
-		}
-		return
-	}
-
-	// Add new condition
-	container.Status.Conditions = append(container.Status.Conditions, metav1.Condition{
-		Type:               conditionType,
-		Status:             status,
-		LastTransitionTime: now,
-		Reason:             reason,
-		Message:            message,
+	changed := apimeta.SetStatusCondition(&container.Status.Conditions, metav1.Condition{
+		Type:    conditionType,
+		Status:  status,
+		Reason:  reason,
+		Message: message,
 	})
-	r.Recorder.Eventf(container, nil, corev1.EventTypeNormal, "ConditionChanged", conditionType, message)
+	if changed {
+		r.Recorder.Eventf(container, nil, corev1.EventTypeNormal, "ConditionChanged", conditionType, message)
+	}
 }
 
 // SetupWithManager sets up the controller with the Manager.
