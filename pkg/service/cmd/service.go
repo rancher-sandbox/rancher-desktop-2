@@ -21,6 +21,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -90,6 +91,43 @@ func GetKubeconfig() ([]byte, error) {
 		return nil, fmt.Errorf("could not read kubeconfig from %s: %w (control plane may still be starting)", instance.KubeConfig(), err)
 	}
 	return data, nil
+}
+
+// WatchKubeconfig blocks until the kubeconfig file changes; it returns once a
+// change has been detected.
+func WatchKubeconfig() error {
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		return err
+	}
+	defer w.Close()
+
+	// fsnotify recommends watching the parent directory instead of the file;
+	// it is implied that on macOS, a rename-into-place (as in vim saving) would
+	// not trigger any events.
+	dir, name := filepath.Split(instance.KubeConfig())
+
+	if err := w.Add(dir); err != nil {
+		return err
+	}
+
+	for {
+		select {
+		case err, ok := <-w.Errors:
+			if !ok {
+				return nil // watcher was closed
+			}
+			return err
+		case event, ok := <-w.Events:
+			if !ok {
+				return nil // watcher was closed
+			}
+			if filepath.Base(event.Name) != name {
+				continue // a different file changed
+			}
+			return nil // The file changed
+		}
+	}
 }
 
 // GetKubeRestConfig generates and returns the kubeconfig as a *rest.Config.

@@ -59,6 +59,7 @@ func newServiceConfigCommand() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE:  serviceConfigAction,
 	}
+	command.Flags().Bool("wait", false, "Wait until the kubeconfig changes before printing")
 	return command
 }
 
@@ -83,6 +84,13 @@ func serviceConfigAction(cmd *cobra.Command, _ []string) error {
 	if err := ensureServiceRunning(cmd.Context()); err != nil {
 		return err
 	}
+
+	if wait, err := cmd.Flags().GetBool("wait"); err == nil && wait {
+		if err := service.WatchKubeconfig(); err != nil {
+			return err
+		}
+	}
+
 	contents, err := service.GetKubeconfig()
 	if err != nil {
 		return err
