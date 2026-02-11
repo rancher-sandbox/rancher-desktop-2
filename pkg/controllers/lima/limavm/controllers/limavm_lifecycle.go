@@ -90,11 +90,24 @@ func (r *LimaVMReconciler) handleRunningState(ctx context.Context, limaVM *v1alp
 		return ctrl.Result{}, errors.New("instance not found")
 	}
 
-	// Handle broken state - attempt to recover via force stop
+	// Handle broken state. Lima reports "broken" when the hostagent PID file
+	// exists but the socket is not yet responding. During startup this is normal:
+	// the hostagent creates its PID file before the socket. If the hostagent
+	// process is alive and the socket doesn't exist yet, treat it as starting.
 	if inst.Status == limatype.StatusBroken {
-		logger.Info("Lima instance is in broken state, attempting force stop to recover", "errors", inst.Errors)
+		haSockPath := filepath.Join(inst.Dir, filenames.HostAgentSock)
+		if inst.HostAgentPID > 0 && !fileExists(haSockPath) {
+			logger.Info("Instance reports broken but hostagent is alive and socket not yet created, treating as starting", "pid", inst.HostAgentPID)
+			if !base.HasConditionWithReason(limaVM.Status.Conditions, ConditionInstanceRunning, metav1.ConditionFalse, ReasonStarting) {
+				if err := r.updateCondition(ctx, limaVM, ConditionInstanceRunning, metav1.ConditionFalse, ReasonStarting, "Lima instance is starting"); err != nil {
+					logger.Error(err, "Failed to update starting condition")
+					return ctrl.Result{}, err
+				}
+			}
+			return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+		}
 
-		// Attempt force stop to clean up
+		logger.Info("Lima instance is broken, attempting force stop to recover", "errors", inst.Errors)
 		limainstance.StopForcibly(inst)
 
 		// Re-inspect to see if recovery succeeded
@@ -105,7 +118,6 @@ func (r *LimaVMReconciler) handleRunningState(ctx context.Context, limaVM *v1alp
 		}
 
 		if inst.Status == limatype.StatusBroken {
-			// Still broken after force stop - surface the error
 			errMsg := "Lima instance is in broken state"
 			if len(inst.Errors) > 0 {
 				errMsg = inst.Errors[0].Error()
@@ -332,4 +344,9 @@ func (r *LimaVMReconciler) stopInstance(ctx context.Context, limaVM *v1alpha1.Li
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
