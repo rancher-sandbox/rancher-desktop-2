@@ -10,13 +10,13 @@ import (
 	"os"
 	"path/filepath"
 	goruntime "runtime"
-	"time"
 
 	limainstance "github.com/lima-vm/lima/v2/pkg/instance"
 	"github.com/lima-vm/lima/v2/pkg/store"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -153,7 +153,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Set initial condition to Unknown so other components know reconciliation is in progress.
-	if !r.conditionExists(&limaVM, ConditionInstanceCreated) {
+	if apimeta.FindStatusCondition(limaVM.Status.Conditions, ConditionInstanceCreated) == nil {
 		r.setCondition(&limaVM, ConditionInstanceCreated, metav1.ConditionUnknown, ReasonPending, "Reconciliation in progress")
 		if err := r.Status().Update(ctx, &limaVM); err != nil {
 			logger.Error(err, "Failed to set initial condition")
@@ -165,7 +165,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// Handle instances with a preparing sentinel file. The sentinel indicates that
 	// a previous reconcile started preparation but didn't complete successfully.
 	if hasSentinel(limaVM.Name) {
-		if r.hasCondition(&limaVM, ConditionInstanceCreated, metav1.ConditionTrue) {
+		if apimeta.IsStatusConditionTrue(limaVM.Status.Conditions, ConditionInstanceCreated) {
 			// Preparation completed but sentinel wasn't cleaned up; remove it now.
 			if err := removeSentinel(limaVM.Name); err != nil {
 				logger.Error(err, "Failed to remove sentinel file")
@@ -234,7 +234,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Instance already created - proceed to handle running state
-	if r.hasCondition(&limaVM, ConditionInstanceCreated, metav1.ConditionTrue) {
+	if apimeta.IsStatusConditionTrue(limaVM.Status.Conditions, ConditionInstanceCreated) {
 		return r.handleRunningState(ctx, &limaVM)
 	}
 
@@ -316,69 +316,17 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	return ctrl.Result{}, nil
 }
 
-// hasCondition reports whether the given condition type has the given status.
-func (r *LimaVMReconciler) hasCondition(limaVM *v1alpha1.LimaVM, conditionType string, status metav1.ConditionStatus) bool {
-	for _, condition := range limaVM.Status.Conditions {
-		if condition.Type == conditionType {
-			return condition.Status == status
-		}
-	}
-	return false
-}
-
-// hasConditionWithReason reports whether the given condition type has the given status and reason.
-func (r *LimaVMReconciler) hasConditionWithReason(limaVM *v1alpha1.LimaVM, conditionType string, status metav1.ConditionStatus, reason string) bool {
-	for _, condition := range limaVM.Status.Conditions {
-		if condition.Type == conditionType {
-			return condition.Status == status && condition.Reason == reason
-		}
-	}
-	return false
-}
-
-// conditionExists reports whether the given condition type exists.
-func (r *LimaVMReconciler) conditionExists(limaVM *v1alpha1.LimaVM, conditionType string) bool {
-	for _, condition := range limaVM.Status.Conditions {
-		if condition.Type == conditionType {
-			return true
-		}
-	}
-	return false
-}
-
 // setCondition updates or adds a condition in the LimaVM status.
 func (r *LimaVMReconciler) setCondition(limaVM *v1alpha1.LimaVM, conditionType string, status metav1.ConditionStatus, reason, message string) {
-	now := metav1.NewTime(time.Now())
-
-	for i, condition := range limaVM.Status.Conditions {
-		if condition.Type != conditionType {
-			continue
-		}
-		// Update existing condition if parameters changed.
-		changed := false
-		if condition.Status != status {
-			limaVM.Status.Conditions[i].Status = status
-			limaVM.Status.Conditions[i].LastTransitionTime = now
-			changed = true
-		}
-		if condition.Reason != reason || condition.Message != message {
-			limaVM.Status.Conditions[i].Reason = reason
-			limaVM.Status.Conditions[i].Message = message
-			changed = true
-		}
-		if changed && r.Recorder != nil {
-			r.Recorder.Eventf(limaVM, nil, corev1.EventTypeNormal, "ConditionChanged", conditionType, message)
-		}
-		return
-	}
-
-	limaVM.Status.Conditions = append(limaVM.Status.Conditions, metav1.Condition{
-		Type:               conditionType,
-		Status:             status,
-		LastTransitionTime: now,
-		Reason:             reason,
-		Message:            message,
+	changed := apimeta.SetStatusCondition(&limaVM.Status.Conditions, metav1.Condition{
+		Type:    conditionType,
+		Status:  status,
+		Reason:  reason,
+		Message: message,
 	})
+	if changed && r.Recorder != nil {
+		r.Recorder.Eventf(limaVM, nil, corev1.EventTypeNormal, "ConditionChanged", conditionType, message)
+	}
 }
 
 // updateCondition sets a condition and updates the status in one call.
