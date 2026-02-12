@@ -92,6 +92,11 @@ get_instance_running_transition_time() {
         --output jsonpath='{.status.conditions[?(@.type=="InstanceRunning")].lastTransitionTime}'
 }
 
+get_hostagent_pid() {
+    local name=$1
+    cat "${LIMA_HOME}/${name}/ha.pid"
+}
+
 assert_recovery_completed() {
     local before_time=$1
     run -0 get_instance_running_transition_time "${VM_NAME}"
@@ -173,27 +178,72 @@ assert_limavm_not_exists() {
     try --max 30 --delay 1 --until-fail -- lima_instance_running "${VM_NAME}"
 }
 
-# Broken state recovery tests
-# These tests verify that the controller can recover from a broken Lima instance
-# (e.g., when hostagent crashes but leaves stale PID file)
+# Crash recovery tests
+# These tests verify that the controller recovers when the hostagent crashes.
+# On VZ the VM dies with the hostagent (runs in-process) so Lima sees Stopped.
+# On QEMU the VM outlives the hostagent so Lima sees Broken, then force-stops
+# the orphaned QEMU process. Either way the controller restarts the full VM.
 
-@test "start VM again for broken state test" {
+@test "start VM for crash recovery test" {
     rdd ctl patch limavm "${VM_NAME}" --namespace "${NAMESPACE}" \
         --type=merge --patch '{"spec":{"running":true}}'
     try --max 60 --delay 5 -- assert_instance_running_condition "${VM_NAME}" "True"
 }
 
-@test "simulate broken state by killing hostagent" {
-    # Kill hostagent, leaving a stale PID file behind
+@test "simulate crash by killing hostagent" {
     local pid_file="${LIMA_HOME}/${VM_NAME}/ha.pid"
     assert_file_exists "${pid_file}"
 
-    local pid
-    pid=$(cat "${pid_file}")
-    assert [ -n "${pid}" ]
+    # shellcheck disable=SC2030 # Persisted via save_var, not subshell
+    OLD_HA_PID=$(get_hostagent_pid "${VM_NAME}")
+    assert [ -n "${OLD_HA_PID}" ]
+    # Verify the PID is a running process. On Windows the hostagent runs as a
+    # Win32 process but BATS runs inside WSL, so kill can't reach it.
+    kill -0 "${OLD_HA_PID}"
+    save_var OLD_HA_PID
 
-    kill -9 "${pid}" || true
+    kill -9 "${OLD_HA_PID}"
+}
+
+@test "trigger reconcile and verify crash recovery" {
+    run -0 get_instance_running_transition_time "${VM_NAME}"
+    assert_output
+    before_time=${output}
+
+    rdd ctl annotate limavm "${VM_NAME}" --namespace "${NAMESPACE}" --overwrite \
+        reconcile-trigger="$(date +%s)"
+
+    # The reconciler should detect the dead hostagent and restart the VM.
+    try --max 60 --delay 5 -- assert_recovery_completed "${before_time}"
+}
+
+@test "verify new hostagent after crash recovery" {
+    local pid_file="${LIMA_HOME}/${VM_NAME}/ha.pid"
     assert_file_exists "${pid_file}"
+    local new_pid
+    new_pid=$(get_hostagent_pid "${VM_NAME}")
+    assert [ -n "${new_pid}" ]
+    kill -0 "${new_pid}"
+
+    load_var OLD_HA_PID
+    # shellcheck disable=SC2031 # Loaded via load_var, not subshell
+    refute [ "${new_pid}" = "${OLD_HA_PID}" ]
+}
+
+# Broken state recovery tests
+# These tests verify that the controller can recover from a broken Lima instance.
+# We simulate breakage by replacing the hostagent socket with a regular file.
+# This makes Lima report StatusBroken (socket exists but is not a Unix socket)
+# without killing the VM process (which on VZ runs inside the hostagent).
+
+@test "simulate broken state by replacing hostagent socket" {
+    local sock_file="${LIMA_HOME}/${VM_NAME}/ha.sock"
+    assert_socket_exists "${sock_file}"
+
+    # Replace the Unix socket with a regular file so Lima can't connect
+    rm "${sock_file}"
+    touch "${sock_file}"
+    assert_file_exists "${sock_file}"
 }
 
 @test "trigger reconcile and verify recovery from broken state" {
@@ -203,7 +253,7 @@ assert_limavm_not_exists() {
     before_time=${output}
 
     # Annotate to trigger a reconcile while spec.running is still true
-    rdd ctl annotate limavm "${VM_NAME}" --namespace "${NAMESPACE}" \
+    rdd ctl annotate limavm "${VM_NAME}" --namespace "${NAMESPACE}" --overwrite \
         reconcile-trigger="$(date +%s)"
 
     # The reconciler should detect broken state, force stop, then restart.
