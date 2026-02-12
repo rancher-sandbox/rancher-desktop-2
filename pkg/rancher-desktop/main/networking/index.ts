@@ -9,11 +9,12 @@ import Electron from 'electron';
 import getLinuxCertificates from './linux-ca';
 import getMacCertificates from './mac-ca';
 import ElectronProxyAgent from './proxy';
+import verifyCertificate from './verify-certificates';
 import getWinCertificates from './win-ca';
 
 import mainEvents from '@pkg/main/mainEvents';
 import Logging from '@pkg/utils/logging';
-import { windowMapping } from '@pkg/window';
+import { KubeConfig } from '@rdd-client';
 
 const console = Logging.networking;
 
@@ -40,79 +41,66 @@ export default async function setupNetworking() {
   http.globalAgent = proxyAgent;
   https.globalAgent = proxyAgent;
 
+  const kubeConfig = new KubeConfig();
+  kubeConfig.loadFromString(await mainEvents.invoke('rdd/kube-config'));
+  configureRDDAuthentication(kubeConfig);
+  const kubeCerts =
+    Buffer.from(kubeConfig.getCurrentCluster()?.caData ?? '', 'base64')
+      .toString('utf-8')
+      .split(/(?=-----BEGIN CERTIFICATE-----)/g)
+      .filter(x => x.trim());
+
   // Set up certificate handling for system certificates on Windows and macOS
-  Electron.app.on('certificate-error', async(event, webContents, url, error, certificate, callback) => {
-    const tlsPort = 9443;
-    const dashboardUrls = [
-      `https://127.0.0.1:${ tlsPort }`,
-      `wss://127.0.0.1:${ tlsPort }`,
-      'http://127.0.0.1:6120',
-      'ws://127.0.0.1:6120',
-    ];
-
-    const pluginDevUrls = [
-      `https://localhost:8888`,
-      `wss://localhost:8888`,
-    ];
-
-    if (
-      process.env.NODE_ENV === 'development' &&
-      process.env.RD_ENV_PLUGINS_DEV &&
-      pluginDevUrls.some(x => url.startsWith(x))
-    ) {
-      event.preventDefault();
-
-      callback(true);
-
-      return;
-    }
-
-    if (dashboardUrls.some(x => url.startsWith(x)) && 'dashboard' in windowMapping) {
-      event.preventDefault();
-
-      callback(true);
-
-      return;
-    }
-
-    if (error === 'net::ERR_CERT_INVALID') {
-      // If we're getting *this* particular error, it means it's an untrusted cert.
-      // Ask the system store.
-      console.log(`Attempting to check system certificates for ${ url } (${ certificate.subjectName }/${ certificate.fingerprint })`);
-      try {
-        for await (const cert of getSystemCertificates()) {
-          // For now, just check that the PEM data matches exactly; this is
-          // probably a little more strict than necessary, but avoids issues like
-          // an attacker generating a cert with the same serial.
-          if (cert === certificate.data.replace(/\r/g, '')) {
-            console.log(`Accepting system certificate for ${ certificate.subjectName } (${ certificate.fingerprint })`);
-
-            callback(true);
-
-            return;
-          }
-        }
-      } catch (ex) {
-        console.error(ex);
-      }
-    }
-
-    console.log(`Not handling certificate error ${ error } for ${ url }`);
-
-    callback(false);
-  });
-
-  mainEvents.on('cert-get-ca-certificates', async() => {
-    const certs: string[] = [];
-
-    for await (const cert of getSystemCertificates()) {
-      certs.push(cert);
-    }
-
-    mainEvents.emit('cert-ca-certificates', certs);
-  });
+  Electron.session.defaultSession.setCertificateVerifyProc(
+    verifyCertificate.bind(null, kubeCerts, getSystemCertificates));
 
   mainEvents.emit('network-ready');
+}
+
+/**
+ * Configure the default Electron session's WebRequest to provide authentication
+ * for accessing RDD's API server.
+ * @param serverURL The URL of the API server.
+ */
+function configureRDDAuthentication(kubeConfig: KubeConfig) {
+  const server = kubeConfig.getCurrentCluster()?.server;
+
+  if (!server) {
+    throw new Error('No currently active cluster');
+  }
+
+  const origin = (new URL(server)).origin;
+  const urls = [`${ server }/*`, `${ server.replace(/^http/, 'ws') }/passthrough/*`];
+  const { webRequest } = Electron.session.defaultSession;
+
+  // Attach the authorization headers here because the WebSocket API does not
+  // allow setting it.  Might as well do the REST headers here too.
+  webRequest.onBeforeSendHeaders(
+    { urls },
+    (details, callback) => {
+      callback({
+        requestHeaders: {
+          ...details.requestHeaders,
+          Authorization: `Bearer ${ kubeConfig.getCurrentUser()?.token ?? '' }`,
+          Origin:        origin,
+        },
+      });
+    });
+  // Override CORS headers.
+  webRequest.onHeadersReceived(
+    { urls },
+    (details, callback) => {
+      const statusLine = details.method === 'OPTIONS' ? 'HTTP/1.1 204' : details.statusLine;
+      callback({
+        statusLine,
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Access-Control-Allow-Origin':  '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+        },
+      });
+    });
 }
 
 /**
