@@ -6,6 +6,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"os/exec"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/logfile"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/process"
 )
 
@@ -208,7 +210,6 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 	// Build hostagent command arguments
 	haPIDPath := filepath.Join(inst.Dir, filenames.HostAgentPID)
 	haSockPath := filepath.Join(inst.Dir, filenames.HostAgentSock)
-	haStdoutPath := filepath.Join(inst.Dir, filenames.HostAgentStdoutLog)
 	haStderrPath := filepath.Join(inst.Dir, filenames.HostAgentStderrLog)
 
 	args := []string{
@@ -221,8 +222,20 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 	}
 	args = append(args, inst.Name)
 
-	// Create log files for hostagent output (os.Create truncates existing files)
-	haStdoutW, err := os.Create(haStdoutPath)
+	// Create numbered log files with symlinks. The symlink names (ha.stdout.log,
+	// ha.stderr.log) match what Lima expects, so StopGracefully follows them.
+	keepLogs := os.Getenv("RDD_KEEP_LOGS") != ""
+	title := os.Getenv("RDD_LOG_TITLE")
+	var header string
+	if title != "" {
+		// JSONL format: Lima's event watcher parses it as a zero-value Event
+		// and skips it; PropagateJSON logs it as a raw info line.
+		b, _ := json.Marshal(struct {
+			Title string `json:"title"`
+		}{title})
+		header = string(b) + "\n"
+	}
+	haStdoutW, err := logfile.Create(inst.Dir, "ha.stdout", keepLogs, header)
 	if err != nil {
 		logger.Error(err, "Failed to create stdout log file")
 		if updateErr := r.updateCondition(ctx, limaVM, ConditionRunning, metav1.ConditionFalse, ReasonStartFailed, err.Error()); updateErr != nil {
@@ -231,7 +244,7 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 		return ctrl.Result{}, err
 	}
 	defer haStdoutW.Close()
-	haStderrW, err := os.Create(haStderrPath)
+	haStderrW, err := logfile.Create(inst.Dir, "ha.stderr", keepLogs, header)
 	if err != nil {
 		logger.Error(err, "Failed to create stderr log file")
 		if updateErr := r.updateCondition(ctx, limaVM, ConditionRunning, metav1.ConditionFalse, ReasonStartFailed, err.Error()); updateErr != nil {

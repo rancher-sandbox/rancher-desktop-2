@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"slices"
 	"strconv"
@@ -67,6 +66,7 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/datastore"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/readiness"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/logfile"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/process"
 )
 
@@ -213,20 +213,17 @@ func Start(ctx context.Context, args []string) error {
 		return fmt.Errorf("%q control plane is already running", instance.Name())
 	}
 
-	// TODO The log files should eventually move to the log directory
-	stdoutPath := filepath.Join(instance.Dir(), "rdd.stdout.log")
-	stderrPath := filepath.Join(instance.Dir(), "rdd.stderr.log")
-	if err := os.RemoveAll(stdoutPath); err != nil {
-		return err
+	keepLogs := os.Getenv("RDD_KEEP_LOGS") != ""
+	title := os.Getenv("RDD_LOG_TITLE")
+	var header string
+	if title != "" {
+		header = "=== " + title + " ===\n"
 	}
-	if err := os.RemoveAll(stderrPath); err != nil {
-		return err
-	}
-	stdout, err := os.Create(stdoutPath)
+	stdout, err := logfile.Create(instance.LogDir(), "rdd.stdout", keepLogs, header)
 	if err != nil {
 		return err
 	}
-	stderr, err := os.Create(stderrPath)
+	stderr, err := logfile.Create(instance.LogDir(), "rdd.stderr", keepLogs, header)
 	if err != nil {
 		return err
 	}
@@ -413,6 +410,9 @@ func Delete() error {
 		return fmt.Errorf("%q control plane does not exist", instance.Name())
 	}
 	_ = Stop()
+	if os.Getenv("RDD_KEEP_LOGS") == "" {
+		_ = os.RemoveAll(instance.LogDir())
+	}
 	return os.RemoveAll(instance.Dir())
 }
 
