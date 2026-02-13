@@ -12,6 +12,7 @@ GIT_DIRTY := $(shell git$(EXE) diff --quiet && echo 'clean' || echo 'dirty')
 GIT_VERSION := $(KUBE_VERSION)+rdd-$(shell git$(EXE) describe --tags --match='v*' --abbrev=14 "$(GIT_COMMIT)^{commit}" 2>/dev/null || echo v0.0.0-$(GIT_COMMIT))
 RDD_VERSION := $(shell git$(EXE) describe --match 'v[0-9]*' --dirty='.m' --always --tags)
 RDD_VERSION_TRIMMED := $(RDD_VERSION:v%=%)
+LIMA_VERSION := $(shell go$(EXE) list -m -f '{{.Version}}' 'github.com/lima-vm/lima/v2')
 BUILD_DATE := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 PACKAGE := github.com/rancher-sandbox/rancher-desktop-daemon
 LDFLAGS := \
@@ -32,6 +33,7 @@ LDFLAGS := \
 	-X $(PACKAGE)/pkg/version.Version=$(RDD_VERSION) \
 	-X $(PACKAGE)/pkg/version.GitCommit=${GIT_COMMIT} \
 	-X $(PACKAGE)/pkg/version.BuildDate=${BUILD_DATE} \
+	-X github.com/lima-vm/lima/v2/pkg/version.Version=$(LIMA_VERSION) \
 	-s -w
 
 TAGS := sqlite_omit_load_extension

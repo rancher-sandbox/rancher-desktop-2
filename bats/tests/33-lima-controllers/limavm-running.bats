@@ -116,6 +116,12 @@ assert_limavm_not_exists() {
     run ! rdd ctl get limavm "${name}" --namespace "${NAMESPACE}"
 }
 
+assert_shell_succeeds() {
+    local name=$1
+    shift
+    rdd lima shell "${name}" "$@"
+}
+
 @test "create source template ConfigMap for running tests" {
     rdd ctl create configmap "alpine-source" --namespace "${NAMESPACE}" --from-literal="template=${ALPINE_TEMPLATE}"
     run -0 rdd ctl get configmap "alpine-source" --namespace "${NAMESPACE}" --output jsonpath='{.data.template}'
@@ -172,6 +178,36 @@ assert_limavm_not_exists() {
     # The hostagent writes its first stdout event only after the VM's SSH port
     # becomes accessible, which can lag behind the InstanceRunning condition.
     try --max 60 --delay 5 -- assert_stdout_logs_contain "${VM_NAME}" "sshLocalPort"
+}
+
+@test "shell executes command in running VM" {
+    # SSH inside the guest may not be ready immediately after InstanceRunning=True
+    try --max 12 --delay 5 -- assert_shell_succeeds "${VM_NAME}" uname -s
+    assert_line "Linux"
+}
+
+@test "shell fails when VM is not running" {
+    # Create a stopped VM to test shell error
+    rdd ctl apply -f - <<EOF
+apiVersion: lima.rancherdesktop.io/v1alpha1
+kind: LimaVM
+metadata:
+  name: stopped-vm
+  namespace: ${NAMESPACE}
+spec:
+  templateRef:
+    name: alpine-source
+    namespace: ${NAMESPACE}
+  running: false
+EOF
+    # Wait for instance to be created
+    try --max 120 --delay 1 -- assert_instance_created_condition "stopped-vm" "True"
+
+    run -1 rdd lima shell "stopped-vm"
+    assert_output --partial "is not running"
+
+    # Cleanup
+    rdd ctl delete limavm "stopped-vm" --namespace "${NAMESPACE}" --grace-period=0
 }
 
 @test "stop the VM by setting running=false" {

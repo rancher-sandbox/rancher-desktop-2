@@ -25,6 +25,7 @@ printcolumn
 
 # Linux
 binfmt
+COLORTERM
 distros
 kvm
 # out of memory

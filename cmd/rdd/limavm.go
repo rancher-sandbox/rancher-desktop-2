@@ -43,6 +43,7 @@ func newLimaVMCommand() *cobra.Command {
 		newLimaVMStopCommand(),
 		newLimaVMDeleteCommand(),
 		newLimaVMLogsCommand(),
+		newLimaVMShellCommand(),
 	)
 	return command
 }
