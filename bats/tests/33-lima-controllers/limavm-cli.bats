@@ -158,6 +158,9 @@ assert_created() {
 
     run_e -1 rdd limavm delete "nonexistent"
     assert_fatal "${not_found}"
+
+    run_e -1 rdd limavm shell "nonexistent"
+    assert_fatal "${not_found}"
 }
 
 @test "lima help text is displayed" {
@@ -169,4 +172,5 @@ assert_created() {
     assert_output --partial "Stop a LimaVM"
     assert_output --partial "Delete a LimaVM"
     assert_output --partial "Show LimaVM logs"
+    assert_output --partial "Execute shell in Lima VM"
 }

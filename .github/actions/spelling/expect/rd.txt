@@ -27,3 +27,4 @@ limactl
 limavm
 pidfile
 syncer
+workdir

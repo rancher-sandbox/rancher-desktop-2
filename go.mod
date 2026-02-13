@@ -3,12 +3,15 @@ module github.com/rancher-sandbox/rancher-desktop-daemon
 go 1.25.0
 
 require (
+	al.essio.dev/pkg/shellescape v1.6.0
 	github.com/MakeNowJust/heredoc v1.0.0
+	github.com/coreos/go-semver v0.3.1
 	github.com/go-logr/logr v1.4.3
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/k3s-io/kine v1.14.2
 	github.com/lima-vm/lima/v2 v2.0.3
+	github.com/mattn/go-isatty v0.0.20
 	github.com/moby/moby/api v1.53.0
 	github.com/muesli/reflow v0.3.0
 	github.com/nxadm/tail v1.4.11
@@ -110,7 +113,6 @@ require (
 	github.com/containerd/ltag v0.3.0 // indirect
 	github.com/containers/gvisor-tap-vsock v0.8.7 // indirect
 	github.com/coreos/go-oidc v2.3.0+incompatible // indirect
-	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/coreos/go-systemd/v22 v22.6.0 // indirect
 	github.com/curioswitch/go-reassign v0.3.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.6.0 // indirect
@@ -249,7 +251,6 @@ require (
 	github.com/maratori/testpackage v1.1.2 // indirect
 	github.com/matoous/godox v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/mattn/go-sqlite3 v1.14.32 // indirect
