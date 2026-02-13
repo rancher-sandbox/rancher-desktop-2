@@ -106,6 +106,16 @@ Sends SIGTERM signal to control plane process (`rdd.pid`).
 
 Deletes the datastore, but create a new (empty) one with the same settings.
 
+### `rdd service status`
+
+Show control plane status: whether it has been created, whether it is running, and its PID.
+
+### `rdd service log`
+
+Show control plane logs.
+
+- `--stdout` (`-o`): Print stdout instead of stderr (default is stderr)
+- `--follow` (`-f`): Follow log output
 
 ## `rdd service config`
 

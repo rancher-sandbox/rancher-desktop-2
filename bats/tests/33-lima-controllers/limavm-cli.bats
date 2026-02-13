@@ -168,4 +168,5 @@ assert_created() {
     assert_output --partial "Start a LimaVM"
     assert_output --partial "Stop a LimaVM"
     assert_output --partial "Delete a LimaVM"
+    assert_output --partial "Show LimaVM logs"
 }

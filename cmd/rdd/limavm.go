@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -24,7 +25,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	limav1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 	service "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/cmd"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail"
 )
 
 func newLimaVMCommand() *cobra.Command {
@@ -39,6 +42,7 @@ func newLimaVMCommand() *cobra.Command {
 		newLimaVMStartCommand(),
 		newLimaVMStopCommand(),
 		newLimaVMDeleteCommand(),
+		newLimaVMLogsCommand(),
 	)
 	return command
 }
@@ -316,4 +320,29 @@ func limaVMDeleteAction(ctx context.Context, name string, wait bool) error {
 
 	logrus.Infof("LimaVM %q deleted from namespace %q", name, limaVM.Namespace)
 	return nil
+}
+
+func newLimaVMLogsCommand() *cobra.Command {
+	command := &cobra.Command{
+		Use:     "log INSTANCE",
+		Aliases: []string{"logs"},
+		Short:   "Show LimaVM logs",
+		Long:    "Show hostagent logs for a LimaVM instance.",
+		Args:    cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			logrus.SetLevel(logrus.InfoLevel)
+
+			name := "ha.stderr.log"
+			if ok, _ := cmd.Flags().GetBool("stdout"); ok {
+				name = "ha.stdout.log"
+			}
+			logPath := filepath.Join(instance.LimaHome(), args[0], name)
+			follow, _ := cmd.Flags().GetBool("follow")
+
+			return tail.TailFile(cmd.Context(), cmd.OutOrStdout(), logPath, follow)
+		},
+	}
+	command.Flags().BoolP("stdout", "o", false, "Print stdout instead of stderr")
+	command.Flags().BoolP("follow", "f", false, "Follow log output")
+	return command
 }

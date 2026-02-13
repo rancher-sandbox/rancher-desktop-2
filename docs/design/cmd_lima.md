@@ -43,3 +43,10 @@ Set `lima.rancherdesktop.io/restartRequested` annotation to the current timestam
 ### `rdd limavm shell NAME CMD`
 
 Runs `CMD` inside a shell in the `NAME` instance, or opens an interactive shell if `CMD` is omitted.
+
+### `rdd limavm logs NAME`
+
+Show hostagent logs for the `NAME` instance.
+
+- `--stdout` (`-o`): Print stdout instead of stderr (default is stderr)
+- `--follow` (`-f`): Follow log output

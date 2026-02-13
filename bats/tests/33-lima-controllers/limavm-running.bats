@@ -81,6 +81,13 @@ assert_instance_running_reason() {
     assert_output "${expected}"
 }
 
+assert_stdout_logs_contain() {
+    local name=$1
+    local expected=$2
+    run -0 rdd limavm logs --stdout "${name}"
+    assert_output --partial "${expected}"
+}
+
 lima_instance_running() {
     local name=$1
     assert_file_exists "${LIMA_HOME}/${name}/ha.pid"
@@ -154,6 +161,17 @@ assert_limavm_not_exists() {
 
 @test "verify hostagent PID file exists" {
     lima_instance_running "${VM_NAME}"
+}
+
+@test "logs shows hostagent stderr" {
+    run -0 rdd limavm logs "${VM_NAME}"
+    assert_output --partial "hostagent socket created"
+}
+
+@test "logs --stdout shows hostagent stdout" {
+    # The hostagent writes its first stdout event only after the VM's SSH port
+    # becomes accessible, which can lag behind the InstanceRunning condition.
+    try --max 60 --delay 5 -- assert_stdout_logs_contain "${VM_NAME}" "sshLocalPort"
 }
 
 @test "stop the VM by setting running=false" {

@@ -51,6 +51,16 @@ EOT
     refute_line "\"rancher-desktop-${RDD_INSTANCE}\" control plane PID is: 0"
 }
 
+@test 'logs shows control plane stderr' {
+    run -0 rdd svc logs
+    assert_output --partial "apiserver"
+}
+
+@test 'logs --stdout shows control plane stdout' {
+    # stdout may be empty, just verify the command succeeds
+    rdd svc logs --stdout
+}
+
 @test 'stop instance' {
     run -0 rdd svc stop
     run -0 extract_msg
