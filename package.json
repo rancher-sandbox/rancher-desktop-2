@@ -26,6 +26,7 @@
     "lint:go:fix": "node scripts/ts-wrapper.js scripts/lint-go.ts --fix",
     "lint:go:nofix": "node scripts/ts-wrapper.js scripts/lint-go.ts",
     "lint:spelling": "bash scripts/spelling.sh",
+    "generate:rdd-client": "node scripts/ts-wrapper.js scripts/generate-rdd-client.ts",
     "generate:nerdctl-stub": "powershell -ExecutionPolicy RemoteSigned scripts/windows/generate-nerdctl-stub.ps1",
     "generate:extension-data": "node scripts/ts-wrapper.js scripts/extension-data.ts",
     "build": "node scripts/ts-wrapper.js scripts/build.ts",

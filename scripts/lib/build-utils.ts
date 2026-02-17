@@ -133,7 +133,10 @@ export default {
       externals:   [...Object.keys(this.packageMeta.dependencies)],
       devtool:     this.isDevelopment ? 'source-map' : false,
       resolve:     {
-        alias:      { '@pkg': path.resolve(this.rootDir, 'pkg', 'rancher-desktop') },
+        alias:      {
+          '@pkg':        path.resolve(this.rootDir, 'pkg', 'rancher-desktop'),
+          '@rdd-client': path.resolve(this.rootDir, 'pkg', 'rdd-client'),
+        },
         extensions: ['.ts', '.js', '.json', '.node'],
         modules:    ['node_modules'],
       },

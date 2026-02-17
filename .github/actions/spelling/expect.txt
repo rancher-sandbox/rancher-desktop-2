@@ -243,6 +243,7 @@ gtk
 guestagent
 Gutterless
 gvisor
+gvk
 hardlinks
 hashicorp
 HDD
@@ -499,6 +500,7 @@ rcedit
 rcfiles
 rcompare
 rdctl
+rdd
 rddepman
 rdinstall
 RDRUNAFTERINSTALL

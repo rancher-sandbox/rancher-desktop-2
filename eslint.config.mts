@@ -4,6 +4,7 @@ import { includeIgnoreFile } from '@eslint/compat';
 import eslint from '@eslint/js';
 import { standardTypeChecked } from '@vue/eslint-config-standard-with-typescript';
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript';
+import { globalIgnores } from 'eslint/config';
 import pluginVue from 'eslint-plugin-vue';
 import globals from 'globals';
 
@@ -21,6 +22,9 @@ export default defineConfigWithVueTs(
   vueTsConfigs.recommendedTypeChecked,
   vueTsConfigs.stylisticTypeChecked,
   includeIgnoreFile(path.resolve('.gitignore')),
+  globalIgnores([
+    'pkg/rdd-client/gen/', // Ignore generated files
+  ]),
   {
     name:            'rancher-desktop',
     languageOptions: {

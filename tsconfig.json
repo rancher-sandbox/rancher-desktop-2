@@ -21,6 +21,9 @@
       "@pkg/*": [
         "pkg/rancher-desktop/*"
       ],
+      "@rdd-client": [
+        "pkg/rdd-client/index"
+      ],
       "@shell/*": [
         "./node_modules/@rancher/shell/*"
       ]

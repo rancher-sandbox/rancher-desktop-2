@@ -102,6 +102,11 @@ export interface IpcMainInvokeEvents {
   // #region Host
   'host/isArm': () => boolean;
   // #endregion
+
+  // #region RDD
+  /** Fetch the KubeConfig for use with RDD */
+  'rdd/kube-config': () => string;
+  // #endregion
 }
 
 /**

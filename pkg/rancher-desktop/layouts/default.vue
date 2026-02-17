@@ -31,14 +31,11 @@
 </template>
 
 <script>
-
-import { mapGetters, mapState } from 'vuex';
-
 import ActionMenu from '@pkg/components/ActionMenu.vue';
 import Nav from '@pkg/components/Nav.vue';
 import StatusBar from '@pkg/components/StatusBar.vue';
 import TheTitle from '@pkg/components/TheTitle.vue';
-import { mapTypedState } from '@pkg/entry/store';
+import { mapTypedActions, mapTypedGetters, mapTypedState } from '@pkg/entry/store';
 import initExtensions from '@pkg/preload/extensions';
 import { ipcRenderer } from '@pkg/utils/ipcRenderer';
 import { mainRoutes } from '@pkg/window/constants';
@@ -83,7 +80,7 @@ export default {
       return this.installedExtensions.filter(ext => ext.canUpgrade).length;
     },
     ...mapTypedState('diagnostics', ['diagnostics']),
-    ...mapGetters('extensions', ['installedExtensions']),
+    ...mapTypedGetters('extensions', ['installedExtensions']),
   },
 
   beforeMount() {
@@ -148,10 +145,9 @@ export default {
   },
 
   methods: {
+    ...mapTypedActions('rdd-connection', ['fetchConfig']),
     async fetch() {
-      return;
-      await this.$store.dispatch('preferences/fetchPreferences');
-      await this.$store.dispatch('diagnostics/fetchDiagnostics');
+      await this.fetchConfig();
     },
 
     openDashboard() {

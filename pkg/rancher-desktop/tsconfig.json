@@ -15,11 +15,13 @@
     "strict": true,
     "noEmit": false,
     "experimentalDecorators": true,
-    "baseUrl": ".",
     "paths": {
       "@pkg/*": [
         "./*"
-      ]
+      ],
+      "@rdd-client": [
+        "../rdd-client/index"
+      ],
     },
     "typeRoots": [
       "../../node_modules",

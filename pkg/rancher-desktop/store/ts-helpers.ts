@@ -26,15 +26,18 @@ type MutationsPayloadType<M> = {
  * not provide typing to match the mutations.
  */
 export interface ActionContext<S, M = MutationsType<S>, G = GetterTree<S, any>> {
-  commit<mutationType extends keyof M>(
-    type: mutationType,
-    payload: MutationsPayloadType<M>[mutationType],
-    commitOptions?: CommitOptions): void;
+  commit:    Commit<M, keyof M>;
   dispatch:  Dispatch;
   state:     S;
   rootState: any;
   getters:   { [key in keyof G]: G[key] extends (...args: any) => any ? ReturnType<G[key]> : never };
 }
+
+export type Commit<M, mutationType extends keyof M> = (
+  type: mutationType,
+  payload: MutationsPayloadType<M>[mutationType],
+  commitOptions?: CommitOptions,
+) => void;
 
 // Copies from the vuex definition, but using our override ActionContext above.
 type ActionHandler<S, R, M, G> = (this: Store<R>, context: ActionContext<S, M, G>, payload?: any) => any;

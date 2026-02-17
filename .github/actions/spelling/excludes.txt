@@ -101,6 +101,7 @@ ignore$
 ^\Qsrc/go/networking/.golangci.yml\E$
 # Generated file
 ^\Qpkg/rancher-desktop/assets/extension-data.yaml\E$
+^pkg/rdd-client/gen/
 # Mostly image names
 ^\Qscripts/assets/extension-data.yaml\E$
 # Test data

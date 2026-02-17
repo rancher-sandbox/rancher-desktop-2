@@ -249,3 +249,6 @@ DNAT\s+.*\s+anywhere anywhere
 
 # Image names
 \bghcr\.io/[A-Za-z0-9_/.-]+(?::[A-Za-z0-9_.-]+)?\b
+
+# RDD API paths
+(['"])/apis/.+?\g{-1}

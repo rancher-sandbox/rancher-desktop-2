@@ -18,6 +18,7 @@ import { protocolsRegistered, setupProtocolHandlers } from '@pkg/utils/protocols
 import { getVersion } from '@pkg/utils/version';
 import getWSLVersion from '@pkg/utils/wslVersion';
 import * as window from '@pkg/window';
+import '@pkg/main/rdd-ctl';
 
 // https://www.electronjs.org/docs/latest/breaking-changes#changed-gtk-4-is-default-when-running-gnome
 if (process.platform === 'linux') {

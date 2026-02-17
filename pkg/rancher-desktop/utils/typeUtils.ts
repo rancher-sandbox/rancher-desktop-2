@@ -50,6 +50,10 @@ export type UpperSnakeCase<T extends string | symbol | number > =
       T extends `${ infer C }${ infer U }` ? `${ Uppercase<C> }${ UpperSnakeCaseInner<U> }`
         : T;
 
+export function UpperSnakeCase<T extends string>(input: T): UpperSnakeCase<T> {
+  return input.replace(/./g, (c, i) => (i > 0 && /[A-Z]/.test(c) ? '_' : '') + c.toUpperCase()) as UpperSnakeCase<T>;
+}
+
 /**
  * RecursiveKeys returns the set of all keys of a type, recursively, separated
  * by dots.

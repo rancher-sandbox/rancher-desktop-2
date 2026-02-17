@@ -10,6 +10,8 @@ import * as ImageManager from '../store/imageManager';
 import * as Page from '../store/page';
 import * as Preferences from '../store/preferences';
 import * as Prefs from '../store/prefs';
+import * as RDD from '../store/rdd';
+import * as RDDConnection from '../store/rddConnection';
 import * as ResourceFetch from '../store/resource-fetch';
 import * as Snapshots from '../store/snapshots';
 import * as TransientSettings from '../store/transientSettings';
@@ -25,17 +27,22 @@ const modules = {
   page:                Page,
   preferences:         Preferences,
   prefs:               Prefs,
+  rdd:                 RDD,
+  'rdd-connection':    RDDConnection,
   'resource-fetch':    ResourceFetch,
   snapshots:           Snapshots,
   transientSettings:   TransientSettings,
 };
 
+export type Modules = typeof modules;
+type moduleTypes = { [K in keyof Modules]: Modules[K] }[keyof Modules];
+type pluginType<T extends moduleTypes> = T extends { plugins: any } ? Plugin<ReturnType<T['state']>> : never;
+type pluginTypes = pluginType<moduleTypes>;
+
 export default createStore<any>({
   modules: Object.fromEntries(Object.entries(modules).map(([k, v]) => [k, { namespaced: true, ...v }])),
-  plugins: Object.values(modules).flatMap(v => 'plugins' in v ? v.plugins : []),
+  plugins: Object.values(modules).flatMap<pluginTypes>(v => 'plugins' in v ? v.plugins : []),
 });
-
-export type Modules = typeof modules;
 
 /**
  * mapTypedGetters is a wrapper around mapGetters that is aware of the types of

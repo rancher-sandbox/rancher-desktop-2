@@ -14,6 +14,7 @@ export default {
   chainWebpack: (config) => {
     config.target('electron-renderer');
     config.resolve.alias.set('@pkg', path.resolve(rootDir, 'pkg', 'rancher-desktop'));
+    config.resolve.alias.set('@rdd-client', path.resolve(rootDir, 'pkg', 'rdd-client'));
     config.resolve.extensions.add('.ts');
 
     config.module.rule('ts')

@@ -165,6 +165,11 @@ interface MainEventNames {
   'backend-locked-check'(): void;
 
   'dialog-info'(args: Record<string, string>): void;
+
+  /**
+   * Get the KubeConfig used for Rancher Desktop Daemon.
+   */
+  'rdd/kube-config'(): Promise<string>;
 }
 
 /**
