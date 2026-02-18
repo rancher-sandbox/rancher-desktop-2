@@ -55,6 +55,7 @@ type ImageStatus struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:ac:generate=true
 // +kubebuilder:subresource:status
 // +kubebuilder:selectablefield:JSONPath=.status.id
 // +kubebuilder:selectablefield:JSONPath=.status.repoTag

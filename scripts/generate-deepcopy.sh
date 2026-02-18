@@ -14,5 +14,5 @@ API_GROUPS=$(
 
 # Generate deepcopy for each API group
 for apigroup in $API_GROUPS; do
-	go tool controller-gen object "paths=./pkg/apis/$apigroup/..."
+	go tool controller-gen applyconfiguration object "paths=./pkg/apis/$apigroup/..."
 done

@@ -11,3 +11,5 @@
 /testdata/
 # Exclude generated CRD files
 ^pkg/controllers/.*/crd\.yaml$
+# Exclude generated applyconfiguration files
+^pkg/apis/[^/]+/[^/]+/applyconfiguration/
