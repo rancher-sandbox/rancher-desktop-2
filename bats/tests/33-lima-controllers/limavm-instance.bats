@@ -69,14 +69,14 @@ lima_instance_exists() {
 assert_instance_created() {
     local name=$1
     run -0 rdd ctl get limavm "${name}" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="InstanceCreated")].status}'
+        --output jsonpath='{.status.conditions[?(@.type=="Created")].status}'
     assert_output "True"
 }
 
 assert_instance_create_failed() {
     local name=$1
     run -0 rdd ctl get limavm "${name}" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="InstanceCreated")].status}'
+        --output jsonpath='{.status.conditions[?(@.type=="Created")].status}'
     assert_output "False"
 }
 
@@ -99,7 +99,7 @@ assert_instance_create_failed() {
         "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout="30s"
 }
 
-@test "wait for InstanceCreated condition to be True" {
+@test "wait for Created condition to be True" {
     try --max 60 --delay 1 -- assert_instance_created "${VM_NAME}"
 }
 
@@ -111,15 +111,15 @@ assert_instance_create_failed() {
     assert_file_exists "${LIMA_HOME}/${VM_NAME}/lima.yaml"
 }
 
-@test "verify InstanceCreated condition has correct reason" {
+@test "verify Created condition has correct reason" {
     run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="InstanceCreated")].reason}'
+        --output jsonpath='{.status.conditions[?(@.type=="Created")].reason}'
     assert_output "Created"
 }
 
-@test "verify InstanceCreated condition has message" {
+@test "verify Created condition has message" {
     run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="InstanceCreated")].message}'
+        --output jsonpath='{.status.conditions[?(@.type=="Created")].message}'
     # Message is "Lima instance created successfully" or "Lima instance exists"
     assert_output --partial "Lima instance"
 }
@@ -154,7 +154,7 @@ assert_instance_create_failed() {
     assert_output "limavm.lima.rancherdesktop.io/${VM_NAME}"
 }
 
-@test "wait for InstanceCreated after leftover cleanup" {
+@test "wait for Created after leftover cleanup" {
     try --max 60 --delay 1 -- assert_instance_created "${VM_NAME}"
 }
 
@@ -171,7 +171,7 @@ assert_instance_create_failed() {
     try --max 30 --delay 1 --until-fail -- lima_instance_exists "${VM_NAME}"
 }
 
-# Test that invalid image URL causes InstanceCreated condition to be False
+# Test that invalid image URL causes Created condition to be False
 
 INVALID_TEMPLATE='images:
 - location: https://invalid.example.test/nonexistent.iso
@@ -189,19 +189,19 @@ INVALID_TEMPLATE='images:
     assert_output "limavm.lima.rancherdesktop.io/invalid-vm"
 }
 
-@test "wait for InstanceCreated condition to be False" {
+@test "wait for Created condition to be False" {
     try --max 30 --delay 1 -- assert_instance_create_failed "invalid-vm"
 }
 
-@test "verify InstanceCreated condition has CreateFailed reason" {
+@test "verify Created condition has CreateFailed reason" {
     run -0 rdd ctl get limavm "invalid-vm" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="InstanceCreated")].reason}'
+        --output jsonpath='{.status.conditions[?(@.type=="Created")].reason}'
     assert_output "CreateFailed"
 }
 
-@test "verify InstanceCreated condition message contains error details" {
+@test "verify Created condition message contains error details" {
     run -0 rdd ctl get limavm "invalid-vm" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="InstanceCreated")].message}'
+        --output jsonpath='{.status.conditions[?(@.type=="Created")].message}'
     assert_output --partial "invalid.example.test"
 }
 

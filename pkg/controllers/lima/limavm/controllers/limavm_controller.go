@@ -33,11 +33,11 @@ const (
 	// TemplateConfigMapLabel is the label applied to template ConfigMaps managed by LimaVM resources.
 	TemplateConfigMapLabel = "lima.rancherdesktop.io/template-configmap"
 
-	// ConditionInstanceCreated indicates whether the Lima instance has been created on disk.
-	ConditionInstanceCreated = "InstanceCreated"
+	// ConditionCreated indicates whether the Lima instance has been created on disk.
+	ConditionCreated = "Created"
 
-	// ConditionInstanceRunning indicates whether the Lima instance is running.
-	ConditionInstanceRunning = "InstanceRunning"
+	// ConditionRunning indicates whether the Lima instance is running.
+	ConditionRunning = "Running"
 
 	// ReasonCreated is used when the Lima instance was successfully created.
 	ReasonCreated = "Created"
@@ -140,8 +140,8 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Set initial condition to Unknown so other components know reconciliation is in progress.
-	if apimeta.FindStatusCondition(limaVM.Status.Conditions, ConditionInstanceCreated) == nil {
-		r.setCondition(&limaVM, ConditionInstanceCreated, metav1.ConditionUnknown, ReasonPending, "Reconciliation in progress")
+	if apimeta.FindStatusCondition(limaVM.Status.Conditions, ConditionCreated) == nil {
+		r.setCondition(&limaVM, ConditionCreated, metav1.ConditionUnknown, ReasonPending, "Reconciliation in progress")
 		if err := r.Status().Update(ctx, &limaVM); err != nil {
 			logger.Error(err, "Failed to set initial condition")
 			return ctrl.Result{}, err
@@ -152,7 +152,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// Handle instances with a preparing sentinel file. The sentinel indicates that
 	// a previous reconcile started preparation but didn't complete successfully.
 	if hasSentinel(limaVM.Name) {
-		if apimeta.IsStatusConditionTrue(limaVM.Status.Conditions, ConditionInstanceCreated) {
+		if apimeta.IsStatusConditionTrue(limaVM.Status.Conditions, ConditionCreated) {
 			// Preparation completed but sentinel wasn't cleaned up; remove it now.
 			if err := removeSentinel(limaVM.Name); err != nil {
 				logger.Error(err, "Failed to remove sentinel file")
@@ -221,7 +221,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Instance already created - proceed to handle running state
-	if apimeta.IsStatusConditionTrue(limaVM.Status.Conditions, ConditionInstanceCreated) {
+	if apimeta.IsStatusConditionTrue(limaVM.Status.Conditions, ConditionCreated) {
 		return r.handleRunningState(ctx, &limaVM)
 	}
 
@@ -230,7 +230,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	existingInst, err := store.Inspect(ctx, limaVM.Name)
 	if err == nil && existingInst != nil {
 		logger.Info("Lima instance already exists", "instance", limaVM.Name)
-		r.setCondition(&limaVM, ConditionInstanceCreated, metav1.ConditionTrue, ReasonCreated, "Lima instance exists")
+		r.setCondition(&limaVM, ConditionCreated, metav1.ConditionTrue, ReasonCreated, "Lima instance exists")
 		if statusErr := r.Status().Update(ctx, &limaVM); statusErr != nil {
 			logger.Error(statusErr, "Failed to update status for existing instance")
 			return ctrl.Result{}, statusErr
@@ -242,7 +242,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	templateData, ok := templateConfigMap.Data[v1alpha1.TemplateConfigMapKey]
 	if !ok || templateData == "" {
 		err := errors.New("template ConfigMap missing template data")
-		r.setCondition(&limaVM, ConditionInstanceCreated, metav1.ConditionFalse, ReasonCreateFailed, err.Error())
+		r.setCondition(&limaVM, ConditionCreated, metav1.ConditionFalse, ReasonCreateFailed, err.Error())
 		if statusErr := r.Status().Update(ctx, &limaVM); statusErr != nil {
 			logger.Error(statusErr, "Failed to update status")
 		}
@@ -253,7 +253,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	inst, err := limainstance.Create(ctx, limaVM.Name, []byte(templateData), false)
 	if err != nil {
 		logger.Error(err, "Failed to create Lima instance")
-		r.setCondition(&limaVM, ConditionInstanceCreated, metav1.ConditionFalse, ReasonCreateFailed, err.Error())
+		r.setCondition(&limaVM, ConditionCreated, metav1.ConditionFalse, ReasonCreateFailed, err.Error())
 		if statusErr := r.Status().Update(ctx, &limaVM); statusErr != nil {
 			logger.Error(statusErr, "Failed to update status after instance creation failure")
 		}
@@ -279,7 +279,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if delErr := limainstance.Delete(ctx, inst, true); delErr != nil {
 			logger.Error(delErr, "Failed to clean up instance after prepare failure")
 		}
-		r.setCondition(&limaVM, ConditionInstanceCreated, metav1.ConditionFalse, ReasonCreateFailed, err.Error())
+		r.setCondition(&limaVM, ConditionCreated, metav1.ConditionFalse, ReasonCreateFailed, err.Error())
 		if statusErr := r.Status().Update(ctx, &limaVM); statusErr != nil {
 			logger.Error(statusErr, "Failed to update status after instance preparation failure")
 		}
@@ -287,7 +287,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	logger.Info("Created Lima instance", "instance", limaVM.Name)
-	r.setCondition(&limaVM, ConditionInstanceCreated, metav1.ConditionTrue, ReasonCreated, "Lima instance created successfully")
+	r.setCondition(&limaVM, ConditionCreated, metav1.ConditionTrue, ReasonCreated, "Lima instance created successfully")
 	if err := r.Status().Update(ctx, &limaVM); err != nil {
 		logger.Error(err, "Failed to update status after instance creation")
 		return ctrl.Result{}, err

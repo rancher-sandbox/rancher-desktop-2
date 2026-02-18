@@ -61,7 +61,7 @@ assert_instance_created_condition() {
     local name=$1
     local expected=$2
     run -0 rdd ctl get limavm "${name}" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="InstanceCreated")].status}'
+        --output jsonpath='{.status.conditions[?(@.type=="Created")].status}'
     assert_output "${expected}"
 }
 
@@ -69,7 +69,7 @@ assert_instance_running_condition() {
     local name=$1
     local expected=$2
     run -0 rdd ctl get limavm "${name}" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="InstanceRunning")].status}'
+        --output jsonpath='{.status.conditions[?(@.type=="Running")].status}'
     assert_output "${expected}"
 }
 
@@ -77,7 +77,7 @@ assert_instance_running_reason() {
     local name=$1
     local expected=$2
     run -0 rdd ctl get limavm "${name}" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="InstanceRunning")].reason}'
+        --output jsonpath='{.status.conditions[?(@.type=="Running")].reason}'
     assert_output "${expected}"
 }
 
@@ -96,7 +96,7 @@ lima_instance_running() {
 get_instance_running_transition_time() {
     local name=$1
     rdd ctl get limavm "${name}" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="InstanceRunning")].lastTransitionTime}'
+        --output jsonpath='{.status.conditions[?(@.type=="Running")].lastTransitionTime}'
 }
 
 get_hostagent_pid() {
@@ -134,16 +134,16 @@ assert_shell_succeeds() {
     assert_output "limavm.lima.rancherdesktop.io/${VM_NAME}"
 }
 
-@test "wait for InstanceCreated condition" {
+@test "wait for Created condition" {
     try --max 120 --delay 1 -- assert_instance_created_condition "${VM_NAME}" "True"
 }
 
-@test "verify initial InstanceRunning condition is False" {
+@test "verify initial Running condition is False" {
     # Wait a bit for the controller to set the initial condition
     try --max 30 --delay 1 -- assert_instance_running_condition "${VM_NAME}" "False"
 }
 
-@test "verify initial InstanceRunning reason is Stopped" {
+@test "verify initial Running reason is Stopped" {
     assert_instance_running_reason "${VM_NAME}" "Stopped"
 }
 
@@ -156,12 +156,12 @@ assert_shell_succeeds() {
     assert_output "true"
 }
 
-@test "wait for InstanceRunning condition to become True" {
+@test "wait for Running condition to become True" {
     # VM boot can take several minutes
     try --max 60 --delay 5 -- assert_instance_running_condition "${VM_NAME}" "True"
 }
 
-@test "verify InstanceRunning reason is Started" {
+@test "verify Running reason is Started" {
     assert_instance_running_reason "${VM_NAME}" "Started"
 }
 
@@ -176,12 +176,12 @@ assert_shell_succeeds() {
 
 @test "logs --stdout shows hostagent stdout" {
     # The hostagent writes its first stdout event only after the VM's SSH port
-    # becomes accessible, which can lag behind the InstanceRunning condition.
+    # becomes accessible, which can lag behind the Running condition.
     try --max 60 --delay 5 -- assert_stdout_logs_contain "${VM_NAME}" "sshLocalPort"
 }
 
 @test "shell executes command in running VM" {
-    # SSH inside the guest may not be ready immediately after InstanceRunning=True
+    # SSH inside the guest may not be ready immediately after Running=True
     try --max 12 --delay 5 -- assert_shell_succeeds "${VM_NAME}" uname -s
     assert_line "Linux"
 }
@@ -219,12 +219,12 @@ EOF
     assert_output "false"
 }
 
-@test "wait for InstanceRunning condition to become False" {
+@test "wait for Running condition to become False" {
     # Graceful shutdown can take up to 3 minutes
     try --max 60 --delay 5 -- assert_instance_running_condition "${VM_NAME}" "False"
 }
 
-@test "verify InstanceRunning reason is Stopped after stop" {
+@test "verify Running reason is Stopped after stop" {
     assert_instance_running_reason "${VM_NAME}" "Stopped"
 }
 

@@ -31,11 +31,11 @@ spec:
 status:
   templateConfigMap: alpine-template
   conditions:
-  - type: InstanceCreated
+  - type: Created
     status: "True"
     reason: Created
     message: Lima instance created successfully
-  - type: InstanceRunning
+  - type: Running
     status: "True"
     reason: Started
     message: Lima instance started successfully
@@ -61,15 +61,15 @@ status:
 
 - **status.conditions**: Standard Kubernetes conditions tracking the LimaVM state.
 
-    | Type | Status | Reason | Description |
-    | --- | --- | --- | --- |
-    | `InstanceCreated` | `Unknown` | `Pending` | Reconciler has seen the resource; creation not yet attempted |
-    | `InstanceCreated` | `True` | `Created` | Lima instance exists on disk and is ready |
-    | `InstanceCreated` | `False` | `CreateFailed` | Instance creation or preparation failed |
-    | `InstanceRunning` | `True` | `Started` | Lima instance is running |
-    | `InstanceRunning` | `False` | `Stopped` | Lima instance is stopped |
-    | `InstanceRunning` | `False` | `StartFailed` | Lima instance failed to start |
-    | `InstanceRunning` | `False` | `StopFailed` | Lima instance failed to stop cleanly |
+    | Type      | Status    | Reason         | Description                                                  |
+    |-----------|-----------|----------------|--------------------------------------------------------------|
+    | `Created` | `Unknown` | `Pending`      | Reconciler has seen the resource; creation not yet attempted |
+    | `Created` | `True`    | `Created`      | Lima instance exists on disk and is ready                    |
+    | `Created` | `False`   | `CreateFailed` | Instance creation or preparation failed                      |
+    | `Running` | `True`    | `Started`      | Lima instance is running                                     |
+    | `Running` | `False`   | `Stopped`      | Lima instance is stopped                                     |
+    | `Running` | `False`   | `StartFailed`  | Lima instance failed to start                                |
+    | `Running` | `False`   | `StopFailed`   | Lima instance failed to stop cleanly                         |
 
 Deleting a `LimaVM` object triggers the finalizer to stop the running instance, delete the Lima instance from disk, and remove the template ConfigMap.
 
@@ -110,22 +110,22 @@ sequenceDiagram
     MW->>MW: Add finalizer to LimaVM
     MW-->>User: LimaVM created
 
-    R->>R: Set InstanceCreated=Unknown
+    R->>R: Set Created=Unknown
     R->>R: Set owner ref on ConfigMap
     R->>R: Set status.templateConfigMap
     R->>Lima: Create instance
     R->>Lima: Prepare (download, disks)
-    R->>R: Set InstanceCreated=True
+    R->>R: Set Created=True
 
     User->>R: Set spec.running=true
     R->>Lima: Launch hostagent
-    R->>R: Set InstanceRunning=False (Starting)
+    R->>R: Set Running=False (Starting)
     R->>Lima: Poll status
-    R->>R: Set InstanceRunning=True
+    R->>R: Set Running=True
 
     User->>R: Set spec.running=false
     R->>Lima: Stop
-    R->>R: Set InstanceRunning=False
+    R->>R: Set Running=False
 
     User->>R: Delete LimaVM
     R->>F: Run finalizer
@@ -145,7 +145,7 @@ The mutating webhook creates the ConfigMap during admission, but cannot set an o
 
 A `.preparing` sentinel file marks preparation in progress. If a reconcile fails after creating the instance but before updating the status, the next reconcile detects the sentinel and cleans up the incomplete instance.
 
-If Lima reports the instance as "Broken" (e.g., hostagent crashed leaving stale PID files, or process mismatch between hostagent and VM driver), the reconciler attempts automatic recovery via force stop. If recovery succeeds, the instance returns to the Stopped state. If recovery fails, the `InstanceRunning` condition is set to `False` with reason `Broken` and a message describing the error.
+If Lima reports the instance as "Broken" (e.g., hostagent crashed leaving stale PID files, or process mismatch between hostagent and VM driver), the reconciler attempts automatic recovery via force stop. If recovery succeeds, the instance returns to the Stopped state. If recovery fails, the `Running` condition is set to `False` with reason `Broken` and a message describing the error.
 
 ## LimaDisk
 
