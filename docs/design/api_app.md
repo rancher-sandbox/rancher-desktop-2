@@ -54,33 +54,52 @@ kind: App
 metadata:
   name: rancher-desktop
   namespace: rancher-desktop
+
 spec:
   containerEngine:
     name: moby
   kubernetes:
     version: 1.30.0
-  status: running
-  dryRun: false
+  running: true
+
 status:
-  appVersion: 2.0.0
-  onlineStatus: true
-  status: starting
+  containerEngine:
+    name: moby
+  kubernetes:
+    version: 1.30.0
+
   progress: "Downloading Kubernetes 1.30.0"
+  version: 2.0.0
+  onlineStatus: true
+
+  conditions:
+  - type: AppCreated
+    status: "True"
+    reason: Created
+    message: Rancher Desktop App created successfully
+  - type: AppRunning
+    status: "True"
+    reason: Started
+    message: Rancher Desktop App started successfully
 ```
 
-### `spec`
+- **spec**: Has all the usual fields that are in `settings.json` in "Rancher Desktop 1.x".
 
-The `spec` has all the usual fields that are in `settings.json` in "Rancher Desktop 1.x".
+- **spec.running**: Set to `true` when the LimaVM should be running, set to `false` when it should be stopped.
 
-The following fields have a special purpose:
+- **status.conditions**: Standard Kubernetes conditions tracking the App state.
 
-#### `status`
+  | Type      | Status      | Reason         | Description                                                  |
+  |-----------|-------------|----------------|--------------------------------------------------------------|
+  | `Created` | `Unknown`   | `Pending`      | Reconciler has seen the resource; creation not yet attempted |
+  | `Created` | `True`      | `Created`      | App has created the LimaVM and LimaDisk and is ready         |
+  | `Created` | `False`     | `CreateFailed` | App creation failed                                          |
+  | `Running` | `True`      | `Started`      | App is running                                               |
+  | `Running` | `False`     | `Stopped`      | App is stopped                                               |
+  | `Running` | `False`     | `StartFailed`  | App failed to start                                          |
+  | `Running` | `False`     | `StopFailed`   | App failed to stop cleanly                                   |
 
-The `status` field is set to the desired state of the VM: `running` or `stopped`. The controller will update the `spec.status` field of the `LimaVM` object to match.
-
-#### `dryRun`
-
-The `dryRun` field can be set to `true` to validate a proposed settings change without actually committing it (for the Preferences dialog). When `dryRun` is set, then the admission controller will always reject the change request, but the error will be "settings valid" when no actual error is detected.
+Deleting the `App` resource triggers the finalizer to stop the and delete the LimaVM and the LimaDisk.
 
 ## GUI
 
@@ -88,4 +107,4 @@ How the GUI uses the App object:
 
 ### Status Bar
 
-The status bar is updated with the information from the `spec` (e.g. container engine, Kubernetes version) and `status` (e.g. online status, progress indicator) parts of the `App` object
+The status bar is updated with the information from the `status` part of the `App` object
