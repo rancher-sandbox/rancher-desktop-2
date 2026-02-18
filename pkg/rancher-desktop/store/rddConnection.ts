@@ -18,6 +18,8 @@ export interface RDDConnectionState {
   error:               any;
   watch:               RDDClient.Watch;
   disconnectCallbacks: Record<string, () => void>;
+  /** Kubernetes namespace RDD objects live in. */
+  namespace:           string;
 };
 
 /** Vuex state for managing the RDD connection. */
@@ -28,6 +30,7 @@ export const state: () => RDDConnectionState = () => {
     error:               undefined,
     watch:               markRaw(new RDDClient.Watch(config)),
     disconnectCallbacks: {},
+    namespace:           'default',
   };
 };
 
@@ -38,7 +41,7 @@ export const mutations = {
     state.watch.config = config;
   },
   SET_ERROR(state, error) {
-    state.error = markRaw(error);
+    state.error = error ? markRaw(error) : error;
   },
   SET_DISCONNECT_CALLBACKS(state, callbacks) {
     state.disconnectCallbacks = callbacks;
@@ -135,7 +138,19 @@ interface ResourceTypeLike {
   type?:      string;
   path:       string;
   makeClient: (config: RDDClient.KubeConfig) => any;
-  list:       (client: any, namespace?: string) => Promise<RDDClient.KubernetesListObject<any>>;
+  list:       (client: any, options: ListResourceOptions<any>) => Promise<RDDClient.KubernetesListObject<any>>;
+}
+
+/**
+ * ListResourceOptions describes the options parameter for a ResourceType's
+ * `list` method.
+ */
+export interface ListResourceOptions<State> {
+  /** Kubernetes namespace the objects live in; if not set, lists in all namespaces. */
+  namespace?:      string,
+  /** The associated state object. */
+  state:           State,
+  connectionState: RDDConnectionState,
 }
 
 /**
@@ -151,7 +166,7 @@ interface ResourceType<C, StateName extends string, TypeName extends string> ext
   /** A function which returns the type of client needed to list the resource. */
   makeClient: (config: RDDClient.KubeConfig) => C,
   /** A function which lists the resource. */
-  list:       (client: C, namespace?: string) => Promise<RDDClient.KubernetesListObject<ItemType<C, TypeName>>>;
+  list:       (client: C, options: ListResourceOptions<ResourceStateItem<StateName, ItemType<C, TypeName>>>) => Promise<RDDClient.KubernetesListObject<ItemType<C, TypeName>>>;
 }
 
 /**
@@ -182,10 +197,10 @@ export function listNamespacedResource<
     (param?: any, options?: RDDClient.ConfigurationOptions) => any
   >,
 >(typeName: TypeName)
-  : (client: C, namespace?: string) => ReturnType<C[`listNamespaced${ TypeName }`]> {
-  return (client: C, namespace?: string) => {
-    if (namespace) {
-      return client[`listNamespaced${ typeName }`]({ namespace });
+  : (client: C, options: ListResourceOptions<any>) => ReturnType<C[`listNamespaced${ TypeName }`]> {
+  return (client: C, options: ListResourceOptions<any>) => {
+    if (options.namespace) {
+      return client[`listNamespaced${ typeName }`]({ namespace: options.namespace });
     }
     return client[`list${ typeName }ForAllNamespaces`]();
   };
@@ -200,7 +215,7 @@ type ResourceStateWatcher<N extends string, T extends RDDClient.KubernetesObject
  * ResourceStateItem defines the state object derived from one specific resource type.
  */
 type ResourceStateItem<Key extends string, T extends RDDClient.KubernetesObject> =
-  Record<Key, null | T[]> & { _watchers: ResourceStateWatcher<Key, T>, namespace: string };
+  Record<Key, null | T[]> & { _watchers: ResourceStateWatcher<Key, T> };
 
 type ResourceStateReturn<R> =
   R extends ResourceType<infer C, infer StateName extends string, infer TypeName extends string>
@@ -216,7 +231,6 @@ export function resourceState<const T extends readonly ResourceTypeLike[]>(resou
 IntersectMapped<{ [K in keyof T]: ResourceStateReturn<T[K]> }> {
   return {
     _watchers: {},
-    namespace: 'default' as string | undefined,
     ...Object.fromEntries(resources.map(r => [r.name, null])),
   } as ReturnType<typeof resourceState<T>>;
 }
@@ -228,7 +242,6 @@ type ResourceMutationsReturn<R> =
       (state: ResourceStateItem<N, ItemType<C, TypeName>>, payload: ItemType<C, TypeName>[] | null) => void }
       & {
         SET__WATCHERS: ResourceMutationsBuiltin<C, N, TypeName, '_watchers'>,
-        SET_NAMESPACE: ResourceMutationsBuiltin<C, N, TypeName, 'namespace'>,
       }
     : never;
 type ResourceMutationsBuiltin<C, N extends string, TypeName extends string, prop extends keyof ResourceStateItem<N, ItemType<C, TypeName>>> =
@@ -243,10 +256,6 @@ IntersectMapped<{ [K in keyof T]: ResourceMutationsReturn<T[K]> }> {
   return {
     SET__WATCHERS: (state: any, payload: any) => {
       state._watchers = markRaw(payload);
-    },
-    SET_NAMESPACE: (state: any, namespace: string) => {
-      state.namespace = namespace;
-      // TODO: Update all the watchers.
     },
     ...Object.fromEntries(resources.map(r => {
       return [`SET_${ UpperSnakeCase(r.name) }`, (state: any, payload: any) => {
@@ -264,7 +273,9 @@ type WatchActionName<StateName extends string> = `watch${ Capitalize<StateName> 
  * watching a resource.
  */
 interface ResourceWatchActionsOptions {
+  /** The Kubernetes namespace the RDD objects live in. */
   namespace?: string,
+  /** Callback that is invoked when an error occurs. */
   callback?:  (error: Error) => void,
 }
 
@@ -306,7 +317,12 @@ IntersectMapped<{ [K in keyof T]: ResourceWatchActionsReturn<T[K]> }> {
           r.path,
           async() => {
             // If this throws, the `doneFn` callback gets called with the exception.
-            const result = await r.list(client, options?.namespace ?? state.namespace);
+            const listOptions: ListResourceOptions<any> = {
+              namespace:       options?.namespace ?? rddState.namespace,
+              state,
+              connectionState: rddState,
+            };
+            const result = await r.list(client, listOptions);
             commit('rdd-connection/SET_ERROR', undefined, { root: true });
             return result;
           },
