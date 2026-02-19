@@ -9,8 +9,11 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"time"
 
 	limainstance "github.com/lima-vm/lima/v2/pkg/instance"
+	"github.com/lima-vm/lima/v2/pkg/limatype"
+	"github.com/lima-vm/lima/v2/pkg/limatype/filenames"
 	"github.com/lima-vm/lima/v2/pkg/store"
 
 	corev1 "k8s.io/api/core/v1"
@@ -96,6 +99,21 @@ func removeSentinel(instanceName string) error {
 	return err
 }
 
+// instanceTemplatePath returns the path to the lima.yaml for an instance.
+func instanceTemplatePath(instanceName string) string {
+	return filepath.Join(instance.LimaHome(), instanceName, filenames.LimaYAML)
+}
+
+// readInstanceTemplate reads the lima.yaml from the instance directory.
+func readInstanceTemplate(instanceName string) ([]byte, error) {
+	return os.ReadFile(instanceTemplatePath(instanceName))
+}
+
+// writeInstanceTemplate writes the lima.yaml to the instance directory.
+func writeInstanceTemplate(instanceName string, data []byte) error {
+	return os.WriteFile(instanceTemplatePath(instanceName), data, 0o644)
+}
+
 // LimaVMReconciler reconciles a LimaVM object.
 type LimaVMReconciler struct {
 	client.Client
@@ -171,7 +189,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			}
 		}
 		// Requeue to continue with fresh state after cleanup.
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
 	// Delete any leftover instance from a failed deletion before setting up owner references.
@@ -220,10 +238,16 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, nil
 	}
 
-	// Instance already created - handle restart annotation, then running state.
+	// Instance already created - handle restart annotation, template changes, then running state.
 	if apimeta.IsStatusConditionTrue(limaVM.Status.Conditions, ConditionCreated) {
 		if _, hasAnnotation := limaVM.Annotations[v1alpha1.AnnotationRestartRequested]; hasAnnotation {
 			return r.handleRestartAnnotation(ctx, &limaVM)
+		}
+		if templateConfigMap.ResourceVersion != limaVM.Status.ObservedTemplateResourceVersion {
+			result, err := r.handleTemplateUpdate(ctx, &limaVM, templateConfigMap)
+			if err != nil || !result.IsZero() {
+				return result, err
+			}
 		}
 		return r.handleRunningState(ctx, &limaVM)
 	}
@@ -233,6 +257,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	existingInst, err := store.Inspect(ctx, limaVM.Name)
 	if err == nil && existingInst != nil {
 		logger.Info("Lima instance already exists", "instance", limaVM.Name)
+		limaVM.Status.ObservedTemplateResourceVersion = templateConfigMap.ResourceVersion
 		r.setCondition(&limaVM, ConditionCreated, metav1.ConditionTrue, ReasonCreated, "Lima instance exists")
 		if statusErr := r.Status().Update(ctx, &limaVM); statusErr != nil {
 			logger.Error(statusErr, "Failed to update status for existing instance")
@@ -290,6 +315,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	logger.Info("Created Lima instance", "instance", limaVM.Name)
+	limaVM.Status.ObservedTemplateResourceVersion = templateConfigMap.ResourceVersion
 	r.setCondition(&limaVM, ConditionCreated, metav1.ConditionTrue, ReasonCreated, "Lima instance created successfully")
 	if err := r.Status().Update(ctx, &limaVM); err != nil {
 		logger.Error(err, "Failed to update status after instance creation")
@@ -304,6 +330,61 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Return and let the next reconcile handle running state (one mutation per reconcile)
 	return ctrl.Result{}, nil
+}
+
+// handleTemplateUpdate detects and applies changes to the template ConfigMap.
+// If the on-disk lima.yaml differs from the ConfigMap, it writes the new template
+// and stops the instance (if running) so the caller can restart it.
+//
+// Returns a non-zero result only when a running instance was stopped (the
+// caller should let the next reconcile restart it). All other paths return
+// an empty result so the caller falls through to handleRunningState.
+func (r *LimaVMReconciler) handleTemplateUpdate(ctx context.Context, limaVM *v1alpha1.LimaVM, templateConfigMap *corev1.ConfigMap) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	diskTemplate, err := readInstanceTemplate(limaVM.Name)
+	if err != nil {
+		logger.Error(err, "Failed to read on-disk template")
+		return ctrl.Result{}, err
+	}
+
+	newTemplate := templateConfigMap.Data[v1alpha1.TemplateConfigMapKey]
+
+	// Update observed version regardless of whether the template data changed.
+	// A ConfigMap update that doesn't change the template key (e.g. label change)
+	// still bumps resourceVersion; recording it avoids repeated comparisons.
+	limaVM.Status.ObservedTemplateResourceVersion = templateConfigMap.ResourceVersion
+
+	if string(diskTemplate) == newTemplate {
+		logger.Info("Template ConfigMap changed but on-disk template is identical")
+		return ctrl.Result{}, r.Status().Update(ctx, limaVM)
+	}
+
+	logger.Info("Template changed, updating on-disk lima.yaml")
+	if err := writeInstanceTemplate(limaVM.Name, []byte(newTemplate)); err != nil {
+		logger.Error(err, "Failed to write updated template to disk")
+		return ctrl.Result{}, err
+	}
+
+	inst, err := store.Inspect(ctx, limaVM.Name)
+	if err != nil {
+		logger.Error(err, "Failed to inspect Lima instance")
+		return ctrl.Result{}, err
+	}
+
+	if inst != nil && inst.Status == limatype.StatusRunning {
+		logger.Info("Stopping instance to apply template change")
+		// stopInstance updates status (sets Running condition and persists
+		// the ObservedTemplateResourceVersion we set above).
+		if _, err := r.stopInstance(ctx, limaVM, inst); err != nil {
+			return ctrl.Result{}, err
+		}
+		// Requeue so the next reconcile calls handleRunningState to restart.
+		return ctrl.Result{RequeueAfter: time.Second}, nil
+	}
+
+	// Instance is not running; persist the new observed version.
+	return ctrl.Result{}, r.Status().Update(ctx, limaVM)
 }
 
 // setCondition updates or adds a condition in the LimaVM status.

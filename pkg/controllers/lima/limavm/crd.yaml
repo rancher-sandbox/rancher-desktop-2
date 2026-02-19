@@ -148,6 +148,13 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              observedTemplateResourceVersion:
+                description: |-
+                  observedTemplateResourceVersion tracks the resourceVersion of the template
+                  ConfigMap last written to the instance's lima.yaml on disk.
+                  When this differs from the ConfigMap's current resourceVersion, the
+                  reconciler checks for template changes.
+                type: string
               restartCount:
                 description: |-
                   restartCount tracks how many times the instance has reached the Running state.
