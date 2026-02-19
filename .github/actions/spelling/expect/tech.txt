@@ -19,6 +19,7 @@ vms
 aarch
 
 # Kubernetes and KubeBuilder
+applyconfiguration
 gvk
 gvr
 printcolumn

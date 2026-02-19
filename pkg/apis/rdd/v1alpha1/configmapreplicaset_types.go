@@ -39,6 +39,7 @@ type ConfigMapStatus struct {
 }
 
 //+kubebuilder:object:root=true
+// +kubebuilder:ac:generate=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:shortName=cmrs
 

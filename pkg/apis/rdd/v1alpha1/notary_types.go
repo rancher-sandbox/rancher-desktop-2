@@ -30,6 +30,7 @@ type NotaryStatus struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:ac:generate=true
 // +kubebuilder:subresource:status
 
 // Notary is the Schema for the notaries API.
