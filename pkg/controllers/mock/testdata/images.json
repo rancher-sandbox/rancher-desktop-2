@@ -55,7 +55,8 @@
     {
         "Id": "sha256:702bb92714f2547d0eec39b68e0d527a99513638a95e71be175bc210d8668756",
         "RepoTags": [
-            "registry.opensuse.org/opensuse/leap:latest"
+            "registry.opensuse.org/opensuse/leap:latest",
+            "registry.opensuse.org/opensuse/leap:15.6"
         ],
         "RepoDigests": [
             "registry.opensuse.org/opensuse/leap@sha256:702bb92714f2547d0eec39b68e0d527a99513638a95e71be175bc210d8668756"

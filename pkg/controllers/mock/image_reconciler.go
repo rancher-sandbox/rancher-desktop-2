@@ -21,6 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
+	metav1apply "k8s.io/client-go/applyconfigurations/meta/v1"
 	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
+	containersv1alpha1apply "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1/applyconfiguration/containers/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 )
 
@@ -72,49 +74,56 @@ func (r *imageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
+	ownerReference := metav1apply.OwnerReference().
+		WithAPIVersion(gvk.GroupVersion().String()).
+		WithKind(gvk.Kind).
+		WithName(rddNamespace.GetName()).
+		WithUID(rddNamespace.GetUID()).
+		WithBlockOwnerDeletion(true).
+		WithController(true)
+
 	for _, inspect := range r.inspects {
-		imageName := inspect.ID
-		if len(inspect.RepoTags) > 0 {
-			imageName = inspect.RepoTags[0]
-		}
-		templateImage := containersv1alpha1.Image{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: metav1.NamespaceDefault,
-				Labels:    map[string]string{},
-				OwnerReferences: []metav1.OwnerReference{
-					*metav1.NewControllerRef(&rddNamespace, gvk),
-				},
-			},
-			Status: containersv1alpha1.ImageStatus{
-				ID:           inspect.ID,
-				RepoDigests:  inspect.RepoDigests,
-				Architecture: inspect.Architecture,
-				OS:           inspect.Os,
-				Size:         inspect.Size,
-				Labels:       inspect.Config.Labels,
-			},
-		}
+		statusApplyConfig := containersv1alpha1apply.ImageStatus().
+			WithID(inspect.ID).
+			WithRepoDigests(inspect.RepoDigests...).
+			WithArchitecture(inspect.Architecture).
+			WithOS(inspect.Os).
+			WithSize(inspect.Size).
+			WithLabels(inspect.Config.Labels)
 		if t, err := time.Parse(time.RFC3339Nano, inspect.Created); err == nil {
-			templateImage.Status.CreatedAt = metav1.NewTime(t)
+			statusApplyConfig.WithCreatedAt(metav1.NewTime(t))
 		} else if inspect.Created != "" {
+			imageName := inspect.ID
+			if len(inspect.RepoTags) > 0 {
+				imageName = inspect.RepoTags[0]
+			}
 			log.Error(err, "Failed to parse image created time", "image", imageName, "created", inspect.Created)
 		}
+
 		if len(inspect.RepoTags) > 0 {
-			templateImage.ObjectMeta.GenerateName = sanitizeKubernetesObjectName(inspect.ID) + "-"
 			for _, tag := range inspect.RepoTags {
-				targetImage := templateImage.DeepCopy()
-				targetImage.Labels["namespace"] = containerNamespace
-				targetImage.Status.RepoTag = tag
-				if err := r.upsertImage(ctx, targetImage); err != nil {
-					errs = append(errs, err)
+				image, err := r.findOrCreateImage(ctx, inspect.ID, tag)
+				if err != nil {
+					errs = append(errs, fmt.Errorf("failed to find or create image %s: %w", tag, err))
+					continue
 				}
+				statusApplyCopy := *statusApplyConfig
+				errs = append(errs, r.updateImage(ctx,
+					containersv1alpha1apply.Image(image.GetName(), image.GetNamespace()).
+						WithLabels(map[string]string{
+							"namespace": containerNamespace,
+						}).
+						WithOwnerReferences(ownerReference),
+					statusApplyCopy.WithRepoTag(tag))...,
+				)
 			}
 		} else {
 			// No tags; create a single dangling image.
-			templateImage.ObjectMeta.Name = sanitizeKubernetesObjectName(inspect.ID)
-			if err := r.upsertImage(ctx, &templateImage); err != nil {
-				errs = append(errs, err)
-			}
+			errs = append(errs, r.updateImage(ctx,
+				containersv1alpha1apply.Image(sanitizeKubernetesObjectName(inspect.ID), metav1.NamespaceDefault).
+					WithOwnerReferences(ownerReference),
+				statusApplyConfig)...,
+			)
 		}
 	}
 
@@ -126,38 +135,67 @@ func (r *imageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	return ctrl.Result{}, nil
 }
 
-// upsertImage creates or updates the given Image resource.  The passed in image
-// will be updated with the results.
-func (r *imageReconciler) upsertImage(ctx context.Context, image *containersv1alpha1.Image) error {
-	imageName := image.Status.RepoTag
-	if imageName == "" {
-		imageName = image.Status.ID
-	}
-
+// findOrCreateImage looks for an existing Image with the given ID and repoTag,
+// and creates one if it doesn't exist.  This is needed because apply cannot be
+// used with `GenerateName` (because it is unclear when a new object needs to be
+// created).
+func (r *imageReconciler) findOrCreateImage(ctx context.Context, id, repoTag string) (*containersv1alpha1.Image, error) {
 	var existingImages containersv1alpha1.ImageList
-	originalImage := image.DeepCopy()
 	err := r.List(ctx, &existingImages,
 		client.MatchingFieldsSelector{Selector: fields.AndSelectors(
-			fields.OneTermEqualSelector(".status.id", image.Status.ID),
-			fields.OneTermEqualSelector(".status.repoTag", image.Status.RepoTag),
+			fields.OneTermEqualSelector(".status.id", id),
+			fields.OneTermEqualSelector(".status.repoTag", repoTag),
 		)})
 	if apierrors.IsNotFound(err) || (err == nil && len(existingImages.Items) == 0) {
-		if err := r.Create(ctx, image); err != nil {
-			return fmt.Errorf("failed to create static image %s: %w", imageName, err)
+		// No existing image found; create a new one.
+		image := containersv1alpha1.Image{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:    metav1.NamespaceDefault,
+				GenerateName: sanitizeKubernetesObjectName(id) + "-",
+			},
 		}
-	} else if err != nil {
-		return fmt.Errorf("failed to find existing static images for %s: %w", imageName, err)
-	} else if len(existingImages.Items) == 1 {
-		existingImages.Items[0].DeepCopyInto(image)
+		if err := r.Create(ctx, &image); err != nil {
+			return nil, fmt.Errorf("failed to create image %s: %w", repoTag, err)
+		}
+		return &image, nil
 	}
-	// We either found an existing image, or we created a new one; in the former
-	// case, we need to update the status.  In the latter case, the status field
-	// isn't updated in the initial create, so we need to set it.
-	originalImage.Status.DeepCopyInto(&image.Status)
-	if err := r.Status().Update(ctx, image); err != nil {
-		return fmt.Errorf("failed to update static image %s status: %w", imageName, err)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list images: %w", err)
 	}
-	return nil
+	for _, image := range existingImages.Items {
+		// Return the first matching image.
+		return &image, nil
+	}
+	// This should be unreachable, but handle it just in case.
+	return nil, fmt.Errorf("unexpectedly found no images with id %s and repoTag %s", id, repoTag)
+}
+
+// updateImage applies the given configuration to the Image and its status.
+func (r *imageReconciler) updateImage(
+	ctx context.Context,
+	image *containersv1alpha1apply.ImageApplyConfiguration,
+	status *containersv1alpha1apply.ImageStatusApplyConfiguration,
+) []error {
+	var errs []error
+	err := r.Client.Apply(
+		ctx,
+		image,
+		client.ForceOwnership,
+		client.FieldOwner(controllerLongName))
+	if err != nil {
+		errs = append(errs, fmt.Errorf("failed to apply image %s: %w", *image.GetName(), err))
+	}
+	// Update the status subresource separately, per Kubernetes API requirements.
+	err = r.Client.SubResource("status").Apply(
+		ctx,
+		containersv1alpha1apply.Image(*image.GetName(), *image.GetNamespace()).
+			WithStatus(status),
+		client.ForceOwnership,
+		client.FieldOwner(controllerLongName))
+	if err != nil {
+		errs = append(errs, fmt.Errorf("failed to apply image status %s: %w", *image.GetName(), err))
+	}
+	return errs
 }
 
 func (r *imageReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
