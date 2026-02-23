@@ -10,6 +10,11 @@ import (
 
 // ImageStatus defines the observed state of the image.
 type ImageStatus struct {
+	// Namespace is the container namespace; refers to a `ContainerNamespace`
+	// object in the same Kubernetes namespace.
+	//
+	// +required
+	Namespace string `json:"namespace"`
 	// ID is the image ID, as reported by the container runtime.
 	//
 	// +required
@@ -57,6 +62,7 @@ type ImageStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:ac:generate=true
 // +kubebuilder:subresource:status
+// +kubebuilder:selectablefield:JSONPath=.status.namespace
 // +kubebuilder:selectablefield:JSONPath=.status.id
 // +kubebuilder:selectablefield:JSONPath=.status.repoTag
 // +kubebuilder:printcolumn:name="Tag",type=string,JSONPath=`.status.repoTag`
@@ -88,6 +94,12 @@ type ImageList struct {
 }
 
 type ImagePullRequestSpec struct {
+	// Namespace is the container namespace; refers to a `ContainerNamespace`
+	// object in the same Kubernetes namespace.  If not specified, the image
+	// will be pulled into the default namespace.
+	//
+	// +optional
+	Namespace string `json:"namespace"`
 	// RepoTag is the image to pull.
 	//
 	// +required
@@ -108,6 +120,7 @@ type ImagePullRequestStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:selectablefield:JSONPath=.spec.namespace
 // +kubebuilder:metadata:annotations=rdd.rancherdesktop.io/controller=image
 
 // ImagePullRequest defines a request to pull a new image.
@@ -143,7 +156,7 @@ type ImagePullRequestList struct {
 
 type ImagePushRequestSpec struct {
 	// ImageRef is the image to push.
-	// This must be the name of an Image object in the same namespace.
+	// This must be the name of an Image object in the same Kubernetes namespace.
 	//
 	// +required
 	ImageRef string `json:"imageRef"`

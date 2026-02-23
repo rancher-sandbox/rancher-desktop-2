@@ -50,6 +50,17 @@ spec:
               driver:
                 description: Driver the volume should use.
                 type: string
+              name:
+                description: |-
+                  Name of the volume to create; if not specified, a random name will be
+                  generated.
+                type: string
+              namespace:
+                description: |-
+                  Namespace of the volume; refers to a `ContainerNamespace` object in the
+                  same Kubernetes namespace.  If not specified, the volume will be created
+                  in the default namespace.
+                type: string
             required:
             - driver
             type: object
@@ -189,6 +200,14 @@ spec:
               mountpoint:
                 description: MountPoint is where on the host the volume is mounted.
                 type: string
+              name:
+                description: Name of the volume.
+                type: string
+              namespace:
+                description: |-
+                  Namespace of the volume; refers to a `ContainerNamespace` object in the
+                  same Kubernetes namespace.
+                type: string
               options:
                 additionalProperties:
                   type: string
@@ -201,9 +220,13 @@ spec:
             - createdAt
             - driver
             - mountpoint
+            - name
+            - namespace
             - scope
             type: object
         type: object
+    selectableFields:
+    - jsonPath: .status.namespace
     served: true
     storage: true
     subresources:

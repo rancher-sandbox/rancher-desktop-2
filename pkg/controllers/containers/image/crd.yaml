@@ -47,6 +47,12 @@ spec:
           spec:
             description: Spec defines the desired state of ImagePullRequest
             properties:
+              namespace:
+                description: |-
+                  Namespace is the container namespace; refers to a `ContainerNamespace`
+                  object in the same Kubernetes namespace.  If not specified, the image
+                  will be pulled into the default namespace.
+                type: string
               repoTag:
                 description: RepoTag is the image to pull.
                 type: string
@@ -125,6 +131,8 @@ spec:
         required:
         - spec
         type: object
+    selectableFields:
+    - jsonPath: .spec.namespace
     served: true
     storage: true
     subresources:
@@ -174,7 +182,7 @@ spec:
               imageRef:
                 description: |-
                   ImageRef is the image to push.
-                  This must be the name of an Image object in the same namespace.
+                  This must be the name of an Image object in the same Kubernetes namespace.
                 type: string
             required:
             - imageRef
@@ -384,6 +392,11 @@ spec:
                   type: string
                 description: Labels of the image.
                 type: object
+              namespace:
+                description: |-
+                  Namespace is the container namespace; refers to a `ContainerNamespace`
+                  object in the same Kubernetes namespace.
+                type: string
               os:
                 description: OS associated with the image.
                 type: string
@@ -405,11 +418,13 @@ spec:
             required:
             - architecture
             - id
+            - namespace
             - os
             - size
             type: object
         type: object
     selectableFields:
+    - jsonPath: .status.namespace
     - jsonPath: .status.id
     - jsonPath: .status.repoTag
     served: true

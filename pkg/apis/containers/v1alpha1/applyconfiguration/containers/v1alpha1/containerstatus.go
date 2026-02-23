@@ -13,6 +13,11 @@ import (
 //
 // ContainerStatus defines the observed state of the container.
 type ContainerStatusApplyConfiguration struct {
+	// Name of the container; this is distinct from the container ID.
+	Name *string `json:"name,omitempty"`
+	// Namespace is the container namespace; refers to a `ContainerNamespace`
+	// object in the same Kubernetes namespace.
+	Namespace *string `json:"namespace,omitempty"`
 	// Path to the executable (within the image) for the process.
 	Path *string `json:"path,omitempty"`
 	// Args is the arguments to the executable.
@@ -56,6 +61,22 @@ type ContainerStatusApplyConfiguration struct {
 // apply.
 func ContainerStatus() *ContainerStatusApplyConfiguration {
 	return &ContainerStatusApplyConfiguration{}
+}
+
+// WithName sets the Name field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Name field is set to the value of the last call.
+func (b *ContainerStatusApplyConfiguration) WithName(value string) *ContainerStatusApplyConfiguration {
+	b.Name = &value
+	return b
+}
+
+// WithNamespace sets the Namespace field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Namespace field is set to the value of the last call.
+func (b *ContainerStatusApplyConfiguration) WithNamespace(value string) *ContainerStatusApplyConfiguration {
+	b.Namespace = &value
+	return b
 }
 
 // WithPath sets the Path field in the declarative configuration to the given value

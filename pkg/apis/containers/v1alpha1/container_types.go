@@ -62,6 +62,15 @@ type ContainerSpec struct {
 
 // ContainerStatus defines the observed state of the container.
 type ContainerStatus struct {
+	// Name of the container; this is distinct from the container ID.
+	//
+	// +required
+	Name string `json:"name"`
+	// Namespace is the container namespace; refers to a `ContainerNamespace`
+	// object in the same Kubernetes namespace.
+	//
+	// +required
+	Namespace string `json:"namespace"`
 	// Path to the executable (within the image) for the process.
 	//
 	// +required
@@ -133,6 +142,7 @@ type ContainerStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:ac:generate=true
 // +kubebuilder:subresource:status
+// +kubebuilder:selectablefield:JSONPath=.status.namespace
 // +kubebuilder:printcolumn:name="Running",type=boolean,JSONPath=`.status.conditions[?(@.type=="Running")].status`
 
 // Container is the Schema for the containers API.
@@ -166,6 +176,17 @@ type ContainerList struct {
 
 // ContainerCreateRequestSpec defines the desired state for creating a container.
 type ContainerCreateRequestSpec struct {
+	// Name of the container to create; if not specified, a random name will be
+	// generated.
+	//
+	// +optional
+	Name string `json:"name"`
+	// Namespace is the container namespace; refers to a `ContainerNamespace`
+	// object in the same Kubernetes namespace.  If not specified, the container
+	// will be created in the default namespace.
+	//
+	// +optional
+	Namespace string `json:"namespace"`
 	// Path is the path to the executable (within the image) for the process.
 	// Defaults to the image's default command if not specified.
 	//
@@ -218,6 +239,7 @@ type ContainerCreateRequestStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:selectablefield:JSONPath=.spec.namespace
 // +kubebuilder:metadata:annotations=rdd.rancherdesktop.io/controller=container
 
 // ContainerCreateRequest defines a request to create a new container.

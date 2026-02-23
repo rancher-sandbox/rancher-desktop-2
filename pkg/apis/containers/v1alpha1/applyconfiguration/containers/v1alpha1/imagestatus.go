@@ -12,6 +12,9 @@ import (
 //
 // ImageStatus defines the observed state of the image.
 type ImageStatusApplyConfiguration struct {
+	// Namespace is the container namespace; refers to a `ContainerNamespace`
+	// object in the same Kubernetes namespace.
+	Namespace *string `json:"namespace,omitempty"`
 	// ID is the image ID, as reported by the container runtime.
 	ID *string `json:"id,omitempty"`
 	// RepoTag is the tag of the image.  Images with multiple tags will have
@@ -39,6 +42,14 @@ type ImageStatusApplyConfiguration struct {
 // apply.
 func ImageStatus() *ImageStatusApplyConfiguration {
 	return &ImageStatusApplyConfiguration{}
+}
+
+// WithNamespace sets the Namespace field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Namespace field is set to the value of the last call.
+func (b *ImageStatusApplyConfiguration) WithNamespace(value string) *ImageStatusApplyConfiguration {
+	b.Namespace = &value
+	return b
 }
 
 // WithID sets the ID field in the declarative configuration to the given value

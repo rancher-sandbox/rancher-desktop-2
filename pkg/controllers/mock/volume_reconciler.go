@@ -76,9 +76,6 @@ func (r *volumeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			ctx,
 			containersv1alpha1apply.
 				Volume(sanitizeKubernetesObjectName(inspect.Name), metav1.NamespaceDefault).
-				WithLabels(map[string]string{
-					"namespace": containerNamespace,
-				}).
 				WithOwnerReferences(ownerReference),
 			client.ForceOwnership,
 			client.FieldOwner(controllerLongName))
@@ -87,6 +84,8 @@ func (r *volumeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 
 		statusApplyConfig := containersv1alpha1apply.VolumeStatus().
+			WithName(inspect.Name).
+			WithNamespace(containerNamespace).
 			WithDriver(inspect.Driver).
 			WithLabels(inspect.Labels).
 			WithOptions(inspect.Options).

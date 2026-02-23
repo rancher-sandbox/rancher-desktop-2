@@ -80,10 +80,6 @@ func (r *containerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			state = containersv1alpha1.ContainerStatusRunning
 		}
 		applyConfig := containersv1alpha1apply.Container(inspect.ID, metav1.NamespaceDefault).
-			WithLabels(map[string]string{
-				"namespace": namespace,
-				"name":      name,
-			}).
 			WithOwnerReferences(ownerReference).
 			WithSpec(containersv1alpha1apply.ContainerSpec().WithState(state))
 
@@ -93,6 +89,8 @@ func (r *containerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 
 		applyStatus := containersv1alpha1apply.ContainerStatus().
+			WithName(name).
+			WithNamespace(namespace).
 			WithPath(inspect.Path).
 			WithArgs(inspect.Args...).
 			WithImage(inspect.Image).

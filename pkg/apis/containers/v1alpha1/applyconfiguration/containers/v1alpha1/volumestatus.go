@@ -11,6 +11,11 @@ import (
 //
 // VolumeStatus describes the configuration the volume was created with.
 type VolumeStatusApplyConfiguration struct {
+	// Name of the volume.
+	Name *string `json:"name,omitempty"`
+	// Namespace of the volume; refers to a `ContainerNamespace` object in the
+	// same Kubernetes namespace.
+	Namespace *string `json:"namespace,omitempty"`
 	// CreatedAt is the time the volume was created.
 	CreatedAt *v1.Time `json:"createdAt,omitempty"`
 	// Driver the volume uses.
@@ -29,6 +34,22 @@ type VolumeStatusApplyConfiguration struct {
 // apply.
 func VolumeStatus() *VolumeStatusApplyConfiguration {
 	return &VolumeStatusApplyConfiguration{}
+}
+
+// WithName sets the Name field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Name field is set to the value of the last call.
+func (b *VolumeStatusApplyConfiguration) WithName(value string) *VolumeStatusApplyConfiguration {
+	b.Name = &value
+	return b
+}
+
+// WithNamespace sets the Namespace field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Namespace field is set to the value of the last call.
+func (b *VolumeStatusApplyConfiguration) WithNamespace(value string) *VolumeStatusApplyConfiguration {
+	b.Namespace = &value
+	return b
 }
 
 // WithCreatedAt sets the CreatedAt field in the declarative configuration to the given value
