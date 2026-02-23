@@ -53,12 +53,11 @@ kind: Container
 metadata:
   name: 8eb6f2cf72b6616aa743cf9187f350af84c9749dab65474db2530f26745d2ef3 # container ID
   namespace: default
-  labels:
-    name: magical_gates
-    namespace: k8s.io # Refers to a `ContainerNamespace` object
 spec:
   state: running # Desired state
 status:
+  name: magical_gates
+  namespace: k8s.io # Refers to a `ContainerNamespace` object
   path: /bin/sh
   args: [-c, 'sleep inf']
   # Image ID; corresponds to `Image` object's `.status.id` field.
@@ -108,10 +107,9 @@ kind: ContainerCreateRequest
 metadata:
   name: whatever-12345
   namespace: rancher-desktop
-  labels:
-    name: magical_gates # If unset, generate one randomly
-    namespace: k8s.io # Refers to a `ContainerNamespace` object
 spec:
+  name: magical_gates # If unset, generate one randomly
+  namespace: k8s.io # Refers to a `ContainerNamespace` object
   state: running # Default to `running`
   path: /bin/sh # defaults to image entry point / command
   args: [-c, 'sleep inf'] # defaults to image entry point / command
@@ -136,8 +134,8 @@ status:
     status: False
 ```
 
-If `.metadata.labels.namespace` / `.metadata.labels.name` duplicates an existing
-container, a `CreateFailed` status is set with some details.
+If `.spec.namespace` / `.spec.name` duplicates an existing container, a
+`CreateFailed` status is set with some details.
 
 An admission controller will ensure that we cannot have multiple
 `ContainerRequest` objects at the same time for the same containerd
@@ -147,12 +145,12 @@ An admission controller will ensure that we cannot have multiple
 Set `.spec.state` to match how Kubernetes resources normally work.
 
 #### Fetch container logs
-The `@kubernetes/client-node` package has some hand-written code to deal with
-logs; maybe we can make a copy of that (with a different endpoint) for this?
+An endpoint at `/passthrough/containers/logs` will speak WebSocket; messages are
+one way, text only, with each line being one message.
 
 #### Exec (shell) in container
-Same as logs; there's some special code in `@kubernetes/client-node` that we may
-be able to fork.
+An endpoint at `/passthrough/containers/exec` will speak WebSocket; messages are
+bidirectional, tentatively text only.
 
 #### Delete container
 Delete the `Container` object; a finalizer will be used to delete the container,
@@ -164,7 +162,7 @@ at which point the `Container` object will actually be deleted.
 as a new `Image` object; therefore, there may be multiple `Image` objects for
 the same image ID (one per tag).  If an image without any tags exists, that will
 be represented by an `Image` object without `.status.repoTag` and
-`.metadata.labels.namespace`.
+`.status.namespace`.
 
 ```yaml
 apiVersion: containers.rancherdesktop.io/v1alpha1
@@ -173,9 +171,8 @@ metadata:
   # Image ID, colon replaced with dot, with random suffix.
   name: 'sha256.999adf320e40662dc96119a14f07459af9959a081d10ccab7c405257030ab96b-12345'
   namespace: rancher-desktop # not the containerd namespace
-  labels:
-    namespace: moby # Refers to a `ContainerNamespace` object
 status:
+  namespace: moby # Refers to a `ContainerNamespace` object
   # Image ID, in the raw form.
   id: 'sha256:999adf320e40662dc96119a14f07459af9959a081d10ccab7c405257030ab96b'
   repoDigests:
@@ -201,9 +198,8 @@ kind: ImagePullRequest
 metadata:
   name: image-fetch-12345
   namespace: rancher-desktop
-  labels:
-    namespace: moby # Refers to a `ContainerNamespace` object
 spec:
+  namespace: moby # Refers to a `ContainerNamespace` object
   repoTag: 'registry.opensuse.org/opensuse/leap:latest'
 status:
   conditions:
@@ -281,10 +277,9 @@ kind: Volume
 metadata:
   name: volume-name-12345 # based on containerd name / namespace?
   namespace: default # Not related to containerd namespace
-  labels:
-    name: volume-name
-    namespace: k8s.io # Refers to a `ContainerNamespace` object
 status:
+  name: volume-name
+  namespace: k8s.io # Refers to a `ContainerNamespace` object
   createdAt: "2025-11-17T03:14:16Z"
   driver: local
   mountpoint: /var/lib/docker/volumes/volume-name/_data
@@ -303,10 +298,9 @@ kind: VolumeCreateRequest
 metadata:
   name: volume-create-12345
   namespace: default
-  labels:
-    name: volume-name
-    namespace: k8s.io # Refers to a `ContainerNamespace` object
 spec:
+  name: volume-name
+  namespace: k8s.io # Refers to a `ContainerNamespace` object
   driver: local
 status:
   conditions:

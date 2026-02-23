@@ -110,11 +110,11 @@ func (r *imageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 				statusApplyCopy := *statusApplyConfig
 				errs = append(errs, r.updateImage(ctx,
 					containersv1alpha1apply.Image(image.GetName(), image.GetNamespace()).
-						WithLabels(map[string]string{
-							"namespace": containerNamespace,
-						}).
 						WithOwnerReferences(ownerReference),
-					statusApplyCopy.WithRepoTag(tag))...,
+					statusApplyCopy.
+						WithRepoTag(tag).
+						WithNamespace(containerNamespace),
+				)...,
 				)
 			}
 		} else {

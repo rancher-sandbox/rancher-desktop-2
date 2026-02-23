@@ -10,6 +10,15 @@ import (
 
 // VolumeStatus describes the configuration the volume was created with.
 type VolumeStatus struct {
+	// Name of the volume.
+	//
+	// +required
+	Name string `json:"name"`
+	// Namespace of the volume; refers to a `ContainerNamespace` object in the
+	// same Kubernetes namespace.
+	//
+	// +required
+	Namespace string `json:"namespace"`
 	// CreatedAt is the time the volume was created.
 	//
 	// +required
@@ -39,6 +48,7 @@ type VolumeStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:ac:generate=true
 // +kubebuilder:subresource:status
+// +kubebuilder:selectablefield:JSONPath=.status.namespace
 // +kubebuilder:printcolumn:name="Driver",type=string,JSONPath=`.status.driver`
 
 // Volume is the Schema for the volumes API.
@@ -66,6 +76,17 @@ type VolumeList struct {
 }
 
 type VolumeCreateSpec struct {
+	// Name of the volume to create; if not specified, a random name will be
+	// generated.
+	//
+	// +optional
+	Name string `json:"name"`
+	// Namespace of the volume; refers to a `ContainerNamespace` object in the
+	// same Kubernetes namespace.  If not specified, the volume will be created
+	// in the default namespace.
+	//
+	// +optional
+	Namespace string `json:"namespace"`
 	// Driver the volume should use.
 	//
 	// +required
