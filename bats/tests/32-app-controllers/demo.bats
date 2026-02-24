@@ -22,42 +22,12 @@ spec:
 EOF
 }
 
-get_demo_status() {
-    local field=$1
-    get_resource_status "demo" "demo" "${field}"
-}
-
-assert_demo_status() {
-    local field=${1:-processedCount}
-    local expected=${2:-0}
-
-    run -0 get_demo_status "${field}"
-    assert_output "${expected}"
-}
-
-assert_demo_condition() {
-    local condition_type=${1:-Ready}
-    local expected_status=${2:-True}
-
-    run rdd ctl get demo "demo" -o json
-    assert_success
-
-    run -0 jq -r ".status.conditions[] | select(.type == \"${condition_type}\") | .status" <<<"${output}"
-    assert_output "${expected_status}"
-}
-
-wait_for_demo_condition() {
-    local condition_type=${1:-Ready}
-    local expected_status=${2:-True}
-
-    try --max 12 --delay 5 -- assert_demo_condition "${condition_type}" "${expected_status}"
-}
-
 wait_for_demo_completion() {
     local expected=$1
 
-    try --max 20 --delay 2 -- assert_demo_status "processedCount" "${expected}"
-    wait_for_demo_condition "Completed" "True"
+    rdd ctl wait --for=jsonpath='{.status.processedCount}'="${expected}" \
+        demo/demo --timeout=40s
+    rdd ctl wait --for=condition=Completed demo/demo --timeout=60s
 }
 
 local_setup_file() {
@@ -70,7 +40,7 @@ local_setup_file() {
 }
 
 @test 'verify Demo is created in Kubernetes' {
-    try --max 30 --delay 2 -- rdd ctl get demo demo
+    rdd ctl wait --for=create demo demo --timeout=60s
 }
 
 @test 'verify Demo resource is cluster-scoped' {
@@ -83,11 +53,11 @@ local_setup_file() {
 }
 
 @test 'wait for Demo processing to start' {
-    wait_for_demo_condition "Ready" "True"
+    rdd ctl wait --for=condition=Ready demo/demo --timeout=60s
 
     # Processing condition might be True briefly or False if already completed
     # So just verify we have the Ready condition and some processing has occurred
-    run -0 get_demo_status "processedCount"
+    run -0 get_resource_status "demo" "demo" "processedCount"
     [[ "${output}" -ge 0 ]] # Should have some status
 }
 
@@ -102,7 +72,7 @@ local_setup_file() {
     assert_output "true"
 
     # Should have at least started processing (processedCount >= 1)
-    run -0 get_demo_status "processedCount"
+    run -0 get_resource_status "demo" "demo" "processedCount"
     [[ "${output}" -ge 1 ]]
 }
 
@@ -192,7 +162,7 @@ EOF
     create_demo "demo" "Zero count test" 0
 
     # Should immediately be marked as completed since no processing needed
-    wait_for_demo_condition "Completed" "True"
+    rdd ctl wait --for=condition=Completed demo/demo --timeout=60s
 
     # ProcessedCount might not be explicitly set to 0, or could be missing
     run -0 rdd ctl get demo demo -o json
@@ -206,7 +176,7 @@ EOF
     create_demo "demo" "Processing test" 20
 
     # Should start processing
-    wait_for_demo_condition "Ready" "True"
+    rdd ctl wait --for=condition=Ready demo/demo --timeout=60s
 
     # Should catch Processing=True at some point (or might already be completed)
     run -0 rdd ctl get demo demo -o json
@@ -221,7 +191,7 @@ EOF
     create_demo "demo" "Update test" 10
 
     # Wait for demo to be ready (which means processing has started and processedCount >= 1)
-    wait_for_demo_condition "Ready" "True"
+    rdd ctl wait --for=condition=Ready demo/demo --timeout=60s
 
     # Update the message and count
     rdd ctl patch demo demo --type='merge' -p='{"spec":{"message":"Updated message","count":15}}'
@@ -278,7 +248,7 @@ EOF
     create_demo "demo" "Finalizer test" 1
 
     # Wait for creation
-    try --max 12 --delay 5 -- rdd ctl get demo demo
+    rdd ctl wait --for=create demo demo --timeout=60s
 
     # Check that no finalizers are set (Demo controller doesn't use finalizers)
     run rdd ctl get demo demo -o jsonpath='{.metadata.finalizers}'
