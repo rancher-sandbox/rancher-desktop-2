@@ -1,3 +1,4 @@
+import type { RootState } from '@pkg/entry/store';
 import type { UpperSnakeCase } from '@pkg/utils/typeUtils';
 
 import type { CommitOptions, Dispatch, GetterTree, MutationTree, Store } from 'vuex';
@@ -29,7 +30,7 @@ export interface ActionContext<S, M = MutationsType<S>, G = GetterTree<S, any>> 
   commit:    Commit<M, keyof M>;
   dispatch:  Dispatch;
   state:     S;
-  rootState: any;
+  rootState: RootState;
   getters:   { [key in keyof G]: G[key] extends (...args: any) => any ? ReturnType<G[key]> : never };
 }
 
@@ -39,7 +40,7 @@ export interface Commit<M, mutationType extends keyof M> {
 }
 
 // Copies from the vuex definition, but using our override ActionContext above.
-type ActionHandler<S, R, M, G> = (this: Store<R>, context: ActionContext<S, M, G>, payload?: any) => any;
+type ActionHandler<S, R, M, G> = (this: Store<RootState>, context: ActionContext<S, M, G>, payload?: any) => any;
 export interface ActionObject<S, R, M, G> {
   root?:   boolean;
   handler: ActionHandler<S, R, M, G>;
@@ -48,7 +49,7 @@ type Action<S, R, M, G> = ActionHandler<S, R, M, G> | ActionObject<S, R, M, G>;
 
 export type ActionTree<
   S,
-  R,
+  R = RootState,
   M extends MutationsType<S> & MutationTree<S> = MutationsType<S> & MutationTree<S>,
   G extends GetterTree<S, any> = GetterTree<S, any>,
 > = Record<string, Action<S, R, M, G>>;
