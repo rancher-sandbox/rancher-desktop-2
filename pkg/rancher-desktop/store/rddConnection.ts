@@ -30,7 +30,7 @@ export const state: () => RDDConnectionState = () => {
     error:               undefined,
     watch:               markRaw(new RDDClient.Watch(config)),
     disconnectCallbacks: {},
-    namespace:           'default',
+    namespace:           'rancher-desktop',
   };
 };
 

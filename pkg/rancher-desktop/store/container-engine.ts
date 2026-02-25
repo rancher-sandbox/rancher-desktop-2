@@ -1,4 +1,4 @@
-import { defineResource, ListResourceOptions, resourceMutations, resourceState, resourceWatchActions } from '@pkg/store/rddConnection';
+import { defineResource, listNamespacedResource, ListResourceOptions, resourceMutations, resourceState, resourceWatchActions } from '@pkg/store/rddConnection';
 import { ActionTree, MutationsType } from '@pkg/store/ts-helpers';
 import * as RDDClient from '@rdd-client';
 
@@ -29,9 +29,9 @@ const resources = [
   defineResource({
     name:       'namespaces',
     type:       'containerNamespace',
-    path:       '/apis/containers.rancherdesktop.io/v1alpha1/namespaces',
+    path:       '/apis/containers.rancherdesktop.io/v1alpha1/containernamespaces',
     makeClient: config => config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api),
-    list:       listContainerNamespacedResource('ContainerNamespace'),
+    list:       listNamespacedResource('ContainerNamespace'),
   }),
 ] as const;
 
