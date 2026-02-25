@@ -166,11 +166,15 @@ spelling: scripts/check-spelling.sh .github/actions/spelling/expect/golang-gener
 	$<
 .PHONY: spelling
 
+LTAG_EXCLUDES := \
+	.github/actions/spelling/check-spelling \
+	bats/lib \
+	pkg/util/nxadmtail \
+	${NULL}
 ltag:
-	# exclude bats/lib, but --excludes only takes a dir name, not a path name
-	go$(EXE) tool ltag -v -t .ltag -path . --excludes='lib check-spelling nxadmtail'
+	go$(EXE) tool ltag -v -t .ltag -path . --gitignore --excludes="${LTAG_EXCLUDES}"
 check-ltag:
-	go$(EXE) tool ltag -v -t .ltag -path . --excludes='lib check-spelling nxadmtail' --check
+	go$(EXE) tool ltag -v -t .ltag -path . --gitignore --excludes="${LTAG_EXCLUDES}" --check
 .PHONY: ltag check-ltag
 
 BATS_TARGETS := $(shell MAKEFLAGS= $(MAKE) -C bats --print-data-base --question --no-builtin-variables | awk -F: '$$1 ~ /^bats-/ { print $$1 }')
