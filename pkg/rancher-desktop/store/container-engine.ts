@@ -39,8 +39,8 @@ type errorSource = 'namespaces';
 
 export const state = () => ({
   ...resourceState(resources),
-  currentNamespace: 'buildkit' as string | undefined,
-  error:              undefined as undefined | { error: Error, source: errorSource },
+  currentNamespace: undefined as string | undefined,
+  error:            undefined as undefined | { error: Error, source: errorSource },
 });
 
 export const getters = ({
