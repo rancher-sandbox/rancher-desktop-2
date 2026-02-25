@@ -371,7 +371,7 @@ class Watcher<
   #namespace?:  string;
   #items:       readonly T[] = [];
   #notifyDelay: ReturnType<typeof setTimeout> | undefined;
-  #commit:      Commit<string, any>;
+  #commit:      Commit<any>;
   #doneFn:      (error?: any) => void;
   #watcher:     RDDClient.ListWatch<T>;
 
@@ -385,7 +385,7 @@ class Watcher<
     listFn: () => Promise<RDDClient.KubernetesListObject<T>>,
     doneFn: (error?: any) => void,
     watch: RDDClient.Watch,
-    commit: Commit<string, any>,
+    commit: Commit<any>,
     namespace?: string,
   ) {
     this.#type = type;
@@ -435,7 +435,7 @@ class Watcher<
       const key = `SET_${ UpperSnakeCase(this.#type) }` as `SET_${ UpperSnakeCase<K> }`;
       this.#notifyDelay = undefined;
       this.#items = this.#watcher?.list(this.#namespace) ?? [];
-      this.#commit(key, this.#items as any);
+      this.#commit(key, this.#items);
     }, 500);
   }
 

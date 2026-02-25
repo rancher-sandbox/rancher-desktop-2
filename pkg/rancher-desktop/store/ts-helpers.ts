@@ -1,3 +1,4 @@
+import type { Modules, RootState } from '@pkg/entry/store';
 import type { UpperSnakeCase } from '@pkg/utils/typeUtils';
 
 import type { CommitOptions, Dispatch, GetterTree, MutationTree, Store } from 'vuex';
@@ -26,20 +27,28 @@ type MutationsPayloadType<M> = {
  * not provide typing to match the mutations.
  */
 export interface ActionContext<S, M = MutationsType<S>, G = GetterTree<S, any>> {
-  commit:    Commit<M, keyof M>;
+  commit:    Commit<M>;
   dispatch:  Dispatch;
   state:     S;
-  rootState: any;
+  rootState: RootState;
   getters:   { [key in keyof G]: G[key] extends (...args: any) => any ? ReturnType<G[key]> : never };
 }
 
-export interface Commit<M, mutationType extends keyof M> {
-  (type: mutationType, payload: MutationsPayloadType<M>[mutationType], commitOptions?: CommitOptions): void;
-  (type: string, payload: any, commitOptions: CommitOptions & { root: true }): void;
+type moduleNames = keyof Modules;
+type mutationTypes<MN extends moduleNames> = keyof Modules[MN]['mutations'] & string;
+type fullMutationType<MN extends moduleNames, MT extends mutationTypes<MN>> = `${ MN }/${ MT }`;
+
+export interface Commit<M> {
+  <mutationType extends keyof M>(type: mutationType, payload: MutationsPayloadType<M>[mutationType], commitOptions?: Omit<CommitOptions, 'root'>): void;
+  <mutationType extends keyof M>(type: mutationType, payload: MutationsPayloadType<M>[mutationType], commitOptions: CommitOptions & { root: false }): void;
+  <moduleName extends keyof Modules,
+    mutationType extends mutationTypes<moduleName>,
+    payloadType extends MutationsPayloadType<Modules[moduleName]['mutations']>[mutationType],
+  >(type: fullMutationType<moduleName, mutationType>, payload: payloadType, commitOptions: CommitOptions & { root: true }): void;
 }
 
 // Copies from the vuex definition, but using our override ActionContext above.
-type ActionHandler<S, R, M, G> = (this: Store<R>, context: ActionContext<S, M, G>, payload?: any) => any;
+type ActionHandler<S, R, M, G> = (this: Store<RootState>, context: ActionContext<S, M, G>, payload?: any) => any;
 export interface ActionObject<S, R, M, G> {
   root?:   boolean;
   handler: ActionHandler<S, R, M, G>;
@@ -48,7 +57,7 @@ type Action<S, R, M, G> = ActionHandler<S, R, M, G> | ActionObject<S, R, M, G>;
 
 export type ActionTree<
   S,
-  R,
+  R = RootState,
   M extends MutationsType<S> & MutationTree<S> = MutationsType<S> & MutationTree<S>,
   G extends GetterTree<S, any> = GetterTree<S, any>,
 > = Record<string, Action<S, R, M, G>>;
