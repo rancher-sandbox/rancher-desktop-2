@@ -44,6 +44,7 @@ func newLimaVMCommand() *cobra.Command {
 		newLimaVMCreateCommand(),
 		newLimaVMStartCommand(),
 		newLimaVMStopCommand(),
+		newLimaVMRestartCommand(),
 		newLimaVMDeleteCommand(),
 		newLimaVMLogsCommand(),
 		newLimaVMShellCommand(),
@@ -159,6 +160,44 @@ func newLimaVMStopCommand() *cobra.Command {
 		},
 	}
 	return command
+}
+
+func newLimaVMRestartCommand() *cobra.Command {
+	command := &cobra.Command{
+		Use:   "restart NAME",
+		Short: "Restart a LimaVM instance",
+		Long:  "Set the restartRequested annotation and spec.running=true to restart the instance.",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return limaVMRestartAction(cmd.Context(), args[0])
+		},
+	}
+	return command
+}
+
+func limaVMRestartAction(ctx context.Context, name string) error {
+	c, err := getKubeClient(ctx)
+	if err != nil {
+		return err
+	}
+	limaVM, err := findLimaVM(ctx, c, name)
+	if err != nil {
+		return err
+	}
+
+	patch := client.MergeFrom(limaVM.DeepCopy())
+	limaVM.Spec.Running = true
+	if limaVM.Annotations == nil {
+		limaVM.Annotations = make(map[string]string)
+	}
+	limaVM.Annotations[limav1alpha1.AnnotationRestartRequested] = time.Now().UTC().Format(time.RFC3339)
+
+	if err := c.Patch(ctx, limaVM, patch); err != nil {
+		return fmt.Errorf("failed to restart LimaVM: %w", err)
+	}
+
+	logrus.Infof("LimaVM %q restart requested in namespace %q", name, limaVM.Namespace)
+	return nil
 }
 
 func newLimaVMDeleteCommand() *cobra.Command {

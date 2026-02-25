@@ -148,6 +148,19 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              restartCount:
+                description: |-
+                  restartCount tracks how many times the instance has reached the Running state.
+                  Incremented each time the controller sets Running=True/Started.
+                format: int32
+                type: integer
+              restartNeeded:
+                description: |-
+                  restartNeeded indicates a restart has been requested but not yet executed.
+                  Set by the reconciler when it processes a restartRequested annotation or
+                  detects a template change on a running instance. Cleared when the restart
+                  completes or the instance is already stopped.
+                type: boolean
               templateConfigMap:
                 description: |-
                   templateConfigMap is the name of the ConfigMap containing the validated template.

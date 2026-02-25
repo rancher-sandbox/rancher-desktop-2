@@ -21,6 +21,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
@@ -73,6 +74,37 @@ func (r *LimaVMReconciler) handleDeletion(ctx context.Context, limaVM *v1alpha1.
 	}
 
 	logger.Info("Deleted Lima instance, owned resources, and finalizer")
+	return ctrl.Result{}, nil
+}
+
+// handleRestartAnnotation translates the restartRequested annotation into
+// status.restartNeeded. It takes two reconcile cycles:
+//  1. Set status.restartNeeded=true (if not already set).
+//  2. Remove the annotation (status is already persisted).
+//
+// This ordering ensures the status is durable before metadata changes.
+// If the annotation removal fails, the next reconcile sees both and retries.
+func (r *LimaVMReconciler) handleRestartAnnotation(ctx context.Context, limaVM *v1alpha1.LimaVM) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	if !limaVM.Status.RestartNeeded {
+		logger.Info("Restart requested via annotation, setting status.restartNeeded")
+		limaVM.Status.RestartNeeded = true
+		if err := r.Status().Update(ctx, limaVM); err != nil {
+			logger.Error(err, "Failed to set status.restartNeeded")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
+
+	// status.restartNeeded is already true; remove the annotation.
+	logger.Info("Removing restartRequested annotation")
+	patch := client.MergeFrom(limaVM.DeepCopy())
+	delete(limaVM.Annotations, v1alpha1.AnnotationRestartRequested)
+	if err := r.Patch(ctx, limaVM, patch); err != nil {
+		logger.Error(err, "Failed to remove restartRequested annotation")
+		return ctrl.Result{}, err
+	}
 	return ctrl.Result{}, nil
 }
 
@@ -140,6 +172,10 @@ func (r *LimaVMReconciler) handleRunningState(ctx context.Context, limaVM *v1alp
 		}
 	}
 
+	if limaVM.Status.RestartNeeded {
+		return r.handleRestartNeeded(ctx, limaVM, inst)
+	}
+
 	shouldRun := limaVM.Spec.Running
 	isRunning := inst.Status == limatype.StatusRunning
 
@@ -168,6 +204,7 @@ func (r *LimaVMReconciler) handleRunningState(ctx context.Context, limaVM *v1alp
 	// Update condition to reflect current state (including reason, so StartFailed/Starting gets updated)
 	if isRunning {
 		if !base.HasConditionWithReason(limaVM.Status.Conditions, ConditionRunning, metav1.ConditionTrue, ReasonStarted) {
+			limaVM.Status.RestartCount++
 			if err := r.updateCondition(ctx, limaVM, ConditionRunning, metav1.ConditionTrue, ReasonStarted, "Lima instance is running"); err != nil {
 				logger.Error(err, "Failed to update running condition")
 				return ctrl.Result{}, err
@@ -183,6 +220,37 @@ func (r *LimaVMReconciler) handleRunningState(ctx context.Context, limaVM *v1alp
 	}
 
 	return ctrl.Result{}, nil
+}
+
+// handleRestartNeeded acts on status.restartNeeded based on the instance state:
+//   - Running: stop the instance (clears restartNeeded in the same write).
+//     The next reconcile starts it via normal shouldRun && !isRunning logic.
+//   - Starting: requeue after 5s to wait for boot to finish.
+//   - Stopped: clear restartNeeded and fall through to normal logic.
+func (r *LimaVMReconciler) handleRestartNeeded(ctx context.Context, limaVM *v1alpha1.LimaVM, inst *limatype.Instance) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	switch inst.Status {
+	case limatype.StatusRunning:
+		logger.Info("Restart needed: stopping running instance")
+		limaVM.Status.RestartNeeded = false
+		return r.stopInstance(ctx, limaVM, inst)
+
+	case limatype.StatusStopped:
+		logger.Info("Restart needed but instance already stopped, clearing flag")
+		limaVM.Status.RestartNeeded = false
+		if err := r.Status().Update(ctx, limaVM); err != nil {
+			logger.Error(err, "Failed to clear restartNeeded")
+			return ctrl.Result{}, err
+		}
+		// Requeue so the next reconcile starts the VM if spec.running=true.
+		return ctrl.Result{}, nil
+
+	default:
+		// Instance is starting or in another transient state; wait.
+		logger.Info("Restart needed but instance is not yet running, waiting", "status", inst.Status)
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+	}
 }
 
 // startInstance starts the Lima VM hostagent in the background.
@@ -312,7 +380,9 @@ func (r *LimaVMReconciler) stopInstance(ctx context.Context, limaVM *v1alpha1.Li
 	logger := log.FromContext(ctx)
 	logger.Info("Stopping Lima instance", "instance", limaVM.Name)
 
-	if err := limainstance.StopGracefully(ctx, inst, false); err != nil {
+	stopCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	if err := limainstance.StopGracefully(stopCtx, inst, false); err != nil {
 		logger.Error(err, "Failed to stop Lima instance gracefully")
 		// Try forceful stop
 		logger.Info("Attempting forceful stop")

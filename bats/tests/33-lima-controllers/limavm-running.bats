@@ -94,22 +94,15 @@ lima_instance_running() {
     assert_file_exists "${RDD_LIMA_HOME}/${name}/ha.pid"
 }
 
-get_instance_running_transition_time() {
+get_restart_count() {
     local name=$1
     rdd ctl get limavm "${name}" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="Running")].lastTransitionTime}'
+        --output jsonpath='{.status.restartCount}'
 }
 
 get_hostagent_pid() {
     local name=$1
     cat "${RDD_LIMA_HOME}/${name}/ha.pid"
-}
-
-assert_recovery_completed() {
-    local before_time=$1
-    run -0 get_instance_running_transition_time "${VM_NAME}"
-    refute_output "${before_time}"
-    assert_instance_running_reason "${VM_NAME}" "Started"
 }
 
 assert_limavm_not_exists() {
@@ -261,15 +254,16 @@ EOF
 }
 
 @test "trigger reconcile and verify crash recovery" {
-    run -0 get_instance_running_transition_time "${VM_NAME}"
-    assert_output
-    before_time=${output}
+    run -0 get_restart_count "${VM_NAME}"
+    local before_count=${output}
 
     rdd ctl annotate limavm "${VM_NAME}" --namespace "${NAMESPACE}" --overwrite \
         reconcile-trigger="$(date +%s)"
 
     # The reconciler should detect the dead hostagent and restart the VM.
-    try --max 60 --delay 5 -- assert_recovery_completed "${before_time}"
+    # restartCount increments in the same status write that sets Running=True.
+    rdd ctl wait --for=jsonpath='{.status.restartCount}'="$((before_count + 1))" \
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=300s
 }
 
 @test "verify new hostagent after crash recovery" {
@@ -302,18 +296,16 @@ EOF
 }
 
 @test "trigger reconcile and verify recovery from broken state" {
-    # Capture the lastTransitionTime before triggering reconcile
-    run -0 get_instance_running_transition_time "${VM_NAME}"
-    assert_output
-    before_time=${output}
+    run -0 get_restart_count "${VM_NAME}"
+    local before_count=${output}
 
     # Annotate to trigger a reconcile while spec.running is still true
     rdd ctl annotate limavm "${VM_NAME}" --namespace "${NAMESPACE}" --overwrite \
         reconcile-trigger="$(date +%s)"
 
     # The reconciler should detect broken state, force stop, then restart.
-    # Verify the condition was actually updated by checking lastTransitionTime changed.
-    try --max 60 --delay 5 -- assert_recovery_completed "${before_time}"
+    rdd ctl wait --for=jsonpath='{.status.restartCount}'="$((before_count + 1))" \
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=300s
 }
 
 @test "verify hostagent is alive after recovery" {
@@ -329,6 +321,74 @@ EOF
     run -0 rdd ctl get events --namespace "${NAMESPACE}" \
         --field-selector involvedObject.kind=LimaVM,involvedObject.name="${VM_NAME}"
     assert_output --partial "BrokenStateRecovered"
+}
+
+# Restart tests
+# These tests verify the restart mechanism: annotation → status.restartNeeded → stop → start.
+
+@test "restart running VM via rdd limavm restart" {
+    run -0 get_restart_count "${VM_NAME}"
+    local before_count=${output}
+
+    rdd limavm restart "${VM_NAME}"
+
+    # Wait for restartCount to increment, confirming a full stop+start cycle.
+    rdd ctl wait --for=jsonpath='{.status.restartCount}'="$((before_count + 1))" \
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=300s
+}
+
+@test "verify restartNeeded cleared and annotation removed after restart" {
+    run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${NAMESPACE}" \
+        --output jsonpath='{.status.restartNeeded}'
+    refute_output "true"
+
+    run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${NAMESPACE}" \
+        --output "jsonpath={.metadata.annotations['lima\\.rancherdesktop\\.io/restartRequested']}"
+    assert_output ""
+}
+
+@test "stop VM for stopped-restart test" {
+    rdd ctl patch limavm "${VM_NAME}" --namespace "${NAMESPACE}" \
+        --type=merge --patch '{"spec":{"running":false}}'
+    rdd ctl wait --for=condition=Running=False \
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=300s
+}
+
+assert_restart_annotation_absent() {
+    local name=$1
+    run -0 rdd ctl get limavm "${name}" --namespace "${NAMESPACE}" \
+        --output "jsonpath={.metadata.annotations['lima\.rancherdesktop\.io/restartRequested']}"
+    assert_output ""
+}
+
+@test "restart annotation on stopped VM with running=false clears restartNeeded" {
+    # Set annotation without changing spec.running (simulates annotation-only path)
+    rdd ctl annotate limavm "${VM_NAME}" --namespace "${NAMESPACE}" --overwrite \
+        "lima.rancherdesktop.io/restartRequested=$(date +%s)"
+
+    # Wait for the annotation to be removed (reconciler processed it)
+    try --max 30 --delay 1 -- assert_restart_annotation_absent "${VM_NAME}"
+
+    # restartNeeded should be cleared
+    run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${NAMESPACE}" \
+        --output jsonpath='{.status.restartNeeded}'
+    refute_output "true"
+
+    # VM should stay stopped because spec.running=false
+    assert_instance_running_condition "${VM_NAME}" "False"
+    assert_instance_running_reason "${VM_NAME}" "Stopped"
+}
+
+@test "restart command on stopped VM starts it" {
+    rdd limavm restart "${VM_NAME}"
+
+    # The restart command sets spec.running=true, so the VM should start
+    rdd ctl wait --for=condition=Running=True \
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=300s
+
+    run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${NAMESPACE}" \
+        --output jsonpath='{.status.restartNeeded}'
+    refute_output "true"
 }
 
 @test "cleanup LimaVM running test" {

@@ -11,6 +11,10 @@ import (
 // TemplateConfigMapKey is the key used to store the template text in the templateConfigMap.
 const TemplateConfigMapKey = "template"
 
+// AnnotationRestartRequested triggers a restart when set on a LimaVM resource.
+// The reconciler translates it to status.restartNeeded and removes the annotation.
+const AnnotationRestartRequested = "lima.rancherdesktop.io/restartRequested"
+
 // TemplateReference specifies a reference to a ConfigMap containing a VM template.
 type TemplateReference struct {
 	// name is the name of the ConfigMap containing the VM template.
@@ -59,6 +63,18 @@ type LimaVMStatus struct {
 	// This field is informational - internal code should use GetTemplateConfigMapName() instead.
 	// +optional
 	TemplateConfigMap string `json:"templateConfigMap,omitempty"`
+
+	// restartNeeded indicates a restart has been requested but not yet executed.
+	// Set by the reconciler when it processes a restartRequested annotation or
+	// detects a template change on a running instance. Cleared when the restart
+	// completes or the instance is already stopped.
+	// +optional
+	RestartNeeded bool `json:"restartNeeded,omitempty"`
+
+	// restartCount tracks how many times the instance has reached the Running state.
+	// Incremented each time the controller sets Running=True/Started.
+	// +optional
+	RestartCount int32 `json:"restartCount,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -163,6 +163,31 @@ assert_created() {
     assert_fatal "${not_found}"
 }
 
+@test "lima restart sets annotation and running=true" {
+    # Create a template ConfigMap and VM
+    rdd ctl create configmap "restart-template" --namespace "${LIMA_TEST_NS}" --from-literal="template=${TEMPLATE}"
+    run_e -0 rdd limavm create "restart-vm" "restart-template" --namespace "${LIMA_TEST_NS}"
+    assert_created "restart-vm" "${LIMA_TEST_NS}" "restart-template"
+
+    # Restart the VM (no controller running, so annotation stays)
+    run -0 rdd limavm restart "restart-vm"
+    assert_output --partial "restart requested"
+
+    # Verify annotation is set
+    run -0 rdd ctl get limavm "restart-vm" --namespace "${LIMA_TEST_NS}" \
+        --output "jsonpath={.metadata.annotations['lima\.rancherdesktop\.io/restartRequested']}"
+    assert [ -n "${output}" ]
+
+    # Verify spec.running is true
+    run -0 rdd ctl get limavm "restart-vm" --namespace "${LIMA_TEST_NS}" \
+        --output jsonpath='{.spec.running}'
+    assert_output "true"
+
+    # Delete the VM
+    run -0 rdd limavm delete "restart-vm"
+    rdd ctl wait --for=delete "limavm/restart-vm" --namespace "${LIMA_TEST_NS}" --timeout="30s"
+}
+
 @test "lima help text is displayed" {
     # lima is an alias of the limavm command
     run -0 rdd lima --help
@@ -170,6 +195,7 @@ assert_created() {
     assert_output --partial "Create a new LimaVM"
     assert_output --partial "Start a LimaVM"
     assert_output --partial "Stop a LimaVM"
+    assert_output --partial "Restart a LimaVM"
     assert_output --partial "Delete a LimaVM"
     assert_output --partial "Show LimaVM logs"
     assert_output --partial "Execute shell in Lima VM"

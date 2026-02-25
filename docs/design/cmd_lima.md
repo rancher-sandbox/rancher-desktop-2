@@ -38,7 +38,7 @@ Set `lima.rancherdesktop.io/resetRequested` annotation to the current timestamp.
 
 ### `rdd limavm restart NAME`
 
-Set `lima.rancherdesktop.io/restartRequested` annotation to the current timestamp. This tells the reconciler to stop the instance, if it is running. Then it will start the instance, even if it had been stopped initially.
+Set `lima.rancherdesktop.io/restartRequested` annotation and `spec.running=true` in a single patch. The annotation tells the reconciler to stop the instance if it is running; setting `spec.running=true` ensures the instance starts afterward, even if it had been stopped initially.
 
 ### `rdd limavm shell NAME CMD`
 

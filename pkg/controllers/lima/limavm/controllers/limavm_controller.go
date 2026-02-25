@@ -220,8 +220,11 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, nil
 	}
 
-	// Instance already created - proceed to handle running state
+	// Instance already created - handle restart annotation, then running state.
 	if apimeta.IsStatusConditionTrue(limaVM.Status.Conditions, ConditionCreated) {
+		if _, hasAnnotation := limaVM.Annotations[v1alpha1.AnnotationRestartRequested]; hasAnnotation {
+			return r.handleRestartAnnotation(ctx, &limaVM)
+		}
 		return r.handleRunningState(ctx, &limaVM)
 	}
 

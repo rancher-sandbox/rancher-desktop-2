@@ -30,6 +30,7 @@ spec:
     DOCKER_ROOTFUL: "true"
 status:
   templateConfigMap: alpine-template
+  restartNeeded: false
   conditions:
   - type: Created
     status: "True"
@@ -41,7 +42,7 @@ status:
     message: Lima instance started successfully
 ```
 
-- **metadata.annotations**: Can be used to request "actions" from the reconciler, like resetting (deleting and recreating with the same settings), or restarting the instance. The `status.conditions` can be used to store the state machine information.
+- **metadata.annotations**: Request actions from the reconciler, such as resetting (deleting and recreating with the same settings) or restarting the instance. The `restartRequested` annotation (set to any value) tells the reconciler to restart the instance. The reconciler translates it to `status.restartNeeded` and removes the annotation. The `status.conditions` store the state machine information.
 
 - **spec.running**: Set to `true` when the instance should be running, set to `false` when it should be stopped.
 
@@ -58,6 +59,8 @@ status:
     If the template provisioning scripts are properly parameterized, then the instance settings can be modified by just updating `spec.params`, which is simpler than modifying the `template` inside the ConfigMap. If `spec.running` is `true` then changing `spec.params` will restart the instance.
 
 - **status.templateConfigMap**: Name of the ConfigMap containing the validated template. The reconciler creates this ConfigMap after copying and validating the template from `spec.templateRef`. This ConfigMap is owned by the LimaVM and deleted automatically when the LimaVM is deleted.
+
+- **status.restartNeeded**: Indicates a restart has been requested but not yet executed. The reconciler sets this field when it processes a `restartRequested` annotation or detects a template change on a running instance. When the instance is running, the reconciler stops it (clearing `restartNeeded` in the same write); the next reconcile starts it via normal logic. When the instance is already stopped, the reconciler clears the flag immediately. When the instance is starting, the reconciler waits for boot to finish before acting.
 
 - **status.conditions**: Standard Kubernetes conditions tracking the LimaVM state.
 

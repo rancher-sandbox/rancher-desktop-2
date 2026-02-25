@@ -26,6 +26,14 @@ type LimaVMStatusApplyConfiguration struct {
 	// An admission controller validates any updates to the ConfigMap.
 	// This field is informational - internal code should use GetTemplateConfigMapName() instead.
 	TemplateConfigMap *string `json:"templateConfigMap,omitempty"`
+	// restartNeeded indicates a restart has been requested but not yet executed.
+	// Set by the reconciler when it processes a restartRequested annotation or
+	// detects a template change on a running instance. Cleared when the restart
+	// completes or the instance is already stopped.
+	RestartNeeded *bool `json:"restartNeeded,omitempty"`
+	// restartCount tracks how many times the instance has reached the Running state.
+	// Incremented each time the controller sets Running=True/Started.
+	RestartCount *int32 `json:"restartCount,omitempty"`
 }
 
 // LimaVMStatusApplyConfiguration constructs a declarative configuration of the LimaVMStatus type for use with
@@ -52,5 +60,21 @@ func (b *LimaVMStatusApplyConfiguration) WithConditions(values ...*v1.ConditionA
 // If called multiple times, the TemplateConfigMap field is set to the value of the last call.
 func (b *LimaVMStatusApplyConfiguration) WithTemplateConfigMap(value string) *LimaVMStatusApplyConfiguration {
 	b.TemplateConfigMap = &value
+	return b
+}
+
+// WithRestartNeeded sets the RestartNeeded field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the RestartNeeded field is set to the value of the last call.
+func (b *LimaVMStatusApplyConfiguration) WithRestartNeeded(value bool) *LimaVMStatusApplyConfiguration {
+	b.RestartNeeded = &value
+	return b
+}
+
+// WithRestartCount sets the RestartCount field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the RestartCount field is set to the value of the last call.
+func (b *LimaVMStatusApplyConfiguration) WithRestartCount(value int32) *LimaVMStatusApplyConfiguration {
+	b.RestartCount = &value
 	return b
 }
