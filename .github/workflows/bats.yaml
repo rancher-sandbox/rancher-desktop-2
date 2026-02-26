@@ -163,6 +163,7 @@ jobs:
       shell: run-in-wsl {0}
       env:
         RDD_TRACE: true
+        TIMEOUT_COMMAND: timeout 30m
 
     - name: Collect RDD logs
       if: always()

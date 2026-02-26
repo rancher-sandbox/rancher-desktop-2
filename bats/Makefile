@@ -30,41 +30,41 @@ endif
 
 # Run BATS tests for BATS helpers
 bats-helpers: check-bats build-rdd
-	$(BATS_CORE) helpers/
+	$(TIMEOUT_COMMAND) $(BATS_CORE) helpers/
 .PHONY: bats-helpers
 
 # Run CLI tests
 bats-cli: check-bats build-rdd
-	RDD_INSTANCE=bats-cli $(BATS_CORE) tests/10-cli/
+	RDD_INSTANCE=bats-cli $(TIMEOUT_COMMAND) $(BATS_CORE) tests/10-cli/
 .PHONY: bats-cli
 
 # Run service tests
 bats-service: check-bats build-rdd
-	RDD_INSTANCE=bats-service $(BATS_CORE) tests/20-service/
+	RDD_INSTANCE=bats-service $(TIMEOUT_COMMAND) $(BATS_CORE) tests/20-service/
 .PHONY: bats-service
 
 # Run builtin controller tests
 bats-builtin: check-bats build-rdd
-	RDD_INSTANCE=bats-builtin-controller $(BATS_CORE) tests/30-builtin-controllers/
+	RDD_INSTANCE=bats-builtin-controller $(TIMEOUT_COMMAND) $(BATS_CORE) tests/30-builtin-controllers/
 .PHONY: bats-builtin
 
 # Run rdd API group controller tests
 bats-rdd: check-bats build-rdd build-rdd-controller
-	RDD_INSTANCE=bats-rdd-controller $(BATS_CORE) tests/31-rdd-controllers/
+	RDD_INSTANCE=bats-rdd-controller $(TIMEOUT_COMMAND) $(BATS_CORE) tests/31-rdd-controllers/
 .PHONY: bats-rdd
 
 # Run app API group controller tests
 bats-app: check-bats build-rdd
-	RDD_INSTANCE=bats-app-controller $(BATS_CORE) tests/32-app-controllers/
+	RDD_INSTANCE=bats-app-controller $(TIMEOUT_COMMAND) $(BATS_CORE) tests/32-app-controllers/
 .PHONY: bats-app
 
 # Run lima API group controller tests
 bats-lima: check-bats build-rdd
-	RDD_INSTANCE=bats-lima-controller $(BATS_CORE) tests/33-lima-controllers/
+	RDD_INSTANCE=bats-lima-controller $(TIMEOUT_COMMAND) $(BATS_CORE) tests/33-lima-controllers/
 .PHONY: bats-lima
 
 bats-containers: check-bats build-rdd build-mock-controller
-	RDD_INSTANCE=bats-containers-controller $(BATS_CORE) tests/34-containers-controllers/
+	RDD_INSTANCE=bats-containers-controller $(TIMEOUT_COMMAND) $(BATS_CORE) tests/34-containers-controllers/
 .PHONY: bats-containers
 
 # Run all controller tests.
@@ -75,9 +75,10 @@ bats-controllers: bats-builtin bats-rdd bats-app bats-lima bats-containers
 bats-all: bats-helpers bats-cli bats-service bats-controllers
 .PHONY: bats-all
 
-# Run BATS tests with timeout to prevent hanging
+# Run BATS tests with timeout to prevent hanging; note that this is a timeout
+# for everything, not per-suite like using TIMEOUT_COMMAND.
 bats-timeout: check-bats build-rdd
-	timeout 600 $(BATS_CORE) tests/
+	timeout 600 $(MAKE) bats-all
 .PHONY: bats-timeout
 
 # Run specific BATS test file
