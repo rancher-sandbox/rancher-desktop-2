@@ -105,7 +105,7 @@ func (r *imageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 				// tag and the image ID, to avoid having to search for an
 				// existing image since we cannot atomically update the status
 				// at the same time as creating the object.
-				name := fmt.Sprintf("%s-%32x",
+				name := fmt.Sprintf("%s-%x",
 					sanitizeKubernetesObjectName(inspect.ID),
 					sha256.Sum256([]byte(tag)))
 				statusApplyCopy := *statusApplyConfig
