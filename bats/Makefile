@@ -5,6 +5,11 @@
 # BATS integration testing targets
 BATS_CORE := ./lib/bats-core/bin/bats
 
+# Per-target timeout (seconds) to prevent hanging CI jobs.
+# Override with BATS_TIMEOUT=0 to disable.
+BATS_TIMEOUT ?= 1800
+BATS := $(if $(filter-out 0,$(BATS_TIMEOUT)),timeout $(BATS_TIMEOUT)) $(BATS_CORE)
+
 default: bats-all
 
 # Check if BATS core exists
@@ -30,41 +35,41 @@ endif
 
 # Run BATS tests for BATS helpers
 bats-helpers: check-bats build-rdd
-	$(BATS_CORE) helpers/
+	$(BATS) helpers/
 .PHONY: bats-helpers
 
 # Run CLI tests
 bats-cli: check-bats build-rdd
-	RDD_INSTANCE=bats-cli $(BATS_CORE) tests/10-cli/
+	RDD_INSTANCE=bats-cli $(BATS) tests/10-cli/
 .PHONY: bats-cli
 
 # Run service tests
 bats-service: check-bats build-rdd
-	RDD_INSTANCE=bats-service $(BATS_CORE) tests/20-service/
+	RDD_INSTANCE=bats-service $(BATS) tests/20-service/
 .PHONY: bats-service
 
 # Run builtin controller tests
 bats-builtin: check-bats build-rdd
-	RDD_INSTANCE=bats-builtin-controller $(BATS_CORE) tests/30-builtin-controllers/
+	RDD_INSTANCE=bats-builtin-controller $(BATS) tests/30-builtin-controllers/
 .PHONY: bats-builtin
 
 # Run rdd API group controller tests
 bats-rdd: check-bats build-rdd build-rdd-controller
-	RDD_INSTANCE=bats-rdd-controller $(BATS_CORE) tests/31-rdd-controllers/
+	RDD_INSTANCE=bats-rdd-controller $(BATS) tests/31-rdd-controllers/
 .PHONY: bats-rdd
 
 # Run app API group controller tests
 bats-app: check-bats build-rdd
-	RDD_INSTANCE=bats-app-controller $(BATS_CORE) tests/32-app-controllers/
+	RDD_INSTANCE=bats-app-controller $(BATS) tests/32-app-controllers/
 .PHONY: bats-app
 
 # Run lima API group controller tests
 bats-lima: check-bats build-rdd
-	RDD_INSTANCE=bats-lima-controller $(BATS_CORE) tests/33-lima-controllers/
+	RDD_INSTANCE=bats-lima-controller $(BATS) tests/33-lima-controllers/
 .PHONY: bats-lima
 
 bats-containers: check-bats build-rdd build-mock-controller
-	RDD_INSTANCE=bats-containers-controller $(BATS_CORE) tests/34-containers-controllers/
+	RDD_INSTANCE=bats-containers-controller $(BATS) tests/34-containers-controllers/
 .PHONY: bats-containers
 
 # Run all controller tests.
@@ -75,11 +80,6 @@ bats-controllers: bats-builtin bats-rdd bats-app bats-lima bats-containers
 bats-all: bats-helpers bats-cli bats-service bats-controllers
 .PHONY: bats-all
 
-# Run BATS tests with timeout to prevent hanging
-bats-timeout: check-bats build-rdd
-	timeout 600 $(BATS_CORE) tests/
-.PHONY: bats-timeout
-
 # Run specific BATS test file
 # Usage: make bats-file FILE=bats/tests/31-rdd-controllers/configmapreplicaset.bats
 bats-file: check-bats build-rdd build-all-controllers
@@ -87,7 +87,7 @@ bats-file: check-bats build-rdd build-all-controllers
 		echo "Usage: make bats-file FILE=path/to/test.bats"; \
 		exit 1; \
 	fi
-	$(BATS_CORE) "$(FILE:bats/%=%)"
+	$(BATS) "$(FILE:bats/%=%)"
 .PHONY: bats-file
 
 # Run BATS tests with trace output for debugging
@@ -97,7 +97,7 @@ bats-trace: check-bats build-rdd build-all-controllers
 		echo "Usage: make bats-trace FILE=path/to/test.bats"; \
 		exit 1; \
 	fi
-	RDD_TRACE=true $(BATS_CORE) "$(FILE)"
+	RDD_TRACE=true $(BATS) "$(FILE)"
 .PHONY: bats-trace
 
 # List all RDD_INSTANCE names used by test targets (for CI log collection)
