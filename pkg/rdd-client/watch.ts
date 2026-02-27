@@ -25,6 +25,12 @@ export class Watch {
     this.config = config;
   }
 
+  // Return the timeout for fetch request, in milliseconds.  Kubernetes
+  // client-go uses somewhere between 5 and 10 minutes; try to match that here.
+  private getRequestTimeoutMS() {
+    return 5 * 60 * 1000 + Math.floor(Math.random() * 5 * 60 * 1000);
+  }
+
   // Watch the resource and call provided callback with parsed json object
   // upon event received over the watcher connection.
   //
@@ -53,7 +59,7 @@ export class Watch {
     const requestInit = this.config.applyToFetchOptions({});
 
     const controller = new AbortController();
-    const timeoutSignal = AbortSignal.timeout(30000);
+    const timeoutSignal = AbortSignal.timeout(this.getRequestTimeoutMS());
     requestInit.signal = AbortSignal.any([controller.signal, timeoutSignal]);
     requestInit.method = 'GET';
 
@@ -102,7 +108,13 @@ export class Watch {
         throw error;
       }
     } catch (err) {
-      doneCallOnce(err);
+      if (timeoutSignal.aborted && !controller.signal.aborted) {
+        // If we hit the timeout, consider this a graceful close; ListWatch will
+        // do an auto-restart.
+        doneCallOnce(null);
+      } else {
+        doneCallOnce(err);
+      }
     }
 
     return controller;
