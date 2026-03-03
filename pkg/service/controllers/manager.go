@@ -562,7 +562,7 @@ func (scm *SharedControllerManager) cleanupUnusedCRDs(ctx context.Context, contr
 
 	crdClient := apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions()
 
-	var deletedCRDNames []string
+	var deletedCRDs []*apiextensionsv1.CustomResourceDefinition
 
 	for _, controller := range controllersToCleanup {
 		crdData := controller.GetCRDData()
@@ -596,8 +596,6 @@ func (scm *SharedControllerManager) cleanupUnusedCRDs(ctx context.Context, contr
 				continue
 			}
 
-			warmCRDCache(ctx, dynamicClient, existingCRD)
-
 			klog.InfoS("Deleting unused CRD", "crd", crd.Name, "controller", controller.GetName())
 			if err := crdClient.Delete(ctx, crd.Name, metav1.DeleteOptions{}); err != nil {
 				if apierrors.IsNotFound(err) {
@@ -605,43 +603,51 @@ func (scm *SharedControllerManager) cleanupUnusedCRDs(ctx context.Context, contr
 				}
 				return fmt.Errorf("failed to delete CRD %s: %w", crd.Name, err)
 			}
-			deletedCRDNames = append(deletedCRDNames, crd.Name)
+			deletedCRDs = append(deletedCRDs, existingCRD)
 		}
 	}
 
-	if len(deletedCRDNames) == 0 {
+	if len(deletedCRDs) == 0 {
 		return nil
 	}
 
-	// Wait for all deleted CRDs to be fully removed. CRD finalization is
-	// event-driven and completes in milliseconds when no instances exist,
-	// but the API server must process the finalizer before the CRD disappears.
-	klog.InfoS("Waiting for CRD deletions to complete", "count", len(deletedCRDNames))
+	// Wait for all deleted CRDs to be fully removed. On each iteration,
+	// re-warm the watch cache for CRDs that still exist. CRD deletions and
+	// finalizations trigger API group handler rebuilds that tear down watch
+	// caches for sibling CRDs. Without re-warming, the CRD finalizer hits
+	// 429s ("storage is (re)initializing") and enters exponential backoff
+	// that can exceed the cleanup timeout.
+	klog.InfoS("Waiting for CRD deletions to complete", "count", len(deletedCRDs))
 	return wait.PollUntilContextTimeout(ctx, 100*time.Millisecond, 30*time.Second, true, func(ctx context.Context) (bool, error) {
-		for _, name := range deletedCRDNames {
-			_, err := crdClient.Get(ctx, name, metav1.GetOptions{})
+		allGone := true
+		for _, crd := range deletedCRDs {
+			_, err := crdClient.Get(ctx, crd.Name, metav1.GetOptions{})
 			if apierrors.IsNotFound(err) {
 				continue
 			}
 			if err != nil {
-				return false, fmt.Errorf("failed to check CRD %s: %w", name, err)
+				return false, fmt.Errorf("failed to check CRD %s: %w", crd.Name, err)
 			}
-			return false, nil // CRD still exists
+			warmCRDCache(ctx, dynamicClient, crd)
+			allGone = false
 		}
-		return true, nil
+		return allGone, nil
 	})
 }
 
 // warmCRDCache issues a List request for a custom resource type to initialize
-// the API server's watch cache before we delete the CRD.
+// the API server's watch cache before the CRD finalizer needs it.
 //
-// On a fresh restart, the API server creates watch caches on demand. Deleting
-// a CRD without a warm cache causes a race: the built-in CRD finalizer tries
-// to list instances, triggers lazy cache creation, and receives HTTP 429
-// ("storage is (re)initializing") because ResilientWatchCacheInitialization
-// (locked on since K8s v1.34) rejects requests immediately instead of blocking.
-// The finalizer then enters exponential backoff, which can exceed our cleanup
-// timeout. A single successful List here eliminates the race.
+// On a fresh restart, the API server creates watch caches on demand. The CRD
+// finalizer lists instances during deletion, which triggers lazy cache creation
+// and receives HTTP 429 ("storage is (re)initializing") because
+// ResilientWatchCacheInitialization (locked on since K8s v1.34) rejects
+// immediately instead of blocking. The finalizer enters exponential backoff,
+// which can exceed our cleanup timeout.
+//
+// Caches are not stable: any CRD deletion or finalization triggers an API group
+// handler rebuild that tears down all watch caches in the group. Callers must
+// re-warm repeatedly, not just once.
 func warmCRDCache(ctx context.Context, dynamicClient dynamic.Interface, crd *apiextensionsv1.CustomResourceDefinition) {
 	version, err := apihelpers.GetCRDStorageVersion(crd)
 	if err != nil {
