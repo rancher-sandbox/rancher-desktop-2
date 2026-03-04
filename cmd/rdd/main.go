@@ -75,7 +75,7 @@ func setLogLevel(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	if logLevel == "" {
-		logLevel = os.Getenv("RDD_LOG_LEVEL")
+		logLevel = strings.TrimSpace(os.Getenv("RDD_LOG_LEVEL"))
 	}
 	if logLevel == "" {
 		// Default log level: warn for regular mode, debug for developer mode

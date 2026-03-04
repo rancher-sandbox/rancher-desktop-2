@@ -713,13 +713,21 @@ func warmCRDCache(ctx context.Context, dynamicClient dynamic.Interface, crd *api
 		Resource: crd.Spec.Names.Plural,
 	}
 
-	// Retry until the List succeeds, meaning the watch cache is initialized.
-	// A 429 ("storage is (re)initializing") means cache creation is still in
-	// progress; keep retrying so the CRD finalizer finds a warm cache.
-	_ = wait.PollUntilContextTimeout(ctx, 100*time.Millisecond, 30*time.Second, true, func(ctx context.Context) (bool, error) {
-		_, err := dynamicClient.Resource(gvr).List(ctx, metav1.ListOptions{Limit: 1})
-		return err == nil, nil
-	})
+	// Retry on 429 ("storage is (re)initializing"), which means cache creation
+	// is still in progress. Any other error is unrelated to cache warming, so
+	// stop retrying and let the CRD finalizer proceed without a warm cache.
+	if err := wait.PollUntilContextTimeout(ctx, 100*time.Millisecond, 30*time.Second, true, func(ctx context.Context) (bool, error) {
+		_, listErr := dynamicClient.Resource(gvr).List(ctx, metav1.ListOptions{Limit: 1})
+		if listErr == nil {
+			return true, nil
+		}
+		if apierrors.IsTooManyRequests(listErr) {
+			return false, nil
+		}
+		return false, listErr
+	}); err != nil {
+		klog.V(1).InfoS("Failed to warm CRD cache", "crd", crd.Name, "err", err)
+	}
 }
 
 // setupSharedWebhookCertificates generates webhook certificates for all controllers that need them.
