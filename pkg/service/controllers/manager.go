@@ -21,6 +21,7 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apihelpers"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apiextensionsv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -546,6 +547,14 @@ func (scm *SharedControllerManager) cleanupUnusedResources(ctx context.Context) 
 
 // cleanupUnusedCRDs removes CRDs for controllers that are not currently running
 // and waits for the deletions to complete.
+//
+// CRDs in the same API group are deleted sequentially because each deletion
+// triggers an API group handler rebuild that tears down watch caches for all
+// sibling CRDs. Deleting them all at once creates a thundering herd: the CRD
+// finalizer hits "storage is (re)initializing" 429s, retries conflict, and
+// drops work items. Serializing within a group lets each CRD finalize cleanly
+// before the next deletion. Different API groups are independent, so they are
+// processed in parallel.
 func (scm *SharedControllerManager) cleanupUnusedCRDs(ctx context.Context, controllersToCleanup []base.Controller) error {
 	if len(controllersToCleanup) == 0 {
 		return nil
@@ -562,7 +571,8 @@ func (scm *SharedControllerManager) cleanupUnusedCRDs(ctx context.Context, contr
 
 	crdClient := apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions()
 
-	var deletedCRDs []*apiextensionsv1.CustomResourceDefinition
+	// Collect CRDs to delete, grouped by API group.
+	crdsByGroup := make(map[string][]*apiextensionsv1.CustomResourceDefinition)
 
 	for _, controller := range controllersToCleanup {
 		crdData := controller.GetCRDData()
@@ -596,47 +606,94 @@ func (scm *SharedControllerManager) cleanupUnusedCRDs(ctx context.Context, contr
 				continue
 			}
 
-			klog.InfoS("Deleting unused CRD", "crd", crd.Name, "controller", controller.GetName())
-			if err := crdClient.Delete(ctx, crd.Name, metav1.DeleteOptions{}); err != nil {
-				if apierrors.IsNotFound(err) {
-					continue
-				}
-				return fmt.Errorf("failed to delete CRD %s: %w", crd.Name, err)
-			}
-			deletedCRDs = append(deletedCRDs, existingCRD)
+			group := existingCRD.Spec.Group
+			crdsByGroup[group] = append(crdsByGroup[group], existingCRD)
 		}
 	}
 
-	if len(deletedCRDs) == 0 {
+	total := 0
+	for _, crds := range crdsByGroup {
+		total += len(crds)
+	}
+	if total == 0 {
 		return nil
 	}
 
-	// Wait for all deleted CRDs to be fully removed. On each iteration,
-	// re-warm the watch cache for CRDs that still exist. CRD deletions and
-	// finalizations trigger API group handler rebuilds that tear down watch
-	// caches for sibling CRDs. Without re-warming, the CRD finalizer hits
-	// 429s ("storage is (re)initializing") and enters exponential backoff
-	// that can exceed the cleanup timeout.
-	klog.InfoS("Waiting for CRD deletions to complete", "count", len(deletedCRDs))
-	return wait.PollUntilContextTimeout(ctx, 100*time.Millisecond, 30*time.Second, true, func(ctx context.Context) (bool, error) {
-		allGone := true
-		for _, crd := range deletedCRDs {
-			_, err := crdClient.Get(ctx, crd.Name, metav1.GetOptions{})
+	klog.InfoS("Deleting unused CRDs", "count", total, "groups", len(crdsByGroup))
+
+	// Delete each API group's CRDs sequentially, but process groups in parallel.
+	cleanupCtx, cleanupCancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cleanupCancel()
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, len(crdsByGroup))
+
+	for group, crds := range crdsByGroup {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := deleteAndWaitForCRDs(cleanupCtx, crdClient, dynamicClient, group, crds); err != nil {
+				errCh <- err
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(errCh)
+
+	var errs []error
+	for err := range errCh {
+		errs = append(errs, err)
+	}
+	return errors.Join(errs...)
+}
+
+// deleteAndWaitForCRDs deletes CRDs one at a time within a single API group,
+// waiting for each to be fully finalized before deleting the next. This avoids
+// the handler rebuild cascade that causes the CRD finalizer to fail.
+func deleteAndWaitForCRDs(
+	ctx context.Context,
+	crdClient apiextensionsv1client.CustomResourceDefinitionInterface,
+	dynamicClient dynamic.Interface,
+	group string,
+	crds []*apiextensionsv1.CustomResourceDefinition,
+) error {
+	for _, crd := range crds {
+		klog.InfoS("Deleting unused CRD", "crd", crd.Name, "group", group)
+
+		// Warm the watch cache so the CRD finalizer can list instances
+		// without hitting a 429 "storage is (re)initializing" error.
+		warmCRDCache(ctx, dynamicClient, crd)
+
+		if err := crdClient.Delete(ctx, crd.Name, metav1.DeleteOptions{}); err != nil {
 			if apierrors.IsNotFound(err) {
 				continue
 			}
-			if err != nil {
-				return false, fmt.Errorf("failed to check CRD %s: %w", crd.Name, err)
-			}
-			warmCRDCache(ctx, dynamicClient, crd)
-			allGone = false
+			return fmt.Errorf("failed to delete CRD %s: %w", crd.Name, err)
 		}
-		return allGone, nil
-	})
+
+		// Wait for finalization before deleting the next CRD in this group.
+		err := wait.PollUntilContextTimeout(ctx, 100*time.Millisecond, 30*time.Second, true, func(ctx context.Context) (bool, error) {
+			_, err := crdClient.Get(ctx, crd.Name, metav1.GetOptions{})
+			if apierrors.IsNotFound(err) {
+				return true, nil
+			}
+			if err != nil {
+				klog.V(2).InfoS("CRD check failed, will retry", "crd", crd.Name, "err", err)
+				return false, nil
+			}
+			return false, nil
+		})
+		if err != nil {
+			return fmt.Errorf("timed out waiting for CRD %s to be deleted: %w", crd.Name, err)
+		}
+		klog.V(2).InfoS("CRD deleted", "crd", crd.Name)
+	}
+	return nil
 }
 
-// warmCRDCache issues a List request for a custom resource type to initialize
-// the API server's watch cache before the CRD finalizer needs it.
+// warmCRDCache waits for the watch cache for a custom resource type to be
+// initialized before the CRD finalizer needs it.
 //
 // On a fresh restart, the API server creates watch caches on demand. The CRD
 // finalizer lists instances during deletion, which triggers lazy cache creation
@@ -644,10 +701,6 @@ func (scm *SharedControllerManager) cleanupUnusedCRDs(ctx context.Context, contr
 // ResilientWatchCacheInitialization (locked on since K8s v1.34) rejects
 // immediately instead of blocking. The finalizer enters exponential backoff,
 // which can exceed our cleanup timeout.
-//
-// Caches are not stable: any CRD deletion or finalization triggers an API group
-// handler rebuild that tears down all watch caches in the group. Callers must
-// re-warm repeatedly, not just once.
 func warmCRDCache(ctx context.Context, dynamicClient dynamic.Interface, crd *apiextensionsv1.CustomResourceDefinition) {
 	version, err := apihelpers.GetCRDStorageVersion(crd)
 	if err != nil {
@@ -660,16 +713,13 @@ func warmCRDCache(ctx context.Context, dynamicClient dynamic.Interface, crd *api
 		Resource: crd.Spec.Names.Plural,
 	}
 
-	// The cache typically initializes in under 25ms, so a few short retries suffice.
-	// Only retry on 429 (storage initializing); any other result means the cache is ready
-	// or the error is unrelated and not worth blocking on.
-	err = wait.PollUntilContextTimeout(ctx, 10*time.Millisecond, 5*time.Second, true, func(ctx context.Context) (bool, error) {
-		_, listErr := dynamicClient.Resource(gvr).List(ctx, metav1.ListOptions{Limit: 1})
-		return !apierrors.IsTooManyRequests(listErr), nil
+	// Retry until the List succeeds, meaning the watch cache is initialized.
+	// A 429 ("storage is (re)initializing") means cache creation is still in
+	// progress; keep retrying so the CRD finalizer finds a warm cache.
+	_ = wait.PollUntilContextTimeout(ctx, 100*time.Millisecond, 30*time.Second, true, func(ctx context.Context) (bool, error) {
+		_, err := dynamicClient.Resource(gvr).List(ctx, metav1.ListOptions{Limit: 1})
+		return err == nil, nil
 	})
-	if err != nil {
-		klog.V(2).InfoS("Cache warm-up timed out; proceeding with CRD deletion", "crd", crd.Name, "gvr", gvr)
-	}
 }
 
 // setupSharedWebhookCertificates generates webhook certificates for all controllers that need them.
