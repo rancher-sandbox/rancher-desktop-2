@@ -64,24 +64,12 @@ type SharedControllerManager struct {
 }
 
 // NewSharedControllerManager creates a new shared controller manager.
-func NewSharedControllerManager(ctx context.Context, name string, kubeConfig *rest.Config, metricsPort, healthPort int) (*SharedControllerManager, error) {
-	// Create discovery service (errors handled in Start method)
+// The metricsPort and healthPort are desired ports; Start resolves them
+// to available ports immediately before binding.
+func NewSharedControllerManager(name string, kubeConfig *rest.Config, metricsPort, healthPort int) (*SharedControllerManager, error) {
 	discovery, err := NewControllerManagerDiscoveryGroup(kubeConfig, name)
 	if err != nil {
 		return nil, err
-	}
-
-	// Calculate webhook port with instance offset
-	desiredWebhookPort := 9443 + instance.Index()
-	webhookPort, err := GetAvailablePort(ctx, desiredWebhookPort)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get available webhook port: %w", err)
-	}
-
-	desiredPassthroughPort := 9090 + instance.Index()
-	passthroughPort, err := GetAvailablePort(ctx, desiredPassthroughPort)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get available pass through port: %w", err)
 	}
 
 	return &SharedControllerManager{
@@ -89,8 +77,8 @@ func NewSharedControllerManager(ctx context.Context, name string, kubeConfig *re
 		kubeConfig:      kubeConfig,
 		metricsPort:     metricsPort,
 		healthPort:      healthPort,
-		webhookPort:     webhookPort,
-		passthroughPort: passthroughPort,
+		webhookPort:     9443 + instance.Index(),
+		passthroughPort: 9090 + instance.Index(),
 		registrations:   make([]base.Controller, 0),
 		started:         false,
 		discovery:       discovery,
@@ -148,6 +136,26 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 	// Modify kubeconfig to force JSON content type to avoid protobuf issues
 	configCopy := *scm.kubeConfig
 	configCopy.ContentType = "application/json"
+
+	// Resolve all ports immediately before use to minimize the window
+	// between releasing the test listener and controller-runtime rebinding.
+	var err error
+	scm.metricsPort, err = ResolvePort(ctx, scm.metricsPort)
+	if err != nil {
+		return fmt.Errorf("failed to resolve metrics port: %w", err)
+	}
+	scm.healthPort, err = ResolvePort(ctx, scm.healthPort)
+	if err != nil {
+		return fmt.Errorf("failed to resolve health port: %w", err)
+	}
+	scm.webhookPort, err = ResolvePort(ctx, scm.webhookPort)
+	if err != nil {
+		return fmt.Errorf("failed to resolve webhook port: %w", err)
+	}
+	scm.passthroughPort, err = ResolvePort(ctx, scm.passthroughPort)
+	if err != nil {
+		return fmt.Errorf("failed to resolve passthrough port: %w", err)
+	}
 
 	// Create the shared controller-runtime manager
 	managerOptions := ctrl.Options{

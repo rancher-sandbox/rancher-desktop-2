@@ -198,11 +198,11 @@ func (o *Options) Complete(ctx context.Context) (*CompletedOptions, error) {
 	o.ControlPlane.SecureServing.ExternalAddress = net.IPv4(127, 0, 0, 1)
 	o.ControlPlane.SecureServing.BindAddress = net.IPv4(127, 0, 0, 1)
 
-	// Handle port fallback mechanism - if the requested port is not available, find an alternative
+	// Fall back to a random port if the configured port is busy.
 	if o.ControlPlane.SecureServing.BindPort != 0 {
-		actualPort, err := controllers.GetAvailablePort(ctx, o.ControlPlane.SecureServing.BindPort)
+		actualPort, err := controllers.ResolvePort(ctx, o.ControlPlane.SecureServing.BindPort)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get available secure port: %w", err)
+			return nil, fmt.Errorf("failed to resolve secure port: %w", err)
 		}
 		o.ControlPlane.SecureServing.BindPort = actualPort
 	}

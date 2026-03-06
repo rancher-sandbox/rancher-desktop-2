@@ -158,7 +158,7 @@ func Running() bool {
 	return PID() != PIDNotFound
 }
 
-func Create(ctx context.Context, args []string) error {
+func Create(args []string) error {
 	if Exists() {
 		return fmt.Errorf("%q control plane already exists", instance.Name())
 	}
@@ -166,11 +166,7 @@ func Create(ctx context.Context, args []string) error {
 		return err
 	}
 	// Add default secure port first, then append user args (which may override it if specified).
-	desiredSecurePort := 6443 + instance.Index()
-	securePort, err := controllers.GetAvailablePort(ctx, desiredSecurePort)
-	if err != nil {
-		return fmt.Errorf("failed to get available secure port: %w", err)
-	}
+	securePort := 6443 + instance.Index()
 	args = append([]string{"--secure-port", strconv.Itoa(securePort)}, args...)
 
 	data, err := json.MarshalIndent(args, "", "  ")
@@ -513,7 +509,7 @@ func NewServeCommand(ctx context.Context) *cobra.Command {
 				return fmt.Errorf("control plane %q is already running", instance.Name())
 			}
 			if !Exists() {
-				if err := Create(cmd.Context(), nil); err != nil {
+				if err := Create(nil); err != nil {
 					return err
 				}
 			}
@@ -682,23 +678,15 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 			defer mgrWg.Done()
 			klog.InfoS("Starting shared controller manager", "controllers", len(enabledControllers))
 
-			// Get available ports for metrics and health endpoints with instance offset
-			instanceOffset := 2 * instance.Index()
-			metricsPort, err := controllers.GetAvailablePort(ctx, 8082+instanceOffset)
-			if err != nil {
-				klog.Error(err, "Failed to get available metrics port")
-				return
-			}
+			// Each instance reserves 4 consecutive ports starting at 8080:
+			// +0 external metrics, +1 external health, +2 embedded metrics, +3 embedded health.
+			// Start() resolves these to available ports immediately before binding.
+			instanceOffset := 4 * instance.Index()
+			metricsPort := 8082 + instanceOffset
+			healthPort := 8083 + instanceOffset
 
-			healthPort, err := controllers.GetAvailablePort(ctx, 8083+instanceOffset)
-			if err != nil {
-				klog.Error(err, "Failed to get available health port")
-				return
-			}
-
-			// Create shared controller manager with dynamic ports
+			// Create shared controller manager
 			sharedManager, err := controllers.NewSharedControllerManager(
-				ctx,
 				"embedded",
 				completed.ControlPlane.Generic.LoopbackClientConfig,
 				metricsPort,

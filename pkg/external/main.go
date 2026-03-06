@@ -19,6 +19,7 @@ import (
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
 )
 
@@ -26,11 +27,14 @@ import (
 // It handles command line parsing, kubeconfig retrieval, discovery checking, and shared manager setup.
 // It returns the command's exit code.
 func RunControllers(apiGroupName string) int {
+	// Each instance reserves 4 consecutive ports starting at 8080:
+	// +0 external metrics, +1 external health, +2 embedded metrics, +3 embedded health.
+	instanceOffset := 4 * instance.Index()
 	var desiredMetricsPort int
 	var desiredHealthPort int
 
-	flag.IntVar(&desiredMetricsPort, "metrics-port", 8080, "The desired port the metric endpoint binds to.")
-	flag.IntVar(&desiredHealthPort, "health-port", 8081, "The desired port the health probe endpoint binds to.")
+	flag.IntVar(&desiredMetricsPort, "metrics-port", 8080+instanceOffset, "The desired port the metric endpoint binds to.")
+	flag.IntVar(&desiredHealthPort, "health-port", 8081+instanceOffset, "The desired port the health probe endpoint binds to.")
 
 	klog.InitFlags(nil)
 	//revive:disable-next-line:deep-exit
@@ -87,21 +91,9 @@ func RunControllers(apiGroupName string) int {
 		})
 	}()
 
-	// Get available ports for metrics and health endpoints
-	metricsPort, err := controllers.GetAvailablePort(ctx, desiredMetricsPort)
-	if err != nil {
-		setupLog.Error(err, "Failed to get available metrics port")
-		return 1
-	}
-
-	healthPort, err := controllers.GetAvailablePort(ctx, desiredHealthPort)
-	if err != nil {
-		setupLog.Error(err, "Failed to get available health port")
-		return 1
-	}
-
-	// Create shared controller manager for this API group
-	sharedManager, err := controllers.NewSharedControllerManager(ctx, apiGroupName, config, metricsPort, healthPort)
+	// Create shared controller manager for this API group.
+	// Start() resolves ports to available ones immediately before binding.
+	sharedManager, err := controllers.NewSharedControllerManager(apiGroupName, config, desiredMetricsPort, desiredHealthPort)
 	if err != nil {
 		setupLog.Error(err, "Failed to create shared controller manager")
 		return 1

@@ -33,7 +33,7 @@ func newCtlCommand() *cobra.Command {
 
 func ctlAction(cmd *cobra.Command, args []string) error {
 	if !service.Exists() {
-		if err := service.Create(cmd.Context(), nil); err != nil {
+		if err := service.Create(nil); err != nil {
 			return err
 		}
 	}
