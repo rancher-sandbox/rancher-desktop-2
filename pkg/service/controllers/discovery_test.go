@@ -66,7 +66,7 @@ func TestControllerManagerDiscoveryGroup(t *testing.T) {
 	}), "failed to register controller manager")
 
 	// Check that the config map exists.
-	cm, err := client.CoreV1().ConfigMaps(d1.namespace).Get(t.Context(), controllerManagerConfigMapName, metav1.GetOptions{})
+	cm, err := client.CoreV1().ConfigMaps(d1.namespace).Get(t.Context(), ControllerManagerConfigMapName, metav1.GetOptions{})
 	assert.NilError(t, err, "failed to get controller manager config map")
 	assert.Assert(t, cmp.Len(cm.Data, 1), "expected config map to have one entry")
 	assert.Check(t, cmp.Contains(cm.Data, d1.name))
@@ -106,7 +106,7 @@ func TestControllerManagerDiscoveryGroup(t *testing.T) {
 	}), "failed to register second controller manager")
 
 	// Check that the config map is updated.
-	cm, err = client.CoreV1().ConfigMaps(d2.namespace).Get(t.Context(), controllerManagerConfigMapName, metav1.GetOptions{})
+	cm, err = client.CoreV1().ConfigMaps(d2.namespace).Get(t.Context(), ControllerManagerConfigMapName, metav1.GetOptions{})
 	assert.NilError(t, err, "failed to get controller manager config map after second registration")
 	assert.Assert(t, cmp.Len(cm.Data, 2), "expected config map to have two entries after second registration")
 	assert.Check(t, cmp.Contains(cm.Data, d1.name))
@@ -151,7 +151,7 @@ func TestControllerManagerDiscoveryGroup(t *testing.T) {
 	assert.Check(t, info != nil, "expected non-nil info for second controller manager")
 
 	// Check that the config map still exists with one entry.
-	cm, err = client.CoreV1().ConfigMaps(d2.namespace).Get(t.Context(), controllerManagerConfigMapName, metav1.GetOptions{})
+	cm, err = client.CoreV1().ConfigMaps(d2.namespace).Get(t.Context(), ControllerManagerConfigMapName, metav1.GetOptions{})
 	assert.NilError(t, err, "failed to get controller manager config map after first unregistered")
 	assert.Assert(t, cmp.Len(cm.Data, 1), "expected config map to have one entry after first unregistered")
 	assert.Check(t, cmp.Contains(cm.Data, d2.name))
@@ -182,6 +182,6 @@ func TestControllerManagerDiscoveryGroup(t *testing.T) {
 	assert.NilError(t, d2.UnregisterControllerManager(t.Context()), "failed to unregister second controller manager")
 
 	// Check that the config map is removed.
-	_, err = client.CoreV1().ConfigMaps(d2.namespace).Get(t.Context(), controllerManagerConfigMapName, metav1.GetOptions{})
+	_, err = client.CoreV1().ConfigMaps(d2.namespace).Get(t.Context(), ControllerManagerConfigMapName, metav1.GetOptions{})
 	assert.Assert(t, errors.IsNotFound(err), "expected config map to be deleted after all controller managers unregistered")
 }

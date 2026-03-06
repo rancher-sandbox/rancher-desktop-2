@@ -6,7 +6,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -15,15 +14,19 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
+	"k8s.io/client-go/tools/cache"
+	watchtools "k8s.io/client-go/tools/watch"
 
 	service "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/cmd"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
@@ -83,7 +86,9 @@ func ctlAwaitAction(cmd *cobra.Command, rawArgs []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create discovery client: %w", err)
 	}
-	gvr, err := resolveGVR(discoveryClient, resourceType)
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient))
+	typeName, group, _ := strings.Cut(resourceType, ".")
+	gvr, err := mapper.ResourceFor(schema.GroupVersionResource{Resource: typeName, Group: group})
 	if err != nil {
 		return err
 	}
@@ -103,7 +108,34 @@ func ctlAwaitAction(cmd *cobra.Command, rawArgs []string) error {
 		sinceTime:  sinceTime,
 	}
 
-	return watchUntilCondition(ctx, dynClient, gvr, *namespace, resourceName, checker.check)
+	// Watch the single named resource for condition changes.
+	// UntilWithSync handles the initial List, Watch setup, and 410 Gone
+	// recovery (re-list on compacted resource versions).
+	resource := dynClient.Resource(gvr).Namespace(*namespace)
+	fieldSelector := "metadata.name=" + resourceName
+	lw := &cache.ListWatch{
+		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			opts.FieldSelector = fieldSelector
+			return resource.List(ctx, opts)
+		},
+		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			opts.FieldSelector = fieldSelector
+			return resource.Watch(ctx, opts)
+		},
+	}
+	_, err = watchtools.UntilWithSync(ctx, lw, &unstructured.Unstructured{}, nil,
+		func(event watch.Event) (bool, error) {
+			if event.Type == watch.Deleted {
+				return false, errors.New("resource was deleted while waiting")
+			}
+			obj, ok := event.Object.(*unstructured.Unstructured)
+			if !ok {
+				return false, nil
+			}
+			return checker.check(obj), nil
+		},
+	)
+	return err
 }
 
 // parseConditionFlag parses "condition=TYPE[=STATUS]" from the --for flag.
@@ -134,40 +166,9 @@ func parseResourceArg(arg string) (resourceType, name string, err error) {
 	return resourceType, name, nil
 }
 
-// resolveGVR finds the GroupVersionResource for a resource type string like
-// "limavm" or "limavm.lima.rancherdesktop.io".
-func resolveGVR(client discovery.DiscoveryInterface, resourceType string) (schema.GroupVersionResource, error) {
-	resourceName, group, _ := strings.Cut(resourceType, ".")
-
-	_, apiResourceLists, err := client.ServerGroupsAndResources()
-	if err != nil {
-		return schema.GroupVersionResource{}, fmt.Errorf("failed to discover API resources: %w", err)
-	}
-
-	for _, list := range apiResourceLists {
-		gv, parseErr := schema.ParseGroupVersion(list.GroupVersion)
-		if parseErr != nil {
-			continue
-		}
-		if group != "" && gv.Group != group {
-			continue
-		}
-		for _, r := range list.APIResources {
-			if r.Name == resourceName || r.SingularName == resourceName {
-				return schema.GroupVersionResource{
-					Group:    gv.Group,
-					Version:  gv.Version,
-					Resource: r.Name,
-				}, nil
-			}
-		}
-	}
-	return schema.GroupVersionResource{}, fmt.Errorf("resource type %q not found", resourceType)
-}
-
-// resolveStartupTime reads the earliest startTime from the controller manager
-// discovery ConfigMap. The ConfigMap is guaranteed to be fresh because
-// ensureServiceRunning waits for it after a restart.
+// resolveStartupTime returns the control plane start time from the discovery
+// ConfigMap's creationTimestamp. The serve command recreates the ConfigMap on
+// every startup, so its creation time reflects the current instance.
 func resolveStartupTime(ctx context.Context, config *rest.Config) (time.Time, error) {
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
@@ -175,27 +176,12 @@ func resolveStartupTime(ctx context.Context, config *rest.Config) (time.Time, er
 	}
 
 	cm, err := client.CoreV1().ConfigMaps(controllers.RDDSystemNamespace).Get(
-		ctx, "rdd-controller-manager", metav1.GetOptions{},
+		ctx, controllers.ControllerManagerConfigMapName, metav1.GetOptions{},
 	)
 	if err != nil {
 		return time.Time{}, err
 	}
-
-	var earliest time.Time
-	for _, data := range cm.Data {
-		var info controllers.ControllerManagerInfo
-		if err := json.Unmarshal([]byte(data), &info); err != nil {
-			continue
-		}
-		t := info.StartTime.Time
-		if earliest.IsZero() || t.Before(earliest) {
-			earliest = t
-		}
-	}
-	if earliest.IsZero() {
-		return time.Time{}, errors.New("no controller manager entries in discovery ConfigMap")
-	}
-	return earliest, nil
+	return cm.CreationTimestamp.Time, nil
 }
 
 type conditionChecker struct {
@@ -236,82 +222,4 @@ func (c *conditionChecker) check(obj *unstructured.Unstructured) bool {
 		return true
 	}
 	return false // Condition type not present yet.
-}
-
-// isResourceVersionStale returns true if the error indicates the resource
-// version is too old. The API server returns 410 with reason "Gone" or
-// "Expired" depending on the storage backend.
-func isResourceVersionStale(err error) bool {
-	return apierrors.IsGone(err) || apierrors.IsResourceExpired(err)
-}
-
-// watchUntilCondition watches a namespaced resource until the check function
-// returns true. It reads the current state first, then watches from that
-// resource version to avoid missing events. On 410 Gone/Expired (resource
-// version too old), it retries the entire Get+Watch cycle.
-func watchUntilCondition(
-	ctx context.Context,
-	client dynamic.Interface,
-	gvr schema.GroupVersionResource,
-	namespace, name string,
-	check func(*unstructured.Unstructured) bool,
-) error {
-	resource := client.Resource(gvr).Namespace(namespace)
-
-	for {
-		obj, err := resource.Get(ctx, name, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("failed to get %s/%s: %w", gvr.Resource, name, err)
-		}
-		if check(obj) {
-			return nil
-		}
-
-		retry, err := watchOnce(ctx, resource, name, obj.GetResourceVersion(), check)
-		if err != nil {
-			return err
-		}
-		if !retry {
-			return ctx.Err()
-		}
-		// 410 Gone — resource version was compacted; restart the Get+Watch cycle.
-	}
-}
-
-// watchOnce runs a single Watch from the given resource version. It returns
-// (true, nil) if the watch expired with 410 Gone and should be retried.
-func watchOnce(
-	ctx context.Context,
-	resource dynamic.ResourceInterface,
-	name, resourceVersion string,
-	check func(*unstructured.Unstructured) bool,
-) (retry bool, err error) {
-	watcher, err := resource.Watch(ctx, metav1.ListOptions{
-		FieldSelector:   "metadata.name=" + name,
-		ResourceVersion: resourceVersion,
-	})
-	if isResourceVersionStale(err) {
-		return true, nil
-	}
-	if err != nil {
-		return false, fmt.Errorf("failed to watch: %w", err)
-	}
-	defer watcher.Stop()
-
-	for event := range watcher.ResultChan() {
-		switch event.Type {
-		case watch.Error:
-			if isResourceVersionStale(apierrors.FromObject(event.Object)) {
-				return true, nil
-			}
-			return false, fmt.Errorf("watch error: %v", event.Object)
-		case watch.Deleted:
-			return false, errors.New("resource was deleted while waiting")
-		}
-		updated, ok := event.Object.(*unstructured.Unstructured)
-		if ok && check(updated) {
-			return false, nil
-		}
-	}
-	return false, nil
 }
