@@ -35,7 +35,7 @@ jobs:
   bats:
     name: BATS
     needs: get-pr-number
-    if: ${{ ! needs.get-pr-number.outputs.number }}
+    if: ${{ needs.get-pr-number.outputs.number == '0' }}
     strategy:
       fail-fast: false
       matrix:
@@ -57,7 +57,7 @@ jobs:
         if test $(cat /proc/sys/net/ipv4/ip_unprivileged_port_start) -gt 80; then
           sudo sh -c 'echo 80 > /proc/sys/net/ipv4/ip_unprivileged_port_start'
         fi
-        
+
         # Install QEMU for Lima VM operations
         sudo apt-get update
         sudo apt-get install --yes qemu-system-x86 qemu-utils
