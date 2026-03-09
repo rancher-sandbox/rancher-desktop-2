@@ -60,30 +60,6 @@ spec:
 EOF
 }
 
-assert_instance_created_condition() {
-    local name=$1
-    local expected=$2
-    run -0 rdd ctl get limavm "${name}" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="Created")].status}'
-    assert_output "${expected}"
-}
-
-assert_instance_running_condition() {
-    local name=$1
-    local expected=$2
-    run -0 rdd ctl get limavm "${name}" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="Running")].status}'
-    assert_output "${expected}"
-}
-
-assert_instance_running_reason() {
-    local name=$1
-    local expected=$2
-    run -0 rdd ctl get limavm "${name}" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="Running")].reason}'
-    assert_output "${expected}"
-}
-
 assert_stdout_logs_contain() {
     local name=$1
     local expected=$2
@@ -107,11 +83,6 @@ get_hostagent_pid() {
     cat "${RDD_LIMA_HOME}/${name}/ha.pid"
 }
 
-assert_limavm_not_exists() {
-    local name=$1
-    run ! rdd ctl get limavm "${name}" --namespace "${NAMESPACE}"
-}
-
 assert_shell_succeeds() {
     local name=$1
     shift
@@ -131,16 +102,13 @@ assert_shell_succeeds() {
 }
 
 @test "wait for Created condition" {
-    try --max 120 --delay 1 -- assert_instance_created_condition "${VM_NAME}" "True"
+    rdd ctl wait --for=condition=Created \
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=120s
 }
 
-@test "verify initial Running condition is False" {
-    # Wait a bit for the controller to set the initial condition
-    try --max 30 --delay 1 -- assert_instance_running_condition "${VM_NAME}" "False"
-}
-
-@test "verify initial Running reason is Stopped" {
-    assert_instance_running_reason "${VM_NAME}" "Stopped"
+@test "verify initial Running condition is False/Stopped" {
+    rdd ctl await "limavm/${VM_NAME}" --namespace "${NAMESPACE}" \
+        --for=condition=Running=False --reason=Stopped --timeout=30s
 }
 
 @test "start the VM by setting running=true" {
@@ -152,13 +120,9 @@ assert_shell_succeeds() {
     assert_output "true"
 }
 
-@test "wait for Running condition to become True" {
-    # VM boot can take several minutes
-    try --max 60 --delay 5 -- assert_instance_running_condition "${VM_NAME}" "True"
-}
-
-@test "verify Running reason is Started" {
-    assert_instance_running_reason "${VM_NAME}" "Started"
+@test "wait for Running condition to become True/Started" {
+    rdd ctl await "limavm/${VM_NAME}" --namespace "${NAMESPACE}" \
+        --for=condition=Running --reason=Started --timeout=300s
 }
 
 @test "verify hostagent PID file exists" {
@@ -196,8 +160,8 @@ spec:
     namespace: ${NAMESPACE}
   running: false
 EOF
-    # Wait for instance to be created
-    try --max 120 --delay 1 -- assert_instance_created_condition "stopped-vm" "True"
+    rdd ctl wait --for=condition=Created \
+        "limavm/stopped-vm" --namespace "${NAMESPACE}" --timeout=120s
 
     run -1 rdd lima shell "stopped-vm"
     assert_output --partial "is not running"
@@ -215,13 +179,9 @@ EOF
     assert_output "false"
 }
 
-@test "wait for Running condition to become False" {
-    # Graceful shutdown can take up to 3 minutes
-    try --max 60 --delay 5 -- assert_instance_running_condition "${VM_NAME}" "False"
-}
-
-@test "verify Running reason is Stopped after stop" {
-    assert_instance_running_reason "${VM_NAME}" "Stopped"
+@test "wait for Running condition to become False/Stopped" {
+    rdd ctl await "limavm/${VM_NAME}" --namespace "${NAMESPACE}" \
+        --for=condition=Running=False --reason=Stopped --timeout=300s
 }
 
 @test "verify hostagent PID file is removed" {
@@ -237,7 +197,8 @@ EOF
 @test "start VM for crash recovery test" {
     rdd ctl patch limavm "${VM_NAME}" --namespace "${NAMESPACE}" \
         --type=merge --patch '{"spec":{"running":true}}'
-    try --max 60 --delay 5 -- assert_instance_running_condition "${VM_NAME}" "True"
+    rdd ctl wait --for=condition=Running=True \
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=300s
 }
 
 @test "simulate crash by killing hostagent" {
@@ -373,8 +334,8 @@ EOF
     rdd svc start
 
     # VM should start fresh (no orphan — graceful shutdown killed it).
-    try --max 60 --delay 5 -- assert_instance_running_condition "${VM_NAME}" "True"
-    assert_instance_running_reason "${VM_NAME}" "Started"
+    rdd ctl await "limavm/${VM_NAME}" --namespace "${NAMESPACE}" \
+        --for=condition=Running --reason=Started --since=startup --timeout=300s
 }
 
 # Restart tests
@@ -429,8 +390,8 @@ assert_restart_annotation_absent() {
     refute_output # restartNeeded has omitempty; false means absent
 
     # VM should stay stopped because spec.running=false
-    assert_instance_running_condition "${VM_NAME}" "False"
-    assert_instance_running_reason "${VM_NAME}" "Stopped"
+    rdd ctl await "limavm/${VM_NAME}" --namespace "${NAMESPACE}" \
+        --for=condition=Running=False --reason=Stopped --timeout=30s
 }
 
 @test "restart command on stopped VM starts it" {
@@ -444,7 +405,7 @@ assert_restart_annotation_absent() {
 
 @test "cleanup LimaVM running test" {
     rdd ctl delete limavm "${VM_NAME}" --namespace "${NAMESPACE}"
-    try --max 60 --delay 1 -- assert_limavm_not_exists "${VM_NAME}"
+    rdd ctl wait --for=delete "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=60s
 }
 
 @test "limavm edit command updates template ConfigMap" {

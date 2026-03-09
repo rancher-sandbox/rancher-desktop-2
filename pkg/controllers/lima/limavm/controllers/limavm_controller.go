@@ -71,6 +71,10 @@ const (
 	// ReasonStopFailed is used when the Lima instance failed to stop.
 	ReasonStopFailed = "StopFailed"
 
+	// ReasonReconciling is used when the controller has restarted and
+	// the Running condition has not yet been verified.
+	ReasonReconciling = "Reconciling"
+
 	// preparingSentinel is a marker file created during instance preparation.
 	// Its presence indicates that preparation is in progress or failed.
 	preparingSentinel = ".preparing"

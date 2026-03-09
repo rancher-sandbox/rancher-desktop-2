@@ -17,7 +17,6 @@ import (
 	"k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
-	service "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/cmd"
 )
 
 func newCtlCommand() *cobra.Command {
@@ -32,18 +31,11 @@ func newCtlCommand() *cobra.Command {
 }
 
 func ctlAction(cmd *cobra.Command, args []string) error {
-	if !service.Exists() {
-		if err := service.Create(nil); err != nil {
-			return err
-		}
-	}
-	if !service.Running() {
-		if err := service.Start(cmd.Context(), nil); err != nil {
-			return err
-		}
-	}
-	if err := service.WaitWithTimeout(cmd.Context()); err != nil {
+	if err := ensureServiceRunning(cmd.Context()); err != nil {
 		return err
+	}
+	if len(args) > 0 && args[0] == "await" {
+		return ctlAwaitAction(cmd, args[1:])
 	}
 	if err := os.Setenv("KUBECONFIG", instance.Config()); err != nil {
 		return fmt.Errorf("failed to set KUBECONFIG: %w", err)

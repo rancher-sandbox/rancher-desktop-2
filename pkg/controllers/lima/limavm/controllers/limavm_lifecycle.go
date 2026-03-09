@@ -120,6 +120,18 @@ func (r *LimaVMReconciler) handleRunningState(ctx context.Context, limaVM *v1alp
 
 	logger.Info("Checking running state", "shouldRun", shouldRun, "phase", phase)
 
+	// After a controller restart, the Running condition may be stale (persisted
+	// in kine from the previous controller lifetime). Without a watcher, we
+	// cannot verify it, so reset it to Unknown before proceeding.
+	if phase == phaseUnknown && !base.HasConditionWithReason(limaVM.Status.Conditions, ConditionRunning, metav1.ConditionUnknown, ReasonReconciling) {
+		logger.Info("No watcher for instance, resetting Running condition to Unknown")
+		if err := r.updateCondition(ctx, limaVM, ConditionRunning, metav1.ConditionUnknown, ReasonReconciling, "Verifying instance state after controller restart"); err != nil {
+			logger.Error(err, "Failed to reset Running condition")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
+
 	if limaVM.Status.RestartNeeded {
 		return r.handleRestartNeeded(ctx, limaVM, phase)
 	}

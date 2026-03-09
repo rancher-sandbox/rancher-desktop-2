@@ -9,13 +9,20 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/developer"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 	service "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/cmd"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail"
 )
 
@@ -69,15 +76,74 @@ func ensureServiceRunning(ctx context.Context) error {
 			return err
 		}
 	}
-	if !service.Running() {
-		if err := service.Start(ctx, nil); err != nil {
+	if service.Running() {
+		ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
+		defer cancel()
+		if err := service.Wait(ctx); err != nil {
 			return err
 		}
+		return waitForDiscoveryConfigMap(ctx)
 	}
-	if err := service.WaitWithTimeout(ctx); err != nil {
+	return startAndWaitForReady(ctx, nil)
+}
+
+// startAndWaitForReady starts the service, waits for the API server and the
+// discovery ConfigMap to be ready. After an unclean shutdown the ConfigMap may
+// survive with stale data, so the freshness check waits for a ConfigMap whose
+// creationTimestamp is at or after the current startup.
+//
+// Both the API server readiness and ConfigMap freshness polls share a single
+// 90-second timeout, because the apiserver may become ready before the
+// serve command creates the ConfigMap.
+func startAndWaitForReady(ctx context.Context, serveArgs []string) error {
+	// Truncate to second precision because metav1.Time drops sub-seconds
+	// during JSON serialization. Without this, a server that starts in the
+	// same second would appear to have a startTime *before* beforeStart.
+	beforeStart := time.Now().Truncate(time.Second)
+	if err := service.Start(ctx, serveArgs); err != nil {
 		return err
 	}
-	return nil
+
+	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
+	defer cancel()
+
+	if err := service.Wait(ctx); err != nil {
+		return err
+	}
+	return waitForFreshDiscoveryConfigMap(ctx, beforeStart)
+}
+
+// waitForDiscoveryConfigMap polls until the discovery ConfigMap exists.
+func waitForDiscoveryConfigMap(ctx context.Context) error {
+	return waitForFreshDiscoveryConfigMap(ctx, time.Time{})
+}
+
+// waitForFreshDiscoveryConfigMap polls until the discovery ConfigMap has a
+// creationTimestamp at or after beforeStart. The serve command recreates the
+// ConfigMap on every startup, so a fresh timestamp means this control plane
+// instance is ready. Pass zero time to wait for existence only.
+func waitForFreshDiscoveryConfigMap(ctx context.Context, beforeStart time.Time) error {
+	restConfig, err := service.GetKubeRestConfig()
+	if err != nil {
+		return err
+	}
+	client, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create kubernetes client: %w", err)
+	}
+
+	return wait.PollUntilContextCancel(ctx, 500*time.Millisecond, true, func(ctx context.Context) (bool, error) {
+		cm, err := client.CoreV1().ConfigMaps(controllers.RDDSystemNamespace).Get(
+			ctx, controllers.ControllerManagerConfigMapName, metav1.GetOptions{},
+		)
+		if apierrors.IsNotFound(err) {
+			return false, nil // ConfigMap not created yet; retry.
+		}
+		if err != nil {
+			return false, err
+		}
+		return !cm.CreationTimestamp.Time.Before(beforeStart), nil
+	})
 }
 
 func serviceConfigAction(cmd *cobra.Command, _ []string) error {
@@ -161,37 +227,46 @@ func serviceStartAction(cmd *cobra.Command, args []string) error {
 	}
 	if service.Running() {
 		logrus.Infof("%q control plane is already running", instance.Name())
-	} else {
-		// Collect all provided flags as arguments for serve subprocess
-		var serveArgs []string
-		if cmd.Flags().Changed("controllers") {
-			controllers, err := cmd.Flags().GetString("controllers")
-			if err != nil {
-				return err
-			}
-			serveArgs = append(serveArgs, "--controllers", controllers)
+		wait, err := cmd.Flags().GetBool("wait")
+		if err == nil && wait {
+			logrus.Infof("waiting for %q control plane to be ready", instance.Name())
+			err = service.WaitWithTimeout(cmd.Context())
 		}
-		if cmd.Flags().Changed("secure-port") {
-			securePort, err := cmd.Flags().GetInt("secure-port")
-			if err != nil {
-				return err
-			}
-			serveArgs = append(serveArgs, "--secure-port", strconv.Itoa(securePort))
-		}
-		serveArgs = append(serveArgs, "-v", logrusLevelToKlog())
-		serveArgs = append(serveArgs, args...)
+		return err
+	}
 
+	// Collect all provided flags as arguments for serve subprocess
+	var serveArgs []string
+	if cmd.Flags().Changed("controllers") {
+		controllers, err := cmd.Flags().GetString("controllers")
+		if err != nil {
+			return err
+		}
+		serveArgs = append(serveArgs, "--controllers", controllers)
+	}
+	if cmd.Flags().Changed("secure-port") {
+		securePort, err := cmd.Flags().GetInt("secure-port")
+		if err != nil {
+			return err
+		}
+		serveArgs = append(serveArgs, "--secure-port", strconv.Itoa(securePort))
+	}
+	serveArgs = append(serveArgs, "-v", logrusLevelToKlog())
+	serveArgs = append(serveArgs, args...)
+
+	wait, err := cmd.Flags().GetBool("wait")
+	if err == nil && wait {
+		if err := startAndWaitForReady(cmd.Context(), serveArgs); err != nil {
+			return err
+		}
+		logrus.Infof("%q control plane is ready", instance.Name())
+	} else {
 		if err := service.Start(cmd.Context(), serveArgs); err != nil {
 			return err
 		}
-		logrus.Infof("successfully started %q control plane", instance.Name())
+		logrus.Infof("%q control plane is starting", instance.Name())
 	}
-	wait, err := cmd.Flags().GetBool("wait")
-	if err == nil && wait {
-		logrus.Infof("waiting for %q control plane to be ready", instance.Name())
-		err = service.WaitWithTimeout(cmd.Context())
-	}
-	return err
+	return nil
 }
 
 func serviceStopAction(cmd *cobra.Command, _ []string) error {
@@ -212,7 +287,11 @@ func serviceStopAction(cmd *cobra.Command, _ []string) error {
 	if err := service.StopWithWait(wait); err != nil {
 		return err
 	}
-	logrus.Infof("successfully stopped %q control plane", instance.Name())
+	if wait {
+		logrus.Infof("%q control plane has stopped", instance.Name())
+	} else {
+		logrus.Infof("%q control plane is stopping", instance.Name())
+	}
 	return nil
 }
 
@@ -238,7 +317,7 @@ func newServiceDeleteCommand() *cobra.Command {
 			if err := service.Delete(); err != nil {
 				return err
 			}
-			logrus.Infof("successfully deleted %q control plane", instance.Name())
+			logrus.Infof("%q control plane has been deleted", instance.Name())
 			return nil
 		},
 	}

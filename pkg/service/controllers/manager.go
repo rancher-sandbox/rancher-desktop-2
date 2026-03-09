@@ -345,11 +345,6 @@ func (scm *SharedControllerManager) registerDiscovery(ctx context.Context) error
 		}
 	}
 
-	// Only register if there are non-builtin controllers.
-	if len(controllerNames) == 0 {
-		return nil
-	}
-
 	return scm.discovery.RegisterControllerManager(ctx, ControllerManagerInput{
 		HealthPort:          scm.healthPort,
 		MetricsPort:         scm.metricsPort,

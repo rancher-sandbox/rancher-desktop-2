@@ -665,6 +665,26 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 		}
 	}()
 
+	klog.Info("Waiting for control plane to be ready")
+
+	restConfig, err := GetKubeRestConfig()
+	if err != nil {
+		return err
+	}
+	if err := readiness.WaitForReady(ctx, restConfig, true); err != nil {
+		return err
+	}
+
+	// Create the discovery ConfigMap before any controller managers register.
+	// Its creationTimestamp serves as the control plane start time.
+	initClient, err := kubernetes.NewForConfig(completed.ControlPlane.Generic.LoopbackClientConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create kubernetes client for discovery init: %w", err)
+	}
+	if err := controllers.InitDiscovery(ctx, initClient); err != nil {
+		return fmt.Errorf("failed to initialize discovery: %w", err)
+	}
+
 	// Start shared controller manager for enabled controllers
 	var enabledControllers []base.Controller
 
@@ -721,17 +741,6 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 				klog.Error(err, "Failed to start shared controller manager")
 			}
 		}()
-	}
-
-	klog.Info("Waiting for control plane to be ready")
-
-	restConfig, err := GetKubeRestConfig()
-	if err != nil {
-		return err
-	}
-	err = readiness.WaitForReady(ctx, restConfig, true)
-	if err != nil {
-		return err
 	}
 
 	<-ctx.Done()

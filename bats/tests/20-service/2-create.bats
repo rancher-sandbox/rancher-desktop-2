@@ -64,7 +64,7 @@ EOT
 @test 'stop instance' {
     run -0 rdd svc stop
     run -0 extract_msg
-    assert_output "successfully stopped \"rancher-desktop-${RDD_INSTANCE}\" control plane"
+    assert_output "\"rancher-desktop-${RDD_INSTANCE}\" control plane has stopped"
     assert_dir_exist "${RDD_DIR}"
 }
 
@@ -79,7 +79,7 @@ EOT
 @test 'Delete instance' {
     run -0 rdd svc delete
     run -0 extract_msg
-    assert_output "successfully deleted \"rancher-desktop-${RDD_INSTANCE}\" control plane"
+    assert_output "\"rancher-desktop-${RDD_INSTANCE}\" control plane has been deleted"
     assert_dir_not_exist "${RDD_DIR}"
 }
 
