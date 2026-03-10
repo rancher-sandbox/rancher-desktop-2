@@ -403,6 +403,106 @@ assert_restart_annotation_absent() {
     refute_output # restartNeeded has omitempty; false means absent
 }
 
+# Template change detection tests
+# These tests verify that the controller detects template ConfigMap changes,
+# updates the on-disk lima.yaml, and restarts the instance if it was running.
+# We use Lima's env: field because it writes to /etc/environment on every boot,
+# so we can verify the new template took effect inside the guest.
+
+# Append an env variable to the original template.
+# Keep images identical so Lima doesn't re-download them.
+MODIFIED_TEMPLATE="${ALPINE_TEMPLATE}
+env:
+  TEMPLATE_CHANGE_MARKER: applied"
+
+assert_instance_template_contains() {
+    local name=$1
+    local expected=$2
+    run -0 cat "${RDD_LIMA_HOME}/${name}/lima.yaml"
+    assert_output --partial "${expected}"
+}
+
+assert_guest_env_var() {
+    local name=$1
+    local var=$2
+    local expected=$3
+    run -0 ssh -F "${RDD_LIMA_HOME}/${name}/ssh.config" lima-"${name}" printenv "${var}"
+    assert_output "${expected}"
+}
+
+@test "verify on-disk template does not contain TEMPLATE_CHANGE_MARKER" {
+    run -0 cat "${RDD_LIMA_HOME}/${VM_NAME}/lima.yaml"
+    refute_output --partial "TEMPLATE_CHANGE_MARKER"
+}
+
+@test "patch template ConfigMap to trigger restart of running instance" {
+    rdd ctl patch configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" --type='merge' \
+        --patch "$(jq -n --arg t "${MODIFIED_TEMPLATE}" '{"data":{"template":$t}}')"
+
+    # Capture the patched ConfigMap's resourceVersion so we can wait for
+    # the controller to observe it.
+    run -0 rdd ctl get configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" \
+        --output jsonpath='{.metadata.resourceVersion}'
+    # shellcheck disable=SC2030
+    PATCHED_TEMPLATE_RV="${output}"
+    save_var PATCHED_TEMPLATE_RV
+}
+
+@test "wait for instance restart after template change" {
+    load_var PATCHED_TEMPLATE_RV
+    # The controller defers the observedTemplateResourceVersion update until
+    # after the restart completes, so this wait implies the full restart cycle.
+    # shellcheck disable=SC2031
+    rdd ctl wait --for=jsonpath='{.status.observedTemplateResourceVersion}'="${PATCHED_TEMPLATE_RV}" \
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=120s
+    # Wait for the VM to finish restarting.
+    rdd ctl wait --for=condition=Running=True \
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=300s
+}
+
+@test "verify on-disk template contains env variable after restart" {
+    assert_instance_template_contains "${VM_NAME}" "TEMPLATE_CHANGE_MARKER"
+}
+
+@test "verify guest applied template change" {
+    # SSH may not be ready immediately after Running=True
+    try --max 12 --delay 5 -- assert_guest_env_var "${VM_NAME}" "TEMPLATE_CHANGE_MARKER" "applied"
+}
+
+@test "stop VM for stopped-template-change test" {
+    rdd ctl patch limavm "${VM_NAME}" --namespace "${NAMESPACE}" \
+        --type=merge --patch '{"spec":{"running":false}}'
+    rdd ctl wait --for=condition=Running=False \
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=300s
+}
+
+# Build a second modified template with a different env value.
+MODIFIED_TEMPLATE_2="${ALPINE_TEMPLATE}
+env:
+  TEMPLATE_CHANGE_MARKER: updated-while-stopped"
+
+@test "patch template ConfigMap while instance is stopped" {
+    rdd ctl patch configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" --type='merge' \
+        --patch "$(jq -n --arg t "${MODIFIED_TEMPLATE_2}" '{"data":{"template":$t}}')"
+
+    # Capture the patched ConfigMap's resourceVersion.
+    run -0 rdd ctl get configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" \
+        --output jsonpath='{.metadata.resourceVersion}'
+    # shellcheck disable=SC2030
+    PATCHED_TEMPLATE_RV_2="${output}"
+    save_var PATCHED_TEMPLATE_RV_2
+}
+
+@test "verify on-disk template updated without starting the instance" {
+    load_var PATCHED_TEMPLATE_RV_2
+    # shellcheck disable=SC2031
+    rdd ctl wait --for=jsonpath='{.status.observedTemplateResourceVersion}'="${PATCHED_TEMPLATE_RV_2}" \
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=30s
+    assert_instance_template_contains "${VM_NAME}" "updated-while-stopped"
+    rdd ctl await "limavm/${VM_NAME}" --namespace "${NAMESPACE}" \
+        --for=condition=Running=False --reason=Stopped --timeout=30s
+}
+
 @test "cleanup LimaVM running test" {
     rdd ctl delete limavm "${VM_NAME}" --namespace "${NAMESPACE}"
     rdd ctl wait --for=delete "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=60s

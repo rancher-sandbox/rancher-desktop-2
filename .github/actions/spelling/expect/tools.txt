@@ -14,6 +14,7 @@ mktemp
 moby
 netcat
 nproc
+printenv
 pulumi
 Trivy
 

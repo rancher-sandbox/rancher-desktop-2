@@ -15,6 +15,7 @@ import (
 	"time"
 
 	limainstance "github.com/lima-vm/lima/v2/pkg/instance"
+	"github.com/lima-vm/lima/v2/pkg/limatype/filenames"
 	"github.com/lima-vm/lima/v2/pkg/store"
 
 	corev1 "k8s.io/api/core/v1"
@@ -107,6 +108,21 @@ func removeSentinel(instanceName string) error {
 		return nil
 	}
 	return err
+}
+
+// instanceTemplatePath returns the path to the lima.yaml for an instance.
+func instanceTemplatePath(instanceName string) string {
+	return filepath.Join(instance.LimaHome(), instanceName, filenames.LimaYAML)
+}
+
+// readInstanceTemplate reads the lima.yaml from the instance directory.
+func readInstanceTemplate(instanceName string) ([]byte, error) {
+	return os.ReadFile(instanceTemplatePath(instanceName))
+}
+
+// writeInstanceTemplate writes the lima.yaml to the instance directory.
+func writeInstanceTemplate(instanceName string, data []byte) error {
+	return os.WriteFile(instanceTemplatePath(instanceName), data, 0o644)
 }
 
 // LimaVMReconciler reconciles a LimaVM object.
@@ -237,10 +253,16 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, nil
 	}
 
-	// Instance already created - handle restart annotation, then running state.
+	// Instance already created - handle restart annotation, template changes, then running state.
 	if apimeta.IsStatusConditionTrue(limaVM.Status.Conditions, ConditionCreated) {
 		if _, hasAnnotation := limaVM.Annotations[v1alpha1.AnnotationRestartRequested]; hasAnnotation {
 			return r.handleRestartAnnotation(ctx, &limaVM)
+		}
+		if templateConfigMap.ResourceVersion != limaVM.Status.ObservedTemplateResourceVersion {
+			result, err := r.handleTemplateUpdate(ctx, &limaVM, templateConfigMap)
+			if err != nil || !result.IsZero() {
+				return result, err
+			}
 		}
 		return r.handleRunningState(ctx, &limaVM)
 	}
@@ -250,6 +272,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	existingInst, err := store.Inspect(ctx, limaVM.Name)
 	if err == nil && existingInst != nil {
 		logger.Info("Lima instance already exists", "instance", limaVM.Name)
+		limaVM.Status.ObservedTemplateResourceVersion = templateConfigMap.ResourceVersion
 		r.setCondition(&limaVM, ConditionCreated, metav1.ConditionTrue, ReasonCreated, "Lima instance exists")
 		if statusErr := r.Status().Update(ctx, &limaVM); statusErr != nil {
 			logger.Error(statusErr, "Failed to update status for existing instance")
@@ -307,6 +330,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	logger.Info("Created Lima instance", "instance", limaVM.Name)
+	limaVM.Status.ObservedTemplateResourceVersion = templateConfigMap.ResourceVersion
 	r.setCondition(&limaVM, ConditionCreated, metav1.ConditionTrue, ReasonCreated, "Lima instance created successfully")
 	if err := r.Status().Update(ctx, &limaVM); err != nil {
 		logger.Error(err, "Failed to update status after instance creation")
@@ -320,6 +344,82 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Return and let the next reconcile handle running state (one mutation per reconcile)
+	return ctrl.Result{}, nil
+}
+
+// handleTemplateUpdate detects and applies changes to the template ConfigMap.
+// If the on-disk lima.yaml differs from the ConfigMap, it writes the new template.
+// For running instances, it sets status.restartNeeded so the existing restart
+// machinery handles the stop/start cycle.
+//
+// When a restart is pending, the method defers the observedTemplateResourceVersion
+// update until after the restart completes. This prevents a race where observers
+// see the new version while Running=True still reflects the pre-restart state.
+// The next reconcile re-enters this method (stale observed version), finds the
+// on-disk template identical, and records the version then.
+//
+// All paths return an empty result so the caller falls through to
+// handleRunningState.
+func (r *LimaVMReconciler) handleTemplateUpdate(ctx context.Context, limaVM *v1alpha1.LimaVM, templateConfigMap *corev1.ConfigMap) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	diskTemplate, err := readInstanceTemplate(limaVM.Name)
+	if err != nil {
+		logger.Error(err, "Failed to read on-disk template")
+		return ctrl.Result{}, err
+	}
+
+	newTemplate := templateConfigMap.Data[v1alpha1.TemplateConfigMapKey]
+
+	if string(diskTemplate) == newTemplate {
+		if limaVM.Status.RestartNeeded {
+			// Defer the version update until after the restart completes.
+			return ctrl.Result{}, nil
+		}
+		// A ConfigMap update that doesn't change the template key (e.g. label
+		// change) still bumps resourceVersion; recording it avoids repeated
+		// comparisons on subsequent reconciles.
+		logger.Info("Template ConfigMap changed but on-disk template is identical")
+		limaVM.Status.ObservedTemplateResourceVersion = templateConfigMap.ResourceVersion
+		return ctrl.Result{}, r.Status().Update(ctx, limaVM)
+	}
+
+	phase := r.getInstancePhase(limaVM.Name)
+	if phase == phaseRunning || phase == phaseStarting {
+		// For running instances: set restartNeeded before writing to disk.
+		// If this status update fails, nothing else changed and the next
+		// reconcile retries. If the subsequent disk write fails, restartNeeded
+		// is already set and the observed version is still stale, so the next
+		// reconcile re-enters this method and retries the disk write.
+		if !limaVM.Status.RestartNeeded {
+			logger.Info("Instance running with stale template, requesting restart")
+			patch := client.MergeFrom(limaVM.DeepCopy())
+			limaVM.Status.RestartNeeded = true
+			if err := r.Status().Patch(ctx, limaVM, patch); err != nil {
+				logger.Error(err, "Failed to set restartNeeded after template change")
+				return ctrl.Result{}, err
+			}
+		}
+	}
+
+	logger.Info("Template changed, updating on-disk lima.yaml")
+	if err := writeInstanceTemplate(limaVM.Name, []byte(newTemplate)); err != nil {
+		logger.Error(err, "Failed to write updated template to disk")
+		return ctrl.Result{}, err
+	}
+
+	if limaVM.Status.RestartNeeded {
+		// Defer the version update until after the restart completes.
+		return ctrl.Result{}, nil
+	}
+
+	// Persist observedTemplateResourceVersion after the disk write succeeds.
+	patch := client.MergeFrom(limaVM.DeepCopy())
+	limaVM.Status.ObservedTemplateResourceVersion = templateConfigMap.ResourceVersion
+	if err := r.Status().Patch(ctx, limaVM, patch); err != nil {
+		logger.Error(err, "Failed to update observedTemplateResourceVersion")
+		return ctrl.Result{}, err
+	}
 	return ctrl.Result{}, nil
 }
 

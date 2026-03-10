@@ -30,6 +30,7 @@ spec:
     DOCKER_ROOTFUL: "true"
 status:
   templateConfigMap: alpine-template
+  observedTemplateResourceVersion: "12345"
   restartNeeded: false
   restartCount: 3
   conditions:
@@ -65,6 +66,8 @@ status:
     If the template provisioning scripts are properly parameterized, then the instance settings can be modified by just updating `spec.params`, which is simpler than modifying the `template` inside the ConfigMap. If `spec.running` is `true` then changing `spec.params` will restart the instance.
 
 - **status.templateConfigMap**: Name of the ConfigMap containing the validated template. The reconciler creates this ConfigMap after copying and validating the template from `spec.templateRef`. This ConfigMap is owned by the LimaVM and deleted automatically when the LimaVM is deleted.
+
+- **status.observedTemplateResourceVersion**: Tracks the `resourceVersion` of the template ConfigMap last applied to the instance. When this differs from the ConfigMap's current `resourceVersion`, the reconciler compares the on-disk template with the ConfigMap data. If they differ, it writes the new template and restarts the instance (if running). For running instances, the version update is deferred until the restart completes, so observers can wait on this field to confirm that a template change has been fully applied. If the template data is identical (e.g. a label-only ConfigMap update), it records the new version without restarting.
 
 - **status.restartNeeded**: Indicates a restart has been requested but not yet executed. The reconciler sets this field when it processes a `restartRequested` annotation or detects a template change on a running instance. The reconciler clears the flag when stopping the instance (before the restart begins), not after the restart completes. When the instance is already stopped, the reconciler clears the flag immediately. When the instance is starting, the reconciler waits for boot to finish before stopping.
 

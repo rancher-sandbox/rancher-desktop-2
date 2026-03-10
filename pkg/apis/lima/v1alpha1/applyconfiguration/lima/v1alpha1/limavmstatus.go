@@ -26,6 +26,13 @@ type LimaVMStatusApplyConfiguration struct {
 	// An admission controller validates any updates to the ConfigMap.
 	// This field is informational - internal code should use GetTemplateConfigMapName() instead.
 	TemplateConfigMap *string `json:"templateConfigMap,omitempty"`
+	// observedTemplateResourceVersion tracks the resourceVersion of the template
+	// ConfigMap last applied to the instance. For stopped instances, this is
+	// updated after writing lima.yaml to disk. For running instances, it is
+	// deferred until the restart completes.
+	// When this differs from the ConfigMap's current resourceVersion, the
+	// reconciler checks for template changes.
+	ObservedTemplateResourceVersion *string `json:"observedTemplateResourceVersion,omitempty"`
 	// restartNeeded indicates a restart has been requested but not yet executed.
 	// Set by the reconciler when it processes a restartRequested annotation or
 	// detects a template change on a running instance. Cleared when the instance
@@ -60,6 +67,14 @@ func (b *LimaVMStatusApplyConfiguration) WithConditions(values ...*v1.ConditionA
 // If called multiple times, the TemplateConfigMap field is set to the value of the last call.
 func (b *LimaVMStatusApplyConfiguration) WithTemplateConfigMap(value string) *LimaVMStatusApplyConfiguration {
 	b.TemplateConfigMap = &value
+	return b
+}
+
+// WithObservedTemplateResourceVersion sets the ObservedTemplateResourceVersion field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the ObservedTemplateResourceVersion field is set to the value of the last call.
+func (b *LimaVMStatusApplyConfiguration) WithObservedTemplateResourceVersion(value string) *LimaVMStatusApplyConfiguration {
+	b.ObservedTemplateResourceVersion = &value
 	return b
 }
 
