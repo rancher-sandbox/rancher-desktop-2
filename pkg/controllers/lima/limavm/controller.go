@@ -117,7 +117,7 @@ func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 			admissionregistrationv1.Create, // Only on CREATE - UPDATE doesn't need to create ConfigMap again
 		},
 		SideEffects: &sideEffectsNoneOnDryRun, // Creates ConfigMap normally, but not during dry-run
-		Defaulter:   &defaulter{Client: mgr.GetClient()},
+		Defaulter:   &defaulter{Client: mgr.GetClient(), Reader: mgr.GetAPIReader()},
 	}
 
 	managers, err := base.SetupWebhookForResource(mgr, &v1alpha1.LimaVM{}, mutatingConfig)
@@ -175,6 +175,10 @@ func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
 // It validates cross-namespace name uniqueness, then creates the template ConfigMap synchronously during admission.
 type defaulter struct {
 	Client client.Client
+	// Reader bypasses the informer cache to read directly from the API server.
+	// The templateRef ConfigMap may have been created moments before the LimaVM,
+	// so the informer cache may not have synced it yet.
+	Reader client.Reader
 }
 
 var _ ctrlwebhookadmission.Defaulter[*v1alpha1.LimaVM] = &defaulter{}
@@ -243,7 +247,7 @@ func (d *defaulter) fetchTemplateRefData(ctx context.Context, limavm *v1alpha1.L
 		configMapKey.Namespace = limavm.Namespace
 	}
 	configMap := &corev1.ConfigMap{}
-	if err := d.Client.Get(ctx, configMapKey, configMap); err != nil {
+	if err := d.Reader.Get(ctx, configMapKey, configMap); err != nil {
 		return "", fmt.Errorf("failed to get templateRef ConfigMap %q in namespace %q: %w", configMapKey.Name, configMapKey.Namespace, err)
 	}
 	return configMap.Data[v1alpha1.TemplateConfigMapKey], nil

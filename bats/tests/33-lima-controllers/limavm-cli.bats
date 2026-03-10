@@ -43,7 +43,7 @@ assert_created() {
     # Create VM with ConfigMap template
     run_e -1 rdd limavm create "test-missing-vm" "test-missing-template" --namespace "${LIMA_TEST_NS}"
     assert_stderr_line --partial 'denied the request'
-    assert_stderr_line --partial 'ConfigMap \"test-missing-template\" not found'
+    assert_stderr_line --partial '\"test-missing-template\" not found'
 
     # Verify the ConfigMap was not created, or at least deleted after.
     run -1 rdd ctl get configmap "test-missing-template" --namespace "${LIMA_TEST_NS}" --output=name
