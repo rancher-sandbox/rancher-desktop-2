@@ -258,27 +258,17 @@ func checkReadiness(ctx context.Context) error {
 		return err
 	}
 
-	if len(runtimeControllers) == 0 {
-		// If we found no controllers, check to see if we just need to wait longer
-		// for the controller manager to register.
-		klog.V(2).Info("No controller manager found - checking if this is truly no-controllers mode")
-
-		// Check the original command args to see if --controllers="" was specified
-		serveArgs := ServeArgs()
-		argIndex := slices.Index(serveArgs, "--controllers")
-		isNoControllersMode := argIndex >= 0 && argIndex+1 < len(serveArgs) && serveArgs[argIndex+1] == ""
-
-		if isNoControllersMode {
-			// Check if API server is ready for basic operations
-			if err := readiness.WaitForReady(ctx, config, false); err == nil {
-				klog.V(2).Info("API server ready and no controllers expected - no controllers mode")
-				return readiness.WaitForReadyWithCRDs(ctx, config, []base.Controller{}, false)
-			}
-			klog.V(2).Info("API server not ready yet, continuing to wait...")
-		} else {
-			klog.V(2).Info("Controllers expected but discovery configmap not found yet - waiting for external controllers to register...")
-		}
+	if runtimeControllers == nil {
+		// Discovery ConfigMap doesn't exist yet; the serve subprocess hasn't
+		// finished initializing. Keep polling.
+		klog.V(2).Info("Discovery configmap not found yet - waiting for control plane initialization")
 		return errors.New("waiting for controller manager registration")
+	}
+
+	if len(runtimeControllers) == 0 {
+		// ConfigMap exists but no controllers are registered.
+		klog.V(2).Info("No controllers registered - checking API server readiness")
+		return readiness.WaitForReadyWithCRDs(ctx, config, []base.Controller{}, false)
 	}
 
 	klog.V(2).Infof("Waiting for %d runtime controllers to be ready", len(runtimeControllers))

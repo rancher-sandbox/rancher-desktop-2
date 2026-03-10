@@ -269,7 +269,7 @@ func (d *ControllerManagerDiscovery) GetEnabledControllers(ctx context.Context) 
 		return nil, fmt.Errorf("failed to discover controller manager: %w", err)
 	}
 
-	var enabledControllers []string
+	enabledControllers := make([]string, 0) // non-nil: distinguishes "0 controllers" from "ConfigMap not found"
 	for _, serializedInfo := range configMap.Data {
 		var info ControllerManagerInfo
 		if err := json.Unmarshal([]byte(serializedInfo), &info); err != nil {

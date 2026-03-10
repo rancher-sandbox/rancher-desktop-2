@@ -20,6 +20,7 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -353,7 +354,7 @@ func (scm *SharedControllerManager) installControllerCRDs(ctx context.Context) e
 
 	crdClient := apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions()
 
-	// Step 1: Create all CRDs that don't already exist
+	// Step 1: Create or update all CRDs
 	type crdInfo struct {
 		controller base.Controller
 		crd        apiextensionsv1.CustomResourceDefinition
@@ -385,10 +386,18 @@ func (scm *SharedControllerManager) installControllerCRDs(ctx context.Context) e
 				continue // Comment block before the first document has no data.
 			}
 
-			// Check if CRD already exists
-			_, err = crdClient.Get(ctx, crd.Name, metav1.GetOptions{})
+			// Update existing CRDs so new schema fields take effect on upgrade.
+			existing, err := crdClient.Get(ctx, crd.Name, metav1.GetOptions{})
 			if err == nil {
-				klog.Infof("%s CRD already exists", controllerName)
+				if !apiequality.Semantic.DeepEqual(existing.Spec, crd.Spec) {
+					existing.Spec = crd.Spec
+					if _, err := crdClient.Update(ctx, existing, metav1.UpdateOptions{}); err != nil {
+						return fmt.Errorf("failed to update CRD for controller %s: %w", controllerName, err)
+					}
+					klog.Infof("Updated %s CRD %s", controllerName, crd.Name)
+				} else {
+					klog.V(2).Infof("%s CRD %s is up to date", controllerName, crd.Name)
+				}
 				crdInfos = append(crdInfos, crdInfo{controller: controller, crd: crd, needsWait: false})
 				continue
 			}

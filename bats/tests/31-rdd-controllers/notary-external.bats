@@ -12,6 +12,13 @@ local_setup_file() {
     rdd svc start
 }
 
+local_teardown_file() {
+    if [[ -f "${BATS_FILE_TMPDIR}/controller_pid" ]]; then
+        kill "$(cat "${BATS_FILE_TMPDIR}/controller_pid")" 2>/dev/null || true
+    fi
+    rdd svc delete
+}
+
 assert_process_exited() {
     local pid=$1
     # Return 0 (success) if process has exited, 1 (failure) if still running
