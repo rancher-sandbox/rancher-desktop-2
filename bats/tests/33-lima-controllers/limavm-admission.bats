@@ -20,7 +20,7 @@ local_setup_file() {
 
 @test "webhook configuration has correct structure" {
     # Wait for the mutating webhook configuration to be created
-    try --max 20 --delay 3 -- rdd ctl get MutatingWebhookConfiguration "limavm-defaulter"
+    rdd ctl wait --for=create MutatingWebhookConfiguration "limavm-defaulter" --timeout=60s
 
     run -0 rdd ctl get MutatingWebhookConfiguration limavm-defaulter -o jsonpath='{.webhooks[0]}'
     local json=${output}

@@ -27,11 +27,6 @@ spec:
 EOF
 }
 
-delete_notary() {
-    local name=$1
-    delete_resource "notary" "${name}"
-}
-
 update_notary_value() {
     local name=$1
     local value=$2
@@ -45,12 +40,12 @@ wait_for_notary_status() {
 }
 
 @test 'create Notary resource' {
-    delete_notary "basic"
+    delete_resource "notary" "basic"
     create_notary "basic" "initial-value" "basic-history"
 }
 
 @test 'verify Notary is created in Kubernetes' {
-    try --max 15 --delay 1 -- rdd ctl get notary basic
+    rdd ctl wait --for=create notary basic --timeout=15s
 }
 
 @test 'wait for controller to create ConfigMap' {
@@ -213,7 +208,7 @@ wait_for_notary_status() {
 }
 
 @test 'delete Notary resource' {
-    delete_notary "basic"
+    delete_resource "notary" "basic"
 }
 
 @test 'verify parent resource deletion triggers finalizer cleanup' {

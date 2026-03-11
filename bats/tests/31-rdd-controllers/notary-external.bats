@@ -44,7 +44,8 @@ assert_process_exited() {
     echo "$!" >"${BATS_FILE_TMPDIR}/controller_pid"
 
     # Wait for external controller to register in discovery system
-    try --max 20 --delay 1 -- rdd ctl get configmap rdd-controller-manager --namespace rdd-system --allow-missing-template-keys=false --output jsonpath='{.data.rdd}'
+    rdd ctl wait --for=jsonpath='{.data.rdd}' \
+        configmap rdd-controller-manager --namespace rdd-system --timeout=20s
 
     # Verify the discovery ConfigMap contains notary controller
     run_e -0 rdd ctl get configmap rdd-controller-manager --namespace rdd-system --output jsonpath='{.data.rdd}'
@@ -54,7 +55,7 @@ assert_process_exited() {
 
 @test "webhook configuration is created" {
     # Wait for webhook configuration to be created by external controller
-    try --max 20 --delay 1 -- rdd ctl get ValidatingWebhookConfiguration notary-validator
+    rdd ctl wait --for=create ValidatingWebhookConfiguration notary-validator --timeout=20s
 
     # Verify webhook configuration structure
     run -0 rdd ctl get ValidatingWebhookConfiguration notary-validator -o jsonpath='{.webhooks[0].name}'
@@ -112,7 +113,7 @@ EOF
 
 @test "controller processes notary resources" {
     # Wait for the controller to process the valid notary and create ConfigMap
-    try --max 30 --delay 1 -- rdd ctl get configmap test-config
+    rdd ctl wait --for=create configmap test-config --timeout=30s
     # Verify ConfigMap was created with correct content
     run -0 rdd ctl get configmap test-config -o json
     run -0 jq -r '.data.change_000' <<<"${output}"
@@ -183,7 +184,8 @@ EOF
     echo "$!" >"${BATS_FILE_TMPDIR}/controller_pid"
 
     # Wait for external controller to register in discovery system
-    try --max 20 --delay 1 -- rdd ctl get configmap rdd-controller-manager --namespace rdd-system --allow-missing-template-keys=false --output jsonpath='{.data.rdd}'
+    rdd ctl wait --for=jsonpath='{.data.rdd}' \
+        configmap rdd-controller-manager --namespace rdd-system --timeout=20s
 
     # Verify the discovery ConfigMap contains notary controller
     run -0 --separate-stderr rdd ctl get configmap rdd-controller-manager --namespace rdd-system --output jsonpath='{.data.rdd}'

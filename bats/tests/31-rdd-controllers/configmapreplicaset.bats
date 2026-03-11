@@ -34,11 +34,6 @@ spec:
 EOF
 }
 
-delete_configmapreplicaset() {
-    local name=$1
-    delete_resource "ConfigMapReplicaSet" "${name}"
-}
-
 wait_for_configmaps() {
     local name=$1
     local expected=$2
@@ -50,7 +45,7 @@ wait_for_configmaps() {
 }
 
 @test 'verify ConfigMapReplicaSet is created in Kubernetes' {
-    try --max 5 --delay 3 -- rdd ctl get ConfigMapReplicaSet basic
+    rdd ctl wait --for=create ConfigMapReplicaSet basic --timeout=15s
 }
 
 @test 'wait for controller to create 3 ConfigMaps' {
@@ -272,7 +267,7 @@ wait_for_configmaps() {
 }
 
 @test 'delete ConfigMapReplicaSet' {
-    delete_configmapreplicaset "basic"
+    delete_resource "ConfigMapReplicaSet" "basic"
 }
 
 @test 'verify parent resource deletion triggers finalizer cleanup' {
@@ -290,7 +285,7 @@ wait_for_configmaps() {
 }
 
 @test 'verify zero replicas ConfigMapReplicaSet is created' {
-    try --max 12 --delay 5 -- rdd ctl get ConfigMapReplicaSet zero
+    rdd ctl wait --for=create ConfigMapReplicaSet zero --timeout=60s
 }
 
 @test 'verify no ConfigMaps are created for zero replicas' {

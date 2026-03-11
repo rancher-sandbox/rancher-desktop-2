@@ -66,20 +66,6 @@ lima_instance_exists() {
     [[ -d "${RDD_LIMA_HOME}/${name}" ]]
 }
 
-assert_instance_created() {
-    local name=$1
-    run -0 rdd ctl get limavm "${name}" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="Created")].status}'
-    assert_output "True"
-}
-
-assert_instance_create_failed() {
-    local name=$1
-    run -0 rdd ctl get limavm "${name}" --namespace "${NAMESPACE}" \
-        --output jsonpath='{.status.conditions[?(@.type=="Created")].status}'
-    assert_output "False"
-}
-
 @test "create source template ConfigMap with Alpine ISO" {
     rdd ctl create configmap "alpine-source" --namespace "${NAMESPACE}" --from-literal="template=${ALPINE_TEMPLATE}"
 
@@ -100,7 +86,8 @@ assert_instance_create_failed() {
 }
 
 @test "wait for Created condition to be True" {
-    try --max 60 --delay 1 -- assert_instance_created "${VM_NAME}"
+    rdd ctl wait --for=condition=Created=True \
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=60s
 }
 
 @test "verify Lima instance directory exists" {
@@ -155,7 +142,8 @@ assert_instance_create_failed() {
 }
 
 @test "wait for Created after leftover cleanup" {
-    try --max 60 --delay 1 -- assert_instance_created "${VM_NAME}"
+    rdd ctl wait --for=condition=Created=True \
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=60s
 }
 
 @test "verify leftover was replaced with real instance" {
@@ -190,7 +178,8 @@ INVALID_TEMPLATE='images:
 }
 
 @test "wait for Created condition to be False" {
-    try --max 30 --delay 1 -- assert_instance_create_failed "invalid-vm"
+    rdd ctl wait --for=condition=Created=False \
+        "limavm/invalid-vm" --namespace "${NAMESPACE}" --timeout=30s
 }
 
 @test "verify Created condition has CreateFailed reason" {

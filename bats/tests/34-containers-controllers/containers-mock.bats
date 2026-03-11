@@ -21,20 +21,19 @@ local_teardown_file() {
 }
 
 @test "containers are created" {
-    try --max 30 --delay 1 -- rdd ctl get namespace rdd-mocks -o name
+    rdd ctl wait --for=create namespace rdd-mocks --timeout=30s
 
     run -0 cat "${TEST_DATA_PATH}/containers.json"
     run -0 jq_output '.[].Id'
     containers=${output}
 
     while IFS= read -r container; do
-        try --max 30 --delay 1 -- rdd ctl get container "${container}" -o name
-        assert_line "container.containers.rancherdesktop.io/${container}"
+        rdd ctl wait --for=create container "${container}" --timeout=30s
     done <<<"${containers}"
 }
 
 @test "images are created" {
-    try --max 30 --delay 1 -- rdd ctl get namespace rdd-mocks -o name
+    rdd ctl wait --for=create namespace rdd-mocks --timeout=30s
 
     run -0 cat "${TEST_DATA_PATH}/images.json"
     run -0 jq_output '.[].RepoTags.[]'
@@ -47,14 +46,13 @@ local_teardown_file() {
 }
 
 @test "volumes are created" {
-    try --max 30 --delay 1 -- rdd ctl get namespace rdd-mocks -o name
+    rdd ctl wait --for=create namespace rdd-mocks --timeout=30s
 
     run -0 cat "${TEST_DATA_PATH}/volumes.json"
     run -0 jq_output '.[].Name'
     volumes=${output}
 
     while IFS= read -r volume; do
-        try --max 30 --delay 1 -- rdd ctl get volume "${volume}" -o name
-        assert_line "volume.containers.rancherdesktop.io/${volume}"
+        rdd ctl wait --for=create volume "${volume}" --timeout=30s
     done <<<"${volumes}"
 }
