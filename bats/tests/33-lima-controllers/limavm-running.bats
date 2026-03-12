@@ -7,19 +7,19 @@ load '../../helpers/load'
 # LimaVM running tests verify that Lima instances can be started and stopped.
 
 NAMESPACE="running-test-ns"
-VM_NAME="alpine-running"
+VM_NAME="opensuse-running"
 TEMPLATE_NAME="${VM_NAME}-template"
 
-# Use a minimal Alpine template for faster boot.
+# Minimal openSUSE template from rancher-desktop-opensuse.
 # Set RDD_VM_TYPE=qemu to reproduce QEMU-specific behavior on macOS.
-ALPINE_TEMPLATE="
+OPENSUSE_TEMPLATE="
 images:
-- location: https://github.com/lima-vm/alpine-lima/releases/download/v0.2.47/alpine-lima-std-3.23.0-x86_64.iso
+- location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.1.1/distro.v0.1.1.amd64.qcow2
   arch: x86_64
-  digest: sha512:c71e21dfb152642dd79af281497f86e7f690998997f787307978d83594e5e47addbc61e7d8ee405b0afc4230688de9eeb98fa44d6e74654e8d9d8b70151fb8da
-- location: https://github.com/lima-vm/alpine-lima/releases/download/v0.2.47/alpine-lima-std-3.23.0-aarch64.iso
+  digest: sha256:6a0a2729781f7a412f2d4fd7cb3270104eb16d9965811d0a39cb9766afdf3fd3
+- location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.1.1/distro.v0.1.1.arm64.qcow2
   arch: aarch64
-  digest: sha512:44659e71c1e277361bc10ecc813fba799d0371c2bc291db811e05e43429fd31aaa7ebe185331d02dccadccddfe9d54184376cdceeb1c444b58e3e9a4e690ce33
+  digest: sha256:8e8f9dfa8292dd4e3821f44542305b01c78ec8cb007065d1bba233899ce438e8
 ${RDD_VM_TYPE:+vmType: ${RDD_VM_TYPE}}
 containerd:
   system: false
@@ -90,13 +90,13 @@ assert_shell_succeeds() {
 }
 
 @test "create source template ConfigMap for running tests" {
-    rdd ctl create configmap "alpine-source" --namespace "${NAMESPACE}" --from-literal="template=${ALPINE_TEMPLATE}"
-    run -0 rdd ctl get configmap "alpine-source" --namespace "${NAMESPACE}" --output jsonpath='{.data.template}'
-    assert_output --partial "alpine-lima"
+    rdd ctl create configmap "opensuse-source" --namespace "${NAMESPACE}" --from-literal="template=${OPENSUSE_TEMPLATE}"
+    run -0 rdd ctl get configmap "opensuse-source" --namespace "${NAMESPACE}" --output jsonpath='{.data.template}'
+    assert_output --partial "rancher-desktop-opensuse"
 }
 
 @test "create LimaVM with running=false" {
-    create_limavm_running "${VM_NAME}" "alpine-source" "false"
+    create_limavm_running "${VM_NAME}" "opensuse-source" "false"
     run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${NAMESPACE}" --output name
     assert_output "limavm.lima.rancherdesktop.io/${VM_NAME}"
 }
@@ -156,7 +156,7 @@ metadata:
   namespace: ${NAMESPACE}
 spec:
   templateRef:
-    name: alpine-source
+    name: opensuse-source
     namespace: ${NAMESPACE}
   running: false
 EOF
@@ -411,7 +411,7 @@ assert_restart_annotation_absent() {
 
 # Append an env variable to the original template.
 # Keep images identical so Lima doesn't re-download them.
-MODIFIED_TEMPLATE="${ALPINE_TEMPLATE}
+MODIFIED_TEMPLATE="${OPENSUSE_TEMPLATE}
 env:
   TEMPLATE_CHANGE_MARKER: applied"
 
@@ -477,7 +477,7 @@ assert_guest_env_var() {
 }
 
 # Build a second modified template with a different env value.
-MODIFIED_TEMPLATE_2="${ALPINE_TEMPLATE}
+MODIFIED_TEMPLATE_2="${OPENSUSE_TEMPLATE}
 env:
   TEMPLATE_CHANGE_MARKER: updated-while-stopped"
 
@@ -509,7 +509,7 @@ env:
 }
 
 @test "limavm edit command updates template ConfigMap" {
-    create_limavm_running "${VM_NAME}" "alpine-source" "false"
+    create_limavm_running "${VM_NAME}" "opensuse-source" "false"
 
     # Wait for template ConfigMap to be created
     rdd ctl wait --for=jsonpath='{.status.templateConfigMap}' \

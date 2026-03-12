@@ -33,6 +33,7 @@ kvm
 OOM
 opensuse
 pids
+qcow
 tarball
 veth
 zst

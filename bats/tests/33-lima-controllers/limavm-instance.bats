@@ -8,19 +8,18 @@ load '../../helpers/load'
 # after template verification, and deleted when the LimaVM is deleted.
 
 NAMESPACE="instance-test-ns"
-VM_NAME="alpine-test"
+VM_NAME="opensuse-test"
 
-# Use a real Alpine ISO template that instance.Create() can use.
-# This is a minimal template with actual image URLs.
+# Minimal template with openSUSE qcow2 images from rancher-desktop-opensuse.
 # vmType defaults to vz on macOS and qemu on Linux.
-ALPINE_TEMPLATE='
+OPENSUSE_TEMPLATE='
 images:
-- location: https://github.com/lima-vm/alpine-lima/releases/download/v0.2.47/alpine-lima-std-3.23.0-x86_64.iso
+- location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.1.1/distro.v0.1.1.amd64.qcow2
   arch: x86_64
-  digest: sha512:c71e21dfb152642dd79af281497f86e7f690998997f787307978d83594e5e47addbc61e7d8ee405b0afc4230688de9eeb98fa44d6e74654e8d9d8b70151fb8da
-- location: https://github.com/lima-vm/alpine-lima/releases/download/v0.2.47/alpine-lima-std-3.23.0-aarch64.iso
+  digest: sha256:6a0a2729781f7a412f2d4fd7cb3270104eb16d9965811d0a39cb9766afdf3fd3
+- location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.1.1/distro.v0.1.1.arm64.qcow2
   arch: aarch64
-  digest: sha512:44659e71c1e277361bc10ecc813fba799d0371c2bc291db811e05e43429fd31aaa7ebe185331d02dccadccddfe9d54184376cdceeb1c444b58e3e9a4e690ce33
+  digest: sha256:8e8f9dfa8292dd4e3821f44542305b01c78ec8cb007065d1bba233899ce438e8
 containerd:
   system: false
   user: false'
@@ -66,15 +65,15 @@ lima_instance_exists() {
     [[ -d "${RDD_LIMA_HOME}/${name}" ]]
 }
 
-@test "create source template ConfigMap with Alpine ISO" {
-    rdd ctl create configmap "alpine-source" --namespace "${NAMESPACE}" --from-literal="template=${ALPINE_TEMPLATE}"
+@test "create source template ConfigMap with openSUSE image" {
+    rdd ctl create configmap "opensuse-source" --namespace "${NAMESPACE}" --from-literal="template=${OPENSUSE_TEMPLATE}"
 
-    run -0 rdd ctl get configmap "alpine-source" --namespace "${NAMESPACE}" --output jsonpath='{.data.template}'
-    assert_output --partial "alpine-lima"
+    run -0 rdd ctl get configmap "opensuse-source" --namespace "${NAMESPACE}" --output jsonpath='{.data.template}'
+    assert_output --partial "rancher-desktop-opensuse"
 }
 
-@test "create LimaVM with Alpine template" {
-    create_limavm "${VM_NAME}" "alpine-source"
+@test "create LimaVM with openSUSE template" {
+    create_limavm "${VM_NAME}" "opensuse-source"
 
     run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${NAMESPACE}" --output name
     assert_output "limavm.lima.rancherdesktop.io/${VM_NAME}"
@@ -136,7 +135,7 @@ lima_instance_exists() {
 }
 
 @test "create LimaVM with leftover instance present" {
-    create_limavm "${VM_NAME}" "alpine-source"
+    create_limavm "${VM_NAME}" "opensuse-source"
     run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${NAMESPACE}" --output name
     assert_output "limavm.lima.rancherdesktop.io/${VM_NAME}"
 }
@@ -151,7 +150,7 @@ lima_instance_exists() {
     assert_file_not_exists "${RDD_LIMA_HOME}/${VM_NAME}/.fake-leftover"
     # Real instance should have images from template
     run -0 cat "${RDD_LIMA_HOME}/${VM_NAME}/lima.yaml"
-    assert_output --partial "alpine-lima"
+    assert_output --partial "rancher-desktop-opensuse"
 }
 
 @test "cleanup LimaVM after leftover test" {
