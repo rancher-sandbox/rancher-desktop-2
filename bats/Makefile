@@ -30,7 +30,13 @@ ifneq ($(shell sh -c 'command -v winver.exe'),)
 # On Windows, make sure we pass the environment variables back to RDD
 export WSLENV := $(WSLENV):RDD_INSTANCE:RDD_DEVELOPER_MODE
 # Use the Windows temporary directory
+ifeq ($(shell sh -c 'command -v wslpath'),)
+# MSYS2: convert Windows TEMP path using cygpath
+export TMPDIR := $(shell cygpath -u '$(TEMP)')
+else
+# WSL: convert Windows TEMP path using wslpath
 export TMPDIR := $(shell wslpath -u $$(cmd.exe /c "echo %TEMP%"))
+endif
 endif
 
 # Run BATS tests for BATS helpers

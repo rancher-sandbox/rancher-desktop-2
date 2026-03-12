@@ -8,5 +8,11 @@ export RDD_INSTANCE
 export RDD_KEEP_LOGS
 
 using_windows_exe() {
-    true # TODO: WSL testing, later.
+    # MSYS2 always uses Windows executables; there is no Linux alternative.
+    if is_msys; then
+        return 0
+    fi
+    # WSL: currently always uses Windows executables.
+    # TODO: Support testing with the Linux binary on WSL.
+    true
 }

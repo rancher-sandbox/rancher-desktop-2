@@ -17,6 +17,9 @@ Linux)
         OS=linux
     fi
     ;;
+MSYS* | MINGW*)
+    OS=windows
+    ;;
 *)
     echo "Unexpected uname: ${UNAME}" >&2
     exit 1
@@ -45,6 +48,12 @@ is_windows() {
     else
         test "${OS}" = windows -a "${ARCH}" = "$1"
     fi
+}
+
+# Detect MSYS2 environment (MSYS or MINGW shells).
+# Both report OS=windows, but behave differently from WSL.
+is_msys() {
+    [[ "${UNAME}" == MSYS* || "${UNAME}" == MINGW* ]]
 }
 
 is_unix() {

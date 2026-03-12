@@ -4,6 +4,7 @@ buildvcs
 coreutils
 cpanm
 cpanminus
+cygpath
 gnubin
 libexec
 ltag
@@ -14,6 +15,8 @@ mktemp
 moby
 netcat
 nproc
+openssh
+pacman
 printenv
 pulumi
 Trivy
@@ -57,6 +60,7 @@ RSTART
 # bash
 neq
 nullglob
+PATHCONV
 
 # bats
 batslib

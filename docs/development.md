@@ -31,12 +31,34 @@ generally the latest release versions.
 On macOS, we expect Xcode command line tools to be available.
 
 ### Windows
-Development should be done inside WSL.  Development using `cmd.exe` / PowerShell
-/ MSYS2 / Git Bash / Cygwin / etc. is explicitly not supported.  We may
-occasionally let things work to make CI easier, but that is the extent of it.
-All Rancher Desktop Daemon processes will be run under Win32 (instead of under
-WSL); developing for Linux on a Windows host is only supported when using a
-full Linux VM (instead of using the WSL VM), whether or not WSL integration is
-enabled.
+
+Development is supported under WSL2 and MSYS2.  Development using `cmd.exe`,
+PowerShell, Git Bash, or Cygwin is not supported.
+
+All RDD processes run as Win32 executables.  Developing for Linux on a Windows
+host is only supported when using a full Linux VM, whether or not WSL
+integration is enabled.
+
+#### WSL2
 
 WSL interop must be enabled (we test for `winver.exe` being around).
+
+#### MSYS2
+
+Install MSYS2, Git, and Go natively on Windows (e.g. via scoop) rather than
+through pacman; the MSYS2 versions may behave differently from what CI uses.
+
+```
+scoop install msys2 git go
+```
+
+Then install build dependencies inside MSYS2:
+
+```bash
+pacman --sync --needed jq make mingw-w64-x86_64-gcc openbsd-netcat openssh
+```
+
+The BATS test harness exports `MSYS_NO_PATHCONV=1` to prevent MSYS2 from
+converting URL-like arguments (e.g. `/passthrough/demo/hello`) into Windows
+paths.  The `rdd()` wrapper in `bats/helpers/commands.bash` handles explicit
+path conversion for arguments that need it.
