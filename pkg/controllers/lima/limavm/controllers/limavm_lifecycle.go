@@ -8,8 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -716,57 +714,12 @@ func preserveInstanceLogs(ctx context.Context, inst *limatype.Instance) {
 	}
 
 	logger := log.FromContext(ctx)
-	logDir := instance.LogDir()
-	if err := os.MkdirAll(logDir, 0o700); err != nil {
-		logger.Error(err, "Failed to create log directory for preservation")
-		return
-	}
-
-	destDir, err := nextAvailableDir(logDir, inst.Name)
+	count, err := instance.PreserveLogs(inst.Dir, inst.Name)
 	if err != nil {
-		logger.Error(err, "Failed to create log preservation directory")
+		logger.Error(err, "Failed to preserve instance logs")
 		return
 	}
-
-	entries, err := os.ReadDir(inst.Dir)
-	if err != nil {
-		logger.Error(err, "Failed to read instance directory for log preservation")
-		return
+	if count > 0 {
+		logger.Info("Preserved instance logs", "instance", inst.Name, "count", count)
 	}
-
-	count := 0
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".log") {
-			continue
-		}
-		src := filepath.Join(inst.Dir, entry.Name())
-		dst := filepath.Join(destDir, entry.Name())
-		if err := os.Rename(src, dst); err != nil {
-			logger.Error(err, "Failed to preserve log file", "file", entry.Name())
-			continue
-		}
-		count++
-	}
-
-	logger.Info("Preserved instance logs", "dest", destDir, "count", count)
-}
-
-// nextAvailableDir creates a new directory named {name} under parent. If it
-// already exists, it tries {name}.2, {name}.3, etc.
-func nextAvailableDir(parent, name string) (string, error) {
-	dir := filepath.Join(parent, name)
-	if err := os.Mkdir(dir, 0o700); err == nil {
-		return dir, nil
-	} else if !errors.Is(err, fs.ErrExist) {
-		return "", fmt.Errorf("create directory %s: %w", dir, err)
-	}
-	for n := 2; n <= 1000; n++ {
-		dir = filepath.Join(parent, fmt.Sprintf("%s.%d", name, n))
-		if err := os.Mkdir(dir, 0o700); err == nil {
-			return dir, nil
-		} else if !errors.Is(err, fs.ErrExist) {
-			return "", fmt.Errorf("create directory %s: %w", dir, err)
-		}
-	}
-	return "", fmt.Errorf("exhausted directory names for %s in %s", name, parent)
 }

@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"slices"
 	"strconv"
@@ -420,11 +421,48 @@ func Delete() error {
 		return fmt.Errorf("%q control plane does not exist", instance.Name())
 	}
 	_ = Stop()
+	preserveAllInstanceLogs()
 	if os.Getenv("RDD_KEEP_LOGS") == "" {
 		_ = os.RemoveAll(instance.LogDir())
 	}
 	_ = os.RemoveAll(instance.ShortDir())
 	return os.RemoveAll(instance.Dir())
+}
+
+// preserveAllInstanceLogs moves .log files from each Lima instance directory
+// to the service log directory before the instance directories are deleted.
+// This is a no-op unless RDD_KEEP_LOGS is set.
+//
+// Errors are logged but do not prevent deletion. On Windows, os.Rename
+// requires FILE_SHARE_DELETE on the source; Go sets this flag since 1.14,
+// but non-Go processes (e.g., QEMU) may not. If rename fails because a
+// process still holds a lock, the logs are lost when the instance directory
+// is deleted afterward.
+func preserveAllInstanceLogs() {
+	if os.Getenv("RDD_KEEP_LOGS") == "" {
+		return
+	}
+	entries, err := os.ReadDir(instance.LimaHome())
+	if err != nil {
+		if !os.IsNotExist(err) {
+			logrus.WithError(err).Warn("Failed to read Lima instance directory")
+		}
+		return
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		instDir := filepath.Join(instance.LimaHome(), entry.Name())
+		count, err := instance.PreserveLogs(instDir, entry.Name())
+		if err != nil {
+			logrus.WithError(err).WithField("instance", entry.Name()).Warn("Failed to preserve instance logs")
+			continue
+		}
+		if count > 0 {
+			logrus.WithFields(logrus.Fields{"instance": entry.Name(), "count": count}).Info("Preserved instance logs")
+		}
+	}
 }
 
 func ServeArgs() []string {
