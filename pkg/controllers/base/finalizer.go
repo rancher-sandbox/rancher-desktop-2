@@ -22,31 +22,56 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-// FinalizerName is the shared finalizer name used by all RDD controllers for deletion protection.
-// This finalizer blocks resource deletion until cleanup work is complete.
-// Owner references indicate which resources need cleanup; the finalizer ensures cleanup happens
-// before deletion proceeds. This acts as RDD's replacement for Kubernetes garbage collection.
-const FinalizerName = "rdd.rancherdesktop.io/cleanup"
+// CleanupFinalizerName is the self-protection finalizer. A resource's own controller sets it
+// to ensure cleanup runs before deletion (e.g., LimaVM stops the VM and deletes disk files).
+// DeleteOwnedResources does NOT strip this finalizer.
+const CleanupFinalizerName = "rdd.rancherdesktop.io/cleanup"
 
-// EnsureFinalizer adds the finalizer to the object if it's not already present.
+// OwnedFinalizerName is the cascade-blocking finalizer. An owner controller sets it on
+// child resources so that DeleteOwnedResources can strip it to unblock deletion.
+const OwnedFinalizerName = "rdd.rancherdesktop.io/owned"
+
+// EnsureCleanupFinalizer adds the cleanup finalizer to the object if not already present.
 // Returns true if the finalizer was added and the object has been updated.
 // When true is returned, controllers should return immediately to allow re-reconciliation
 // with the updated object (avoids stale resourceVersion conflicts).
-func EnsureFinalizer(ctx context.Context, c client.Client, obj client.Object) (bool, error) {
-	if !controllerutil.AddFinalizer(obj, FinalizerName) {
+func EnsureCleanupFinalizer(ctx context.Context, c client.Client, obj client.Object) (bool, error) {
+	if !controllerutil.AddFinalizer(obj, CleanupFinalizerName) {
 		return false, nil
 	}
 	if err := c.Update(ctx, obj); err != nil {
-		return false, fmt.Errorf("failed to add finalizer: %w", err)
+		return false, fmt.Errorf("failed to add cleanup finalizer: %w", err)
 	}
 	return true, nil
 }
 
-// RemoveFinalizer removes the finalizer from the object and updates it.
-func RemoveFinalizer(ctx context.Context, c client.Client, obj client.Object) error {
-	if controllerutil.RemoveFinalizer(obj, FinalizerName) {
+// RemoveCleanupFinalizer removes the cleanup finalizer from the object and updates it.
+func RemoveCleanupFinalizer(ctx context.Context, c client.Client, obj client.Object) error {
+	if controllerutil.RemoveFinalizer(obj, CleanupFinalizerName) {
 		if err := c.Update(ctx, obj); err != nil {
-			return fmt.Errorf("failed to remove finalizer: %w", err)
+			return fmt.Errorf("failed to remove cleanup finalizer: %w", err)
+		}
+	}
+	return nil
+}
+
+// EnsureOwnedFinalizer adds the owned finalizer to a child object if not already present.
+// Returns true if the finalizer was added and the object has been updated.
+func EnsureOwnedFinalizer(ctx context.Context, c client.Client, obj client.Object) (bool, error) {
+	if !controllerutil.AddFinalizer(obj, OwnedFinalizerName) {
+		return false, nil
+	}
+	if err := c.Update(ctx, obj); err != nil {
+		return false, fmt.Errorf("failed to add owned finalizer: %w", err)
+	}
+	return true, nil
+}
+
+// RemoveOwnedFinalizer removes the owned finalizer from the object and updates it.
+func RemoveOwnedFinalizer(ctx context.Context, c client.Client, obj client.Object) error {
+	if controllerutil.RemoveFinalizer(obj, OwnedFinalizerName) {
+		if err := c.Update(ctx, obj); err != nil {
+			return fmt.Errorf("failed to remove owned finalizer: %w", err)
 		}
 	}
 	return nil
@@ -131,9 +156,10 @@ func DeleteOwnedResources(ctx context.Context, c client.Client, owner client.Obj
 				continue
 			}
 
-			// Remove only the RDD finalizer before deletion to allow other controllers to still perform their own cleanup.
+			// Strip the owned finalizer to unblock deletion. The cleanup finalizer (if any)
+			// remains so the child's own controller can still run its cleanup logic.
 			patch := client.MergeFrom(item.DeepCopy())
-			if controllerutil.RemoveFinalizer(&item, FinalizerName) {
+			if controllerutil.RemoveFinalizer(&item, OwnedFinalizerName) {
 				// Use Patch instead of Update for PartialObjectMetadata
 				if err := c.Patch(ctx, &item, patch); err != nil {
 					itemLogger := logger.V(1).WithValues("namespace", item.GetNamespace(), "name", item.GetName(), "gvk", gvk.String())
@@ -211,9 +237,14 @@ func DiscoverNamespacedResources(ctx context.Context, mgr ctrl.Manager) ([]schem
 	return resourceTypes, nil
 }
 
-// HasFinalizer checks if a resource has the RDD finalizer.
-func HasFinalizer(obj client.Object) bool {
-	return controllerutil.ContainsFinalizer(obj, FinalizerName)
+// HasCleanupFinalizer checks if a resource has the cleanup finalizer.
+func HasCleanupFinalizer(obj client.Object) bool {
+	return controllerutil.ContainsFinalizer(obj, CleanupFinalizerName)
+}
+
+// HasOwnedFinalizer checks if a resource has the owned finalizer.
+func HasOwnedFinalizer(obj client.Object) bool {
+	return controllerutil.ContainsFinalizer(obj, OwnedFinalizerName)
 }
 
 // IsOwnedByUID checks if a resource is owned by an owner with the given UID.

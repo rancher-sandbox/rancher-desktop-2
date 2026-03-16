@@ -72,9 +72,9 @@ EOF
     assert_output "true"
 }
 
-@test "verify template ConfigMap has protection finalizer" {
+@test "verify template ConfigMap has owned finalizer" {
     run -0 rdd ctl get configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" -o jsonpath='{.metadata.finalizers}'
-    assert_output --partial "rdd.rancherdesktop.io/cleanup"
+    assert_output --partial "rdd.rancherdesktop.io/owned"
 }
 
 @test "verify template ConfigMap has owner reference" {

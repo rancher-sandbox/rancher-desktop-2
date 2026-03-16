@@ -49,7 +49,7 @@ The `--instance` flag takes precedence over the `RDD_INSTANCE` environment varia
 
 ### API Groups / Controllers
 
-RDD includes controllers for multiple API groups. Each group can be separately versioned, updated, disabled, etc.
+RDD includes controllers for multiple API groups. Each group can be separately versioned, updated, disabled, etc. The [controller framework](controllers.md) documents the shared base infrastructure all groups use: registration, finalizers, owned-resource cleanup, and webhook helpers.
 
 #### `rdd.rancherdesktop.io`
 

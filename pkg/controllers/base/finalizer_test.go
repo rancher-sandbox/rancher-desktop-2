@@ -58,13 +58,24 @@ func TestDeleteOwnedResources(t *testing.T) {
 	testCases := []struct {
 		name       string
 		finalizers []string
+		// expectDeleted is true when the owned resource should be fully deleted
+		// (NotFound) after DeleteOwnedResources. When false, the resource still
+		// exists because a remaining finalizer blocks deletion.
+		expectDeleted bool
 	}{
 		{
-			name: "config map without finalizers",
+			name:          "config map without finalizers",
+			expectDeleted: true,
 		},
 		{
-			name:       "config map with finalizer",
-			finalizers: []string{FinalizerName},
+			name:          "config map with owned finalizer only",
+			finalizers:    []string{OwnedFinalizerName},
+			expectDeleted: true,
+		},
+		{
+			name:          "config map with both finalizers strips only owned",
+			finalizers:    []string{CleanupFinalizerName, OwnedFinalizerName},
+			expectDeleted: false,
 		},
 	}
 
@@ -116,7 +127,7 @@ func TestDeleteOwnedResources(t *testing.T) {
 			}})
 			assert.NilError(t, c.Update(t.Context(), unrelated), "failed to update unrelated config map")
 
-			// Delete owned sources
+			// Delete owned resources
 			err = DeleteOwnedResources(
 				t.Context(),
 				c,
@@ -124,9 +135,16 @@ func TestDeleteOwnedResources(t *testing.T) {
 				mgr)
 			assert.NilError(t, err, "failed to delete owned resources")
 
-			// Check that only the owned config map was deleted
 			err = c.Get(t.Context(), client.ObjectKeyFromObject(owned), owned)
-			assert.Check(t, apierrors.IsNotFound(err), "owned config map was not deleted: %s", err)
+			if tc.expectDeleted {
+				assert.Check(t, apierrors.IsNotFound(err), "owned config map was not deleted: %s", err)
+			} else {
+				// Resource still exists because cleanup finalizer blocks deletion
+				assert.NilError(t, err, "failed to get owned config map")
+				assert.Check(t, !owned.GetDeletionTimestamp().IsZero(), "owned config map should be marked for deletion")
+				assert.Check(t, HasCleanupFinalizer(owned), "cleanup finalizer should remain")
+				assert.Check(t, !HasOwnedFinalizer(owned), "owned finalizer should be stripped")
+			}
 			err = c.Get(t.Context(), client.ObjectKeyFromObject(owner), owner)
 			assert.Check(t, cmp.ErrorIs(err, nil), "failed to get owner object")
 			err = c.Get(t.Context(), client.ObjectKeyFromObject(unrelated), unrelated)

@@ -1,5 +1,7 @@
 # Controller Manager Discovery
 
+See also the [controller framework](controllers.md) for base controller utilities (registration, finalizers, owned-resource cleanup).
+
 Controller managers register themselves in a shared ConfigMap so that other components can find them. The control plane uses this to determine which controllers are running, to route passthrough requests, and to detect when an external controller manager has gone away.
 
 ## ConfigMap

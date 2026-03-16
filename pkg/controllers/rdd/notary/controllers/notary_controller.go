@@ -66,7 +66,7 @@ func (r *NotaryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Add finalizer if not present
-	if added, err := base.EnsureFinalizer(ctx, r.Client, &notary); err != nil {
+	if added, err := base.EnsureCleanupFinalizer(ctx, r.Client, &notary); err != nil {
 		log.Error(err, "Failed to add finalizer")
 		return ctrl.Result{}, err
 	} else if added {
@@ -122,7 +122,7 @@ func (r *NotaryReconciler) handleDeletion(ctx context.Context, notary *v1alpha1.
 	}
 
 	// Remove finalizer to allow deletion
-	if err := base.RemoveFinalizer(ctx, r.Client, notary); err != nil {
+	if err := base.RemoveCleanupFinalizer(ctx, r.Client, notary); err != nil {
 		log.Error(err, "Failed to remove finalizer")
 		return ctrl.Result{}, err
 	}

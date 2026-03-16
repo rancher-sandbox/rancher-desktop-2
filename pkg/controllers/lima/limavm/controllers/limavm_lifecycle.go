@@ -68,7 +68,7 @@ func (r *LimaVMReconciler) handleDeletion(ctx context.Context, limaVM *v1alpha1.
 	}
 
 	// Remove finalizer
-	if err := base.RemoveFinalizer(ctx, r.Client, limaVM); err != nil {
+	if err := base.RemoveCleanupFinalizer(ctx, r.Client, limaVM); err != nil {
 		logger.Error(err, "Failed to remove finalizer")
 		return ctrl.Result{}, err
 	}

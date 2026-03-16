@@ -185,7 +185,7 @@ var _ ctrlwebhookadmission.Defaulter[*v1alpha1.LimaVM] = &defaulter{}
 
 // Default is called during CREATE operations to add finalizer and create the template ConfigMap.
 func (d *defaulter) Default(ctx context.Context, limavm *v1alpha1.LimaVM) error {
-	controllerutil.AddFinalizer(limavm, base.FinalizerName)
+	controllerutil.AddFinalizer(limavm, base.CleanupFinalizerName)
 
 	// Validate name uniqueness BEFORE creating ConfigMap
 	// This prevents orphaned ConfigMaps when validation fails
@@ -208,7 +208,7 @@ func (d *defaulter) Default(ctx context.Context, limavm *v1alpha1.LimaVM) error 
 				controllers.TemplateConfigMapLabel: "true",
 			},
 			Finalizers: []string{
-				base.FinalizerName,
+				base.OwnedFinalizerName,
 			},
 		},
 		Data: map[string]string{
@@ -273,7 +273,7 @@ func (v *ConfigMapValidator) ValidateDelete(ctx context.Context, configMap *core
 	if base.IsDryRun(ctx) {
 		klog.V(1).Infof("[DryRun] Webhook validating ConfigMap deletion %s/%s\n", configMap.Namespace, configMap.Name)
 	}
-	if base.HasFinalizer(configMap) {
+	if base.HasOwnedFinalizer(configMap) {
 		return nil, fmt.Errorf("cannot delete template ConfigMap %q: it is protected by the LimaVM controller; delete the owning LimaVM resource instead", configMap.Name)
 	}
 	return nil, nil

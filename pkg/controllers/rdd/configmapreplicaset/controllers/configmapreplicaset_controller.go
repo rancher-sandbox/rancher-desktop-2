@@ -72,7 +72,7 @@ func (r *ConfigMapReplicaSetReconciler) Reconcile(ctx context.Context, req ctrl.
 	}
 
 	// Add finalizer if not present
-	if added, err := base.EnsureFinalizer(ctx, r.Client, &configMapReplicaSet); err != nil {
+	if added, err := base.EnsureCleanupFinalizer(ctx, r.Client, &configMapReplicaSet); err != nil {
 		logger.Error(err, "Failed to add finalizer")
 		return ctrl.Result{}, err
 	} else if added {
@@ -160,7 +160,7 @@ func (r *ConfigMapReplicaSetReconciler) handleDeletion(ctx context.Context, conf
 	}
 
 	// Remove finalizer to allow deletion
-	if err := base.RemoveFinalizer(ctx, r.Client, configMapReplicaSet); err != nil {
+	if err := base.RemoveCleanupFinalizer(ctx, r.Client, configMapReplicaSet); err != nil {
 		logger.Error(err, "Failed to remove finalizer")
 		return ctrl.Result{}, err
 	}
