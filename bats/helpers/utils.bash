@@ -387,10 +387,11 @@ EOF
 # directories.
 create_file() {
     local dest=$1
-    # On Windows, avoid creating files from within WSL; this leads to issues
-    # where the WSL view of the filesystem is desynchronized from the Windows
-    # view, so we end up having ghost files that can't be deleted from Windows.
-    if ! is_windows; then
+    # On WSL, avoid creating files from within the Linux side; this leads to
+    # issues where the WSL view of the filesystem is desynchronized from the
+    # Windows view, so we end up having ghost files that can't be deleted from
+    # Windows. MSYS2 writes directly to the Windows filesystem, so it's safe.
+    if ! is_windows || is_msys; then
         mkdir -p "$(dirname "${dest}")"
         cat >"${dest}"
         return
@@ -404,8 +405,12 @@ create_file() {
     winParent="$(wslpath -w "$(dirname "${dest}")")"
     winDest="$(wslpath -w "${dest}")"
     PowerShell.exe -NoProfile -NoLogo -NonInteractive -Command "New-Item -ItemType Directory -ErrorAction SilentlyContinue '${winParent}'" || true
-    local command="[IO.File]::WriteAllBytes('${winDest}', \$([System.Convert]::FromBase64String('${contents}')))"
-    PowerShell.exe -NoProfile -NoLogo -NonInteractive -Command "${command}"
+    if [[ -z "${contents}" ]]; then
+        PowerShell.exe -NoProfile -NoLogo -NonInteractive -Command "New-Item -ItemType File -Force '${winDest}'"
+    else
+        local command="[IO.File]::WriteAllBytes('${winDest}', \$([System.Convert]::FromBase64String('${contents}')))"
+        PowerShell.exe -NoProfile -NoLogo -NonInteractive -Command "${command}"
+    fi
 }
 
 # unique_filename /tmp/image .png

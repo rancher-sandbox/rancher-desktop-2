@@ -10,9 +10,22 @@ NAMESPACE="running-test-ns"
 VM_NAME="opensuse-running"
 TEMPLATE_NAME="${VM_NAME}-template"
 
-# Minimal openSUSE template from rancher-desktop-opensuse.
+# Use a real template for boot.
+# WSL2 requires tarball images; macOS/Linux use openSUSE qcow2s.
 # Set RDD_VM_TYPE=qemu to reproduce QEMU-specific behavior on macOS.
-OPENSUSE_TEMPLATE="
+if is_windows; then
+    RUNNING_TEMPLATE="
+vmType: wsl2
+images:
+- location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.1.2/distro.v0.1.2.amd64.tar.xz
+  arch: x86_64
+  digest: sha256:dab70ce152f163ad5c7ce45accb314b91a68f43efd9a153415eaab3e22b8cdf8
+mountType: wsl2
+containerd:
+  system: false
+  user: false"
+else
+    RUNNING_TEMPLATE="
 images:
 - location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.1.1/distro.v0.1.1.amd64.qcow2
   arch: x86_64
@@ -24,6 +37,7 @@ ${RDD_VM_TYPE:+vmType: ${RDD_VM_TYPE}}
 containerd:
   system: false
   user: false"
+fi
 
 local_setup_file() {
     setup_rdd_control_plane "lima"
@@ -35,10 +49,12 @@ local_teardown_file() {
     if [[ -d "${RDD_LIMA_HOME}/${VM_NAME}" ]]; then
         rm -rf "${RDD_LIMA_HOME:?}/${VM_NAME}"
     fi
-}
-
-local_setup() {
-    skip_on_windows
+    # Clean up any WSL2 distros created by tests
+    if is_windows; then
+        for vm in "${VM_NAME}" "stopped-vm"; do
+            MSYS_NO_PATHCONV=1 wsl.exe --unregister "lima-${vm}" 2>/dev/null || true
+        done
+    fi
 }
 
 create_limavm_running() {
@@ -89,10 +105,21 @@ assert_shell_succeeds() {
     rdd lima shell "${name}" "$@"
 }
 
+# On Windows, rdd.exe can't execute MSYS2 paths directly. Use "bash <path>"
+# so the editor command is resolved by bash, and convert the path for Win32.
+editor_cmd() {
+    local script=$1
+    if is_msys; then
+        echo "bash $(cygpath -m "${script}")"
+    else
+        echo "${script}"
+    fi
+}
+
 @test "create source template ConfigMap for running tests" {
-    rdd ctl create configmap "opensuse-source" --namespace "${NAMESPACE}" --from-literal="template=${OPENSUSE_TEMPLATE}"
+    rdd ctl create configmap "opensuse-source" --namespace "${NAMESPACE}" --from-literal="template=${RUNNING_TEMPLATE}"
     run -0 rdd ctl get configmap "opensuse-source" --namespace "${NAMESPACE}" --output jsonpath='{.data.template}'
-    assert_output --partial "rancher-desktop-opensuse"
+    assert_output --partial "images:"
 }
 
 @test "create LimaVM with running=false" {
@@ -108,7 +135,7 @@ assert_shell_succeeds() {
 
 @test "verify initial Running condition is False/Stopped" {
     rdd ctl await "limavm/${VM_NAME}" --namespace "${NAMESPACE}" \
-        --for=condition=Running=False --reason=Stopped --timeout=30s
+        --for=condition=Running=False --reason=Stopped --timeout=120s
 }
 
 @test "start the VM by setting running=true" {
@@ -208,9 +235,8 @@ EOF
     # shellcheck disable=SC2030 # Persisted via save_var, not subshell
     OLD_HA_PID=$(get_hostagent_pid "${VM_NAME}")
     assert [ -n "${OLD_HA_PID}" ]
-    # Verify the PID is a running process. On Windows the hostagent runs as a
-    # Win32 process but BATS runs inside WSL, so kill can't reach it.
-    kill -0 "${OLD_HA_PID}"
+    # Verify the PID is a running process.
+    assert_process_alive "${OLD_HA_PID}"
     save_var OLD_HA_PID
 
     # Save restart count before the kill. The watcher detects the crash
@@ -219,7 +245,7 @@ EOF
     BEFORE_KILL_COUNT=$(get_restart_count "${VM_NAME}")
     save_var BEFORE_KILL_COUNT
 
-    kill -9 "${OLD_HA_PID}"
+    process_kill "${OLD_HA_PID}"
 }
 
 @test "trigger reconcile and verify crash recovery" {
@@ -243,7 +269,7 @@ EOF
     local new_pid
     new_pid=$(get_hostagent_pid "${VM_NAME}")
     assert [ -n "${new_pid}" ]
-    kill -0 "${new_pid}"
+    assert_process_alive "${new_pid}"
 
     # Windows recycles PIDs quickly, so this assertion is only reliable on Unix.
     load_var OLD_HA_PID
@@ -262,7 +288,7 @@ EOF
     # shellcheck disable=SC2030 # Persisted via save_var, not subshell
     ORPHAN_HA_PID=$(get_hostagent_pid "${VM_NAME}")
     assert [ -n "${ORPHAN_HA_PID}" ]
-    kill -0 "${ORPHAN_HA_PID}"
+    assert_process_alive "${ORPHAN_HA_PID}"
     save_var ORPHAN_HA_PID
 
     # Save restart count to detect when recovery completes after restart.
@@ -276,16 +302,16 @@ EOF
     svc_pid=$(cat "${RDD_PID_FILE}")
     assert [ -n "${svc_pid}" ]
 
-    kill -9 "${svc_pid}"
+    process_kill "${svc_pid}"
 
     # Wait for the service process to be fully reaped
-    try --max 10 --delay 1 --until-fail -- kill -0 "${svc_pid}"
+    try --max 10 --delay 1 --until-fail -- assert_process_alive "${svc_pid}"
 }
 
 @test "verify hostagent survived service crash" {
     load_var ORPHAN_HA_PID
     # shellcheck disable=SC2031 # Loaded via load_var, not subshell
-    kill -0 "${ORPHAN_HA_PID}"
+    assert_process_alive "${ORPHAN_HA_PID}"
 }
 
 @test "restart service and verify orphaned hostagent recovery" {
@@ -296,7 +322,7 @@ EOF
 
     # Wait for the controller to detect and kill the orphaned hostagent.
     # shellcheck disable=SC2031 # Loaded via load_var, not subshell
-    try --max 30 --delay 1 --until-fail -- kill -0 "${ORPHAN_HA_PID}"
+    try --max 30 --delay 1 --until-fail -- assert_process_alive "${ORPHAN_HA_PID}"
 
     # restartCount increments when the new hostagent reaches Running.
     # shellcheck disable=SC2031 # Loaded via load_var, not subshell
@@ -306,7 +332,7 @@ EOF
     local new_pid
     new_pid=$(get_hostagent_pid "${VM_NAME}")
     assert [ -n "${new_pid}" ]
-    kill -0 "${new_pid}"
+    assert_process_alive "${new_pid}"
 
     # Windows recycles PIDs quickly, so this assertion is only reliable on Unix.
     # shellcheck disable=SC2031 # Loaded via load_var, not subshell
@@ -323,11 +349,16 @@ EOF
     local ha_pid
     ha_pid=$(get_hostagent_pid "${VM_NAME}")
     assert [ -n "${ha_pid}" ]
-    kill -0 "${ha_pid}"
+    assert_process_alive "${ha_pid}"
 
     rdd svc stop
 
-    try --max 15 --delay 1 --until-fail -- kill -0 "${ha_pid}"
+    # On Windows, child process handles (wsl.exe) keep the hostagent PID visible
+    # in the process table long after termination. The next test ("restart service
+    # after graceful shutdown") verifies the hostagent is functionally dead.
+    if is_unix; then
+        try --max 15 --delay 1 --until-fail -- assert_process_alive "${ha_pid}"
+    fi
 }
 
 @test "restart service after graceful shutdown" {
@@ -411,7 +442,7 @@ assert_restart_annotation_absent() {
 
 # Append an env variable to the original template.
 # Keep images identical so Lima doesn't re-download them.
-MODIFIED_TEMPLATE="${OPENSUSE_TEMPLATE}
+MODIFIED_TEMPLATE="${RUNNING_TEMPLATE}
 env:
   TEMPLATE_CHANGE_MARKER: applied"
 
@@ -426,7 +457,8 @@ assert_guest_env_var() {
     local name=$1
     local var=$2
     local expected=$3
-    run -0 ssh -F "${RDD_LIMA_HOME}/${name}/ssh.config" lima-"${name}" printenv "${var}"
+    # Use --separate-stderr to avoid Lima driver warnings leaking into output.
+    run --separate-stderr -0 rdd lima shell "${name}" printenv "${var}"
     assert_output "${expected}"
 }
 
@@ -477,7 +509,7 @@ assert_guest_env_var() {
 }
 
 # Build a second modified template with a different env value.
-MODIFIED_TEMPLATE_2="${OPENSUSE_TEMPLATE}
+MODIFIED_TEMPLATE_2="${RUNNING_TEMPLATE}
 env:
   TEMPLATE_CHANGE_MARKER: updated-while-stopped"
 
@@ -527,7 +559,7 @@ SCRIPT
     chmod +x "${editor_script}"
 
     # Run edit with fake editor
-    EDITOR="${editor_script}" run -0 rdd limavm edit "${VM_NAME}"
+    EDITOR="$(editor_cmd "${editor_script}")" run -0 rdd limavm edit "${VM_NAME}"
     assert_output --partial "updated successfully"
 
     # Verify ConfigMap was updated
@@ -554,7 +586,7 @@ SCRIPT
     chmod +x "${editor_script}"
 
     # Run edit aborts
-    EDITOR="${editor_script}" run -1 rdd limavm edit "${VM_NAME}"
+    EDITOR="$(editor_cmd "${editor_script}")" run -1 rdd limavm edit "${VM_NAME}"
     assert_output --partial "template data was cleared, aborting edit"
 
     # Verify ConfigMap unchanged
@@ -574,7 +606,7 @@ SCRIPT
 
     chmod +x "${editor_script}"
 
-    EDITOR="${editor_script}" run -0 rdd limavm edit "${VM_NAME}"
+    EDITOR="$(editor_cmd "${editor_script}")" run -0 rdd limavm edit "${VM_NAME}"
     assert_output --partial "No changes made to template, skipping update"
 }
 

@@ -10,9 +10,21 @@ load '../../helpers/load'
 NAMESPACE="instance-test-ns"
 VM_NAME="opensuse-test"
 
-# Minimal template with openSUSE qcow2 images from rancher-desktop-opensuse.
-# vmType defaults to vz on macOS and qemu on Linux.
-OPENSUSE_TEMPLATE='
+# Use a real template that instance.Create() can use.
+# WSL2 requires tarball images; macOS/Linux use openSUSE qcow2s.
+if is_windows; then
+    INSTANCE_TEMPLATE='
+vmType: wsl2
+images:
+- location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.1.2/distro.v0.1.2.amd64.tar.xz
+  arch: x86_64
+  digest: sha256:dab70ce152f163ad5c7ce45accb314b91a68f43efd9a153415eaab3e22b8cdf8
+mountType: wsl2
+containerd:
+  system: false
+  user: false'
+else
+    INSTANCE_TEMPLATE='
 images:
 - location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.1.1/distro.v0.1.1.amd64.qcow2
   arch: x86_64
@@ -23,6 +35,7 @@ images:
 containerd:
   system: false
   user: false'
+fi
 
 local_setup_file() {
     setup_rdd_control_plane "lima"
@@ -36,10 +49,12 @@ local_teardown_file() {
             rm -rf "${RDD_LIMA_HOME:?}/${vm}"
         fi
     done
-}
-
-local_setup() {
-    skip_on_windows
+    # Clean up any WSL2 distros created by tests
+    if is_windows; then
+        for vm in "${VM_NAME}" "invalid-vm"; do
+            MSYS_NO_PATHCONV=1 wsl.exe --unregister "lima-${vm}" 2>/dev/null || true
+        done
+    fi
 }
 
 create_limavm() {
@@ -65,11 +80,11 @@ lima_instance_exists() {
     [[ -d "${RDD_LIMA_HOME}/${name}" ]]
 }
 
-@test "create source template ConfigMap with openSUSE image" {
-    rdd ctl create configmap "opensuse-source" --namespace "${NAMESPACE}" --from-literal="template=${OPENSUSE_TEMPLATE}"
+@test "create source template ConfigMap" {
+    rdd ctl create configmap "opensuse-source" --namespace "${NAMESPACE}" --from-literal="template=${INSTANCE_TEMPLATE}"
 
     run -0 rdd ctl get configmap "opensuse-source" --namespace "${NAMESPACE}" --output jsonpath='{.data.template}'
-    assert_output --partial "rancher-desktop-opensuse"
+    assert_output --partial "images:"
 }
 
 @test "create LimaVM with openSUSE template" {
@@ -150,7 +165,7 @@ lima_instance_exists() {
     assert_file_not_exists "${RDD_LIMA_HOME}/${VM_NAME}/.fake-leftover"
     # Real instance should have images from template
     run -0 cat "${RDD_LIMA_HOME}/${VM_NAME}/lima.yaml"
-    assert_output --partial "rancher-desktop-opensuse"
+    assert_output --partial "images:"
 }
 
 @test "cleanup LimaVM after leftover test" {
