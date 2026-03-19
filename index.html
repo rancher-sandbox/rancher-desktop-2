@@ -16,8 +16,7 @@ body {
   padding: 2rem 1rem;
 }
 main { max-width: 1200px; margin: 0 auto; }
-h1 { font-size: 1.6rem; margin-bottom: 0.3rem; color: #111827; }
-.subtitle { color: #6b7280; margin-bottom: 2rem; }
+h1 { font-size: 1.6rem; margin-bottom: 0.8rem; color: #111827; }
 a { color: #2563eb; text-decoration: none; }
 a:hover { text-decoration: underline; }
 table {
@@ -42,6 +41,7 @@ td {
 }
 tr:hover td { background: #f0f4ff; }
 .date { white-space: nowrap; color: #6b7280; font-size: 0.9rem; }
+.time { color: #9ca3af; font-size: 0.82rem; margin-left: 0.3em; }
 .verdict {
   display: inline-block;
   font-size: 0.78rem;
@@ -81,17 +81,16 @@ code {
 <body>
 <main>
 <h1>rancher-desktop-daemon</h1>
-<p class="subtitle">8 reviews</p>
 <table>
 <thead><tr><th>Date</th><th>Review</th><th>Verdict</th></tr></thead>
 <tbody>
-<tr><td class="date">2026-03-18</td><td><a href="20260318-173320-msys2.html">Branch: `msys2`</a> <a href="20260318-173320-msys2.html" class="badge-html">html</a> <a href="20260318-173320-msys2.md" class="badge-md">md</a></td><td><span class="verdict verdict-merge">Merge as-is</span></td></tr>
-<tr><td class="date">2026-03-16</td><td><a href="20260316-134751-pr-236.html">#236</a> — Implement App controller lifecycle for LimaVM <a href="20260316-134751-pr-236.html" class="badge-html">html</a> <a href="20260316-134751-pr-236.md" class="badge-md">md</a></td><td><span class="verdict verdict-rework">Rework</span></td></tr>
-<tr><td class="date">2026-03-16</td><td><a href="20260316-111459-pr-238.html">#238</a> — Split RDD finalizer into /cleanup and /owned <a href="20260316-111459-pr-238.html" class="badge-html">html</a> <a href="20260316-111459-pr-238.md" class="badge-md">md</a></td><td><span class="verdict verdict-fixes">Merge with fixes</span></td></tr>
-<tr><td class="date">2026-03-15</td><td><a href="20260315-180016-pr-188.html">#188</a> — mock: namespaces: ensure we have all namespaces <a href="20260315-180016-pr-188.html" class="badge-html">html</a> <a href="20260315-180016-pr-188.md" class="badge-md">md</a></td><td><span class="verdict verdict-fixes">Merge with fixes</span></td></tr>
-<tr><td class="date">2026-03-13</td><td><a href="20260313-180000-app-controller-create-delete-limavm.md">Branch: `app-controller-create-delete-limavm`</a> <a href="20260313-180000-app-controller-create-delete-limavm.md" class="badge-md">md</a></td><td><span class="verdict verdict-fixes">Merge with fixes</span></td></tr>
-<tr><td class="date">2026-03-13</td><td><a href="20260313-123900-rotate-serial-logs.md">Branch: `rotate-serial-logs`</a> <a href="20260313-123900-rotate-serial-logs.md" class="badge-md">md</a></td><td><span class="verdict verdict-fixes">Merge with fixes</span></td></tr>
-<tr><td class="date">2026-03-13</td><td><a href="20260313-120000-app-controller-create-delete-limavm.md">Branch: `app-controller-create-delete-limavm`</a> <a href="20260313-120000-app-controller-create-delete-limavm.md" class="badge-md">md</a></td><td><span class="verdict verdict-rework">Rework</span></td></tr>
+<tr><td class="date">2026-03-18 <span class="time">17:33</span></td><td><a href="20260318-173320-msys2.html">Branch: `msys2`</a> <a href="20260318-173320-msys2.html" class="badge-html">html</a> <a href="20260318-173320-msys2.md" class="badge-md">md</a></td><td><span class="verdict verdict-merge">Merge as-is</span></td></tr>
+<tr><td class="date">2026-03-16 <span class="time">13:47</span></td><td><a href="20260316-134751-pr-236.html">#236 — Implement App controller lifecycle for LimaVM</a> <a href="20260316-134751-pr-236.html" class="badge-html">html</a> <a href="20260316-134751-pr-236.md" class="badge-md">md</a></td><td><span class="verdict verdict-rework">Rework</span></td></tr>
+<tr><td class="date">2026-03-16 <span class="time">11:14</span></td><td><a href="20260316-111459-pr-238.html">#238 — Split RDD finalizer into /cleanup and /owned</a> <a href="20260316-111459-pr-238.html" class="badge-html">html</a> <a href="20260316-111459-pr-238.md" class="badge-md">md</a></td><td><span class="verdict verdict-fixes">Merge with fixes</span></td></tr>
+<tr><td class="date">2026-03-15 <span class="time">18:00</span></td><td><a href="20260315-180016-pr-188.html">#188 — mock: namespaces: ensure we have all namespaces</a> <a href="20260315-180016-pr-188.html" class="badge-html">html</a> <a href="20260315-180016-pr-188.md" class="badge-md">md</a></td><td><span class="verdict verdict-fixes">Merge with fixes</span></td></tr>
+<tr><td class="date">2026-03-13 <span class="time">18:00</span></td><td><a href="20260313-180000-app-controller-create-delete-limavm.md">Branch: `app-controller-create-delete-limavm`</a> <a href="20260313-180000-app-controller-create-delete-limavm.md" class="badge-md">md</a></td><td><span class="verdict verdict-fixes">Merge with fixes</span></td></tr>
+<tr><td class="date">2026-03-13 <span class="time">12:39</span></td><td><a href="20260313-123900-rotate-serial-logs.md">Branch: `rotate-serial-logs`</a> <a href="20260313-123900-rotate-serial-logs.md" class="badge-md">md</a></td><td><span class="verdict verdict-fixes">Merge with fixes</span></td></tr>
+<tr><td class="date">2026-03-13 <span class="time">12:00</span></td><td><a href="20260313-120000-app-controller-create-delete-limavm.md">Branch: `app-controller-create-delete-limavm`</a> <a href="20260313-120000-app-controller-create-delete-limavm.md" class="badge-md">md</a></td><td><span class="verdict verdict-rework">Rework</span></td></tr>
 <tr><td class="date">2026-03-13</td><td><a href="20260313-000000-app-controller-create-delete-limavm-v2.md">Branch: `app-controller-create-delete-limavm`</a> <a href="20260313-000000-app-controller-create-delete-limavm-v2.md" class="badge-md">md</a></td><td><span class="verdict verdict-rework">Rework</span></td></tr>
 </tbody>
 </table>

@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Date** | 2026-03-13 |
+| **Date** | 2026-03-13 12:39 |
 | **Branch** | `rotate-serial-logs` |
-| **Commits** | `4fd77c6` (serial log rotation), `71714cf` (instance log preservation) |
+| **Commits** | `4fd77c6` (serial log rotation)<br>`71714cf` (instance log preservation) |
 | **Reviewers** | Claude Opus 4.6, Codex GPT 5.4, Gemini 3.1 Pro |
 | **Verdict** | **Merge with fixes** — new functions lack unit tests, `svc delete` bypasses log preservation |
 
