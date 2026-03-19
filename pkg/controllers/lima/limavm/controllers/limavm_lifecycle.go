@@ -479,8 +479,9 @@ func (r *LimaVMReconciler) stopInstance(ctx context.Context, limaVM *v1alpha1.Li
 }
 
 // shutdownHostagent stops the hostagent for the named instance: sends a graceful
-// signal, waits for exit, and falls back to force-killing the process tree.
-// If inst is nil, it is looked up via store.Inspect when needed for forceful cleanup.
+// signal, waits for exit, and falls back to force-killing the process tree and
+// cleaning up WSL2 distros and tmp files. If inst is nil, it is looked up via
+// store.Inspect when needed for forceful cleanup.
 func (r *LimaVMReconciler) shutdownHostagent(ctx context.Context, name string, inst *limatype.Instance) {
 	logger := log.FromContext(ctx)
 

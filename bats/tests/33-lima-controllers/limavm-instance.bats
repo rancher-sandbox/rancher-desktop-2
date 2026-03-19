@@ -77,7 +77,7 @@ lima_instance_exists() {
 
 @test "wait for Created condition to be True" {
     rdd ctl wait --for=condition=Created=True \
-        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=60s
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=120s
 }
 
 @test "verify Lima instance directory exists" {
@@ -133,7 +133,7 @@ lima_instance_exists() {
 
 @test "wait for Created after leftover cleanup" {
     rdd ctl wait --for=condition=Created=True \
-        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=60s
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=120s
 }
 
 @test "verify leftover was replaced with real instance" {

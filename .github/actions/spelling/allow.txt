@@ -1,10 +1,13 @@
 cooldown #https://en.wiktionary.org/wiki/cooldown#English
 keypair
+msystem
 nohup
 taskkill
+ucrt
 passthrough #https://en.wiktionary.org/wiki/passthrough
 passthroughs #https://en.wiktionary.org/wiki/passthrough
 pgid
+rootfs #https://en.wiktionary.org/wiki/rootfs
 routable #https://en.wiktionary.org/wiki/routable#English
 standalone #https://en.wiktionary.org/wiki/standalone#English
 startable #https://en.wiktionary.org/wiki/startable

@@ -57,14 +57,14 @@ jobs:
         if test $(cat /proc/sys/net/ipv4/ip_unprivileged_port_start) -gt 80; then
           sudo sh -c 'echo 80 > /proc/sys/net/ipv4/ip_unprivileged_port_start'
         fi
-        
+
         # Install QEMU for Lima VM operations
         sudo apt-get update
         sudo apt-get install --yes qemu-system-x86 qemu-utils
 
-        # Set up run-in-wsl helper script (as a symlink to bash)
+        # Set up run-in-shell helper script (as a symlink to bash)
         mkdir -p bin
-        ln -s $(which bash) bin/run-in-wsl
+        ln -s $(which bash) bin/run-in-shell
         readlink -f bin >> "$GITHUB_PATH"
 
         # Install a newer version of jq
@@ -77,9 +77,9 @@ jobs:
       run: |
         brew install bash coreutils make
 
-        # Set up run-in-wsl helper script (as a symlink to bash)
+        # Set up run-in-shell helper script (as a symlink to bash)
         mkdir -p bin
-        ln -s $(brew --prefix bash)/bin/bash bin/run-in-wsl
+        ln -s $(brew --prefix bash)/bin/bash bin/run-in-shell
         readlink -f bin >> "$GITHUB_PATH"
 
         # Use GNU make
@@ -100,43 +100,36 @@ jobs:
         # Setting the default version also lets WSL finish updating.
         wsl --set-default-version 2
 
-        # Install WSL2 Distribution
+        # Install a WSL2 distro. Lima's WSL2 driver requires at least one
+        # installed distribution, even though Lima creates its own distros.
         wsl --install --no-launch --version 2 --name openSUSE openSUSE-Leap-16.0
-        # Disable first-boot script
-        wsl --distribution openSUSE --exec sed -i '/^command =/d' /etc/wsl-distribution.conf
 
-        # Make sure WSL interop is enabled
-        wsl --distribution openSUSE --exec sh -c 'echo ":WSLInterop-custom:M::MZ::/init:PF" | tee /etc/binfmt.d/zzz-WSLInterop-custom.conf' # spellchecker:ignore
-        wsl --shutdown
+        # Install MSYS2 packages for BATS.
+        # openssh is required because Lima constructs SSH paths using cygpath
+        # (/c/Users/...) which only MSYS2's ssh understands; Windows OpenSSH
+        # needs native paths and fails with "No such file or directory".
+        C:\msys64\usr\bin\pacman.exe --noconfirm -S gzip jq make openbsd-netcat openssh
 
-        # Set up wrapper script PATH
+        # Set up MSYS2 wrapper script
         New-Item -ItemType Directory -Name bin -Force
-        Get-ItemPropertyValue -Path bin -Name FullName | Out-File -Encoding UTF8 -Append "$env:GITHUB_PATH"
+        Get-ItemPropertyValue -Path bin -Name FullName |
+          Out-File -Encoding UTF8 -Append "$env:GITHUB_PATH"
 
         # Set up git configuration
         git config --global --replace-all core.autocrlf false # spellchecker:ignore
         git config --global --replace-all core.eol lf # spellchecker:ignore
         git config --global --replace-all core.longpath true #spellchecker:ignore
 
-    - name: "Windows: write wrapper script"
-      # This is a separate step so that we can just set up the script as an
-      # inline YAML block.
+    - name: "Windows: write MSYS2 wrapper script"
       if: runner.os == 'Windows'
-      shell: cmd /c copy {0} run-in-wsl.cmd
+      shell: cmd /c copy {0} run-in-shell.cmd
       working-directory: ${{ runner.temp }}/bin
       run: |
-        IF NOT DEFINED DISTRO SET DISTRO=openSUSE
-        FOR /F "usebackq tokens=*" %%L IN (`wsl --distribution %DISTRO% --exec wslpath -ua %1`) DO (
-          wsl --distribution %DISTRO% --exec /bin/bash -c "tr -d '\r' < %%L | /bin/bash -e"
-          EXIT %%ERRORLEVEL%%
-        )
-
-    - name: "Windows: Install prerequisites in WSL"
-      if: runner.os == 'Windows'
-      shell: run-in-wsl {0}
-      run: >-
-        zypper --non-interactive install
-        gzip jq make netcat-openbsd
+        SET MSYSTEM=UCRT64
+        SET CHERE_INVOKING=1
+        SET MSYS2_PATH_TYPE=inherit
+        C:\msys64\usr\bin\bash.exe --login -e %1
+        EXIT %ERRORLEVEL%
 
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
@@ -146,28 +139,23 @@ jobs:
       with:
         go-version-file: go.mod
 
-    - name: "Windows: WSL interop debugging"
+    - name: "Windows: WSL debugging"
       if: runner.os == 'Windows'
-      shell: run-in-wsl {0}
+      shell: pwsh
       run: |
-        set +e
-        ls -l /proc/sys/fs/binfmt_misc
-        for i in /proc/sys/fs/binfmt_misc/*; do
-          echo "$i"
-          cat "$i" || true
-        done
-        systemctl status systemd-binfmt.service || true
+        wsl --list --verbose
+        wsl --status
       continue-on-error: true
 
     - run: make -C bats --keep-going --jobs=$(nproc) --output-sync=target
-      shell: run-in-wsl {0}
+      shell: run-in-shell {0}
       env:
         RDD_TRACE: true
         RDD_LOG_LEVEL: trace
 
     - name: Collect RDD logs
       if: always()
-      shell: run-in-wsl {0}
+      shell: run-in-shell {0}
       run: scripts/collect-bats-logs.sh rdd-logs
 
     - name: Upload RDD service logs

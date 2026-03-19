@@ -132,9 +132,10 @@ func RunControllers(apiGroupName string) int {
 // This allows external controllers to automatically exit when `rdd svc stop` or `rdd svc delete` is called.
 func monitorControlPlane(ctx context.Context, apiGroupName string, config *rest.Config, log klog.Logger, cancel context.CancelFunc) {
 	// Use a short timeout for monitoring so we detect shutdown quickly.
-	// 1 second is sufficient for local API server connections.
+	// 2 seconds allows margin for Windows localhost TLS handshakes under load,
+	// while still detecting real shutdowns promptly (connection refused is instant).
 	monitorConfig := rest.CopyConfig(config)
-	monitorConfig.Timeout = time.Second
+	monitorConfig.Timeout = 2 * time.Second
 
 	discovery, err := controllers.NewControllerManagerDiscoveryGroup(monitorConfig, apiGroupName)
 	if err != nil {
@@ -189,7 +190,7 @@ func monitorControlPlane(ctx context.Context, apiGroupName string, config *rest.
 	defer ticker.Stop()
 
 	consecutiveFailures := 0
-	const maxFailures = 2 // 4 seconds of failures (2 * 2 seconds) - sufficient for local connections
+	const maxFailures = 3 // ~6 seconds of failures before shutdown
 
 	log.V(1).Info("Starting control plane monitoring")
 
