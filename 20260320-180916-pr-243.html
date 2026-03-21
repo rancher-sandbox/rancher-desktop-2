@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260320-180916-pr-243</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block.
+ * The filename is a GitHub permalink to the displayed line range.
+ * Text color is light gray (#adbac7) for the bar, green (#7ee787)
+ * for the hyperlink — matching GitHub's dark-mode file header. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+  </style>
+</head>
+<body>
+  <main>
+
+<h1>Deep Review: 20260320-180916-pr-243</h1>
+
+<table class="meta-table">
+  <tr><td>Date</td><td>2026-03-20 18:09</td></tr>
+  <tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/243" class="gh-ref" data-title="Encode owner Kind in owned finalizer, document webhook requirement" data-state="open" data-type="pr">#243</a> &mdash; Encode owner Kind in owned finalizer, document webhook requirement</td></tr>
+  <tr><td>Branch</td><td><code>owned-finalizer-webhook-docs</code></td></tr>
+  <tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/54602ea"><code>54602ea</code></a> Encode owner Kind in owned finalizer name<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/eb0d203"><code>eb0d203</code></a> Document validating webhook requirement for owned finalizer</td></tr>
+  <tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.6, <span class="pill pill-codex">Codex</span> GPT 5.4, <span class="pill pill-gemini">Gemini</span> 3.1 Pro</td></tr>
+  <tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; BATS assertions reference the old error message and will fail in CI</td></tr>
+  <tr><td>Wall-clock time</td><td>7 min 29 s</td></tr>
+</table>
+
+<hr>
+
+<h2 id="consolidated-review">Consolidated Review <a href="#consolidated-review" class="pilcrow">&para;</a></h2>
+
+<div class="card card-neutral">
+<h3 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&para;</a></h3>
+<p>This PR encodes the owner Kind in the owned finalizer name (<code>owned-by-App</code> instead of <code>owned</code>), adds a generic <code>OwnedDeletionGuard[T]</code> webhook, refactors <code>ConfigMapValidator</code> to embed it, and documents the webhook requirement. The design is clean and the generics usage is correct. One concrete regression breaks BATS tests: the new generic error message does not match the assertions in <code>limavm-lifecycle.bats</code>. The documentation example also diverges from the actual error format.</p>
+</div>
+
+<h3 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&para;</a></h3>
+
+<div class="card card-critical">
+<div class="finding-title" id="critical-1">
+  <span class="finding-num">1.</span> BATS assertions expect old error message <span class="pill pill-codex">Codex</span>
+  <a href="#critical-1" class="pilcrow">&para;</a>
+</div>
+
+<p>The new <code>OwnedDeletionGuard.ValidateDelete</code> at line 55 produces <code>cannot delete "&lt;name&gt;": owned by LimaVM; delete the LimaVM resource instead</code>.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/54602eab086c0390498d9b3a603cf0471f4e5b5b/pkg/controllers/base/webhook.go#L53-L58">pkg/controllers/base/webhook.go</a></div>
+<pre data-start="53" data-line="55"><code class="language-go">func (g *OwnedDeletionGuard[T]) ValidateDelete(_ context.Context, obj T) (admission.Warnings, error) {
+	if owner := OwnedFinalizerOwner(obj); owner != "" {
+		return nil, fmt.Errorf("cannot delete %q: owned by %s; delete the %s resource instead", obj.GetName(), owner, owner)
+	}
+	return nil, nil
+}</code></pre>
+
+<p>The BATS tests at lines 139&ndash;141 and 151 still assert the old phrasing (<code>"cannot delete template ConfigMap"</code>, <code>"protected by the LimaVM controller"</code>). Codex confirmed by running the tests: tests 13 and 14 fail. <code>git blame</code> confirms these lines predate the PR (commit <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/14d79c9f"><code>14d79c9f</code></a>) and were not updated.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/54602eab086c0390498d9b3a603cf0471f4e5b5b/bats/tests/33-lima-controllers/limavm-lifecycle.bats#L136-L156">bats/tests/33-lima-controllers/limavm-lifecycle.bats</a></div>
+<pre data-start="136" data-line="139,140,141,151"><code class="language-bash">@test "template ConfigMap cannot be deleted independently" {
+    run -1 rdd ctl delete configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" --grace-period=0
+    assert_output --partial "Forbidden"
+    assert_output --partial "cannot delete template ConfigMap"
+    assert_output --partial "protected by the LimaVM controller"
+    assert_output --partial "delete the owning LimaVM resource instead"
+
+    # Verify the ConfigMap still exists
+    run -0 rdd ctl get configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}"
+    assert_output --partial "${TEMPLATE_NAME}"
+}
+
+@test "dry-run deletion of template ConfigMap is also rejected" {
+    run -1 rdd ctl delete configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" --dry-run=server
+    assert_output --partial "Forbidden"
+    assert_output --partial "cannot delete template ConfigMap"
+
+    # Verify the ConfigMap still exists
+    run -0 rdd ctl get configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}"
+    assert_output --partial "${TEMPLATE_NAME}"
+}</code></pre>
+
+<p><span class="fix-label">Fix:</span> update the BATS assertions to match the new error format. For example: <code>assert_output --partial "owned by LimaVM"</code> and <code>assert_output --partial "delete the LimaVM resource instead"</code>.</p>
+</div>
+
+<h3 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&para;</a></h3>
+
+<div class="card card-important">
+<div class="finding-title" id="important-1">
+  <span class="finding-num">1.</span> Documentation example diverges from actual error format <span class="pill pill-claude">Claude</span>
+  <a href="#important-1" class="pilcrow">&para;</a>
+</div>
+
+<p>The example at line 52 includes the resource Kind (<code>LimaVM</code>) before the name, but <code>OwnedDeletionGuard.ValidateDelete</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/54602eab086c0390498d9b3a603cf0471f4e5b5b/pkg/controllers/base/webhook.go#L55">webhook.go:55</a> uses only <code>obj.GetName()</code> &mdash; producing <code>cannot delete "rd"</code>, not <code>cannot delete LimaVM 'rd'</code>. This misleads readers about the actual error format.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/54602eab086c0390498d9b3a603cf0471f4e5b5b/docs/design/controllers.md#L49-L57">docs/design/controllers.md</a></div>
+<pre data-start="49" data-line="52"><code class="language-markdown">Any resource type that may carry an owned finalizer **must** have a validating webhook with a `ValidateDelete` handler that rejects DELETE requests while the finalizer is present. The owned finalizer and the webhook work together as a single access-control mechanism:
+
+1. The owner creates the child with `OwnedFinalizerFor("OwnerKind")` in its finalizers.
+2. The webhook calls `OwnedFinalizerOwner` on DELETE and rejects the request with a clear error (e.g., *"cannot delete LimaVM 'rd': owned by App; delete the App resource instead"*).
+3. When the owner wants to delete the child, it calls `RemoveOwnedFinalizer` first. The next DELETE passes the webhook because the finalizer is gone.
+
+Without the webhook, a DELETE request is accepted by the API server and the resource enters Terminating — but the finalizer prevents actual deletion, leaving a stuck resource with no explanation. The webhook prevents this by rejecting the DELETE outright.
+
+For an example, see `ConfigMapValidator.ValidateDelete` in the LimaVM controller, which protects template ConfigMaps owned by LimaVM resources.</code></pre>
+
+<p><span class="fix-label">Fix:</span> change the example to <code>"cannot delete 'rd': owned by App; delete the App resource instead"</code>.</p>
+</div>
+
+<div class="card card-important">
+<div class="finding-title" id="important-2">
+  <span class="finding-num">2.</span> No unit tests for <code>OwnedFinalizerOwner</code> or <code>OwnedDeletionGuard.ValidateDelete</code> <span class="pill pill-claude">Claude</span>
+  <a href="#important-2" class="pilcrow">&para;</a>
+</div>
+
+<p>The PR introduces <code>OwnedFinalizerFor</code>, <code>OwnedFinalizerOwner</code>, <code>removeOwnedFinalizers</code>, and <code>OwnedDeletionGuard.ValidateDelete</code>. The existing <code>TestDeleteOwnedResources</code> covers <code>removeOwnedFinalizers</code> indirectly, and <code>OwnedFinalizerFor</code> is exercised through test setup at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/54602eab086c0390498d9b3a603cf0471f4e5b5b/pkg/controllers/base/finalizer_test.go#L72">finalizer_test.go:72</a>. Two functions lack direct tests:</p>
+<ul>
+<li><code>OwnedFinalizerOwner</code> &mdash; the reverse parse, especially edge cases: no finalizer, multiple owned finalizers.</li>
+<li><code>OwnedDeletionGuard.ValidateDelete</code> &mdash; that it rejects when an owned finalizer is present and allows when absent. The webhook rejection logic is the behavioral core of this PR.</li>
+</ul>
+
+<p><span class="fix-label">Fix:</span> add unit tests for both functions.</p>
+</div>
+
+<h3 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&para;</a></h3>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-1">
+  <span class="finding-num">1.</span> Stale <code>/owned</code> reference in <code>DeleteOwnedResources</code> docs <span class="pill pill-claude">Claude</span>
+  <a href="#suggestion-1" class="pilcrow">&para;</a>
+</div>
+
+<p>This text still says "strips their <code>/owned</code> finalizer" but the code now strips all <code>owned-by-*</code> finalizers via <code>removeOwnedFinalizers</code>. Since the PR updated surrounding documentation in the same section, this stale reference could have been caught.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/54602eab086c0390498d9b3a603cf0471f4e5b5b/docs/design/controllers.md#L63-L67">docs/design/controllers.md</a></div>
+<pre data-start="63" data-line="65"><code class="language-markdown">## DeleteOwnedResources
+
+`DeleteOwnedResources` finds all resources owned by a given object (via owner references), strips their `/owned` finalizer, and deletes them. It uses dynamic resource discovery to find all namespaced resource types without a hardcoded list.
+
+For cluster-scoped owners, the resource must implement `ResourceNamespace` to specify which namespace contains its children.</code></pre>
+
+<p><span class="fix-label">Fix:</span> change to "strips their <code>owned-by-*</code> finalizers."</p>
+</div>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-2">
+  <span class="finding-num">2.</span> DryRun logging dropped from <code>ValidateDelete</code> <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span>
+  <a href="#suggestion-2" class="pilcrow">&para;</a>
+</div>
+
+<p>The old <code>ConfigMapValidator.ValidateDelete</code> logged at V(1) during dry-run requests. The generic <code>OwnedDeletionGuard.ValidateDelete</code> ignores context entirely. The create/update paths still log dry-run via <code>validateTemplateConfigMap</code> at line 276, but the delete path no longer does. Low priority since it is V(1) debug logging.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/54602eab086c0390498d9b3a603cf0471f4e5b5b/pkg/controllers/lima/limavm/controller.go#L274-L280">pkg/controllers/lima/limavm/controller.go</a></div>
+<pre data-start="274" data-line="276,277"><code class="language-go">// validateTemplateConfigMap validates the template data in a ConfigMap.
+func (v *ConfigMapValidator) validateTemplateConfigMap(ctx context.Context, configMap *corev1.ConfigMap) (ctrlwebhookadmission.Warnings, error) {
+	if base.IsDryRun(ctx) {
+		klog.V(1).Infof("[DryRun] Webhook validating template ConfigMap %s/%s\n", configMap.Namespace, configMap.Name)
+	}
+	return validateTemplateData(ctx, configMap.Data)
+}</code></pre>
+
+<p><span class="fix-label">Fix:</span> accept context and add the dry-run log, for consistency with other webhook handlers.</p>
+</div>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-3">
+  <span class="finding-num">3.</span> <code>removeOwnedFinalizers</code> strips all owners indiscriminately <span class="pill pill-gemini">Gemini</span>
+  <a href="#suggestion-3" class="pilcrow">&para;</a>
+</div>
+
+<p>By encoding the owner Kind in the finalizer name, this PR enables multiple controllers to maintain independent cascade protections. But <code>removeOwnedFinalizers</code> (called at line 168) strips all <code>owned-by-*</code> finalizers regardless of which owner triggered cleanup. If a resource ever has multiple owners, deleting one owner strips all ownership finalizers.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/54602eab086c0390498d9b3a603cf0471f4e5b5b/pkg/controllers/base/finalizer.go#L165-L182">pkg/controllers/base/finalizer.go</a></div>
+<pre data-start="165" data-line="168"><code class="language-go">			// Strip owned finalizers to unblock deletion. The cleanup finalizer (if any)
+			// remains so the child's own controller can still run its cleanup logic.
+			patch := client.MergeFrom(item.DeepCopy())
+			if removeOwnedFinalizers(&item) {
+				// Use Patch instead of Update for PartialObjectMetadata
+				if err := c.Patch(ctx, &item, patch); err != nil {
+					itemLogger := logger.V(1).WithValues("namespace", item.GetNamespace(), "name", item.GetName(), "gvk", gvk.String())
+					if apierrors.IsNotFound(err) {
+						itemLogger.Info("Resource already deleted during finalizer removal")
+						continue
+					}
+					// For other errors, log and collect error but proceed with deletion attempt
+					// The deletion might still succeed if there are no other blocking finalizers
+					itemLogger.Info("Failed to remove finalizer, will attempt deletion anyway", "error", err)
+					errs = append(errs, fmt.Errorf("failed to remove finalizers from %s %s/%s: %w", gvk, item.GetNamespace(), item.GetName(), err))
+				}
+			}
+			if err := c.Delete(ctx, &item); err != nil && client.IgnoreNotFound(err) != nil {</code></pre>
+
+<p>In RDD&rsquo;s single-user embedded apiserver, multi-owner scenarios are unlikely, so this is a design note rather than a must-fix.</p>
+
+<p><span class="fix-label">Fix:</span> if multi-owner support becomes necessary, pass the owner Kind to <code>DeleteOwnedResources</code> and strip only the matching finalizer.</p>
+</div>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-4">
+  <span class="finding-num">4.</span> ObjectSelector bypass via label removal <span class="pill pill-codex">Codex</span>
+  <a href="#suggestion-4" class="pilcrow">&para;</a>
+</div>
+
+<p>The validating webhook fires only for ConfigMaps with <code>TemplateConfigMapLabel</code>. A user who removes this label (via <code>kubectl patch</code>) and then deletes the ConfigMap bypasses the webhook entirely, leaving a stuck Terminating resource &mdash; exactly the failure mode the webhook exists to prevent.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/54602eab086c0390498d9b3a603cf0471f4e5b5b/pkg/controllers/lima/limavm/controller.go#L129-L144">pkg/controllers/lima/limavm/controller.go</a></div>
+<pre data-start="129" data-line="134,135,136,137"><code class="language-go">	// Set up ConfigMap webhook for template ConfigMaps
+	configMapWebhookConfig := base.WebhookConfig[*corev1.ConfigMap]{
+		Name:        configMapValidatorConfigName,
+		WebhookName: configMapValidatorWebhookName,
+		WebhookPort: c.webhookPort,
+		ObjectSelector: metav1apply.LabelSelector().
+			WithMatchLabels(map[string]string{
+				controllers.TemplateConfigMapLabel: "true",
+			}),
+		Operations: []admissionregistrationv1.OperationType{
+			admissionregistrationv1.Create,
+			admissionregistrationv1.Update,
+			admissionregistrationv1.Delete,
+		},
+		Validator: &ConfigMapValidator{Client: mgr.GetClient()},
+	}</code></pre>
+
+<p>In RDD&rsquo;s single-user context this requires a deliberate two-step bypass, reducing practical risk. Broadening the webhook to match all ConfigMaps would add overhead for every ConfigMap operation in the namespace.</p>
+
+<p><span class="fix-label">Fix:</span> if this becomes a concern, either (a) reject label removal in <code>ValidateUpdate</code> when an owned finalizer is present, or (b) register the webhook for all ConfigMaps and return early for non-template ones.</p>
+</div>
+
+<hr>
+
+<h2 id="design-observations">Design Observations <a href="#design-observations" class="pilcrow">&para;</a></h2>
+
+<h3 id="design-strengths" class="section-design">Strengths <a href="#design-strengths" class="pilcrow">&para;</a></h3>
+
+<div class="card card-design">
+<p><strong>Clean generics usage:</strong> <code>OwnedDeletionGuard[T]</code> eliminates per-resource boilerplate for delete validation. Embedding it in <code>ConfigMapValidator</code> (line 261) inherits <code>ValidateDelete</code> while allowing the struct to override <code>ValidateCreate</code>/<code>ValidateUpdate</code>. <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span></p>
+</div>
+
+<div class="card card-design">
+<p><strong>Self-documenting finalizers:</strong> The <code>owned-by-&lt;Kind&gt;</code> naming scheme lets <code>kubectl get</code> immediately show which controller owns a resource and what to delete, without tracing owner references. <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span></p>
+</div>
+
+<div class="card card-design">
+<p><strong>Forward-compatible cleanup:</strong> Switching <code>DeleteOwnedResources</code> from a single hard-coded finalizer to prefix-based <code>removeOwnedFinalizers</code> ensures cleanup works regardless of which owner Kind set the finalizer. <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span></p>
+</div>
+
+<hr>
+
+<h2 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&para;</a></h2>
+
+<div class="card card-neutral">
+<ol>
+<li><strong>BATS assertions broken</strong> (highest risk): tests 13 and 14 in <code>limavm-lifecycle.bats</code> fail because the assertions reference the old error message format.</li>
+<li><strong><code>OwnedDeletionGuard.ValidateDelete</code> has no unit test</strong>: the webhook rejection logic &mdash; the behavioral core of this PR &mdash; is tested only indirectly through BATS integration tests.</li>
+<li><strong><code>OwnedFinalizerOwner</code> edge cases untested</strong>: no owned finalizer, multiple owned finalizers.</li>
+<li><strong>Multiple <code>owned-by-*</code> finalizers not tested</strong>: <code>TestDeleteOwnedResources</code> covers the single-owner case; no test verifies behavior with mixed owners.</li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&para;</a></h2>
+
+<div class="card card-neutral">
+<p>The new &ldquo;Validating Webhook Requirement&rdquo; section in <code>controllers.md</code> explains the finalizer-webhook contract clearly. Two issues: the example error message at line 52 does not match the code&rsquo;s actual format, and the <code>DeleteOwnedResources</code> description at line 65 still references the old <code>/owned</code> finalizer name.</p>
+</div>
+
+<hr>
+
+<h2 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&para;</a></h2>
+
+<div class="card card-neutral">
+<p>Clean. The two commits represent distinct concepts: <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/54602ea"><code>54602ea</code></a> makes the code change (encode Kind in finalizer, refactor webhook), and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/eb0d203"><code>eb0d203</code></a> adds the documentation. No fixup commits.</p>
+</div>
+
+<hr>
+
+<h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&para;</a></h2>
+
+<h3 id="retro-claude"><span class="pill pill-claude">Claude</span> <a href="#retro-claude" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>Claude identified the documentation error message mismatch, the stale <code>/owned</code> reference, the missing unit tests, and the dry-run logging regression. Its analysis was accurate and well-supported by <code>git blame</code> verification. It missed the BATS test breakage &mdash; the most impactful finding &mdash; and did not flag the ObjectSelector bypass.</p>
+</div>
+
+<h3 id="retro-codex"><span class="pill pill-codex">Codex</span> <a href="#retro-codex" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>Codex found the critical BATS test breakage by actually running the tests, and identified the label-removal bypass. Both findings were verified and actionable. It did not flag the documentation mismatch or the stale <code>/owned</code> reference. Best signal-to-noise ratio: every finding was concrete and correct.</p>
+</div>
+
+<h3 id="retro-gemini"><span class="pill pill-gemini">Gemini</span> <a href="#retro-gemini" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>Gemini raised the <code>removeOwnedFinalizers</code> multi-owner concern and the <code>OwnedFinalizerOwner</code> single-owner limitation. Both are valid design observations, though their severity was overweighted for RDD&rsquo;s single-user context. It also caught the dry-run logging regression (shared with Claude). It missed the BATS breakage and the documentation mismatch.</p>
+</div>
+
+<h3 id="retro-summary">Summary <a href="#retro-summary" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<table class="retro-table">
+  <tr>
+    <th></th>
+    <th><span class="pill pill-claude">Claude</span></th>
+    <th><span class="pill pill-codex">Codex</span></th>
+    <th><span class="pill pill-gemini">Gemini</span></th>
+  </tr>
+  <tr><td>Duration</td><td>3:47</td><td>3:18</td><td>4:13</td></tr>
+  <tr><td>Critical</td><td>0</td><td>1</td><td>0</td></tr>
+  <tr><td>Important</td><td>2</td><td>1</td><td>1</td></tr>
+  <tr><td>Suggestion</td><td>2</td><td>0</td><td>2</td></tr>
+  <tr><td>Design observations</td><td>3</td><td>2</td><td>2</td></tr>
+  <tr><td>False positives</td><td>0</td><td>0</td><td>0</td></tr>
+  <tr><td>Unique insights</td><td>3</td><td>2</td><td>2</td></tr>
+</table>
+<p>Codex delivered the most value by finding the one must-fix regression and confirming it with a live test run. Claude provided the broadest coverage across documentation and testing gaps. Gemini contributed forward-looking design observations about multi-owner scenarios that, while theoretical for now, will become relevant if the ownership model expands. All three agents produced zero false positives.</p>
+</div>
+
+  </main>
+
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markdown.min.js"></script>
+  <script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+  </script>
+</body>
+</html>
