@@ -27,9 +27,15 @@ import (
 // DeleteOwnedResources does NOT strip this finalizer.
 const CleanupFinalizerName = "rdd.rancherdesktop.io/cleanup"
 
-// OwnedFinalizerName is the cascade-blocking finalizer. An owner controller sets it on
-// child resources so that DeleteOwnedResources can strip it to unblock deletion.
-const OwnedFinalizerName = "rdd.rancherdesktop.io/owned"
+// ownedFinalizerPrefix is the prefix for cascade-blocking finalizers. The full finalizer
+// name includes the owner's Kind so that the validating webhook can tell the user
+// which resource to delete instead (e.g., "rdd.rancherdesktop.io/owned-by-App").
+const ownedFinalizerPrefix = "rdd.rancherdesktop.io/owned-by-"
+
+// OwnedFinalizerFor returns the owned finalizer name for a given owner Kind.
+func OwnedFinalizerFor(ownerKind string) string {
+	return ownedFinalizerPrefix + ownerKind
+}
 
 // EnsureCleanupFinalizer adds the cleanup finalizer to the object if not already present.
 // Returns true if the finalizer was added and the object has been updated.
@@ -55,10 +61,16 @@ func RemoveCleanupFinalizer(ctx context.Context, c client.Client, obj client.Obj
 	return nil
 }
 
-// EnsureOwnedFinalizer adds the owned finalizer to a child object if not already present.
-// Returns true if the finalizer was added and the object has been updated.
-func EnsureOwnedFinalizer(ctx context.Context, c client.Client, obj client.Object) (bool, error) {
-	if !controllerutil.AddFinalizer(obj, OwnedFinalizerName) {
+// EnsureOwnedFinalizer adds the owned finalizer for ownerKind to a child object if not
+// already present. Returns true if the finalizer was added and the object has been updated.
+// A resource may have at most one owned finalizer; adding a second is a programming error.
+func EnsureOwnedFinalizer(ctx context.Context, c client.Client, obj client.Object, ownerKind string) (bool, error) {
+	// Belt-and-suspenders: controllerutil.SetControllerReference already rejects a second
+	// controller owner, so this should never trigger. Guard anyway for a clear error message.
+	if existing := OwnedFinalizerOwner(obj); existing != "" && existing != ownerKind {
+		return false, fmt.Errorf("cannot add owned-by-%s finalizer: already owned by %s (multi-owner not supported)", ownerKind, existing)
+	}
+	if !controllerutil.AddFinalizer(obj, OwnedFinalizerFor(ownerKind)) {
 		return false, nil
 	}
 	if err := c.Update(ctx, obj); err != nil {
@@ -67,9 +79,9 @@ func EnsureOwnedFinalizer(ctx context.Context, c client.Client, obj client.Objec
 	return true, nil
 }
 
-// RemoveOwnedFinalizer removes the owned finalizer from the object and updates it.
-func RemoveOwnedFinalizer(ctx context.Context, c client.Client, obj client.Object) error {
-	if controllerutil.RemoveFinalizer(obj, OwnedFinalizerName) {
+// RemoveOwnedFinalizer removes the owned finalizer for ownerKind from the object and updates it.
+func RemoveOwnedFinalizer(ctx context.Context, c client.Client, obj client.Object, ownerKind string) error {
+	if controllerutil.RemoveFinalizer(obj, OwnedFinalizerFor(ownerKind)) {
 		if err := c.Update(ctx, obj); err != nil {
 			return fmt.Errorf("failed to remove owned finalizer: %w", err)
 		}
@@ -156,10 +168,10 @@ func DeleteOwnedResources(ctx context.Context, c client.Client, owner client.Obj
 				continue
 			}
 
-			// Strip the owned finalizer to unblock deletion. The cleanup finalizer (if any)
+			// Strip owned finalizers to unblock deletion. The cleanup finalizer (if any)
 			// remains so the child's own controller can still run its cleanup logic.
 			patch := client.MergeFrom(item.DeepCopy())
-			if controllerutil.RemoveFinalizer(&item, OwnedFinalizerName) {
+			if removeOwnedFinalizers(&item) {
 				// Use Patch instead of Update for PartialObjectMetadata
 				if err := c.Patch(ctx, &item, patch); err != nil {
 					itemLogger := logger.V(1).WithValues("namespace", item.GetNamespace(), "name", item.GetName(), "gvk", gvk.String())
@@ -242,9 +254,38 @@ func HasCleanupFinalizer(obj client.Object) bool {
 	return controllerutil.ContainsFinalizer(obj, CleanupFinalizerName)
 }
 
-// HasOwnedFinalizer checks if a resource has the owned finalizer.
+// HasOwnedFinalizer checks if a resource has any owned finalizer.
 func HasOwnedFinalizer(obj client.Object) bool {
-	return controllerutil.ContainsFinalizer(obj, OwnedFinalizerName)
+	return OwnedFinalizerOwner(obj) != ""
+}
+
+// OwnedFinalizerOwner returns the owner Kind encoded in the owned finalizer,
+// or "" if no owned finalizer is present.
+func OwnedFinalizerOwner(obj client.Object) string {
+	for _, f := range obj.GetFinalizers() {
+		if strings.HasPrefix(f, ownedFinalizerPrefix) {
+			return strings.TrimPrefix(f, ownedFinalizerPrefix)
+		}
+	}
+	return ""
+}
+
+// removeOwnedFinalizers strips all owned-by-* finalizers from obj.
+// Returns true if any were removed. Multi-owner is not supported
+// (EnsureOwnedFinalizer rejects it), so at most one will be present.
+func removeOwnedFinalizers(obj client.Object) bool {
+	finalizers := obj.GetFinalizers()
+	filtered := make([]string, 0, len(finalizers))
+	for _, f := range finalizers {
+		if !strings.HasPrefix(f, ownedFinalizerPrefix) {
+			filtered = append(filtered, f)
+		}
+	}
+	if len(filtered) == len(finalizers) {
+		return false
+	}
+	obj.SetFinalizers(filtered)
+	return true
 }
 
 // IsOwnedByUID checks if a resource is owned by an owner with the given UID.

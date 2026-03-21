@@ -36,6 +36,30 @@ func IsDryRun(ctx context.Context) bool {
 	return req.DryRun != nil && *req.DryRun
 }
 
+// OwnedDeletionGuard is a generic validating webhook that rejects DELETE requests
+// on resources with an owned finalizer. It implements admission.Validator[T] so it
+// can be used directly as the Validator in a WebhookConfig, or embedded in a
+// validator that needs additional create/update validation.
+type OwnedDeletionGuard[T client.Object] struct{}
+
+func (g *OwnedDeletionGuard[T]) ValidateCreate(_ context.Context, _ T) (admission.Warnings, error) {
+	return nil, nil
+}
+
+func (g *OwnedDeletionGuard[T]) ValidateUpdate(_ context.Context, _, _ T) (admission.Warnings, error) {
+	return nil, nil
+}
+
+func (g *OwnedDeletionGuard[T]) ValidateDelete(ctx context.Context, obj T) (admission.Warnings, error) {
+	if IsDryRun(ctx) {
+		klog.V(1).Infof("[DryRun] Webhook validating delete of %s/%s", obj.GetNamespace(), obj.GetName())
+	}
+	if owner := OwnedFinalizerOwner(obj); owner != "" {
+		return nil, fmt.Errorf("cannot delete %q: owned by %s; delete the %s resource instead", obj.GetName(), owner, owner)
+	}
+	return nil, nil
+}
+
 // GenerateWebhookPath generates the webhook path that controller-runtime uses
 // when registering a webhook for a given GroupVersionKind and webhook type.
 // This follows controller-runtime's conventions:
