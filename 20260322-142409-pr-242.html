@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260322-142409-pr-242</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block.
+ * The filename is a GitHub permalink to the displayed line range.
+ * Text color is light gray (#adbac7) for the bar, green (#7ee787)
+ * for the hyperlink — matching GitHub's dark-mode file header. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}</style>
+</head>
+<body>
+  <main>
+
+<h1>Deep Review: 20260322-142409-pr-242</h1>
+
+<table class="meta-table">
+<tr><td>Date</td><td>2026-03-22 14:24</td></tr>
+<tr><td>Author</td><td><a href="https://github.com/jandubois">@jandubois</a></td></tr>
+<tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/242" class="gh-ref" data-title="Run Lima BATS tests on Windows via MSYS2" data-state="open" data-type="pr">#242</a> &mdash; Run Lima BATS tests on Windows via MSYS2</td></tr>
+<tr><td>Branch</td><td><code>msys2-ci</code></td></tr>
+<tr><td>Commits</td><td>
+<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/99f1148"><code>99f1148</code></a> Fix Windows process signaling for Lima hostagent lifecycle<br>
+<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/db225a5"><code>db225a5</code></a> Fix stopInstanceForcibly to terminate WSL2 distro and clean up files<br>
+<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/03546e4"><code>03546e4</code></a> Enable Lima BATS tests on Windows<br>
+<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/498d0c0"><code>498d0c0</code></a> Pre-generate Lima SSH keys on Windows to avoid broken path conversion<br>
+<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/7e0e21e"><code>7e0e21e</code></a> Run Windows BATS tests via MSYS2 instead of WSL2<br>
+<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/e201440"><code>e201440</code></a> Honor RDD_LOG_LEVEL in external controllers
+</td></tr>
+<tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.6, <span class="pill pill-codex">Codex</span> GPT 5.4, <span class="pill pill-gemini">Gemini</span> 3.1 Pro</td></tr>
+<tr><td>Verdict</td><td class="verdict">Merge with fixes &mdash; two process-lifecycle issues on Windows need attention before merge</td></tr>
+<tr><td>Wall-clock time</td><td>18 min 21 s</td></tr>
+</table>
+
+<hr>
+
+<h2 id="consolidated-review">Consolidated Review <a href="#consolidated-review" class="pilcrow">&para;</a></h2>
+
+<h3 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>This PR fixes Windows process signaling by placing hostagents in their own process groups (<code>CREATE_NEW_PROCESS_GROUP</code>), adds WSL2 deadlock prevention (<code>wsl --terminate</code> before <code>--unregister</code>), pre-generates SSH keys to sidestep MSYS2 path conversion, and switches CI from WSL2-based to MSYS2-based BATS. The core design is sound: each fix targets a real Windows deficiency. Two important issues remain: <code>stopInstanceForcibly</code> can kill recycled PIDs when called on stopped instances, and <code>killHostagent</code> only kills the parent process, leaving children alive on Windows.</p>
+</div>
+
+<h3 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&para;</a></h3>
+
+<div class="card card-critical">
+<p>None.</p>
+</div>
+
+<h3 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&para;</a></h3>
+
+<div class="card card-important">
+<div class="finding-title" id="important-1"><span class="finding-num">1.</span> Stopped-instance force-stop can kill recycled PIDs on Windows (important, regression) <span class="pill pill-codex">Codex</span> <a href="#important-1" class="pilcrow">&para;</a></div>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L46-L56">pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go</a></div>
+<pre data-start="46" data-line="52,55,56"><code class="language-go">	if existingInst != nil {
+		// Always force-stop before deleting, even if the instance appears
+		// stopped. On WSL2, a "stopped" distro may retain kernel-level state
+		// that causes wsl.exe --unregister to deadlock wslservice.exe,
+		// bricking all subsequent WSL commands. Running wsl --terminate
+		// first (via stopInstanceForcibly) prevents this.
+		stopInstanceForcibly(ctx, logger, existingInst)
+		// Clear stale PIDs so Lima's Delete &rarr; StopForcibly does not kill
+		// unrelated processes if the PIDs were recycled (likely on Windows).
+		existingInst.DriverPID = 0
+		existingInst.HostAgentPID = 0</code></pre>
+
+<p>The <code>deleteInstance</code> path calls <code>stopInstanceForcibly</code> at line 52 before zeroing the PID fields at lines 55&ndash;56. For a stopped instance on Windows, Lima's <code>ReadPIDFile</code> returns a non-zero PID if the PID file exists and the OS recycled that PID to a new process (<code>store/instance.go:210-211</code> returns early for any running Windows process). <code>stopInstanceForcibly</code> then calls <code>process.KillTree</code> at line 598 with this recycled PID, killing an unrelated process tree. The zeroing at lines 55&ndash;56 prevents Lima's subsequent <code>Delete &rarr; StopForcibly</code> from repeating the damage but does not prevent the first kill.</p>
+
+<p>On Unix this cannot happen: <code>ReadPIDFile</code> sends signal 0 to verify ownership and removes stale PID files for dead processes. On Windows, <code>os.FindProcess</code> succeeds for any running PID regardless of ownership.</p>
+
+<p>The intent of the unconditional <code>stopInstanceForcibly</code> call is to run <code>wsl --terminate</code> before <code>--unregister</code>. PID-based killing is unnecessary for stopped instances.</p>
+
+<p><span class="fix-label">Fix:</span> Split WSL2-specific teardown from PID-based killing for stopped instances:</p>
+
+<pre><code class="language-diff">- stopInstanceForcibly(ctx, logger, existingInst)
++ if existingInst.Status == limatype.StatusRunning || existingInst.Status == limatype.StatusBroken {
++     stopInstanceForcibly(ctx, logger, existingInst)
++ } else if existingInst.VMType == limatype.WSL2 {
++     // A "stopped" WSL2 distro can retain kernel state that deadlocks
++     // wsl.exe --unregister. Terminate it without PID-based killing,
++     // since the PIDs may have been recycled on Windows.
++     wslCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
++     defer cancel()
++     distroName := "lima-" + existingInst.Name
++     _ = exec.CommandContext(wslCtx, "wsl.exe", "--terminate", distroName).Run()
++ }
+  existingInst.DriverPID = 0
+  existingInst.HostAgentPID = 0</code></pre>
+</div>
+
+<div class="card card-important">
+<div class="finding-title" id="important-2"><span class="finding-num">2.</span> <code>killHostagent</code> only terminates the parent, leaving children alive on Windows (important, regression) <span class="pill pill-gemini">Gemini</span> <a href="#important-2" class="pilcrow">&para;</a></div>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/controllers/lima/limavm/controllers/hostagent_watcher.go#L214-L223">pkg/controllers/lima/limavm/controllers/hostagent_watcher.go</a></div>
+<pre data-start="214" data-line="222"><code class="language-go">// killHostagent terminates the hostagent process via the Go process handle.
+func (r *LimaVMReconciler) killHostagent(name string) {
+	r.instanceStatesMu.RLock()
+	state, ok := r.instanceStates[name]
+	r.instanceStatesMu.RUnlock()
+	if !ok || state.cmd == nil || state.cmd.Process == nil {
+		return
+	}
+	_ = state.cmd.Process.Kill()
+}</code></pre>
+
+<p><code>Process.Kill()</code> at line 222 sends <code>TerminateProcess</code> on Windows, which kills only the parent hostagent. Child processes (SSH port forwarders) inherit the parent's stdout/stderr pipes and keep them open. The subsequent <code>forceStop()</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L529"><code>limavm_lifecycle.go:529</code></a> calls <code>process.KillTree</code> with the instance's <code>HostAgentPID</code>, but on Windows <code>taskkill /F /T /PID</code> returns exit code 128 (process not found) for the already-dead parent and does not traverse to its children. The children survive, <code>cmd.Wait()</code> blocks on the held pipes, and the reaper goroutine at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/controllers/lima/limavm/controllers/hostagent_watcher.go#L83-L92"><code>hostagent_watcher.go:83-92</code></a> leaks.</p>
+
+<p>On Unix this self-heals: <code>KillTree</code> sends <code>SIGKILL</code> to the process group (<code>kill(-pid, SIGKILL)</code>), which kills all members regardless of the leader's state.</p>
+
+<p><span class="fix-label">Fix:</span> Replace <code>Process.Kill()</code> with <code>process.KillTree</code> to kill the entire process group while the parent is still alive:</p>
+
+<pre><code class="language-diff"> func (r *LimaVMReconciler) killHostagent(name string) {
+ 	r.instanceStatesMu.RLock()
+ 	state, ok := r.instanceStates[name]
+ 	r.instanceStatesMu.RUnlock()
+ 	if !ok || state.cmd == nil || state.cmd.Process == nil {
+ 		return
+ 	}
+-	_ = state.cmd.Process.Kill()
++	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
++	defer cancel()
++	_ = process.KillTree(ctx, state.cmd.Process.Pid)
+ }</code></pre>
+</div>
+
+<div class="card card-important">
+<div class="finding-title" id="important-3"><span class="finding-num">3.</span> Disk unlock ignores failed process kills (important, gap) <span class="pill pill-codex">Codex</span> <a href="#important-3" class="pilcrow">&para;</a></div>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L594-L632">pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go</a></div>
+<pre data-start="594" data-line="604-613"><code class="language-go">func stopInstanceForcibly(ctx context.Context, logger logr.Logger, inst *limatype.Instance) {
+	allKilled := true
+	for _, pid := range []int{inst.DriverPID, inst.HostAgentPID} {
+		if pid &gt; 0 {
+			if err := process.KillTree(ctx, pid); err != nil {
+				logger.V(1).Info("Failed to kill process tree", "pid", pid, "error", err)
+				allKilled = false
+			}
+		}
+	}
+	// Unlock additional disks so they can be reused by other instances.
+	for _, d := range inst.AdditionalDisks {
+		disk, err := store.InspectDisk(d.Name)
+		if err != nil {
+			logger.V(1).Info("Disk does not exist", "disk", d.Name)
+			continue
+		}
+		if err := disk.Unlock(); err != nil {
+			logger.V(1).Info("Failed to unlock disk", "disk", d.Name, "error", err)
+		}
+	}
+	// On WSL2, terminate the distro so store.Inspect reports StatusStopped.
+	if inst.VMType == limatype.WSL2 {
+		distroName := "lima-" + inst.Name
+		// Best-effort with a timeout: wsl.exe can hang if the WSL
+		// subsystem is degraded; don't block the caller.
+		wslCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		if err := exec.CommandContext(wslCtx, "wsl.exe", "--terminate", distroName).Run(); err != nil {
+			logger.V(1).Info("Failed to terminate WSL2 distro", "distro", distroName, "error", err)
+		}
+	}
+	// Clean up PID/socket/tmp files so the next hostagent can start cleanly.
+	// Skip cleanup if any kill failed: Lima's store.Inspect derives StatusStopped
+	// from missing PID files, so removing them would mask a still-running process.
+	if !allKilled {
+		logger.Info("Skipping tmp file cleanup because process kill failed")
+		return
+	}</code></pre>
+
+<p><code>stopInstanceForcibly</code> gates PID/socket file cleanup on <code>allKilled</code> at lines 629&ndash;631 but unlocks additional disks at lines 604&ndash;613 unconditionally. If <code>KillTree</code> failed (the VM driver is still alive), another instance can now lock and attach the same disk while the original VM is still using it. The PID cleanup correctly avoids this pattern; the disk unlock should follow the same guard.</p>
+
+<p><span class="fix-label">Fix:</span></p>
+
+<pre><code class="language-diff">- // Unlock additional disks so they can be reused by other instances.
+- for _, d := range inst.AdditionalDisks {
++ if allKilled {
++     // Unlock additional disks only after the instance is confirmed gone.
++     for _, d := range inst.AdditionalDisks {</code></pre>
+</div>
+
+<h3 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&para;</a></h3>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-1"><span class="finding-num">1.</span> Cross-console <code>process.Interrupt</code> fails silently on Windows (suggestion, gap) <span class="pill pill-gemini">Gemini</span> <a href="#suggestion-1" class="pilcrow">&para;</a></div>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/service/cmd/service.go#L344-L349">pkg/service/cmd/service.go</a></div>
+<pre data-start="344" data-line="345"><code class="language-go">	// first to let the service run its shutdown path (shutdownAllHostagents).
+	if err := process.Interrupt(pid); err != nil {
+		if err := process.Kill(pid); err != nil {
+			return fmt.Errorf("failed to stop %q control plane with pid %d: %w", instance.Name(), pid, err)
+		}
+	}</code></pre>
+
+<p><code>GenerateConsoleCtrlEvent</code> delivers the signal only if the caller shares a console with the target. If invoked from a different terminal or if the daemon is detached, the call fails and the code falls back to <code>process.Kill</code> (<code>TerminateProcess</code>), which bypasses the graceful shutdown path (<code>shutdownAllHostagents</code>). Hostagents survive because they run in separate process groups, and self-heal on the next startup. A comment documenting this limitation and the self-healing behavior would prevent future confusion.</p>
+
+<p><span class="fix-label">Fix:</span> Add a comment above line 345 explaining the cross-console limitation.</p>
+</div>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-2"><span class="finding-num">2.</span> <code>KillTree</code> semantics differ between Unix and Windows (suggestion, gap) <span class="pill pill-gemini">Gemini</span> <a href="#suggestion-2" class="pilcrow">&para;</a></div>
+
+<p>On Unix, <code>KillTree</code> sends <code>SIGKILL</code> to the process group; children started with <code>SetGroup</code> (their own group) are not affected:</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/util/process/process_unix.go#L36-L44">pkg/util/process/process_unix.go</a></div>
+<pre data-start="36" data-line="40"><code class="language-go">// KillTree sends SIGKILL to the process group led by the given PID.
+// The process must have been started with SetGroup so it leads its own group.
+// Returns nil if the process group no longer exists.
+func KillTree(_ context.Context, pid int) error {
+	err := unix.Kill(-pid, unix.SIGKILL)
+	if errors.Is(err, unix.ESRCH) {
+		return nil
+	}
+	return err</code></pre>
+
+<p>On Windows, <code>taskkill /T</code> walks the parent-child tree regardless of process groups and kills all descendants:</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/util/process/process_windows.go#L63-L74">pkg/util/process/process_windows.go</a></div>
+<pre data-start="63" data-line="67"><code class="language-go">// KillTree terminates the process and all its descendants.
+// Uses taskkill with /T (tree kill) and /F (force).
+// Returns nil if the process no longer exists (taskkill exit code 128).
+func KillTree(ctx context.Context, pid int) error {
+	err := exec.CommandContext(ctx, "taskkill", "/F", "/T", "/PID", strconv.Itoa(pid)).Run()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &amp;exitErr) &amp;&amp; exitErr.ExitCode() == 128 {
+			return nil
+		}
+	}
+	return err</code></pre>
+
+<p>This difference is harmless in the current codebase because <code>shutdownAllHostagents</code> calls <code>KillTree</code> directly on each hostagent's PID, but the abstraction leak should be documented on the <code>KillTree</code> function.</p>
+</div>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-3"><span class="finding-num">3.</span> <code>ensureSSHKeysAt</code> runs <code>ssh-keygen</code> without a timeout (suggestion, regression) <span class="pill pill-claude">Claude</span> <a href="#suggestion-3" class="pilcrow">&para;</a></div>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/controllers/lima/limavm/controllers/ssh_keys.go#L47-L53">pkg/controllers/lima/limavm/controllers/ssh_keys.go</a></div>
+<pre data-start="47" data-line="47-48"><code class="language-go">	cmd := exec.CommandContext(ctx, "ssh-keygen", "-t", "ed25519", "-q", "-N", "",
+		"-C", "lima", "-f", tmpPath)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		// Clean up any partial files left by ssh-keygen.
+		_ = os.Remove(tmpPath)
+		_ = os.Remove(tmpPath + ".pub")
+		return fmt.Errorf("failed to generate SSH key: %s: %w", out, err)
+	}</code></pre>
+
+<p>The <code>ctx</code> originates from <code>context.Background()</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/controllers/lima/limavm/controllers/limavm_controller.go#L453"><code>limavm_controller.go:453</code></a>. If <code>ssh-keygen</code> hangs (e.g., a misconfigured hardware security module or MSYS2 path issue), controller setup blocks indefinitely. A 30-second timeout would bound this.</p>
+</div>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-4"><span class="finding-num">4.</span> <code>setVerbosityFromEnv</code> mapping undocumented for operators (suggestion, regression) <span class="pill pill-claude">Claude</span> <a href="#suggestion-4" class="pilcrow">&para;</a></div>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/external/main.go#L257-L278">pkg/external/main.go</a></div>
+<pre data-start="257" data-line="263-264,267-268"><code class="language-go">// setVerbosityFromEnv sets klog verbosity from RDD_LOG_LEVEL as a default.
+// Called before flag.Parse() so that an explicit -v flag on the command line
+// takes precedence.
+func setVerbosityFromEnv() {
+	level := strings.TrimSpace(os.Getenv("RDD_LOG_LEVEL"))
+	switch strings.ToLower(level) {
+	case "trace":
+		if err := flag.Set("v", "4"); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to set klog verbosity: %v\n", err)
+		}
+	case "debug":
+		if err := flag.Set("v", "2"); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to set klog verbosity: %v\n", err)
+		}
+	case "", "info":
+		// info is the default klog verbosity; nothing to change.
+	default:
+		// klog has no warn/error levels; unsupported values fall through to
+		// the default verbosity (v=0), which is equivalent to info-only.
+		fmt.Fprintf(os.Stderr, "RDD_LOG_LEVEL=%q is not supported for klog; valid values are trace, debug, info\n", level)
+	}
+}</code></pre>
+
+<p>The mapping from <code>RDD_LOG_LEVEL</code> values to klog verbosity levels (<code>trace</code>&rarr;4, <code>debug</code>&rarr;2, <code>info</code>&rarr;0) exists only in source code. Operators setting <code>RDD_LOG_LEVEL=debug</code> for the service (which uses logrus) may not realize that external controllers interpret it as klog verbosity. A brief comment in the CI workflow or the CLAUDE.md logging section would clarify this.</p>
+</div>
+
+<h3 id="design-observations" class="section-design">Design Observations <a href="#design-observations" class="pilcrow">&para;</a></h3>
+
+<div class="card card-design">
+<h3 id="design-concerns">Concerns <a href="#design-concerns" class="pilcrow">&para;</a></h3>
+
+<p><strong><code>exec.CommandContext</code> races with graceful shutdown</strong> (future) <span class="pill pill-claude">Claude</span></p>
+
+<p><code>startInstance</code> creates the hostagent command with <code>exec.CommandContext(ctx, ...)</code> where <code>ctx</code> is the reconciler context:</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L396-L400">pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go</a></div>
+<pre data-start="396" data-line="397"><code class="language-go">	// Start hostagent in background.
+	haCmd := exec.CommandContext(ctx, rddPath, args...)
+	process.SetGroup(haCmd)
+	haCmd.Stdout = haStdoutW
+	haCmd.Stderr = haStderrW</code></pre>
+
+<p>When the manager shuts down and cancels this context, Go sends <code>os.Kill</code> (SIGKILL/TerminateProcess) immediately, racing with <code>shutdownAllHostagents</code> which attempts graceful SIGINT first. If SIGKILL arrives first, the hostagent dies without running its cleanup. <code>shutdownAllHostagents</code> then sees <code>procExited</code> closed, sets <code>graceful = true</code>, and skips <code>stopInstanceForcibly</code>. The orphaned resources self-heal on the next startup via <code>killOrphanedHostagent</code>. Fix: override <code>cmd.Cancel</code> after <code>cmd.Start()</code> to use <code>process.Interrupt</code> instead of the default <code>os.Kill</code>, aligning context cancellation with the graceful shutdown design.</p>
+</div>
+
+<div class="card card-design">
+<h3 id="design-strengths">Strengths <a href="#design-strengths" class="pilcrow">&para;</a></h3>
+
+<ul>
+<li><code>stopInstanceForcibly</code> cleanly enumerates four cleanup concerns (process tree, disk locks, WSL2 distro, temp files) and correctly gates file cleanup on kill success &mdash; removing PID files for a still-running process would mask the problem from <code>store.Inspect</code>. <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span></li>
+<li>The <code>ensureSSHKeysAt</code> function handles all six combinations of partial on-disk state (both exist, private-only, public-only, neither, corrupt, stale temps) with correct crash-recovery semantics: generate to <code>.tmp</code>, rename public first, then private, with cleanup on failure at each step. <span class="pill pill-claude">Claude</span></li>
+<li>Moving hostagents into their own process group and routing graceful shutdown through <code>process.Interrupt</code> is the right fix for the console-wide <code>CTRL_BREAK_EVENT</code> problem. <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span></li>
+<li>The WSL2-specific <code>wsl --terminate</code> before <code>--unregister</code> addresses the actual deadlock source instead of hardening only the test harness. <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span></li>
+<li><code>shutdownHostagent</code> consolidates three inline shutdown sequences into a single function with explicit timeouts at every stage, bounding worst-case blocking to ~70s. <span class="pill pill-claude">Claude</span></li>
+</ul>
+</div>
+
+<h3 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>Test coverage is solid for the main paths. The SSH key generation has thorough unit tests covering all partial-state scenarios. The BATS integration tests cover the full VM lifecycle including crash recovery and orphan recovery. Untested scenarios, ranked by risk:</p>
+
+<ol>
+<li><strong>Force-stop fallback in <code>shutdownHostagent</code></strong> &mdash; acknowledged at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L518-L520"><code>limavm_lifecycle.go:518-520</code></a>. Requires a hostagent that ignores shutdown signals.</li>
+<li><strong>Windows deletion of a stopped/crashed WSL2 instance with stale PID files</strong> &mdash; the new path at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L47-L56"><code>limavm_lifecycle.go:47-56</code></a> (finding 1 above).</li>
+<li><strong>Partial-failure branch in <code>stopInstanceForcibly</code></strong> &mdash; when one <code>KillTree</code> call fails but cleanup continues (finding 3 above).</li>
+<li><strong><code>ensureSSHKeys</code> on Windows</strong> &mdash; unit tests cover <code>ensureSSHKeysAt</code>, but the platform-specific wrapper that resolves the Lima config directory requires a Windows environment.</li>
+</ol>
+</div>
+
+<h3 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>In-code rationale for the WSL2 and process-group changes is thorough. The <code>setVerbosityFromEnv</code> mapping (suggestion 4) would benefit from a note in the CI workflow or CLAUDE.md logging section.</p>
+</div>
+
+<h3 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>The six commits form a clean progression: process signaling fix &rarr; force-stop + WSL2 cleanup &rarr; Windows BATS enablement &rarr; SSH key pre-generation &rarr; CI workflow switch &rarr; log-level propagation. Each commit represents a single concept and its message accurately describes the change.</p>
+
+<p>The PR bundles five distinct concerns (process signaling, WSL2 deadlock, SSH keys, CI workflow, log-level propagation), but they are interdependent: the BATS tests cannot pass on Windows without all five fixes in place. Splitting them would create un-testable intermediate states.</p>
+</div>
+
+<h3 id="acknowledged-limitations">Acknowledged Limitations <a href="#acknowledged-limitations" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<ol>
+<li><strong>Sequential hostagent shutdown</strong> &mdash; <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/controllers/lima/limavm/controllers/limavm_controller.go#L504-L505"><code>limavm_controller.go:504-505</code></a>: <code>// TODO: Wait on all hostagents in parallel instead of sequentially; with the current loop, the total wait is N &times; gracefulShutdownTimeout in the worst case.</code> &mdash; The WSL2 termination step adds ~10s to the per-instance force-stop path. N is typically 1 (single VM per instance), so the practical impact is minor. <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span></li>
+<li><strong>Non-blocking stop</strong> &mdash; <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L442-L443"><code>limavm_lifecycle.go:442-443</code></a>: <code>// TODO: Non-blocking stop: send SIGINT and return immediately; the watcher detects the Exiting event and triggers a reconcile.</code> &mdash; Unchanged by this PR. <code>shutdownHostagent</code> blocks the reconciler during stop, consistent with the pre-existing design. <span class="pill pill-claude">Claude</span></li>
+<li><strong>Force-stop test gap</strong> &mdash; <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/e2014404da577f466258cd23a9322799a0de3210/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L518-L520"><code>limavm_lifecycle.go:518-520</code></a>: <code>// Not tested: the forceStop fallback requires a hostagent that ignores shutdown signals.</code> &mdash; Explicitly documented. The risky cleanup branches (findings 2 and 3) live in this untested path. <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&para;</a></h2>
+
+<h3 id="retro-claude">Claude Opus 4.6 <a href="#retro-claude" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p><span class="pill pill-claude">Claude</span> produced the most thorough review (10.4 KB), tracing lifecycle paths through initialization, shutdown, and restart. Its strongest unique contribution was identifying the <code>exec.CommandContext</code> race with graceful shutdown &mdash; a subtle design concern that requires understanding Go's internal <code>cmd.Cancel</code> behavior and the interaction between manager context cancellation and <code>shutdownAllHostagents</code>. <span class="pill pill-claude">Claude</span> also correctly identified the <code>ensureSSHKeysAt</code> timeout gap and the stale-PID comment suggestion.</p>
+
+<p>However, <span class="pill pill-claude">Claude</span>'s only "important" finding (test teardown on Windows) was weaker than the other agents' findings. The concern about stale PID files in <code>local_teardown_file</code> is mitigated by the <code>rm -rf</code> that removes the entire instance directory. <span class="pill pill-claude">Claude</span> did not identify the more impactful PID recycling issue in the production code (finding 1) or the <code>killHostagent</code> child-process issue (finding 2).</p>
+
+<p>Depth was excellent: <span class="pill pill-claude">Claude</span> traced through <code>store.Inspect</code>, <code>ReadPIDFile</code>, and the watcher goroutine lifecycle. No false positives.</p>
+</div>
+
+<h3 id="retro-codex">Codex GPT 5.4 <a href="#retro-codex" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p><span class="pill pill-codex">Codex</span> delivered a focused, high-signal review (5.9 KB) with two strong findings. Its PID recycling analysis (finding 1) identified the exact ordering problem: <code>stopInstanceForcibly</code> runs before the PID fields are zeroed, and the comment at lines 53&ndash;56 shows the author was aware of the risk for Lima's subsequent <code>Delete</code> call but missed the first invocation. The disk-unlock gap (finding 3) was also well-reasoned, noting that the <code>allKilled</code> guard protects PID cleanup but not disk locks.</p>
+
+<p><span class="pill pill-codex">Codex</span> did not identify the <code>killHostagent</code> child-process issue. Its review was concise but thorough within its scope. No false positives.</p>
+</div>
+
+<h3 id="retro-gemini">Gemini 3.1 Pro <a href="#retro-gemini" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p><span class="pill pill-gemini">Gemini</span> identified the <code>killHostagent</code> child-process issue (finding 2), which neither <span class="pill pill-claude">Claude</span> nor <span class="pill pill-codex">Codex</span> caught. The analysis correctly traced the Windows-specific failure: <code>TerminateProcess</code> kills only the parent, <code>taskkill /T</code> on a dead PID returns 128 without traversing children, and the watcher sub-goroutine leaks.</p>
+
+<p><span class="pill pill-gemini">Gemini</span>'s cross-console signaling and <code>KillTree</code> semantics findings were valid but less impactful (suggestions). The cross-console concern correctly identifies a limitation but the self-healing behavior makes it low-risk. One minor accuracy issue: <span class="pill pill-gemini">Gemini</span> stated <code>killHostagent</code> "leaves child processes orphaned and can leak the watcher goroutine" in the title, but the watcher goroutine does not leak (the main <code>runWatcher</code> goroutine returns after <code>events.Watch</code> completes; only the sub-goroutine doing <code>cmd.Wait</code> leaks). This distinction matters for understanding the blast radius.</p>
+
+<p>No false positives.</p>
+</div>
+
+<h3 id="retro-summary">Summary <a href="#retro-summary" class="pilcrow">&para;</a></h3>
+
+<table class="retro-table">
+<tr>
+<th>Metric</th>
+<th><span class="pill pill-claude">Claude</span> Opus 4.6</th>
+<th><span class="pill pill-codex">Codex</span> GPT 5.4</th>
+<th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th>
+</tr>
+<tr><td>Duration</td><td>11:23</td><td>5:31</td><td>5:16</td></tr>
+<tr><td>Critical</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>Important</td><td>0</td><td>2</td><td>1</td></tr>
+<tr><td>Suggestion</td><td>3</td><td>0</td><td>2</td></tr>
+<tr><td>Design observations</td><td>2</td><td>2</td><td>1</td></tr>
+<tr><td>False positives</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>Unique insights</td><td>2</td><td>1</td><td>1</td></tr>
+</table>
+
+<div class="card card-neutral">
+<p>All three agents contributed unique, non-overlapping insights. <span class="pill pill-codex">Codex</span> delivered the highest-impact findings (PID recycling, disk unlock) with the best signal-to-noise ratio. <span class="pill pill-gemini">Gemini</span> caught the one Windows-specific process-tree issue the others missed. <span class="pill pill-claude">Claude</span> provided the deepest architectural analysis but spent its effort on lower-severity findings. The multi-agent approach justified itself: no single agent caught all three important issues.</p>
+</div>
+
+<hr>
+
+<h2 id="improvement-recommendations">Improvement Recommendations <a href="#improvement-recommendations" class="pilcrow">&para;</a></h2>
+
+<h3 id="repo-context-updates">Repo context updates <a href="#repo-context-updates" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<ol>
+<li><strong>Windows <code>taskkill /T</code> does not traverse children of dead parents</strong> &mdash; When reviewing process lifecycle code on Windows, verify that <code>KillTree</code> / <code>taskkill /F /T</code> is called while the parent process is still alive. If the parent has already been killed (e.g., via <code>Process.Kill()</code> or <code>TerminateProcess</code>), <code>taskkill /T</code> returns exit code 128 without killing children. This differs from Unix where <code>kill(-pgid, SIGKILL)</code> kills all process group members regardless of the leader's state.</li>
+</ol>
+</div>
+
+  </main>
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+  <script>/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+</script>
+</body>
+</html>
