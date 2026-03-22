@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260321-165509-pr-242</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block.
+ * The filename is a GitHub permalink to the displayed line range.
+ * Text color is light gray (#adbac7) for the bar, green (#7ee787)
+ * for the hyperlink — matching GitHub's dark-mode file header. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+  </style>
+</head>
+<body>
+  <main>
+
+<h1>Deep Review: 20260321-165509-pr-242</h1>
+
+<table class="meta-table">
+<tr><td>Date</td><td>2026-03-21 16:55</td></tr>
+<tr><td>Author</td><td><a href="https://github.com/jandubois">@jandubois</a></td></tr>
+<tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/242" class="gh-ref" data-title="Run Lima BATS tests on Windows via MSYS2" data-state="open" data-type="pr">#242</a> &mdash; Run Lima BATS tests on Windows via MSYS2</td></tr>
+<tr><td>Branch</td><td><code>msys2-ci</code></td></tr>
+<tr><td>Commits</td><td>
+  <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/76ef79d">76ef79d</a></code> Fix Windows process signaling for Lima hostagent lifecycle<br>
+  <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/d9fbdb3">d9fbdb3</a></code> Fix stopInstanceForcibly to terminate WSL2 distro and clean up files<br>
+  <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/297dac3">297dac3</a></code> Enable Lima BATS tests on Windows<br>
+  <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/c207006">c207006</a></code> Pre-generate Lima SSH keys on Windows to avoid broken path conversion<br>
+  <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/7962cc8">7962cc8</a></code> Run Windows BATS tests via MSYS2 instead of WSL2<br>
+  <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/6dea712">6dea712</a></code> Honor RDD_LOG_LEVEL in external controllers
+</td></tr>
+<tr><td>Reviewers</td><td>
+  <span class="pill pill-claude">Claude</span> Opus 4.6,
+  <span class="pill pill-codex">Codex</span> GPT 5.4,
+  <span class="pill pill-gemini">Gemini</span> 3.1 Pro
+</td></tr>
+<tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; two important issues in forced-stop and timeout escalation paths</td></tr>
+<tr><td>Wall-clock time</td><td>11 min 40 s</td></tr>
+</table>
+
+<hr>
+
+<h2 id="consolidated-review">Consolidated Review <a href="#consolidated-review" class="pilcrow">&para;</a></h2>
+
+<div class="card card-neutral">
+<h3 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&para;</a></h3>
+<p>This PR fixes Windows process signaling (isolating hostagents in their own process groups), hardens WSL2 cleanup (always terminating before unregistering to prevent <code>wslservice.exe</code> deadlocks), adds Windows-specific SSH key pre-generation, and migrates CI from WSL2-based to MSYS2-based BATS tests. The code is well-structured and the design decisions are sound. Two important issues warrant attention: unconditional PID file cleanup after failed process kills can mask a still-running instance, and the <code>StopWithWait</code> timeout fallback sends SIGTERM instead of SIGKILL on Unix.</p>
+</div>
+
+<hr>
+
+<h3 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&para;</a></h3>
+
+<div class="card card-critical">
+<p>None.</p>
+</div>
+
+<hr>
+
+<h3 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&para;</a></h3>
+
+<div class="card card-important">
+<div class="finding-title" id="important-1">
+  <span class="finding-num">1.</span> Unconditional PID file cleanup after failed process kill <span class="pill pill-codex">Codex</span> (important, regression)
+  <a href="#important-1" class="pilcrow">&para;</a>
+</div>
+
+<p><code>stopInstanceForcibly</code> logs but ignores <code>process.KillTree</code> failures at lines <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6dea712409d1dc57a06e12536e7cd5a53af7f7ad/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L588-L591">588&ndash;591</a>, then unconditionally deletes all <code>.pid</code>, <code>.sock</code>, and <code>.tmp</code> files at lines <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6dea712409d1dc57a06e12536e7cd5a53af7f7ad/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L624-L635">624&ndash;635</a>.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6dea712409d1dc57a06e12536e7cd5a53af7f7ad/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L586-L593">pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go</a></div>
+<pre data-start="586" data-line="588-591"><code class="language-go">func stopInstanceForcibly(ctx context.Context, logger logr.Logger, inst *limatype.Instance) {
+	for _, pid := range []int{inst.DriverPID, inst.HostAgentPID} {
+		if pid > 0 {
+			if err := process.KillTree(ctx, pid); err != nil {
+				logger.V(1).Info("Failed to kill process tree", "pid", pid, "error", err)
+			}
+		}
+	}</code></pre>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6dea712409d1dc57a06e12536e7cd5a53af7f7ad/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L616-L636">pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go</a></div>
+<pre data-start="616" data-line="624-635"><code class="language-go">	// Clean up PID/socket/tmp files so the next hostagent can start cleanly.
+	// Uses os.ReadDir (not filepath.Glob) because Glob treats brackets in the
+	// path as meta-characters, silently failing on paths like C:\Users\name[1].
+	entries, err := os.ReadDir(inst.Dir)
+	if err != nil {
+		logger.V(1).Info("Failed to read instance directory for cleanup", "dir", inst.Dir, "error", err)
+		return
+	}
+	for _, f := range entries {
+		for _, suffix := range filenames.TmpFileSuffixes {
+			if strings.HasSuffix(f.Name(), suffix) {
+				path := filepath.Join(inst.Dir, f.Name())
+				if err := os.Remove(path); err != nil {
+					logger.V(1).Info("Failed to remove tmp file", "path", path, "error", err)
+				} else {
+					logger.V(1).Info("Removed tmp file", "path", path)
+				}
+				break
+			}
+		}
+	}</code></pre>
+
+<p>Lima&rsquo;s <code>store.Inspect</code> derives <code>StatusStopped</code> from missing PID files (via <code>inspectStatusWithPIDFiles</code> in Lima&rsquo;s <code>pkg/store/instance.go</code>). If <code>KillTree</code> fails but PID files are removed, <code>store.Inspect</code> reports <code>StatusStopped</code> while the process is still alive.</p>
+
+<p><strong>Mitigating factors:</strong> On WSL2 (the primary target of this PR), Lima&rsquo;s WSL2 driver has its own <code>InspectStatus</code> that checks actual WSL state, bypassing the PID file fallback entirely. The VZ driver on macOS returns <code>""</code> and falls through to PID file inspection, where this bug applies. However, <code>KillTree</code> on Unix sends SIGKILL to the process group, which rarely fails for processes the controller spawned.</p>
+
+<p>The most exposed caller is <code>killOrphanedHostagent</code> (line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6dea712409d1dc57a06e12536e7cd5a53af7f7ad/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L550">550</a>), which calls <code>stopInstanceForcibly</code> and returns without further verification.</p>
+
+<p><span class="fix-label">Fix:</span> Track whether any kill failed and skip PID file cleanup on failure, so Lima continues to report the true state:</p>
+
+<pre><code class="language-diff">+	allKilled := true
+ 	for _, pid := range []int{inst.DriverPID, inst.HostAgentPID} {
+ 		if pid > 0 {
+ 			if err := process.KillTree(ctx, pid); err != nil {
+ 				logger.V(1).Info("Failed to kill process tree", "pid", pid, "error", err)
++				allKilled = false
+ 			}
+ 		}
+ 	}
+ 	// ...
++	if !allKilled {
++		logger.Info("Skipping tmp file cleanup because process kill failed")
++		return
++	}
+ 	entries, err := os.ReadDir(inst.Dir)</code></pre>
+</div>
+
+<div class="card card-important">
+<div class="finding-title" id="important-2">
+  <span class="finding-num">2.</span> StopWithWait timeout sends SIGTERM instead of SIGKILL on Unix <span class="pill pill-claude">Claude</span> (important, regression)
+  <a href="#important-2" class="pilcrow">&para;</a>
+</div>
+
+<p>After 60 seconds waiting for graceful shutdown, <code>StopWithWait</code> calls <code>process.Kill(pid)</code> at line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6dea712409d1dc57a06e12536e7cd5a53af7f7ad/pkg/service/cmd/service.go#L363">363</a>, which sends SIGTERM on Unix (line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6dea712409d1dc57a06e12536e7cd5a53af7f7ad/pkg/util/process/process_unix.go#L32">32</a> of <code>process_unix.go</code>). The service already received SIGINT via <code>process.Interrupt</code> at line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6dea712409d1dc57a06e12536e7cd5a53af7f7ad/pkg/service/cmd/service.go#L345">345</a>. Escalating to another catchable signal after a 60-second timeout does not force termination.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6dea712409d1dc57a06e12536e7cd5a53af7f7ad/pkg/service/cmd/service.go#L340-L372">pkg/service/cmd/service.go</a></div>
+<pre data-start="340" data-line="345,363"><code class="language-go">	pid := PID()
+	// Try graceful shutdown first. On Unix, Kill already sends SIGTERM which
+	// triggers the Go signal handler. On Windows, Kill uses TerminateProcess
+	// which bypasses all handlers, so we send Interrupt (CTRL_BREAK_EVENT)
+	// first to let the service run its shutdown path (shutdownAllHostagents).
+	if err := process.Interrupt(pid); err != nil {
+		if err := process.Kill(pid); err != nil {
+			return fmt.Errorf("failed to stop %q control plane with pid %d: %w", instance.Name(), pid, err)
+		}
+	}
+
+	if wait {
+		// Wait for the process to actually terminate. The service needs up to
+		// 30s for graceful hostagent shutdown plus overhead, so allow 60s total.
+		timeout := time.After(60 * time.Second)
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case &lt;-timeout:
+				// Graceful shutdown timed out; force-kill so we don't leave
+				// a hung service process.
+				_ = process.Kill(pid)
+				return fmt.Errorf("timed out waiting for %q control plane with pid %d to stop", instance.Name(), pid)
+			case &lt;-ticker.C:
+				if !Running() {
+					_ = os.Remove(instance.Config()) // Ignore error as file might not exist
+					return nil
+				}
+			}
+		}
+	}</code></pre>
+
+<p>On Windows this is not an issue because <code>process.Kill</code> uses <code>TerminateProcess</code>, which is unconditional. Git blame confirms <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/76ef79d">76ef79d</a></code> introduced this line (the pre-PR code had no kill-on-timeout at all).</p>
+
+<p><span class="fix-label">Fix:</span> Use <code>KillTree</code> to send SIGKILL on Unix and <code>taskkill /F /T</code> on Windows:</p>
+
+<pre><code class="language-diff"> 			case &lt;-timeout:
+ 				// Graceful shutdown timed out; force-kill so we don't leave
+ 				// a hung service process.
+-				_ = process.Kill(pid)
++				_ = process.KillTree(context.Background(), pid)</code></pre>
+</div>
+
+<hr>
+
+<h3 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&para;</a></h3>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-1">
+  <span class="finding-num">1.</span> waitForInstanceStopped aborts on any store.Inspect error <span class="pill pill-gemini">Gemini</span> (suggestion, regression)
+  <a href="#suggestion-1" class="pilcrow">&para;</a>
+</div>
+
+<p><code>waitForInstanceStopped</code> treats all <code>store.Inspect</code> errors as terminal, immediately returning <code>false</code> and triggering the forced-kill path. A transient error (e.g., the hostagent atomically rewriting a status file) causes unnecessary forced termination. In practice, <code>store.Inspect</code> errors on own instances are rare, and aborting early is conservative rather than dangerous.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6dea712409d1dc57a06e12536e7cd5a53af7f7ad/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L554-L573">pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go</a></div>
+<pre data-start="554" data-line="565-566"><code class="language-go">// waitForInstanceStopped polls store.Inspect until the instance reports
+// StatusStopped or the context is cancelled.
+func waitForInstanceStopped(ctx context.Context, name string) bool {
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case &lt;-ctx.Done():
+			return false
+		case &lt;-ticker.C:
+			inst, err := store.Inspect(ctx, name)
+			if err != nil {
+				return false
+			}
+			if inst == nil || inst.Status == limatype.StatusStopped {
+				return true
+			}
+		}
+	}
+}</code></pre>
+
+<p><span class="fix-label">Fix:</span> Continue polling on transient errors instead of aborting:</p>
+
+<pre><code class="language-diff"> 			inst, err := store.Inspect(ctx, name)
+ 			if err != nil {
+-				return false
++				continue
+ 			}</code></pre>
+</div>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-2">
+  <span class="finding-num">2.</span> forceStop closure captures parent context for store.Inspect <span class="pill pill-claude">Claude</span> (suggestion, regression)
+  <a href="#suggestion-2" class="pilcrow">&para;</a>
+</div>
+
+<p>The <code>ctx</code> in <code>shutdownHostagent</code>&rsquo;s <code>forceStop</code> closure is the reconciler context. If the context is nearing its deadline when <code>forceStop</code> runs (after a 30-second graceful timeout), <code>store.Inspect</code> at line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6dea712409d1dc57a06e12536e7cd5a53af7f7ad/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L489">489</a> fails and skips WSL2 cleanup entirely. Low risk because the reconciler context is typically long-lived and <code>shutdownAllHostagents</code> already demonstrates the correct pattern at line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6dea712409d1dc57a06e12536e7cd5a53af7f7ad/pkg/controllers/lima/limavm/controllers/limavm_controller.go#L522">522</a> (using <code>context.Background()</code>).</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6dea712409d1dc57a06e12536e7cd5a53af7f7ad/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L483-L499">pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go</a></div>
+<pre data-start="483" data-line="489"><code class="language-go">func (r *LimaVMReconciler) shutdownHostagent(ctx context.Context, name string, inst *limatype.Instance) {
+	logger := log.FromContext(ctx)
+
+	forceStop := func() {
+		if inst == nil {
+			var err error
+			inst, err = store.Inspect(ctx, name)
+			if err != nil {
+				logger.Error(err, "Failed to inspect Lima instance for forceful stop")
+				return
+			}
+			if inst == nil {
+				return
+			}
+		}
+		stopInstanceForcibly(ctx, logger, inst)
+	}</code></pre>
+
+<p><span class="fix-label">Fix:</span> Use a bounded background context for the force-stop path:</p>
+
+<pre><code class="language-diff"> 	forceStop := func() {
+ 		if inst == nil {
+ 			var err error
+-			inst, err = store.Inspect(ctx, name)
++			forceCtx, forceCancel := context.WithTimeout(context.Background(), 30*time.Second)
++			defer forceCancel()
++			inst, err = store.Inspect(forceCtx, name)</code></pre>
+</div>
+
+<hr>
+
+<h3 id="design-observations" class="section-design">Design Observations <a href="#design-observations" class="pilcrow">&para;</a></h3>
+
+<div class="card card-design">
+<h3>Strengths</h3>
+
+<ul>
+<li><strong>Process group isolation</strong> &mdash; Replacing console-wide <code>CTRL_BREAK</code> with targeted <code>CTRL_BREAK_EVENT</code> per process group eliminates the entire class of &ldquo;stopping a VM kills the RDD service&rdquo; bugs. The <code>process</code> package API (<code>SetGroup</code>, <code>Interrupt</code>, <code>Kill</code>, <code>KillTree</code>) provides clean cross-platform abstractions with minimal, correct implementations on each platform. <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span></li>
+<li><strong>WSL2 deadlock prevention</strong> &mdash; Always terminating before unregistering, wrapping <code>wsl.exe</code> calls with timeouts, and including a nuclear <code>wslservice.exe</code> kill in BATS cleanup reflects hard-won operational experience. The defensive layering means no single failure can block the test suite or the controller indefinitely. <span class="pill pill-claude">Claude</span></li>
+<li><strong>Crash-safe SSH key generation</strong> &mdash; <code>ensureSSHKeys</code> in <code>ssh_keys_windows.go</code> handles all partial-state combinations: temp file cleanup before generation, rename with public-key-first ordering, and fallback regeneration if the public key is missing. <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span></li>
+<li><strong>VM template extraction</strong> &mdash; Moving template YAML into <code>bats/helpers/vm_template.bash</code> with the <code>RDD_WSL_DISTRO</code> switch cleanly supports both finch and opensuse rootfs without duplicating templates across test files. <span class="pill pill-claude">Claude</span></li>
+</ul>
+</div>
+
+<div class="card card-design">
+<h3>Concerns</h3>
+
+<p><strong>1. Stale PID risk in shutdownHostagent after graceful timeout</strong> (future) <span class="pill pill-gemini">Gemini</span></p>
+
+<p>When <code>shutdownHostagent</code> waits 30 seconds for graceful exit and then calls <code>forceStop()</code>, the <code>inst</code> object passed at function entry may be stale. If the hostagent exited moments before the timeout, the PID could theoretically be recycled and <code>KillTree</code> would target an unrelated process. The practical window is milliseconds (between hostagent exit near the timeout boundary and the <code>KillTree</code> call), and SIGKILL/<code>taskkill</code> rarely fails for own child processes, so the risk is very low. A fresh <code>store.Inspect</code> inside <code>forceStop</code> would close this window but adds a <code>store</code> dependency to what is currently a pure cleanup function.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6dea712409d1dc57a06e12536e7cd5a53af7f7ad/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L510-L523">pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go</a></div>
+<pre data-start="510" data-line="513-517"><code class="language-go">	if r.signalHostagent(name) {
+		stopCtx, cancel := context.WithTimeout(ctx, gracefulShutdownTimeout)
+		defer cancel()
+		if !r.waitForProcessExit(stopCtx, name) {
+			logger.Info("Hostagent did not exit gracefully, forcing stop")
+			forceStop()
+			waitAfterKill()
+		}
+	} else {
+		logger.Info("Could not signal hostagent, killing process directly")
+		r.killHostagent(name)
+		forceStop()
+		waitAfterKill()
+	}</code></pre>
+
+<p><em>Originally rated CRITICAL by Gemini; downgraded after verification that <code>handleDeletion</code> fetches a fresh instance at line 42 and <code>shutdownHostagent</code>&rsquo;s staleness window is milliseconds-small.</em></p>
+</div>
+
+<hr>
+
+<h3 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>The BATS tests adapt well to cross-platform execution with <code>assert_process_alive</code>/<code>process_kill</code> replacing Unix-only signals and <code>editor_cmd</code> handling MSYS2 path conversion.</p>
+
+<p>Untested scenarios, ranked by risk:</p>
+<ol>
+<li><strong>Failed KillTree followed by PID file cleanup</strong> &mdash; No test exercises the path where <code>process.KillTree</code> fails but <code>stopInstanceForcibly</code> still removes PID files, creating a false <code>StatusStopped</code>. This is the highest-risk untested path.</li>
+<li><strong>StopWithWait timeout escalation on Unix</strong> &mdash; No test covers the 60-second timeout path in <code>StopWithWait</code> that now sends SIGTERM instead of SIGKILL.</li>
+<li><strong>Concurrent <code>ensureSSHKeys</code> calls</strong> &mdash; Two controller processes calling <code>ensureSSHKeys</code> simultaneously could race on the temp file path. Low risk given the single-instance deployment model.</li>
+</ol>
+</div>
+
+<hr>
+
+<h3 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>Code comments are thorough throughout. The Windows signal model, WSL2 deadlock rationale, and MSYS2 path conversion workarounds are all well-documented. The PR description provides clear context for each commit. No documentation gaps.</p>
+</div>
+
+<hr>
+
+<h3 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>The six commits form a clean progression:</p>
+<ol>
+<li><code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/76ef79d">76ef79d</a></code> &mdash; Core Windows process signaling fix</li>
+<li><code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/d9fbdb3">d9fbdb3</a></code> &mdash; WSL2 cleanup hardening (builds on #1)</li>
+<li><code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/297dac3">297dac3</a></code> &mdash; Enable Lima BATS on Windows (test infra)</li>
+<li><code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/c207006">c207006</a></code> &mdash; SSH key pre-generation (MSYS2 path workaround)</li>
+<li><code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/7962cc8">7962cc8</a></code> &mdash; CI: MSYS2 instead of WSL2</li>
+<li><code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/6dea712">6dea712</a></code> &mdash; Log level propagation (independent improvement)</li>
+</ol>
+<p>Each commit is self-contained and the messages accurately describe the changes. No fixup commits.</p>
+</div>
+
+<hr>
+
+<h3 id="acknowledged-limitations">Acknowledged Limitations <a href="#acknowledged-limitations" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<ul>
+<li><code>limavm_controller.go:504</code>: <em>&ldquo;TODO: Wait on all hostagents in parallel instead of sequentially; with the current loop, the total wait is N &times; gracefulShutdownTimeout in the worst case.&rdquo;</em> &mdash; Pre-existing. This PR does not worsen it.</li>
+<li><code>limavm_lifecycle.go:442</code>: <em>&ldquo;TODO: Non-blocking stop: send SIGINT and return immediately; the watcher detects the Exiting event and triggers a reconcile.&rdquo;</em> &mdash; Pre-existing. This PR improves the stop mechanics but keeps the reconciler blocked on shutdown completion.</li>
+</ul>
+</div>
+
+<hr>
+
+<h3 id="unresolved-feedback">Unresolved Feedback <a href="#unresolved-feedback" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>No review comments on this PR.</p>
+</div>
+
+<hr>
+
+<h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&para;</a></h2>
+
+<div class="card card-neutral">
+<h3 id="retro-claude"><span class="pill pill-claude">Claude</span> Opus 4.6 <a href="#retro-claude" class="pilcrow">&para;</a></h3>
+
+<p><strong>Duration:</strong> 3 min 37 s</p>
+
+<p>Claude produced the most findings (3) and was the only agent to identify the <code>StopWithWait</code> timeout escalation issue and the <code>forceStop</code> context concern. Its analysis was methodical: it traced through callers, verified findings with git blame, and correctly confirmed that the <code>defer cancel()</code> in <code>stopInstanceForcibly</code> is not a bug. One finding (#3 in the original) was purely confirmatory analysis rather than an actionable issue. No false positives.</p>
+
+<p>Claude identified five design strengths with specific code references and clear reasoning. Its testing assessment was accurate, including correctly dismissing the PID recycling concern in <code>waitForProcessExit</code> after tracing the implementation.</p>
+</div>
+
+<div class="card card-neutral">
+<h3 id="retro-codex"><span class="pill pill-codex">Codex</span> GPT 5.4 <a href="#retro-codex" class="pilcrow">&para;</a></h3>
+
+<p><strong>Duration:</strong> 4 min 22 s</p>
+
+<p>Codex produced a single finding but it was the most impactful: unconditional PID file cleanup masking failed kills. The analysis was precise &mdash; it traced through Lima&rsquo;s <code>store.Inspect</code> &rarr; <code>inspectStatusWithPIDFiles</code> to demonstrate that missing PID files cause false <code>StatusStopped</code> reports. The suggested fix (conditional cleanup on verified process termination) is concrete and actionable.</p>
+
+<p>The review was lean &mdash; one finding, two design strengths, three testing gaps. No false positives. The signal-to-noise ratio was excellent.</p>
+</div>
+
+<div class="card card-neutral">
+<h3 id="retro-gemini"><span class="pill pill-gemini">Gemini</span> 3.1 Pro <a href="#retro-gemini" class="pilcrow">&para;</a></h3>
+
+<p><strong>Duration:</strong> 4 min 58 s</p>
+
+<p>Gemini&rsquo;s CRITICAL finding (stale PID recycling killing unrelated processes) was overblown. The claimed scenario in <code>handleDeletion</code> is incorrect: the function fetches a fresh instance via <code>store.Inspect</code> at line 42, immediately before calling <code>stopInstanceForcibly</code> at line 52. The broader PID recycling concern in <code>shutdownHostagent</code> is theoretically valid but requires SIGKILL failure combined with exact PID recycling within milliseconds &mdash; a scenario unlikely enough to warrant IMPORTANT at most. The suggested fix (re-fetching inside <code>stopInstanceForcibly</code> and adding a status check) would add complexity for negligible benefit and introduces a <code>store</code> dependency into a pure cleanup function.</p>
+
+<p>Gemini&rsquo;s IMPORTANT finding about <code>waitForInstanceStopped</code> aborting on transient errors is valid but overstated at IMPORTANT severity. The practical risk is low since <code>store.Inspect</code> errors on own instances are rare.</p>
+
+<p>Gemini had one false positive (the CRITICAL) and one severity inflation (the IMPORTANT). Its design strengths section was accurate.</p>
+</div>
+
+<div class="card card-neutral">
+<h3 id="retro-summary">Summary <a href="#retro-summary" class="pilcrow">&para;</a></h3>
+
+<table class="retro-table">
+<tr>
+  <th>Metric</th>
+  <th><span class="pill pill-claude">Claude</span> Opus 4.6</th>
+  <th><span class="pill pill-codex">Codex</span> GPT 5.4</th>
+  <th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th>
+</tr>
+<tr><td>Duration</td><td>3:37</td><td>4:22</td><td>4:58</td></tr>
+<tr><td>Critical</td><td>0</td><td>0</td><td>1</td></tr>
+<tr><td>Important</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><td>Suggestion</td><td>2</td><td>0</td><td>0</td></tr>
+<tr><td>Design observations</td><td>5</td><td>2</td><td>3</td></tr>
+<tr><td>False positives</td><td>0</td><td>0</td><td>1</td></tr>
+<tr><td>Unique insights</td><td>2</td><td>1</td><td>1</td></tr>
+</table>
+
+<p>Claude provided the broadest coverage with the highest signal-to-noise ratio and no false positives. Codex was the most efficient &mdash; one finding, but it was the most impactful in the review. Gemini&rsquo;s strength was probing persistent-state lifecycle paths, but its top finding was a false positive after verification. The multi-agent approach paid off: Claude&rsquo;s <code>StopWithWait</code> finding and Codex&rsquo;s PID file cleanup finding were each caught by only one agent.</p>
+</div>
+
+  </main>
+
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+  </script>
+</body>
+</html>
