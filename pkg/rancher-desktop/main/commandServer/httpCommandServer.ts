@@ -504,7 +504,6 @@ export class HttpCommandServer {
   }
 
   async factoryReset(request: express.Request, response: express.Response, _: commandContext): Promise<void> {
-    let values: Record<string, any> = {};
     const [data, payloadError] = await serverHelper.getRequestBody(request, MAX_REQUEST_BODY_LENGTH);
     let error = '';
     let keepSystemImages = false;
@@ -512,7 +511,7 @@ export class HttpCommandServer {
     if (!payloadError) {
       try {
         console.debug(`Request data: ${ data }`);
-        values = JSON.parse(data);
+        const values: Record<string, any> = JSON.parse(data);
         if ('keepSystemImages' in values) {
           keepSystemImages = values.keepSystemImages;
         }
@@ -538,7 +537,6 @@ export class HttpCommandServer {
   }
 
   async k8sReset(request: express.Request, response: express.Response, context: commandContext): Promise<void> {
-    let values: Record<string, any> = {};
     const [data, payloadError] = await serverHelper.getRequestBody(request, MAX_REQUEST_BODY_LENGTH);
     let error = '';
     let mode: 'fast' | 'wipe' = 'fast';
@@ -546,7 +544,7 @@ export class HttpCommandServer {
     if (!payloadError) {
       try {
         console.debug(`Request data: ${ data }`);
-        values = JSON.parse(data);
+        const values: Record<string, any> = JSON.parse(data);
         if ('mode' in values && typeof values.mode === 'string' && (values.mode === 'fast' || values.mode === 'wipe')) {
           mode = values.mode;
         }
@@ -568,7 +566,6 @@ export class HttpCommandServer {
   }
 
   protected async createPortForwarding(request: express.Request, response: express.Response, _: commandContext): Promise<void> {
-    let values: Record<string, any> = {};
     const [data, payloadError] = await serverHelper.getRequestBody(request, MAX_REQUEST_BODY_LENGTH);
     let error = '';
     let namespace = '';
@@ -579,7 +576,7 @@ export class HttpCommandServer {
     if (!payloadError) {
       try {
         console.debug(`Request data: ${ data }`);
-        values = JSON.parse(data);
+        const values: Record<string, any> = JSON.parse(data);
         if ('namespace' in values && 'service' in values && 'k8sPort' in values && 'hostPort' in values) {
           namespace = values.namespace;
 

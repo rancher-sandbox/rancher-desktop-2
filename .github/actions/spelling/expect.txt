@@ -237,6 +237,7 @@ googlegke
 googleoauth
 gopacket
 GOTOOLCHAIN
+GOWORK
 govet
 gpu
 gtk
@@ -641,6 +642,7 @@ tmutil
 toggleable
 togglefullscreen
 tonistiigi
+toolsets
 topmenu
 TQF
 traefik
