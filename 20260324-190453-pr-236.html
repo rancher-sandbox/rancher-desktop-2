@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deep Review: 20260324-190453-pr-236</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+.fix-label { font-weight: 700; }
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+.verdict { font-weight: 700; }
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+</style>
+</head>
+<body>
+<main>
+
+<h1>Deep Review: 20260324-190453-pr-236</h1>
+
+<table class="meta-table">
+<tr><td>Date</td><td>2026-03-24 19:04</td></tr>
+<tr><td>Round</td><td>4</td></tr>
+<tr><td>Author</td><td>@Nino-K</td></tr>
+<tr><td>PR</td><td><a class="gh-ref" href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/236" data-title="Implement App controller lifecycle for LimaVM" data-state="open" data-type="pr">#236</a> &mdash; Implement App controller lifecycle for LimaVM</td></tr>
+<tr><td>Branch</td><td><code>app-controller-create-delete-limavm</code></td></tr>
+<tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/2a3c5b2">2a3c5b2</a> Implement App controller lifecycle for LimaVM<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/049a3a0">049a3a0</a> Add Bats test to App Controller</td></tr>
+<tr><td>Reviewers</td><td><span class="pill pill-claude">Claude Opus 4.6</span> <span class="pill pill-codex">Codex GPT 5.4</span> <span class="pill pill-gemini">Gemini 3.1 Pro</span></td></tr>
+<tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; wrong finalizer kind in the deletion safety-net blocks App deletion if triggered; ObservedGeneration mirroring breaks Kubernetes condition conventions</td></tr>
+<tr><td>Wall-clock time</td><td>14 min 42 s</td></tr>
+</table>
+
+<h2 id="executive-summary">Executive Summary<a class="pilcrow" href="#executive-summary">&para;</a></h2>
+
+<div class="card card-neutral">
+<p>This PR implements the App controller's core reconciliation loop: creating a LimaVM instance from an embedded template, propagating <code>spec.running</code>, mirroring VM status conditions onto the App resource, and cleaning up owned resources on deletion via a finalizer. The design is clean with a well-structured priority chain that avoids multi-mutation conflicts. Two issues need fixing: the deletion safety-net uses the wrong finalizer kind (all three agents agree), and mirrored ObservedGeneration values reference the wrong resource's generation (two agents agree).</p>
+</div>
+
+<h2 id="important" class="section-important">Important Issues<a class="pilcrow" href="#important">&para;</a></h2>
+
+<div class="card card-important">
+<div class="finding-title" id="I1"><span class="finding-num">I1.</span> Wrong finalizer kind in template ConfigMap cleanup blocks App deletion<a class="pilcrow" href="#I1">&para;</a>
+<br><span class="pill pill-claude">Claude</span><span class="pill pill-codex">Codex</span><span class="pill pill-gemini">Gemini</span> &mdash; regression</div>
+
+<p>The deletion safety-net at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/app/app/controllers/app_controller.go#L73-L84">lines 73&ndash;84</a> fires when the LimaVM is already gone but ConfigMaps linger. The template ConfigMap's owned finalizer is <code>rdd.rancherdesktop.io/owned-by-LimaVM</code> (set by the LimaVM mutating webhook), not <code>owned-by-App</code>. <code>RemoveOwnedFinalizer</code> with <code>AppKind</code> is a no-op &mdash; <code>controllerutil.RemoveFinalizer</code> returns false because the target finalizer does not exist (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/base/finalizer.go#L84">finalizer.go:84</a>). The subsequent <code>r.Delete</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/app/app/controllers/app_controller.go#L79">line 79</a> is rejected by the <code>OwnedDeletionGuard</code> webhook because <code>owned-by-LimaVM</code> remains. The error propagates, causing infinite requeues &mdash; the App is permanently stuck in Terminating.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/app/app/controllers/app_controller.go#L73-L86">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+<pre class="language-go" data-start="73" data-line="76,79"><code>		templateCM := &amp;corev1.ConfigMap{}
+		templateCMName := limaVMName + &quot;-template&quot;
+		if cmErr := r.Get(ctx, client.ObjectKey{Name: templateCMName, Namespace: namespace}, templateCM); cmErr == nil {
+			if cmErr := base.RemoveOwnedFinalizer(ctx, r.Client, templateCM, v1alpha1.AppKind); cmErr != nil {
+				return ctrl.Result{}, fmt.Errorf(&quot;failed to remove finalizer from template ConfigMap: %w&quot;, cmErr)
+			}
+			if cmErr := r.Delete(ctx, templateCM); cmErr != nil &amp;&amp; !apierrors.IsNotFound(cmErr) {
+				return ctrl.Result{}, fmt.Errorf(&quot;failed to delete template ConfigMap during cleanup: %w&quot;, cmErr)
+			}
+		} else if !apierrors.IsNotFound(cmErr) {
+			log.Error(cmErr, &quot;Failed to fetch template ConfigMap during cleanup&quot;)
+		}
+
+		return ctrl.Result{}, base.RemoveCleanupFinalizer(ctx, r.Client, &amp;app)</code></pre>
+
+<p>In normal operation this safety-net is unreachable: the LimaVM controller's <code>handleDeletion</code> calls <code>DeleteOwnedResources</code> to strip owned finalizers and delete the template CM before removing the LimaVM's cleanup finalizer. The path fires only if the LimaVM is removed abnormally (e.g., someone manually strips its finalizers).</p>
+
+<p><span class="fix-label">Fix:</span></p>
+<pre class="language-diff"><code>-			if cmErr := base.RemoveOwnedFinalizer(ctx, r.Client, templateCM, v1alpha1.AppKind); cmErr != nil {
++			if cmErr := base.RemoveOwnedFinalizer(ctx, r.Client, templateCM, limav1alpha1.LimaVMKind); cmErr != nil {</code></pre>
+</div>
+
+<div class="card card-important">
+<div class="finding-title" id="I2"><span class="finding-num">I2.</span> Mirrored ObservedGeneration references wrong resource<a class="pilcrow" href="#I2">&para;</a>
+<br><span class="pill pill-claude">Claude</span><span class="pill pill-gemini">Gemini</span> &mdash; regression</div>
+
+<p><code>cond.ObservedGeneration</code> reflects the LimaVM's <code>metadata.generation</code>. When set on the App's condition, Kubernetes convention says it should reflect <code>app.metadata.generation</code> &mdash; the generation of the resource the condition is attached to. A client checking whether the App controller has processed its latest spec change would see a mismatched generation and incorrectly conclude the condition is stale.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/app/app/controllers/app_controller.go#L200-L210">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+<pre class="language-go" data-start="200" data-line="207"><code>	statusChanged := false
+	for _, cond := range limaVM.Status.Conditions {
+		statusChanged = apimeta.SetStatusCondition(&amp;app.Status.Conditions, metav1.Condition{
+			Type:               cond.Type,
+			Status:             cond.Status,
+			Reason:             cond.Reason,
+			Message:            base.TruncateConditionMessage(cond.Message),
+			ObservedGeneration: cond.ObservedGeneration,
+			LastTransitionTime: cond.LastTransitionTime,
+		}) || statusChanged
+	}</code></pre>
+
+<p><span class="fix-label">Fix:</span></p>
+<pre class="language-diff"><code>-			ObservedGeneration: cond.ObservedGeneration,
++			ObservedGeneration: app.Generation,</code></pre>
+</div>
+
+<h2 id="suggestions" class="section-suggestion">Suggestions<a class="pilcrow" href="#suggestions">&para;</a></h2>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="S1"><span class="finding-num">S1.</span> ConfigMap read failures swallowed during deletion can orphan resources<a class="pilcrow" href="#S1">&para;</a>
+<br><span class="pill pill-codex">Codex</span> &mdash; regression</div>
+
+<p>In the deletion path, non-NotFound errors from ConfigMap Gets at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/app/app/controllers/app_controller.go#L69-L70">lines 69&ndash;70</a> and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/app/app/controllers/app_controller.go#L82-L84">lines 82&ndash;84</a> are logged but fall through to <code>RemoveCleanupFinalizer</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/app/app/controllers/app_controller.go#L86">line 86</a>. If a transient API error prevents reading a ConfigMap, the App's cleanup finalizer is removed and the App can be deleted, potentially orphaning ConfigMaps. Since RDD has no garbage collector, orphaned resources with owned finalizers would linger permanently.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/app/app/controllers/app_controller.go#L62-L86">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+<pre class="language-go" data-start="62" data-line="69-70,82-84,86"><code>	case apierrors.IsNotFound(err):
+		// LimaVM is gone. Clean up any ConfigMaps that may have been left behind.
+		inputCM := &amp;corev1.ConfigMap{}
+		if cmErr := r.Get(ctx, client.ObjectKey{Name: inputConfigMapName, Namespace: namespace}, inputCM); cmErr == nil {
+			if cmErr := r.Delete(ctx, inputCM); cmErr != nil &amp;&amp; !apierrors.IsNotFound(cmErr) {
+				return ctrl.Result{}, fmt.Errorf(&quot;failed to delete input ConfigMap during cleanup: %w&quot;, cmErr)
+			}
+		} else if !apierrors.IsNotFound(cmErr) {
+			log.Error(cmErr, &quot;Failed to fetch input ConfigMap during cleanup&quot;)
+		}
+
+		templateCM := &amp;corev1.ConfigMap{}
+		templateCMName := limaVMName + &quot;-template&quot;
+		if cmErr := r.Get(ctx, client.ObjectKey{Name: templateCMName, Namespace: namespace}, templateCM); cmErr == nil {
+			if cmErr := base.RemoveOwnedFinalizer(ctx, r.Client, templateCM, v1alpha1.AppKind); cmErr != nil {
+				return ctrl.Result{}, fmt.Errorf(&quot;failed to remove finalizer from template ConfigMap: %w&quot;, cmErr)
+			}
+			if cmErr := r.Delete(ctx, templateCM); cmErr != nil &amp;&amp; !apierrors.IsNotFound(cmErr) {
+				return ctrl.Result{}, fmt.Errorf(&quot;failed to delete template ConfigMap during cleanup: %w&quot;, cmErr)
+			}
+		} else if !apierrors.IsNotFound(cmErr) {
+			log.Error(cmErr, &quot;Failed to fetch template ConfigMap during cleanup&quot;)
+		}
+
+		return ctrl.Result{}, base.RemoveCleanupFinalizer(ctx, r.Client, &amp;app)</code></pre>
+
+<p>In the embedded single-user kube-apiserver, transient Get errors are very rare, making the practical risk low. But the defensive fix is straightforward.</p>
+
+<p><span class="fix-label">Fix:</span> Return errors from ConfigMap Gets instead of logging and continuing, so the cleanup finalizer is not removed until both ConfigMaps are confirmed absent or successfully deleted.</p>
+</div>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="S2"><span class="finding-num">S2.</span> Stale input ConfigMap reused without validation<a class="pilcrow" href="#S2">&para;</a>
+<br><span class="pill pill-gemini">Gemini</span> &mdash; gap</div>
+
+<p>If a stale input ConfigMap exists from a previous crash (between creating the CM at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/app/app/controllers/app_controller.go#L140">line 140</a> and the LimaVM at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/app/app/controllers/app_controller.go#L162">line 162</a>), the controller reuses it without updating its <code>Data</code> to match <code>r.LimaTemplateData</code>. If the binary was updated between crashes, the LimaVM would be created from outdated template data.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/app/app/controllers/app_controller.go#L121-L143">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+<pre class="language-go" data-start="121" data-line="122-127"><code>	if apierrors.IsNotFound(limaVMErr) {
+		inputCM := &amp;corev1.ConfigMap{}
+		err := r.Get(ctx, client.ObjectKey{Name: inputConfigMapName, Namespace: namespace}, inputCM)
+		if err != nil &amp;&amp; !apierrors.IsNotFound(err) {
+			return ctrl.Result{}, err
+		}
+		if apierrors.IsNotFound(err) {
+			inputCM = &amp;corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      inputConfigMapName,
+					Namespace: namespace,
+				},
+				Data: map[string]string{
+					limav1alpha1.TemplateConfigMapKey: r.LimaTemplateData,
+				},
+			}
+			if err := ctrl.SetControllerReference(&amp;app, inputCM, r.Scheme); err != nil {
+				return ctrl.Result{}, fmt.Errorf(&quot;failed to set owner reference on input ConfigMap: %w&quot;, err)
+			}
+			if err := r.Create(ctx, inputCM); err != nil {
+				return ctrl.Result{}, fmt.Errorf(&quot;failed to create input ConfigMap: %w&quot;, err)
+			}
+		}</code></pre>
+
+<p>The practical risk is low: the window is narrow (crash between two sequential API calls), and template data is embedded so it only changes with binary updates (which restart the controller). But an explicit update-or-create pattern would eliminate the concern.</p>
+
+<p><span class="fix-label">Fix:</span> Use <code>controllerutil.CreateOrUpdate</code> or update the Data and OwnerReference when the ConfigMap already exists.</p>
+</div>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="S3"><span class="finding-num">S3.</span> Misleading docstring on ConditionMessageMaxLen<a class="pilcrow" href="#S3">&para;</a>
+<br><span class="pill pill-claude">Claude</span><span class="pill pill-gemini">Gemini</span> &mdash; regression</div>
+
+<p>The comment says 32768 is a byte limit on the whole object, but 32768 is actually the per-field character limit on the condition message (from <code>maxLength: 32768</code> in the CRD validation). The whole-object limit is 1.5 MB. The comment should reference the CRD field validation, not a whole-object byte limit.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/base/conditions.go#L12-L17">pkg/controllers/base/conditions.go</a></div>
+<pre class="language-go" data-start="12" data-line="13-14"><code>// ConditionMessageMaxLen is the maximum number of runes allowed in a Kubernetes
+// condition message. The API server enforces a 32768-byte limit on the whole
+// object; keeping messages within this bound avoids rejections from operations
+// that produce very long error strings (e.g. accumulated retry errors from
+// image downloads).
+const ConditionMessageMaxLen = 32768</code></pre>
+</div>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="S4"><span class="finding-num">S4.</span> No unit tests for TruncateConditionMessage<a class="pilcrow" href="#S4">&para;</a>
+<br><span class="pill pill-claude">Claude</span> &mdash; gap</div>
+
+<p>The new function has no unit test. A table-driven test covering empty string, under-limit, at-limit, and over-limit cases (including multi-byte runes) would prevent regressions on the boundary logic.</p>
+</div>
+
+<h2 id="design" class="section-design">Design Observations<a class="pilcrow" href="#design">&para;</a></h2>
+
+<div class="card card-design">
+<h3 id="design-concerns">Concerns<a class="pilcrow" href="#design-concerns">&para;</a></h3>
+<ol>
+<li><strong>Template ConfigMap cleanup responsibility is split across controllers</strong> (in-scope) <span class="pill pill-codex">Codex</span> &mdash; The LimaVM webhook creates the template ConfigMap with <code>owned-by-LimaVM</code>, the LimaVM controller later attaches OwnerReferences, and the App controller has a name-based fallback delete path. This split creates the wrong-finalizer bug in <a href="#I1">Finding I1</a>. A cleaner design would have the App only delete the LimaVM and leave all template ConfigMap cleanup to the LimaVM controller's finalizer.</li>
+<li><strong>Condition mirroring is add-only</strong> (future) <span class="pill pill-claude">Claude</span> &mdash; The mirroring loop at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/app/app/controllers/app_controller.go#L201-L210">lines 201&ndash;210</a> copies LimaVM conditions to the App but never removes App conditions that no longer exist on the LimaVM.</li>
+</ol>
+
+<h3 id="design-strengths">Strengths<a class="pilcrow" href="#design-strengths">&para;</a></h3>
+<ul>
+<li><strong>Explicit requeue after ConfigMap deletion</strong> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/app/app/controllers/app_controller.go#L177-L180">lines 177&ndash;180</a>) <span class="pill pill-claude">Claude</span><span class="pill pill-codex">Codex</span></li>
+<li><strong>Priority chain</strong> in the reconcile loop <span class="pill pill-claude">Claude</span></li>
+<li><strong>Input ConfigMap lifecycle</strong> <span class="pill pill-claude">Claude</span></li>
+<li><strong>CRD-level immutability</strong> for <code>spec.namespace</code> <span class="pill pill-gemini">Gemini</span></li>
+</ul>
+</div>
+
+<h2 id="testing">Testing Assessment<a class="pilcrow" href="#testing">&para;</a></h2>
+
+<div class="card card-neutral">
+<ol>
+<li>Template ConfigMap orphan during deletion</li>
+<li>App deletion immediately after creation</li>
+<li>Stale input ConfigMap from a previous crash</li>
+<li>No unit tests for App reconciler</li>
+<li>No unit tests for TruncateConditionMessage</li>
+</ol>
+</div>
+
+<h2 id="documentation">Documentation Assessment<a class="pilcrow" href="#documentation">&para;</a></h2>
+
+<div class="card card-neutral">
+<p>Code is well-commented overall. The only documentation issue is the misleading <code>ConditionMessageMaxLen</code> docstring (<a href="#S3">Suggestion 3</a>).</p>
+</div>
+
+<h2 id="limitations">Acknowledged Limitations<a class="pilcrow" href="#limitations">&para;</a></h2>
+
+<div class="card card-neutral">
+<ul>
+<li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/049a3a0723e87e72633826c4e8ad422e3026eb66/pkg/controllers/app/app/controllers/controller.go#L18">controller.go:18</a>: &ldquo;This is temporary and will be removed once the app controller is fully implemented.&rdquo;</li>
+</ul>
+</div>
+
+<hr>
+
+<h2 id="retro">Agent Performance Retro<a class="pilcrow" href="#retro">&para;</a></h2>
+
+<div class="card card-neutral">
+<h3 id="retro-claude"><span class="pill pill-claude">Claude</span><a class="pilcrow" href="#retro-claude">&para;</a></h3>
+<ul>
+<li>Most thorough review, excellent cross-controller tracing</li>
+<li>Unique: TruncateConditionMessage unit tests, add-only condition mirroring concern</li>
+<li>No false positives, 9/9 files, 0 coverage misses</li>
+</ul>
+
+<h3 id="retro-codex"><span class="pill pill-codex">Codex</span><a class="pilcrow" href="#retro-codex">&para;</a></h3>
+<ul>
+<li>Fastest (213s), most focused</li>
+<li>Unique: ConfigMap error swallowing, split-responsibility design concern</li>
+<li>Missed ObservedGeneration issue</li>
+<li>No false positives, 9/9 files, 1 coverage miss</li>
+</ul>
+
+<h3 id="retro-gemini"><span class="pill pill-gemini">Gemini</span><a class="pilcrow" href="#retro-gemini">&para;</a></h3>
+<ul>
+<li>Most findings (4), broadest set</li>
+<li>Unique: Stale input ConfigMap reuse</li>
+<li>One imprecise claim about webhook behavior</li>
+<li>9/9 files, 0 coverage misses</li>
+</ul>
+</div>
+
+<table class="retro-table">
+<thead>
+<tr>
+<th>Metric</th>
+<th><span class="pill pill-claude">Claude Opus 4.6</span></th>
+<th><span class="pill pill-codex">Codex GPT 5.4</span></th>
+<th><span class="pill pill-gemini">Gemini 3.1 Pro</span></th>
+</tr>
+</thead>
+<tbody>
+<tr><td>Duration</td><td>5:19</td><td>3:33</td><td>6:25</td></tr>
+<tr><td>Critical</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>Important</td><td>1</td><td>2</td><td>3</td></tr>
+<tr><td>Suggestion</td><td>3</td><td>0</td><td>1</td></tr>
+<tr><td>Design observations</td><td>3</td><td>2</td><td>1</td></tr>
+<tr><td>False positives</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>Unique insights</td><td>2</td><td>2</td><td>1</td></tr>
+<tr><td>Files reviewed</td><td>9</td><td>9</td><td>9</td></tr>
+<tr><td>Coverage misses</td><td>0</td><td>1</td><td>0</td></tr>
+</tbody>
+</table>
+
+<div class="card card-neutral">
+<p><span class="pill pill-claude">Claude</span> provided the deepest analysis with the most thorough cross-controller tracing. <span class="pill pill-codex">Codex</span> was the fastest and most focused, identifying the architecturally most insightful design concern (split cleanup responsibility). <span class="pill pill-gemini">Gemini</span> produced the broadest set of findings. All three agents converged on the wrong-finalizer bug &mdash; the strongest signal in this review. <span class="pill pill-claude">Claude</span> and <span class="pill pill-gemini">Gemini</span> both caught the ObservedGeneration issue that <span class="pill pill-codex">Codex</span> missed. Overall, the multi-agent approach worked well: each agent brought unique insights, and no single agent caught everything.</p>
+</div>
+
+</main>
+
+<script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-diff.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script>
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+</script>
+</body>
+</html>
