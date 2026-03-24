@@ -32,23 +32,39 @@ A resource's own controller sets this finalizer to run cleanup before deletion. 
 
 `DeleteOwnedResources` does **not** strip this finalizer. Only the resource's own controller removes it.
 
-### `rdd.rancherdesktop.io/owned` (Cascade Blocking)
+### `rdd.rancherdesktop.io/owned-by-<Kind>` (Cascade Blocking)
 
-An owner controller sets this on child resources to block their deletion until the owner explicitly releases them via `DeleteOwnedResources`.
+An owner controller sets this on child resources to block their deletion until the owner explicitly releases them. The finalizer name encodes the owner's Kind (e.g., `rdd.rancherdesktop.io/owned-by-App`), making it self-documenting and allowing the validating webhook to tell the user which resource to delete instead.
 
 | Function | Purpose |
 |----------|---------|
+| `OwnedFinalizerFor(kind)` | Return the finalizer name for a given owner Kind |
 | `EnsureOwnedFinalizer` | Add owned finalizer to a child resource |
 | `RemoveOwnedFinalizer` | Remove owned finalizer from a child resource |
-| `HasOwnedFinalizer` | Check whether the owned finalizer is present |
+| `HasOwnedFinalizer` | Check whether any owned finalizer is present |
+| `OwnedFinalizerOwner` | Return the owner Kind from the finalizer, or "" |
+
+#### Validating Webhook Requirement
+
+Any resource type that may carry an owned finalizer **must** have a validating webhook with a `ValidateDelete` handler that rejects DELETE requests while the finalizer is present. The owned finalizer and the webhook work together as a single access-control mechanism:
+
+1. The owner creates the child with `OwnedFinalizerFor("OwnerKind")` in its finalizers.
+2. The webhook calls `OwnedFinalizerOwner` on DELETE and rejects the request with a clear error (e.g., *"cannot delete 'rd': owned by App; delete the App resource instead"*).
+3. When the owner wants to delete the child, it calls `RemoveOwnedFinalizer` first. The next DELETE passes the webhook because the finalizer is gone.
+
+Without the webhook, a DELETE request is accepted by the API server and the resource enters Terminating — but the finalizer prevents actual deletion, leaving a stuck resource with no explanation. The webhook prevents this by rejecting the DELETE outright.
+
+If the webhook uses `ObjectSelector` to match a label, the validator must also reject updates that remove the label while the owned finalizer is present. Otherwise a label removal silently deactivates the webhook, and the next DELETE bypasses the guard.
+
+For an example, see `ConfigMapValidator` in the LimaVM controller, which embeds `OwnedDeletionGuard` to protect template ConfigMaps owned by LimaVM resources.
 
 ### Why Two Finalizers?
 
-A resource can need both finalizers. Consider a LimaVM owned by the App controller. The App controller sets `/owned` on the LimaVM so `DeleteOwnedResources` can release it during App deletion. The LimaVM controller sets `/cleanup` on itself to stop the VM and delete disk files before the resource disappears. With a single finalizer, `DeleteOwnedResources` would strip it, and the LimaVM would be deleted without ever running its cleanup — leaking the VM on disk.
+A resource can need both finalizers. Consider a LimaVM owned by the App controller. The App controller sets `/owned-by-App` on the LimaVM so `DeleteOwnedResources` can release it during App deletion. The LimaVM controller sets `/cleanup` on itself to stop the VM and delete disk files before the resource disappears. With a single finalizer, `DeleteOwnedResources` would strip it, and the LimaVM would be deleted without ever running its cleanup — leaking the VM on disk.
 
 ## DeleteOwnedResources
 
-`DeleteOwnedResources` finds all resources owned by a given object (via owner references), strips their `/owned` finalizer, and deletes them. It uses dynamic resource discovery to find all namespaced resource types without a hardcoded list.
+`DeleteOwnedResources` finds all resources owned by a given object (via owner references), strips their `owned-by-*` finalizers, and deletes them. It uses dynamic resource discovery to find all namespaced resource types without a hardcoded list.
 
 For cluster-scoped owners, the resource must implement `ResourceNamespace` to specify which namespace contains its children.
 

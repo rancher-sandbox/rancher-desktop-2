@@ -74,7 +74,7 @@ EOF
 
 @test "verify template ConfigMap has owned finalizer" {
     run -0 rdd ctl get configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" -o jsonpath='{.metadata.finalizers}'
-    assert_output --partial "rdd.rancherdesktop.io/owned"
+    assert_output --partial "rdd.rancherdesktop.io/owned-by-LimaVM"
 }
 
 @test "verify template ConfigMap has owner reference" {
@@ -133,12 +133,19 @@ EOF
     assert_output "${template_before}"
 }
 
+@test "template ConfigMap label removal is rejected while owned" {
+    run -1 rdd ctl patch configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" --type='merge' \
+        --patch='{"metadata":{"labels":{"lima.rancherdesktop.io/template-configmap":null}}}'
+    assert_output --partial "Forbidden"
+    assert_output --partial "cannot remove"
+    assert_output --partial "resource is owned"
+}
+
 @test "template ConfigMap cannot be deleted independently" {
     run -1 rdd ctl delete configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" --grace-period=0
     assert_output --partial "Forbidden"
-    assert_output --partial "cannot delete template ConfigMap"
-    assert_output --partial "protected by the LimaVM controller"
-    assert_output --partial "delete the owning LimaVM resource instead"
+    assert_output --partial "owned by LimaVM"
+    assert_output --partial "delete the LimaVM resource instead"
 
     # Verify the ConfigMap still exists
     run -0 rdd ctl get configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}"
@@ -148,7 +155,7 @@ EOF
 @test "dry-run deletion of template ConfigMap is also rejected" {
     run -1 rdd ctl delete configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}" --dry-run=server
     assert_output --partial "Forbidden"
-    assert_output --partial "cannot delete template ConfigMap"
+    assert_output --partial "owned by LimaVM"
 
     # Verify the ConfigMap still exists
     run -0 rdd ctl get configmap "${TEMPLATE_NAME}" --namespace "${NAMESPACE}"

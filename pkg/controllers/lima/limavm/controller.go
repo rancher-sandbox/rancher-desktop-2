@@ -208,7 +208,7 @@ func (d *defaulter) Default(ctx context.Context, limavm *v1alpha1.LimaVM) error 
 				controllers.TemplateConfigMapLabel: "true",
 			},
 			Finalizers: []string{
-				base.OwnedFinalizerName,
+				base.OwnedFinalizerFor(v1alpha1.LimaVMKind),
 			},
 		},
 		Data: map[string]string{
@@ -255,8 +255,10 @@ func (d *defaulter) fetchTemplateRefData(ctx context.Context, limavm *v1alpha1.L
 
 // ConfigMapValidator validates ConfigMap resources that are template ConfigMaps for LimaVM resources.
 // It is only invoked for ConfigMaps that have the TemplateConfigMapLabel set to "true".
+// ValidateDelete is inherited from the embedded OwnedDeletionGuard.
 type ConfigMapValidator struct {
 	Client client.Client
+	base.OwnedDeletionGuard[*corev1.ConfigMap]
 }
 
 var _ ctrlwebhookadmission.Validator[*corev1.ConfigMap] = &ConfigMapValidator{}
@@ -265,18 +267,16 @@ func (v *ConfigMapValidator) ValidateCreate(ctx context.Context, configMap *core
 	return v.validateTemplateConfigMap(ctx, configMap)
 }
 
-func (v *ConfigMapValidator) ValidateUpdate(ctx context.Context, _, newConfigMap *corev1.ConfigMap) (ctrlwebhookadmission.Warnings, error) {
+func (v *ConfigMapValidator) ValidateUpdate(ctx context.Context, oldConfigMap, newConfigMap *corev1.ConfigMap) (ctrlwebhookadmission.Warnings, error) {
+	// Reject removing the template label while an owned finalizer is present.
+	// Without the label the ObjectSelector stops routing DELETEs to this webhook,
+	// which would leave the finalizer stuck with no user-facing explanation.
+	if base.HasOwnedFinalizer(oldConfigMap) {
+		if newConfigMap.Labels[controllers.TemplateConfigMapLabel] != "true" {
+			return nil, fmt.Errorf("cannot remove %s label: resource is owned", controllers.TemplateConfigMapLabel)
+		}
+	}
 	return v.validateTemplateConfigMap(ctx, newConfigMap)
-}
-
-func (v *ConfigMapValidator) ValidateDelete(ctx context.Context, configMap *corev1.ConfigMap) (ctrlwebhookadmission.Warnings, error) {
-	if base.IsDryRun(ctx) {
-		klog.V(1).Infof("[DryRun] Webhook validating ConfigMap deletion %s/%s\n", configMap.Namespace, configMap.Name)
-	}
-	if base.HasOwnedFinalizer(configMap) {
-		return nil, fmt.Errorf("cannot delete template ConfigMap %q: it is protected by the LimaVM controller; delete the owning LimaVM resource instead", configMap.Name)
-	}
-	return nil, nil
 }
 
 // validateTemplateConfigMap validates the template data in a ConfigMap.

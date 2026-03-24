@@ -8,6 +8,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// LimaVMKind is the Kind string for LimaVM resources.
+const LimaVMKind = "LimaVM"
+
 // TemplateConfigMapKey is the key used to store the template text in the templateConfigMap.
 const TemplateConfigMapKey = "template"
 

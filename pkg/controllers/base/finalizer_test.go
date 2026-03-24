@@ -69,12 +69,12 @@ func TestDeleteOwnedResources(t *testing.T) {
 		},
 		{
 			name:          "config map with owned finalizer only",
-			finalizers:    []string{OwnedFinalizerName},
+			finalizers:    []string{OwnedFinalizerFor("ConfigMap")},
 			expectDeleted: true,
 		},
 		{
 			name:          "config map with both finalizers strips only owned",
-			finalizers:    []string{CleanupFinalizerName, OwnedFinalizerName},
+			finalizers:    []string{CleanupFinalizerName, OwnedFinalizerFor("ConfigMap")},
 			expectDeleted: false,
 		},
 	}
@@ -151,4 +151,83 @@ func TestDeleteOwnedResources(t *testing.T) {
 			assert.Check(t, cmp.ErrorIs(err, nil), "failed to get unrelated object")
 		})
 	}
+}
+
+func TestOwnedFinalizerOwner(t *testing.T) {
+	testCases := []struct {
+		name       string
+		finalizers []string
+		wantOwner  string
+	}{
+		{
+			name:      "no finalizers",
+			wantOwner: "",
+		},
+		{
+			name:       "unrelated finalizer only",
+			finalizers: []string{CleanupFinalizerName},
+			wantOwner:  "",
+		},
+		{
+			name:       "single owned finalizer",
+			finalizers: []string{OwnedFinalizerFor("App")},
+			wantOwner:  "App",
+		},
+		{
+			name:       "owned finalizer among others",
+			finalizers: []string{CleanupFinalizerName, OwnedFinalizerFor("LimaVM"), "some.other/finalizer"},
+			wantOwner:  "LimaVM",
+		},
+		{
+			name:       "multiple owned finalizers returns first",
+			finalizers: []string{OwnedFinalizerFor("App"), OwnedFinalizerFor("LimaVM")},
+			wantOwner:  "App",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			obj := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "test"}}
+			obj.SetFinalizers(tc.finalizers)
+			got := OwnedFinalizerOwner(obj)
+			assert.Equal(t, got, tc.wantOwner)
+		})
+	}
+}
+
+func TestOwnedDeletionGuardValidateDelete(t *testing.T) {
+	guard := &OwnedDeletionGuard[*corev1.ConfigMap]{}
+
+	t.Run("allows delete without owned finalizer", func(t *testing.T) {
+		obj := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "test"}}
+		warnings, err := guard.ValidateDelete(t.Context(), obj)
+		assert.NilError(t, err)
+		assert.Assert(t, warnings == nil)
+	})
+
+	t.Run("rejects delete with owned finalizer", func(t *testing.T) {
+		obj := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+			Name:       "my-config",
+			Finalizers: []string{OwnedFinalizerFor("App")},
+		}}
+		warnings, err := guard.ValidateDelete(t.Context(), obj)
+		assert.Assert(t, warnings == nil)
+		assert.ErrorContains(t, err, `cannot delete "my-config"`)
+		assert.ErrorContains(t, err, "owned by App")
+		assert.ErrorContains(t, err, "delete the App resource instead")
+	})
+
+	t.Run("no-ops for create and update", func(t *testing.T) {
+		obj := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+			Name:       "test",
+			Finalizers: []string{OwnedFinalizerFor("App")},
+		}}
+		warnings, err := guard.ValidateCreate(t.Context(), obj)
+		assert.NilError(t, err)
+		assert.Assert(t, warnings == nil)
+
+		warnings, err = guard.ValidateUpdate(t.Context(), obj, obj)
+		assert.NilError(t, err)
+		assert.Assert(t, warnings == nil)
+	})
 }
