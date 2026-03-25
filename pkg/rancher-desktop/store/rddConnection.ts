@@ -304,7 +304,7 @@ IntersectMapped<{ [K in keyof T]: ResourceWatchActionsReturn<T[K]> }> {
       watchMethodName,
       async(actionContext: ActionContext<any, MutationsType<State>>, options?: ResourceWatchActionsOptions) => {
         const { commit, state, dispatch, rootState } = actionContext;
-        const rddState: RDDConnectionState = rootState['rdd-connection'];
+        const rddState = rootState['rdd-connection'];
 
         if (!rddState.config.currentContext) {
           await dispatch('rdd-connection/fetchConfig', {}, { root: true });

@@ -4,7 +4,7 @@
 <template>
   <div>
     <div
-      v-if="state === 'READY'"
+      v-if="ready"
       ref="fullWindow"
     >
       <SortableTable
@@ -12,7 +12,7 @@
         class="imagesTable"
         data-test="imagesTableRows"
         key-field="_key"
-        default-sort-by="imageName"
+        default-sort-by="name"
         :headers="headers"
         :rows="rows"
         no-rows-key="images.sortableTables.noRows"
@@ -34,7 +34,7 @@
               <select
                 class="select-namespace"
                 :value="selectedNamespace"
-                @change="handleChangeNamespace($event)"
+                @change="handleChangeNamespace($event as any)"
               >
                 <option
                   v-for="item in imageNamespaces"
@@ -47,6 +47,20 @@
               </select>
             </div>
           </div>
+        </template>
+        <template #col:id="{ row }:{ row: RowItem }">
+          <td>
+            <span v-tooltip="{ content: row.shortId ? row.id : undefined }">
+              {{ row.shortId ?? row.id }}
+            </span>
+          </td>
+        </template>
+        <template #col:size="{ row }:{ row: RowItem }">
+          <td>
+            <span v-tooltip="{ content: row.size }">
+              {{ sizeFormatter.format(row.size) }}
+            </span>
+          </td>
         </template>
         <!-- The SortableTable component puts the Filter box goes in the #header-right slot
              Too bad, because it means we can't use a css grid to manage the relative
@@ -79,9 +93,10 @@
       </Card>
     </div>
     <div v-else>
-      <h3 v-if="state === 'IMAGE_MANAGER_UNREADY'">
+      <h3 v-if="!ready">
         {{ t('images.state.imagesUnready') }}
       </h3>
+      <!-- TODO: actually handle this correctly -->
       <h3 v-else>
         {{ t('images.state.unknown') }}
       </h3>
@@ -91,27 +106,49 @@
 
 <script lang="ts">
 import { Card, Checkbox } from '@rancher/components';
-import _ from 'lodash';
-import { PropType } from 'vue';
-import { mapMutations } from 'vuex';
+import { defineComponent, PropType } from 'vue';
 
 import ImagesOutputWindow from '@pkg/components/ImagesOutputWindow.vue';
 import SortableTable from '@pkg/components/SortableTable';
-import { mapTypedState } from '@pkg/entry/store';
-import type { IpcRendererEvents } from '@pkg/typings/electron-ipc';
+import { mapTypedActions, mapTypedMutations, mapTypedState } from '@pkg/entry/store';
 import getImageOutputCuller, { ImageOutputCuller } from '@pkg/utils/imageOutputCuller';
 import { ipcRenderer } from '@pkg/utils/ipcRenderer';
-import { parseSi } from '@pkg/utils/units';
+import { hasField } from '@pkg/utils/iterator';
 
-interface Image {
-  imageName: string;
-  tag:       string;
-  imageID:   string;
-  size:      number;
-  digest:    string;
+import type * as RDDClient from '@rdd-client';
+import type Electron from 'electron';
+
+const untaggedTag = '<none>';
+
+type Image = RDDClient.IoRancherdesktopContainersV1alpha1Image;
+/**
+ * ParsedImage represents an image with the `.status.repoTag` field parsed to
+ * its component parts.
+ */
+type ParsedImage = Image & {
+  /** The full repoTag reference; may be empty (for dangling images). */
+  reference:  string;
+  /** The name of the image, excluding the part after the `:`. */
+  name:       string;
+  /** The image registry; may be empty for `docker.io` images. */
+  registry:   string;
+  /** The image repository; may not contain a slash for `docker.io/library` images. */
+  repository: string;
+  /** The image tag, i.e. the part after the `:`. */
+  tag:        string;
+  /** The image ID, something like `sha256:abcdef...` */
+  id:         string;
+  /** Truncated image ID, for display purposes; e.g. `sha256:abc..def`. */
+  shortId?:   string;
+  /** The image size, in bytes. */
+  size:       number;
+  /** A sort key for the image. */
+  _key:       string;
 };
-
-type RowItem = Image & {
+/**
+ * RowItem represents a row in the table; this is ParsedImage plus actions.
+ */
+type RowItem = ParsedImage & {
   availableActions: {
     label:       string;
     action:      string;
@@ -126,7 +163,7 @@ type RowItem = Image & {
   scanImage:    () => void;
 };
 
-export default {
+export default defineComponent({
   components: {
     Card,
     Checkbox,
@@ -135,9 +172,14 @@ export default {
   },
   props: {
     images: {
-      type:     Array as PropType<Image[]>,
+      type:     Array as PropType<Image[] | null>,
       required: true,
     },
+    /**
+     * List of images that should be protected; the list should only contain
+     * the image name, excluding the tag; e.g.
+     * `registry.opensuse.org/opensuse/leap` (excluding `:16.0`).
+     */
     protectedImages: {
       type:    Array as PropType<string[]>,
       default: () => [],
@@ -154,11 +196,6 @@ export default {
       type:    Boolean,
       default: false,
     },
-    state: {
-      type:      String as PropType<'IMAGE_MANAGER_UNREADY' | 'READY'>,
-      default:   'IMAGE_MANAGER_UNREADY',
-      validator: (value: string) => ['IMAGE_MANAGER_UNREADY', 'READY'].includes(value),
-    },
     showAll: {
       type:    Boolean,
       default: false,
@@ -166,70 +203,98 @@ export default {
   },
 
   data() {
+    const sizeFormatter = Intl.NumberFormat(undefined, {
+      style:       'unit',
+      unit:        'byte',
+      unitDisplay: 'narrow',
+      notation:    'compact',
+    });
     return {
-      currentCommand: null as string | null,
+      currentCommand: undefined as string | undefined,
       headers:
       [
         {
-          name:  'imageName',
+          name:  'name',
           label: this.t('images.manager.table.header.imageName'),
-          sort:  ['imageName', 'tag', 'imageID'],
+          sort:  ['name', 'tag', 'id'],
         },
         {
           name:  'tag',
           label: this.t('images.manager.table.header.tag'),
-          sort:  ['tag', 'imageName', 'imageID'],
+          sort:  ['tag', 'name', 'id'],
         },
         {
-          name:  'imageID',
+          name:  'id',
           label: this.t('images.manager.table.header.imageId'),
-          sort:  ['imageID', 'imageName', 'tag'],
+          sort:  ['id', 'name', 'tag'],
         },
         {
           name:  'size',
           label: this.t('images.manager.table.header.size'),
-          sort:  ['si', 'imageName', 'tag'],
+          sort:  ['size', 'name', 'tag', 'id'],
         },
       ],
       keepImageManagerOutputWindowOpen: false,
       imageOutputCuller:                undefined as ImageOutputCuller | undefined,
       mainWindowScroll:                 -1,
       selected:                         [] as RowItem[],
-      imageToPull:                      undefined,
+      imageToPull:                      undefined as string | undefined,
+      sizeFormatter,
     };
   },
   computed: {
-    ...mapTypedState('action-menu', { menuImages: state => state.resources?.map((i: RowItem) => i.imageName) ?? [] }),
+    ...mapTypedState('action-menu', { menuImages: state => state.resources?.map((i: RowItem) => i._key) ?? [] }),
     main() {
       return document.getElementsByTagName('main')[0];
     },
-    keyedImages() {
-      return this.images
-        .map((image, index) => {
-          return {
-            ...image,
-            si:   parseSi(image.size),
-            _key: `${ index }-${ image.imageID }-${ this.imageTag(image.tag) }`,
-          };
-        });
+    parsedImages(): ParsedImage[] {
+      // For our purposes, an image reference can be split up into:
+      // registry.opensuse.org:443/opensuse/leap:15.6
+      // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^   reference
+      // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        name
+      // ^^^^^^^^^^^^^^^^^^^^^^^^^                      registry
+      //                           ^^^^^^^^^^^^^        repository
+      //                                         ^^^^   tag
+      // If an image does not have a reference (i.e. untagged), we use the image ID as the name,
+      // and '<none>' as the tag.
+      return (this.images ?? []).filter(hasField('status')).map(image => {
+        const reference = image.status.repoTag ?? '';
+        const [, name, tag] = /^(.*):([^/:]*)$/.exec(reference) ?? ['', reference || image.status.id, untaggedTag];
+        // The registry part must have at least one dot or colon (for port), because it's a host name.
+        const [, registry, repository] = /^([^/]+[.:][^/]+)\/(.*)$/.exec(name) ?? ['', '', name];
+
+        return {
+          ...image,
+          reference,
+          name,
+          registry,
+          repository,
+          tag,
+          id:      image.status.id,
+          shortId: this.shortHash(image.status.id),
+          size:    image.status.size,
+          _key:    `${ image.status.id }-${ reference }-${ image.metadata?.name }`,
+        };
+      });
     },
     filteredImages() {
       // Images with '<none>' or empty name are not allowed at the moment.
-      const filteredImages = this.keyedImages.filter(this.isNotNoneImage);
+      const filteredImages = this.parsedImages.filter(image => image.reference);
 
       if (!this.supportsShowAll || this.showAll) {
         return filteredImages;
       }
 
-      return filteredImages
-        .filter(this.isDeletable);
+      return filteredImages.filter(this.isDeletable);
     },
-    imagesToDelete() {
+    ready() {
+      return Array.isArray(this.images);
+    },
+    imagesToDelete(): RowItem[] {
       return this.selected.filter(image => this.isDeletable(image));
     },
     imageIdsToDelete() {
-      return this.imagesToDelete
-        .map(this.getTaggedImage);
+      return this.imagesToDelete.map(image => image.reference || image.id);
     },
     rows(): RowItem[] {
       return this.filteredImages
@@ -277,8 +342,10 @@ export default {
 
   watch: {
     rows: {
+      // Hide the action menu if some of the images that the menu would act upon
+      // have been updated while the menu was open.
       handler(newRows: RowItem[]) {
-        if (this.menuImages.some(name => newRows.map(r => r.imageName).includes(name))) {
+        if (this.menuImages.some(name => newRows.map(r => r._key).includes(name))) {
           this.hideMenu();
         }
       },
@@ -287,7 +354,8 @@ export default {
   },
 
   methods: {
-    ...mapMutations('action-menu', { hideMenu: 'hide' }),
+    ...mapTypedActions('container-engine', ['imageDelete', 'imagePush']),
+    ...mapTypedMutations('action-menu', { hideMenu: 'hide' }),
     updateSelection(val: RowItem[]) {
       this.selected = val;
     },
@@ -305,12 +373,12 @@ export default {
     },
     scrollToTop() {
       this.$nextTick(() => {
-        if (this.main) {
-          try {
+        try {
+          if (this.main) {
             this.main.scrollTop = this.mainWindowScroll;
-          } catch (e) {
-            console.log(`Trying to reset scroll to ${ this.mainWindowScroll }, got error:`, e);
           }
+        } catch (e) {
+          console.log(`Trying to reset scroll to ${ this.mainWindowScroll }, got error:`, e);
         }
 
         this.mainWindowScroll = -1;
@@ -339,14 +407,12 @@ export default {
         return;
       }
 
-      this.currentCommand = `delete ${ this.imageIdsToDelete }`;
-      this.mainWindowScroll = this.main.scrollTop;
-      this.startRunningCommand('delete');
-      this.startImageManagerOutput();
+      // TODO: This should display deletion output.
+      await Promise.all(this.imagesToDelete.map(image => this.imageDelete({ image })));
     },
-    async deleteImage(obj: Image) {
+    async deleteImage(image: ParsedImage) {
       const options: Electron.MessageBoxOptions = {
-        message:   `Delete image ${ obj.imageName }:${ obj.tag }?`,
+        message:   `Delete image ${ image.name }:${ image.tag }?`,
         type:      'question',
         buttons:   ['Yes', 'No'],
         defaultId: 1,
@@ -358,47 +424,36 @@ export default {
       if (result.response === 1) {
         return;
       }
-      this.currentCommand = `delete ${ obj.imageName }:${ obj.tag }`;
-      this.mainWindowScroll = this.main.scrollTop;
-      this.startRunningCommand('delete');
 
-      this.startImageManagerOutput();
+      // TODO: This should display deletion output.
+      await this.imageDelete({ image });
     },
-    doPush(obj: Image) {
-      this.currentCommand = `push ${ obj.imageName }:${ obj.tag }`;
-      this.mainWindowScroll = this.main.scrollTop;
-      this.startRunningCommand('push');
+    doPush(image: ParsedImage) {
+      // TODO: This should display push output.
+      this.imagePush({ image });
     },
-    scanImage(obj: Image) {
-      const taggedImageName = `${ obj.imageName.trim() }:${ this.imageTag(obj.tag) }`;
-
-      this.$router.push({ name: 'images-scans-image-name', params: { image: taggedImageName, namespace: this.selectedNamespace } });
+    scanImage(row: ParsedImage) {
+      this.$router.push({
+        name:   'images-scans-image-name',
+        params: { image: row.reference || row.id, namespace: this.selectedNamespace },
+      });
     },
-    imageTag(tag: string) {
-      return tag === '<none>' ? 'latest' : `${ tag.trim() }`;
+    isDeletable(row: ParsedImage) {
+      return !this.protectedImages.includes(row.name);
     },
-    isNotNoneImage(row: Image) {
-      return row.imageName && row.imageName !== '<none>';
-    },
-    isDeletable(row: Image) {
-      return !this.protectedImages.includes(row.imageName);
-    },
-    isPushable(row: Image) {
+    isPushable(row: ParsedImage) {
       // If it doesn't contain a '/', it's certainly not pushable,
       // but having a '/' isn't sufficient, but it's all we have to go on.
-      return this.isDeletable(row) && row.imageName.includes('/');
-    },
-    hasDropdownActions(row: Image) {
-      return this.isDeletable(row);
+      return this.isDeletable(row) && row.name.includes('/');
     },
     handleShowAllCheckbox(value: boolean) {
       this.$emit('toggledShowAll', value);
     },
-    handleChangeNamespace(event: Event) {
-      this.$emit('switchNamespace', (event.target as HTMLSelectElement).value);
+    handleChangeNamespace(event: Event & { target: HTMLSelectElement }) {
+      this.$emit('switchNamespace', event.target.value);
     },
     resetCurrentCommand() {
-      this.currentCommand = null;
+      this.currentCommand = undefined;
     },
     toggleOutput(val: boolean) {
       this.keepImageManagerOutputWindowOpen = val;
@@ -407,11 +462,18 @@ export default {
         this.scrollToTop();
       }
     },
-    getTaggedImage(image: Image) {
-      return image.tag !== '<none>' ? `${ image.imageName }:${ image.tag }` : `${ image.imageName }@${ image.digest }`;
+    shortHash(sha: string) {
+      const length = 6;
+      const [, prefix, actualHash] = new RegExp(`^([^:]+:)(.{${ length * 2 },})$`).exec(sha) ?? [];
+
+      if (!prefix) {
+        return undefined;
+      }
+
+      return `${ prefix }${ actualHash.slice(0, length) }..${ actualHash.slice(-length) }`;
     },
   },
-};
+});
 </script>
 
 <style lang="scss" scoped>

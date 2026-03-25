@@ -5,10 +5,9 @@
       class="content"
       data-test="imagesTable"
       :images="images"
-      :image-namespaces="imageNamespaces"
-      :state="state"
+      :image-namespaces="namespaces"
       :show-all="settings.images.showAll"
-      :selected-namespace="settings.images.namespace"
+      :selected-namespace="currentNamespace"
       :supports-namespaces="supportsNamespaces"
       :protected-images="protectedImages"
       @toggled-show-all="onShowAllImagesChanged"
@@ -18,57 +17,44 @@
 </template>
 
 <script lang="ts">
-
-import _ from 'lodash';
 import { defineComponent } from 'vue';
 
-import { State as K8sState } from '@pkg/backend/backend';
 import Images from '@pkg/components/Images.vue';
 import { defaultSettings } from '@pkg/config/settings';
 import { mapTypedActions, mapTypedGetters, mapTypedMutations, mapTypedState } from '@pkg/entry/store';
-import { IpcRendererEvents } from '@pkg/typings/electron-ipc';
 import { ipcRenderer } from '@pkg/utils/ipcRenderer';
-
-interface Image {
-  imageName: string;
-  tag:       string;
-  imageID:   string;
-}
-
-enum ImageManagerStates {
-  UNREADY = 'IMAGE_MANAGER_UNREADY',
-  READY = 'READY',
-}
+import { defined } from '@pkg/utils/typeUtils';
 
 export default defineComponent({
   components: { Images },
   data() {
     return {
-      settings:           defaultSettings,
-      images:             [] as Image[],
-      imageNamespaces:    [] as string[],
-      supportsNamespaces: true,
+      settings: defaultSettings,
     };
   },
 
   computed: {
-    state() {
-      if ((window as any).imagesListMock) {
-        // Override for screenshots
-        return ImageManagerStates.READY;
-      }
-
-      return this.imageManagerState ? ImageManagerStates.READY : ImageManagerStates.UNREADY;
+    ...mapTypedGetters('extensions', ['installedExtensions']),
+    ...mapTypedGetters('container-engine', ['supportsNamespaces']),
+    ...mapTypedState('rdd-connection', { kubeNamespace: 'namespace' }),
+    ...mapTypedState('container-engine', ['currentNamespace', 'images']),
+    ...mapTypedState('container-engine', { namespaceObjects: 'namespaces' }),
+    namespaces() {
+      return (this.namespaceObjects ?? []).map(ns => ns.metadata?.name).filter(defined);
     },
     rancherImages(): string[] {
-      return this.images
-        .map(image => image.imageName)
+      return (this.images ?? [])
+        .map(image => image.status?.repoTag)
+        .filter(defined)
+        .map(reference => reference.replace(/:[^/]*?$/, ''))
         .filter(name => name.startsWith('rancher/'));
     },
     installedExtensionImages(): string[] {
       return this.installedExtensions.map(image => image.id);
     },
     protectedImages(): string[] {
+      // This should be replaced with something on the image; see
+      // https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/193
       return [
         'moby/buildkit',
         'ghcr.io/rancher-sandbox/rancher-desktop/rdx-proxy',
@@ -76,35 +62,38 @@ export default defineComponent({
         ...this.installedExtensionImages,
       ];
     },
-    ...mapTypedState('imageManager', ['imageManagerState']),
-    ...mapTypedGetters('extensions', ['installedExtensions']),
   },
 
   watch: {
-    state: {
-      handler(state: string) {
-        this.setHeader({ title: this.t('images.title') });
-
-        if (!state || state === ImageManagerStates.UNREADY) {
-          return;
+    images: {
+      handler(images) {
+        if (Array.isArray(images)) {
+          this.setAction({ action: 'ImagesButtonAdd' });
         }
-
-        this.setAction({ action: 'ImagesButtonAdd' });
       },
       immediate: true,
     },
   },
 
+  beforeMount() {
+    this.setHeader({ title: this.t('images.title') });
+  },
+
   mounted() {
-    ipcRenderer.on('settings-update', (event, settings) => {
-      // TODO: put in a status bar
-      this.$data.settings = settings;
-      this.checkSelectedNamespace();
+    // TODO: Handle setting change (for namespaces).
+
+    this.watchNamespaces({
+      namespace: this.kubeNamespace,
+      callback:  (error) => {
+        this.SET_ERROR({ error, source: 'namespaces' });
+      },
     });
-    ipcRenderer.on('settings-read', (event, settings) => {
-      this.settings = settings;
+    this.watchImages({
+      namespace: this.kubeNamespace,
+      callback:  (error) => {
+        this.SET_ERROR({ error, source: 'images' });
+      },
     });
-    ipcRenderer.send('settings-read');
 
     ipcRenderer.on('extensions/changed', this.fetchExtensions);
     this.fetchExtensions();
@@ -114,32 +103,16 @@ export default defineComponent({
   },
 
   methods: {
+    ...mapTypedActions('container-engine', ['setCurrentNamespace', 'watchImages', 'watchNamespaces']),
+    ...mapTypedMutations('container-engine', ['SET_ERROR']),
     ...mapTypedActions('extensions', { fetchExtensions: 'fetch' }),
     ...mapTypedActions('page', ['setAction', 'setHeader']),
-    ...mapTypedMutations('imageManager', { setImageManagerState: 'SET_IMAGE_MANAGER_STATE' }),
-    checkSelectedNamespace() {
-      if (!this.supportsNamespaces || this.imageNamespaces.length === 0) {
-        // Nothing to verify yet
-        return;
-      }
-      if (!this.imageNamespaces.includes(this.settings.images.namespace)) {
-        const defaultNamespace = this.imageNamespaces.includes('default') ? 'default' : this.imageNamespaces[0];
-
-        ipcRenderer.invoke('settings-write',
-          { images: { namespace: defaultNamespace } } );
-      }
-    },
     onShowAllImagesChanged(value: boolean) {
-      if (value !== this.settings.images.showAll) {
-        ipcRenderer.invoke('settings-write',
-          { images: { showAll: value } } );
-      }
+      // TODO: This should update the namespace.
+      console.log('onShowAllImagesChanged', value);
     },
-    onChangeNamespace(value: string) {
-      if (value !== this.settings.images.namespace) {
-        ipcRenderer.invoke('settings-write',
-          { images: { namespace: value } } );
-      }
+    async onChangeNamespace(namespace: string) {
+      await this.setCurrentNamespace({ namespace });
     },
   },
 });

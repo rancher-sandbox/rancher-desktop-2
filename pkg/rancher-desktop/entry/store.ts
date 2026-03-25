@@ -114,7 +114,11 @@ export function mapTypedMutations
   N extends keyof Modules,
   M extends Modules[N] extends { mutations: any } ? Modules[N]['mutations'] : never,
   K extends keyof M,
->(namespace: N, keys: K[]): { [key in K]: (payload: Parameters<M[key]>[1]) => ReturnType<M[key]> };
+>(namespace: N, keys: K[]): {
+  [key in K]: Parameters<M[key]>[1] extends undefined ?
+    () => ReturnType<M[key]> :
+    (payload: Parameters<M[key]>[1]) => ReturnType<M[key]>;
+};
 // mapTypedMutations('namespace', {key: 'name', key: (state) => (state.key)})
 export function mapTypedMutations
 <
@@ -123,7 +127,9 @@ export function mapTypedMutations
   K extends keyof M,
   G extends Record<string, K>,
 >(namespace: N, mappings: G): {
-  [key in keyof G]: (payload: Parameters<M[G[key]]>[1]) => ReturnType<M[G[key]]>;
+  [key in keyof G]: Parameters<M[G[key]]>[1] extends undefined ?
+    () => ReturnType<M[G[key]]> :
+    (payload: Parameters<M[G[key]]>[1]) => ReturnType<M[G[key]]>;
 };
 // Actual implementation defers to mapMutations
 export function mapTypedMutations(namespace: string, arg: any) {

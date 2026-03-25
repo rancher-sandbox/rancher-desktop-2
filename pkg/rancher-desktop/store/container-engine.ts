@@ -27,6 +27,12 @@ function listContainerNamespacedResource<
 
 const resources = [
   defineResource({
+    name:       'images',
+    path:       '/apis/containers.rancherdesktop.io/v1alpha1/images',
+    makeClient: config => config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api),
+    list:       listContainerNamespacedResource('Image'),
+  }),
+  defineResource({
     name:       'namespaces',
     type:       'containerNamespace',
     path:       '/apis/containers.rancherdesktop.io/v1alpha1/containernamespaces',
@@ -41,7 +47,7 @@ const resources = [
   }),
 ] as const;
 
-type errorSource = 'volumes' | 'namespaces';
+type errorSource = 'images' | 'volumes' | 'namespaces';
 
 export const state = () => ({
   ...resourceState(resources),
@@ -68,6 +74,83 @@ export const mutations = {
 
 export const actions = {
   ...resourceWatchActions(resources),
+  setCurrentNamespace({ commit, state }, { namespace }: { namespace: string | undefined }) {
+    if (namespace !== undefined && !state.namespaces?.some(ns => ns.metadata?.name === namespace)) {
+      const error = new Error(`Cannot set current namespace to nonexistent namespace ${ namespace }`);
+      commit('SET_ERROR', { error, source: 'namespaces' });
+      console.log(error);
+    } else {
+      commit('SET_CURRENT_NAMESPACE', namespace);
+    }
+  },
+  imagePush(
+    { rootState },
+    { image }: {
+      image: RDDClient.IoRancherdesktopContainersV1alpha1Image,
+    },
+  ) {
+    const config: RDDClient.KubeConfig = rootState['rdd-connection'].config;
+    const client = config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api);
+
+    return client.createNamespacedImagePushRequest({
+      namespace: image.metadata!.namespace!,
+      body:      {
+        metadata: {
+          namespace:    image.metadata!.namespace,
+          generateName: `image-push-${ image.metadata!.name! }-`,
+        },
+        spec: {
+          imageRef: image.metadata!.name!,
+        },
+      },
+    });
+  },
+  imageScan(
+    { rootState },
+    { image }: {
+      image: RDDClient.IoRancherdesktopContainersV1alpha1Image,
+    },
+  ) {
+    const config: RDDClient.KubeConfig = rootState['rdd-connection'].config;
+    const client = config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api);
+
+    return client.createNamespacedImageScanRequest({
+      namespace: image.metadata!.namespace!,
+      body:      {
+        metadata: {
+          namespace:    image.metadata!.namespace,
+          generateName: `image-scan-${ image.metadata!.name! }-`,
+        },
+        spec: {
+          imageRef: image.metadata!.name!,
+        },
+      },
+    });
+  },
+  async imageDelete(
+    { rootState, commit },
+    { image }: {
+      image: RDDClient.IoRancherdesktopContainersV1alpha1Image,
+    },
+  ) {
+    const config: RDDClient.KubeConfig = rootState['rdd-connection'].config;
+    const client = config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api);
+
+    try {
+      const status = await client.deleteNamespacedImage({
+        name:      image.metadata!.name!,
+        namespace: image.metadata!.namespace!,
+      });
+      if (status.status !== 'Success') {
+        commit('SET_ERROR', {
+          error:  new Error(`Failed to delete image ${ image.metadata!.name }: ${ status.message }`),
+          source: 'images',
+        });
+      }
+    } catch (error: any) {
+      commit('SET_ERROR', { error, source: 'images' });
+    }
+  },
   async volumeDelete(
     { rootState, commit },
     { volume }: {
