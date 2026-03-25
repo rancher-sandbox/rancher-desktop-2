@@ -6,6 +6,7 @@ package app
 
 import (
 	_ "embed"
+	"runtime"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -15,10 +16,26 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 )
 
-// This is temporary and will be removed once the app controller is fully implemented.
+// Embedded Lima template split into platform-specific images and shared
+// configuration. The two parts are concatenated at runtime so the VM gets
+// an image type compatible with the host (qcow2 on Unix, tarball on WSL2).
 //
-//go:embed lima.yaml
-var limaTemplateData string
+//go:embed lima-images-unix.yaml
+var limaImagesUnix string
+
+//go:embed lima-images-wsl2.yaml
+var limaImagesWSL2 string
+
+//go:embed lima-template.yaml
+var limaTemplate string
+
+func limaTemplateData() string {
+	images := limaImagesUnix
+	if runtime.GOOS == "windows" {
+		images = limaImagesWSL2
+	}
+	return images + limaTemplate
+}
 
 func init() {
 	base.RegisterController(newController())
@@ -72,6 +89,6 @@ func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
 	return (&controllers.AppReconciler{
 		Client:           mgr.GetClient(),
 		Scheme:           mgr.GetScheme(),
-		LimaTemplateData: limaTemplateData,
+		LimaTemplateData: limaTemplateData(),
 	}).SetupWithManager(mgr)
 }

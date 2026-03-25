@@ -1,10 +1,3 @@
-images:
-- location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.1.2/distro.v0.1.2.amd64.qcow2
-  arch: x86_64
-  digest: "sha256:45de5c158399d5bc31e93f42d9c7fcfaf8dd3279ee157c702e9bd86bcaf9e088"
-- location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.1.2/distro.v0.1.2.arm64.qcow2
-  arch: aarch64
-  digest: "sha256:39598a41ebe5c8da0baf428716a63c50598e8306e85bb85043877407eecc8991"
 cpus: 2
 memory: "6442450944"
 mounts:

@@ -1,0 +1,6 @@
+vmType: wsl2
+images:
+- location: https://deps.runfinch.com/common/x86-64/finch-rootfs-production-amd64-1771357941.tar.gz
+  arch: x86_64
+  digest: sha256:423d1a0f1cabeaea6801995c90ed896dccc091180068626430f19fd87853fdf3
+mountType: wsl2
