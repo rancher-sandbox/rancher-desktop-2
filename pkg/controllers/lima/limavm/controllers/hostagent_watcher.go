@@ -127,7 +127,7 @@ func (r *LimaVMReconciler) runWatcher(ctx context.Context, name, namespace, inst
 		return false
 	}
 
-	if err := hostagentevents.Watch(waitCtx, haStdoutPath, haStderrPath, begin, onEvent); err != nil {
+	if err := hostagentevents.Watch(waitCtx, haStdoutPath, haStderrPath, begin, false, onEvent); err != nil {
 		// Context cancellation is expected (process exit or controller shutdown).
 		if waitCtx.Err() == nil {
 			logger.Error(err, "Event watcher failed")
