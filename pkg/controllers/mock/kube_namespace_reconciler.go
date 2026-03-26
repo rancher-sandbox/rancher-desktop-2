@@ -13,7 +13,6 @@ import (
 	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -64,14 +63,6 @@ func (r *kubeNamespaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Namespace{}).
 		Named("mock-kube-namespace-reconciler").
-		Watches(
-			&corev1.Namespace{},
-			handler.EnqueueRequestForOwner(
-				mgr.GetScheme(),
-				mgr.GetRESTMapper(),
-				&corev1.Namespace{},
-				handler.OnlyControllerOwner(),
-			)).
 		WithEventFilter(predicate.NewPredicateFuncs(func(object client.Object) bool {
 			if _, ok := object.(*corev1.Namespace); ok {
 				return object.GetName() == mockNamespaceName

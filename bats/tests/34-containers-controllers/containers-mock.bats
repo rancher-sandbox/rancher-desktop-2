@@ -27,7 +27,7 @@ local_teardown_file() {
 
     run -0 cat "${TEST_DATA_PATH}/containers.json"
     run -0 jq_output '.[].Id'
-    containers=${output}
+    mapfile -t containers <<<"${output}"
 
     rdd ctl wait --for=create --namespace="${NAMESPACE}" container "${containers[@]}" --timeout=30s
 }
@@ -40,8 +40,8 @@ local_teardown_file() {
     images=${output}
 
     while IFS= read -r image; do
-        rdd ctl wait --for=create --namespace="${NAMESPACE}" image --field-selector "status.repoTag=${image}" --timeout=30s --output=jsonpath='{.items[*].status.repoTag}'
-        assert_line "${image}"
+        rdd ctl wait --for=create --namespace="${NAMESPACE}" image \
+            --field-selector "status.repoTag=${image}" --timeout=30s
     done <<<"${images}"
 }
 
@@ -50,7 +50,7 @@ local_teardown_file() {
 
     run -0 cat "${TEST_DATA_PATH}/volumes.json"
     run -0 jq_output '.[].Name'
-    volumes=${output}
+    mapfile -t volumes <<<"${output}"
 
     rdd ctl wait --for=create --namespace="${NAMESPACE}" volume "${volumes[@]}" --timeout=30s
 }
