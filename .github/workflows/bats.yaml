@@ -35,7 +35,7 @@ jobs:
   bats:
     name: BATS
     needs: get-pr-number
-    if: ${{ ! needs.get-pr-number.outputs.number }}
+    if: ${{ needs.get-pr-number.outputs.number == '0' }}
     strategy:
       fail-fast: false
       matrix:

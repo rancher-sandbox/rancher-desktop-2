@@ -35,7 +35,7 @@ jobs:
     name: Verify generated files
     needs: get-pr-number
     runs-on: ubuntu-latest
-    if: ${{ ! needs.get-pr-number.outputs.number }}
+    if: ${{ needs.get-pr-number.outputs.number == '0' }}
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
@@ -51,7 +51,7 @@ jobs:
       matrix:
         runs-on: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.runs-on }}
-    if: ${{ ! needs.get-pr-number.outputs.number }}
+    if: ${{ needs.get-pr-number.outputs.number == '0' }}
     steps:
     - name: "Windows: Set up line endings"
       if: runner.os == 'Windows'
@@ -73,7 +73,7 @@ jobs:
       matrix:
         runs-on: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.runs-on }}
-    if: ${{ ! needs.get-pr-number.outputs.number }}
+    if: ${{ needs.get-pr-number.outputs.number == '0' }}
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
@@ -86,7 +86,7 @@ jobs:
     name: Lint BATS
     needs: get-pr-number
     runs-on: ubuntu-latest
-    if: ${{ ! needs.get-pr-number.outputs.number }}
+    if: ${{ needs.get-pr-number.outputs.number == '0' }}
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
@@ -100,7 +100,7 @@ jobs:
     name: Check Spelling
     needs: get-pr-number
     runs-on: ubuntu-latest
-    if: ${{ ! needs.get-pr-number.outputs.number }}
+    if: ${{ needs.get-pr-number.outputs.number == '0' }}
     steps:
     - run: sudo apt install cpanminus
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -116,7 +116,7 @@ jobs:
     name: Check license tags
     needs: get-pr-number
     runs-on: ubuntu-latest
-    if: ${{ ! needs.get-pr-number.outputs.number }}
+    if: ${{ needs.get-pr-number.outputs.number == '0' }}
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
