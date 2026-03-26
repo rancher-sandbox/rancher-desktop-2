@@ -8,21 +8,9 @@ load '../../helpers/load'
 # after template verification, and deleted when the LimaVM is deleted.
 
 NAMESPACE="instance-test-ns"
-VM_NAME="opensuse-test"
+VM_NAME="test-instance"
 
-# Minimal template with openSUSE qcow2 images from rancher-desktop-opensuse.
-# vmType defaults to vz on macOS and qemu on Linux.
-OPENSUSE_TEMPLATE='
-images:
-- location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.1.1/distro.v0.1.1.amd64.qcow2
-  arch: x86_64
-  digest: sha256:6a0a2729781f7a412f2d4fd7cb3270104eb16d9965811d0a39cb9766afdf3fd3
-- location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.1.1/distro.v0.1.1.arm64.qcow2
-  arch: aarch64
-  digest: sha256:8e8f9dfa8292dd4e3821f44542305b01c78ec8cb007065d1bba233899ce438e8
-containerd:
-  system: false
-  user: false'
+INSTANCE_TEMPLATE=$(vm_template)
 
 local_setup_file() {
     setup_rdd_control_plane "lima"
@@ -36,10 +24,13 @@ local_teardown_file() {
             rm -rf "${RDD_LIMA_HOME:?}/${vm}"
         fi
     done
-}
-
-local_setup() {
-    skip_on_windows
+    # Clean up any WSL2 distros created by tests.
+    # Use a timeout because wsl.exe --unregister can hang.
+    if is_windows; then
+        for vm in "${VM_NAME}" "invalid-vm"; do
+            timeout 30 bash -c "MSYS_NO_PATHCONV=1 wsl.exe --unregister 'lima-${vm}'" 2>/dev/null || true
+        done
+    fi
 }
 
 create_limavm() {
@@ -65,15 +56,15 @@ lima_instance_exists() {
     [[ -d "${RDD_LIMA_HOME}/${name}" ]]
 }
 
-@test "create source template ConfigMap with openSUSE image" {
-    rdd ctl create configmap "opensuse-source" --namespace "${NAMESPACE}" --from-literal="template=${OPENSUSE_TEMPLATE}"
+@test "create source template ConfigMap" {
+    rdd ctl create configmap "source-template" --namespace "${NAMESPACE}" --from-literal="template=${INSTANCE_TEMPLATE}"
 
-    run -0 rdd ctl get configmap "opensuse-source" --namespace "${NAMESPACE}" --output jsonpath='{.data.template}'
-    assert_output --partial "rancher-desktop-opensuse"
+    run -0 rdd ctl get configmap "source-template" --namespace "${NAMESPACE}" --output jsonpath='{.data.template}'
+    assert_output --partial "images:"
 }
 
-@test "create LimaVM with openSUSE template" {
-    create_limavm "${VM_NAME}" "opensuse-source"
+@test "create LimaVM with source template" {
+    create_limavm "${VM_NAME}" "source-template"
 
     run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${NAMESPACE}" --output name
     assert_output "limavm.lima.rancherdesktop.io/${VM_NAME}"
@@ -86,7 +77,7 @@ lima_instance_exists() {
 
 @test "wait for Created condition to be True" {
     rdd ctl wait --for=condition=Created=True \
-        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=60s
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=120s
 }
 
 @test "verify Lima instance directory exists" {
@@ -135,14 +126,14 @@ lima_instance_exists() {
 }
 
 @test "create LimaVM with leftover instance present" {
-    create_limavm "${VM_NAME}" "opensuse-source"
+    create_limavm "${VM_NAME}" "source-template"
     run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${NAMESPACE}" --output name
     assert_output "limavm.lima.rancherdesktop.io/${VM_NAME}"
 }
 
 @test "wait for Created after leftover cleanup" {
     rdd ctl wait --for=condition=Created=True \
-        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=60s
+        "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=120s
 }
 
 @test "verify leftover was replaced with real instance" {
@@ -150,7 +141,7 @@ lima_instance_exists() {
     assert_file_not_exists "${RDD_LIMA_HOME}/${VM_NAME}/.fake-leftover"
     # Real instance should have images from template
     run -0 cat "${RDD_LIMA_HOME}/${VM_NAME}/lima.yaml"
-    assert_output --partial "rancher-desktop-opensuse"
+    assert_output --partial "images:"
 }
 
 @test "cleanup LimaVM after leftover test" {

@@ -8,6 +8,8 @@
 package process
 
 import (
+	"context"
+	"errors"
 	"os/exec"
 
 	"golang.org/x/sys/unix"
@@ -15,10 +17,43 @@ import (
 
 // SetGroup configures the command to run in its own process group.
 func SetGroup(cmd *exec.Cmd) {
-	cmd.SysProcAttr = &unix.SysProcAttr{Setpgid: true}
+	if cmd.SysProcAttr == nil {
+		cmd.SysProcAttr = &unix.SysProcAttr{}
+	}
+	cmd.SysProcAttr.Setpgid = true
+}
+
+// Interrupt sends SIGINT to the process with the given PID.
+func Interrupt(pid int) error {
+	return unix.Kill(pid, unix.SIGINT)
 }
 
 // Kill sends SIGTERM to the process with the given PID.
 func Kill(pid int) error {
 	return unix.Kill(pid, unix.SIGTERM)
+}
+
+// KillTree terminates the process and all its descendants.
+// The target must have been started with SetGroup so it leads its own group.
+// On Unix, this sends SIGKILL to the process group. On Windows, this uses
+// taskkill /F /T to walk the parent-child tree. When the target is a group
+// leader whose children remain in the same group (the expected usage), both
+// platforms produce the same result.
+//
+// If the process group does not exist (the target is not a group leader),
+// falls back to killing the individual process. This handles cases like
+// a VM driver (e.g., QEMU) that inherited its parent's process group.
+//
+// Returns nil if the process (group) no longer exists.
+func KillTree(_ context.Context, pid int) error {
+	err := unix.Kill(-pid, unix.SIGKILL)
+	if errors.Is(err, unix.ESRCH) {
+		// Process group does not exist — the target may not be a group
+		// leader. Fall back to killing the individual process.
+		err = unix.Kill(pid, unix.SIGKILL)
+		if errors.Is(err, unix.ESRCH) {
+			return nil
+		}
+	}
+	return err
 }

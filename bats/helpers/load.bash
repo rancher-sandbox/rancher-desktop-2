@@ -43,6 +43,7 @@ source "${PATH_BATS_ROOT}/lib/bats-assert/load.bash"
 source "${PATH_BATS_ROOT}/lib/bats-file/load.bash"
 
 source "${PATH_BATS_HELPERS}/os.bash"
+source "${PATH_BATS_HELPERS}/vm_template.bash"
 source "${PATH_BATS_HELPERS}/utils.bash"
 source "${PATH_BATS_HELPERS}/controller.bash"
 source "${PATH_BATS_HELPERS}/instance.bash"

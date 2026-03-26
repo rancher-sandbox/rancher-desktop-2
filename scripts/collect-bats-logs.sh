@@ -22,21 +22,23 @@ REPO_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
 
 output_dir=${1:-rdd-logs}
 
-# Use .exe extension on Windows (WSL runs Windows binaries via interop).
+# Use .exe extension on Windows (WSL or MSYS2).
 rdd="${REPO_ROOT}/bin/rdd"
-if command -v wslpath >/dev/null 2>&1; then
+if command -v wslpath >/dev/null 2>&1 || command -v cygpath >/dev/null 2>&1; then
     rdd="${REPO_ROOT}/bin/rdd.exe"
 fi
 
 # Pass RDD_INSTANCE to Windows binaries via WSL interop.
 export WSLENV="${WSLENV:+${WSLENV}:}RDD_INSTANCE"
 
-# Resolve a path from rdd, converting Windows paths to WSL paths if needed.
+# Resolve a path from rdd, converting Windows paths to POSIX paths if needed.
 resolve_path() {
     local p
     p=$("$rdd" svc paths "$1" | tr -d '\r') || return 1
     if command -v wslpath >/dev/null 2>&1; then
         p=$(wslpath -ua "$p")
+    elif command -v cygpath >/dev/null 2>&1; then
+        p=$(cygpath -u "$p")
     fi
     echo "$p"
 }

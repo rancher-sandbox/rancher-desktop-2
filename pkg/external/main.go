@@ -9,6 +9,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -37,6 +39,7 @@ func RunControllers(apiGroupName string) int {
 	flag.IntVar(&desiredHealthPort, "health-port", 8081+instanceOffset, "The desired port the health probe endpoint binds to.")
 
 	klog.InitFlags(nil)
+	setVerbosityFromEnv()
 	//revive:disable-next-line:deep-exit
 	flag.Parse()
 
@@ -132,9 +135,10 @@ func RunControllers(apiGroupName string) int {
 // This allows external controllers to automatically exit when `rdd svc stop` or `rdd svc delete` is called.
 func monitorControlPlane(ctx context.Context, apiGroupName string, config *rest.Config, log klog.Logger, cancel context.CancelFunc) {
 	// Use a short timeout for monitoring so we detect shutdown quickly.
-	// 1 second is sufficient for local API server connections.
+	// 2 seconds allows margin for Windows localhost TLS handshakes under load,
+	// while still detecting real shutdowns promptly (connection refused is instant).
 	monitorConfig := rest.CopyConfig(config)
-	monitorConfig.Timeout = time.Second
+	monitorConfig.Timeout = 2 * time.Second
 
 	discovery, err := controllers.NewControllerManagerDiscoveryGroup(monitorConfig, apiGroupName)
 	if err != nil {
@@ -189,7 +193,7 @@ func monitorControlPlane(ctx context.Context, apiGroupName string, config *rest.
 	defer ticker.Stop()
 
 	consecutiveFailures := 0
-	const maxFailures = 2 // 4 seconds of failures (2 * 2 seconds) - sufficient for local connections
+	const maxFailures = 3 // ~6 seconds of failures before shutdown
 
 	log.V(1).Info("Starting control plane monitoring")
 
@@ -248,4 +252,33 @@ func shouldStartController(ctx context.Context, config *rest.Config, controllerN
 		"metricsEndpoint", info.MetricsEndpoint)
 
 	return false, nil
+}
+
+// setVerbosityFromEnv sets klog verbosity from RDD_LOG_LEVEL as a default.
+// Called before flag.Parse() so that an explicit -v flag on the command line
+// takes precedence.
+//
+// The RDD service (cmd/rdd) uses logrus, where log levels map directly to
+// names (trace, debug, info, warn, error). External controllers use klog,
+// which has numeric verbosity instead of named levels. The mapping is:
+//   - trace → v=4 (very verbose, including per-reconcile details)
+//   - debug → v=2 (controller lifecycle events)
+//   - info  → v=0 (default; errors and high-level status only)
+func setVerbosityFromEnv() {
+	level := strings.TrimSpace(os.Getenv("RDD_LOG_LEVEL"))
+	switch strings.ToLower(level) {
+	case "trace":
+		if err := flag.Set("v", "4"); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to set klog verbosity: %v\n", err)
+		}
+	case "debug":
+		if err := flag.Set("v", "2"); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to set klog verbosity: %v\n", err)
+		}
+	case "", "info", "warn", "warning", "error", "fatal":
+		// klog cannot suppress info-level messages, so higher logrus levels
+		// map to the default verbosity (v=0).
+	default:
+		fmt.Fprintf(os.Stderr, "RDD_LOG_LEVEL=%q is not supported for klog; valid values are trace, debug, info\n", level)
+	}
 }

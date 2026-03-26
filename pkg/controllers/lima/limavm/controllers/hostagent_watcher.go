@@ -6,7 +6,6 @@ package controllers
 
 import (
 	"context"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"sync"
@@ -19,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/process"
 )
 
 // instancePhase represents the hostagent lifecycle as observed by the watcher.
@@ -75,7 +75,7 @@ func (r *LimaVMReconciler) runWatcher(ctx context.Context, name, namespace, inst
 	// Reap the hostagent process in a sub-goroutine. haCmd.Wait() blocks until
 	// the process exits and cannot be cancelled via context. This is safe because
 	// every code path that cancels the watcher also kills the hostagent process
-	// (stopInstance, shutdownAllHostagents, StopForcibly on delete), so this
+	// (stopInstance, shutdownAllHostagents, stopInstanceForcibly on delete), so this
 	// goroutine always returns promptly after cancellation.
 	// When the process exits, cancel the Watch context so events.Watch returns.
 	waitCtx, waitCancel := context.WithCancel(ctx)
@@ -197,16 +197,18 @@ func (r *LimaVMReconciler) waitForProcessExit(ctx context.Context, name string) 
 	}
 }
 
-// signalHostagent sends a signal to the hostagent process. Returns false if no
-// watcher exists or the process handle is unavailable.
-func (r *LimaVMReconciler) signalHostagent(name string, sig os.Signal) bool {
+// signalHostagent sends a graceful shutdown signal to the hostagent process.
+// Uses process.Interrupt which sends SIGINT on Unix and CTRL_BREAK on Windows
+// (targeted at the hostagent's process group, not the parent).
+// Returns false if no watcher exists or the signal could not be delivered.
+func (r *LimaVMReconciler) signalHostagent(name string) bool {
 	r.instanceStatesMu.RLock()
 	state, ok := r.instanceStates[name]
 	r.instanceStatesMu.RUnlock()
 	if !ok || state.cmd == nil || state.cmd.Process == nil {
 		return false
 	}
-	return state.cmd.Process.Signal(sig) == nil
+	return process.Interrupt(state.cmd.Process.Pid) == nil
 }
 
 // enqueueReconcile sends a GenericEvent to trigger a reconcile for the named VM.

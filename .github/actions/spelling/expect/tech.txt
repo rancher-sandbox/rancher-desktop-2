@@ -1,12 +1,13 @@
 # Generic technical terms
 backgrounding
-cooloff
 backquotes
+cooloff
 crt
 filewatcher
 FQDNs
 gui
 hyperlinks
+keypair
 lte
 NONINFRINGEMENT
 OIDC
@@ -32,8 +33,10 @@ kvm
 # out of memory
 OOM
 opensuse
+pgid
 pids
 qcow
+rootfs
 tarball
 veth
 zst
@@ -46,12 +49,16 @@ ERRORLEVEL
 LOCALAPPDATA
 mnt
 msys
-PROGRAMFILES
+MSYSTEM
 netsh
+PROGRAMFILES
 pwsh
 SYSTEMROOT
+taskkill
+UCRT
 usebackq
 winver
 wsl
 WSLENV
 wslpath
+wslservice

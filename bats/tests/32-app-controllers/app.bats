@@ -39,10 +39,6 @@ local_setup_file() {
     setup_rdd_control_plane "app,limavm"
 }
 
-local_setup() {
-    skip_on_windows
-}
-
 @test "create App resource" {
     create_app false
 }

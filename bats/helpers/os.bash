@@ -92,3 +92,26 @@ sudo_needs_password() {
     run sudo --non-interactive --reset-timestamp true
     ((status != 0))
 }
+
+# Cross-platform process management.
+# MSYS2's kill cannot reach Win32 processes, so use taskkill.exe on Windows.
+
+# Check if a process is alive. Returns 0 if alive, non-zero otherwise.
+assert_process_alive() {
+    local pid=$1
+    if is_windows; then
+        MSYS_NO_PATHCONV=1 tasklist.exe /FI "PID eq ${pid}" /NH 2>/dev/null | grep -qw "${pid}"
+    else
+        kill -0 "${pid}" 2>/dev/null
+    fi
+}
+
+# Send SIGKILL (or TerminateProcess on Windows) to a process.
+process_kill() {
+    local pid=$1
+    if is_windows; then
+        MSYS_NO_PATHCONV=1 taskkill.exe /PID "${pid}" /F >/dev/null 2>&1
+    else
+        kill -9 "${pid}"
+    fi
+}

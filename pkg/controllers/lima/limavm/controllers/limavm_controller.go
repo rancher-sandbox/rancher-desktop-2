@@ -7,11 +7,11 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"maps"
 	"os"
 	"path/filepath"
 	"sync"
-	"syscall"
 	"time"
 
 	limainstance "github.com/lima-vm/lima/v2/pkg/instance"
@@ -36,6 +36,7 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/process"
 )
 
 const (
@@ -81,7 +82,7 @@ const (
 	preparingSentinel = ".preparing"
 
 	// gracefulShutdownTimeout is the time to wait for a hostagent to exit
-	// after sending SIGINT before falling back to SIGKILL.
+	// after requesting graceful shutdown before falling back to forced termination.
 	gracefulShutdownTimeout = 30 * time.Second
 )
 
@@ -448,6 +449,11 @@ func (r *LimaVMReconciler) updateCondition(ctx context.Context, limaVM *v1alpha1
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *LimaVMReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	// No parent context exists yet; the manager hasn't started.
+	if err := ensureSSHKeys(context.Background()); err != nil {
+		return fmt.Errorf("failed to generate Lima SSH keys: %w", err)
+	}
+
 	r.instanceStates = make(map[string]*instanceState)
 	r.reconcileChan = make(chan event.TypedGenericEvent[*v1alpha1.LimaVM], 1)
 
@@ -474,8 +480,8 @@ func (r *LimaVMReconciler) waitForShutdown(ctx context.Context) error {
 }
 
 // shutdownAllHostagents terminates all running hostagents during graceful shutdown.
-// It sends SIGINT to each hostagent for graceful shutdown, waits for them to exit,
-// and falls back to SIGKILL after a timeout.
+// It sends a graceful shutdown signal to each hostagent, waits for exit, and falls
+// back to process termination after a timeout.
 func (r *LimaVMReconciler) shutdownAllHostagents() {
 	r.instanceStatesMu.RLock()
 	states := maps.Clone(r.instanceStates)
@@ -485,10 +491,10 @@ func (r *LimaVMReconciler) shutdownAllHostagents() {
 		return
 	}
 
-	// Send SIGINT to all hostagents in parallel for graceful shutdown.
+	// Send graceful shutdown signal to all hostagents in parallel.
 	for _, state := range states {
 		if state.cmd != nil && state.cmd.Process != nil {
-			_ = state.cmd.Process.Signal(syscall.SIGINT)
+			_ = process.Interrupt(state.cmd.Process.Pid)
 		}
 	}
 
@@ -498,13 +504,34 @@ func (r *LimaVMReconciler) shutdownAllHostagents() {
 	// TODO: Wait on all hostagents in parallel instead of sequentially; with the
 	// current loop, the total wait is N × gracefulShutdownTimeout in the worst case.
 	for name, state := range states {
+		graceful := true
 		select {
 		case <-state.procExited:
 		case <-time.After(gracefulShutdownTimeout):
-			if state.cmd != nil && state.cmd.Process != nil {
-				_ = state.cmd.Process.Kill()
+			graceful = false
+		}
+		if !graceful {
+			// Manager context is cancelled; use a fresh context for cleanup.
+			// Inspect before killing so PIDs are still valid (not yet recycled
+			// to unrelated processes). stopInstanceForcibly kills the process
+			// tree and cleans up PID/socket/tmp files in one pass.
+			logger := ctrl.Log.WithName("shutdownAllHostagents")
+			cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			inst, err := store.Inspect(cleanupCtx, name)
+			if err == nil && inst != nil {
+				stopInstanceForcibly(cleanupCtx, logger, inst)
 			}
-			<-state.procExited
+			cancel()
+			// Wait briefly for the process to exit after forced kill.
+			// Without a timeout, cmd.Wait can block indefinitely if a
+			// child process survives KillTree and holds an inherited pipe.
+			waitCtx, waitCancel := context.WithTimeout(context.Background(), 10*time.Second)
+			select {
+			case <-state.procExited:
+			case <-waitCtx.Done():
+				logger.Info("Timed out waiting for hostagent to exit after forced kill", "instance", name)
+			}
+			waitCancel()
 		}
 		state.cancel()
 		r.instanceStatesMu.Lock()
