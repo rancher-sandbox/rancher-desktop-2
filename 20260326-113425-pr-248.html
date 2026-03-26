@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260326-113425-pr-248</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+  </style>
+</head>
+<body>
+<main>
+
+<h1>Deep Review: 20260326-113425-pr-248</h1>
+
+<table class="meta-table">
+<tr><td>Date</td><td>2026-03-26 11:34</td></tr>
+<tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+<tr><td>Round</td><td>2 (of PR <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/248" class="gh-ref" data-title="App controller Stop and Start LimaVM" data-state="open" data-type="pr">#248</a>)</td></tr>
+<tr><td>Author</td><td><a href="https://github.com/Nino-K">@Nino-K</a></td></tr>
+<tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/248" class="gh-ref" data-title="App controller Stop and Start LimaVM" data-state="open" data-type="pr">#248</a> &mdash; App controller Stop and Start LimaVM</td></tr>
+<tr><td>Branch</td><td><code>app-controller-stop-start-limavm</code></td></tr>
+<tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/3bbb4f9"><code>3bbb4f9</code></a> Update api_app.md to reflect condition definition<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/4a508c8"><code>4a508c8</code></a> Add additional BATs for App Controller<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/aadeeb4"><code>aadeeb4</code></a> Fix ObservedGeneration in App Controller</td></tr>
+<tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.6, <span class="pill pill-codex">Codex</span> GPT 5.4, <span class="pill pill-gemini">Gemini</span> 3.1 Pro</td></tr>
+<tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; two issues: the ObservedGeneration fix never landed in the code, and the stop-path test races App status propagation</td></tr>
+<tr><td>Wall-clock time</td><td>14 min 25 s</td></tr>
+</table>
+
+<hr>
+
+<h2 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&para;</a></h2>
+
+<div class="card card-neutral">
+<p>This PR mirrors <code>spec.running</code> from the App resource to its owned LimaVM, updates the API design doc to describe condition mirroring, and adds BATS tests for start/stop lifecycle. The code changes are small and correct: two error-handling fixes that prevent the reconciler from proceeding when ConfigMap state is unknown. However, commit <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/aadeeb4"><code>aadeeb4</code></a> claims to fix ObservedGeneration propagation but contains only the error-handling changes. The test and documentation assert a contract the code does not satisfy. A second issue affects the stop path: the test waits for the LimaVM to reach Running=False but reads the App immediately, without waiting for the App controller to reconcile.</p>
+</div>
+
+<hr>
+
+<h2 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&para;</a></h2>
+
+<div class="card card-critical">
+<p>None.</p>
+</div>
+
+<hr>
+
+<h2 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&para;</a></h2>
+
+<div class="card card-important">
+<div class="finding-title" id="important-1">
+  <span class="finding-num">1.</span> ObservedGeneration fix described in commit but never applied &mdash; <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/3bbb4f9c91cf1b17f49e1339736d7b0526f4963b/pkg/controllers/app/app/controllers/app_controller.go#L193">app_controller.go:193</a> <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span>
+  <a href="#important-1" class="pilcrow">&para;</a>
+</div>
+
+<p>Commit <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/aadeeb4"><code>aadeeb4</code></a> is titled "Fix ObservedGeneration in App Controller" and its body says the mirroring loop was changed from <code>app.Generation</code> to <code>cond.ObservedGeneration</code>. The actual diff changes only error handling (lines 70 and 168). Line 193 remains <code>app.Generation</code>, identical to the base branch.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/3bbb4f9c91cf1b17f49e1339736d7b0526f4963b/pkg/controllers/app/app/controllers/app_controller.go#L186-L196">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+<pre class="language-go" data-start="186" data-line="193"><code>	statusChanged := false
+	for _, cond := range limaVM.Status.Conditions {
+		statusChanged = apimeta.SetStatusCondition(&amp;app.Status.Conditions, metav1.Condition{
+			Type:               cond.Type,
+			Status:             cond.Status,
+			Reason:             cond.Reason,
+			Message:            base.TruncateConditionMessage(cond.Message),
+			ObservedGeneration: app.Generation,
+			LastTransitionTime: cond.LastTransitionTime,
+		}) || statusChanged
+	}</code></pre>
+
+<p>The test at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/3bbb4f9c91cf1b17f49e1339736d7b0526f4963b/bats/tests/32-app-controllers/app.bats#L184-L194">app.bats:184-194</a> compares <code>observedGeneration</code> from both resources and fails because the LimaVM controller never sets <code>ObservedGeneration</code> (defaults to 0, omitted from JSON via <code>omitempty</code>), while the App sets it to <code>app.Generation</code> (e.g. 2).</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/3bbb4f9c91cf1b17f49e1339736d7b0526f4963b/bats/tests/32-app-controllers/app.bats#L184-L194">bats/tests/32-app-controllers/app.bats</a></div>
+<pre class="language-bash" data-start="184" data-line="184-194"><code>@test "verify App Running condition observedGeneration matches LimaVM" {
+    run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${RDD_NAMESPACE}" -o json
+    local limavm_gen
+    limavm_gen=$(jq -r '.status.conditions[] | select(.type == "Running") | .observedGeneration' &lt;&lt;&lt;"${output}")
+
+    run -0 rdd ctl get app "${APP_NAME}" -o json
+    local app_gen
+    app_gen=$(jq -r '.status.conditions[] | select(.type == "Running") | .observedGeneration' &lt;&lt;&lt;"${output}")
+
+    [[ "${limavm_gen}" == "${app_gen}" ]]
+}</code></pre>
+
+<p><strong>Agents disagree on the fix direction.</strong> Claude and Codex recommend changing the code to <code>cond.ObservedGeneration</code>, matching the stated intent. Gemini argues the code is correct per Kubernetes conventions (<code>observedGeneration</code> should reflect the generation of the resource it belongs to, not its children) and recommends removing the test and correcting the docs instead.</p>
+
+<p>Both approaches resolve the inconsistency. The commit message and design doc express clear intent to mirror the LimaVM's value. After the code fix, both values would be 0 (null in JSON) since the LimaVM controller does not set <code>ObservedGeneration</code> &mdash; the test would pass by comparing null to null.</p>
+
+<p><span class="fix-label">Fix (option A &mdash; match stated intent):</span></p>
+
+<pre class="language-diff"><code>         Message:            base.TruncateConditionMessage(cond.Message),
+-        ObservedGeneration: app.Generation,
++        ObservedGeneration: cond.ObservedGeneration,
+         LastTransitionTime: cond.LastTransitionTime,</code></pre>
+
+<p><span class="fix-label">Fix (option B &mdash; keep current code, fix docs and test):</span> Remove the <code>observedGeneration</code> test and update <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/3bbb4f9c91cf1b17f49e1339736d7b0526f4963b/docs/design/api_app.md#L92">api_app.md:92</a> to exclude <code>observedGeneration</code> from the mirrored-fields list.</p>
+</div>
+
+<div class="card card-important">
+<div class="finding-title" id="important-2">
+  <span class="finding-num">2.</span> Stop-path test races App status propagation &mdash; <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/3bbb4f9c91cf1b17f49e1339736d7b0526f4963b/bats/tests/32-app-controllers/app.bats#L202-L211">app.bats:202-211</a> <span class="pill pill-codex">Codex</span>
+  <a href="#important-2" class="pilcrow">&para;</a>
+</div>
+
+<p>The test waits for the LimaVM to reach Running=False (line 203) but then reads the App immediately (line 207). The App and LimaVM are separate resources reconciled asynchronously &mdash; passing the LimaVM wait does not guarantee the App controller has processed the watch event. Codex ran the tests and saw this fail with <code>actual: Unknown</code>. The start-path tests avoid this race correctly: they include a separate <code>rdd ctl wait --for=condition=Running app/"${APP_NAME}"</code> test before the assertion.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/3bbb4f9c91cf1b17f49e1339736d7b0526f4963b/bats/tests/32-app-controllers/app.bats#L202-L211">bats/tests/32-app-controllers/app.bats</a></div>
+<pre class="language-bash" data-start="202" data-line="207-210"><code>@test "wait for LimaVM Running condition to become false after stop" {
+    rdd ctl wait --for=condition=Running=False \
+        limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=60s
+}
+
+@test "verify App mirrors LimaVM Running condition as False after stop" {
+    run -0 rdd ctl get app "${APP_NAME}" -o json
+    run -0 jq -r '.status.conditions[] | select(.type == "Running") | .status' &lt;&lt;&lt;"${output}"
+    assert_output "False"
+}</code></pre>
+
+<p><span class="fix-label">Fix:</span> Add a wait test before the assertion, matching the start-path pattern:</p>
+
+<pre class="language-diff"><code> @test "wait for LimaVM Running condition to become false after stop" {
+     rdd ctl wait --for=condition=Running=False \
+         limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=60s
+ }
+
++@test "wait for App Running condition to become False after stop" {
++    rdd ctl wait --for=condition=Running=False app/"${APP_NAME}" --timeout=30s
++}
++
+ @test "verify App mirrors LimaVM Running condition as False after stop" {</code></pre>
+</div>
+
+<hr>
+
+<h2 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&para;</a></h2>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-1">
+  <span class="finding-num">1.</span> Doc lists <code>observedGeneration</code> among mirrored fields but neither resource sets it &mdash; <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/3bbb4f9c91cf1b17f49e1339736d7b0526f4963b/docs/design/api_app.md#L92">api_app.md:92</a> <span class="pill pill-claude">Claude</span>
+  <a href="#suggestion-1" class="pilcrow">&para;</a>
+</div>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/3bbb4f9c91cf1b17f49e1339736d7b0526f4963b/docs/design/api_app.md#L92">docs/design/api_app.md</a></div>
+<pre class="language-markdown" data-start="92" data-line="92"><code>- **status.conditions**: Conditions are **mirrored directly from the owned `LimaVM`** resource. The App controller does not set conditions independently; it copies `type`, `status`, `reason`, `message`, `lastTransitionTime`, and `observedGeneration` from the LimaVM's conditions on every reconcile.</code></pre>
+
+<p>After applying the code fix for <a href="#important-1">Finding 1</a>, both conditions will have <code>observedGeneration</code> absent (zero with <code>omitempty</code>). Listing it among copied fields is technically accurate but misleading. Either drop <code>observedGeneration</code> from the list, or add <code>ObservedGeneration: limaVM.Generation</code> to the LimaVM controller's <code>setCondition</code> helper in a follow-up to give the field a meaningful value.</p>
+</div>
+
+<hr>
+
+<h2 id="design-observations" class="section-design">Design Observations <a href="#design-observations" class="pilcrow">&para;</a></h2>
+
+<h3 id="design-strengths">Strengths <a href="#design-strengths" class="pilcrow">&para;</a></h3>
+
+<div class="card card-design">
+<p><strong>Clean reconciler priority chain.</strong> The sequence &mdash; deletion, finalizer, create, ConfigMap cleanup, running propagation, condition mirroring &mdash; returns after each action, keeping the App's resourceVersion current for the final status update. The comment at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/3bbb4f9c91cf1b17f49e1339736d7b0526f4963b/pkg/controllers/app/app/controllers/app_controller.go#L181-L182">lines 181-182</a> explaining the explicit requeue is helpful. <span class="pill pill-claude">Claude</span></p>
+</div>
+
+<div class="card card-design">
+<p><strong>Error handling improvements are correct.</strong> The two actual code changes in <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/aadeeb4"><code>aadeeb4</code></a> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/3bbb4f9c91cf1b17f49e1339736d7b0526f4963b/pkg/controllers/app/app/controllers/app_controller.go#L70">line 70</a> and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/3bbb4f9c91cf1b17f49e1339736d7b0526f4963b/pkg/controllers/app/app/controllers/app_controller.go#L168">line 168</a>) fix genuine bugs: the old log-and-continue pattern allowed the reconciler to remove the cleanup finalizer or proceed with running-state propagation when ConfigMap state was unknown. Returning the error triggers a retry with backoff. <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span></p>
+</div>
+
+<div class="card card-design">
+<p><strong>Defensive message truncation.</strong> <code>TruncateConditionMessage</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/3bbb4f9c91cf1b17f49e1339736d7b0526f4963b/pkg/controllers/app/app/controllers/app_controller.go#L192">line 192</a> guards against a future LimaVM controller change bypassing its own truncation &mdash; good defense-in-depth at minimal cost. <span class="pill pill-claude">Claude</span></p>
+</div>
+
+<hr>
+
+<h2 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&para;</a></h2>
+
+<div class="card card-neutral">
+<p>The new tests cover start-path condition mirroring (Running=True status, lastTransitionTime preservation, observedGeneration comparison) and stop-path spec propagation (running=false patched and waited). Codex ran the full suite and confirmed two failures:</p>
+
+<ol>
+<li><code>verify App Running condition observedGeneration matches LimaVM</code> &mdash; fails because the code fix was never applied (<a href="#important-1">Finding 1</a>).</li>
+<li><code>verify App mirrors LimaVM Running condition as False after stop</code> &mdash; fails intermittently due to the race condition (<a href="#important-2">Finding 2</a>).</li>
+</ol>
+
+<p>Untested scenarios, ranked by risk:</p>
+<ol>
+<li>Condition mirroring when LimaVM has no conditions yet (reconcile before LimaVM controller runs).</li>
+<li>Stop-during-start: patching <code>running: false</code> while the LimaVM is still starting.</li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&para;</a></h2>
+
+<div class="card card-neutral">
+<p>The doc changes are a substantial improvement. The old doc had stale condition types (<code>AppCreated</code>/<code>AppRunning</code> vs the actual <code>Created</code>/<code>Running</code>), a wrong example (namespaced resource vs cluster-scoped), and no description of condition mirroring. The new doc accurately describes the cluster-scoped singleton constraint, <code>spec.namespace</code> semantics and immutability, condition mirroring design, <code>lastTransitionTime</code> semantics, and the finalizer-based deletion flow. The only inaccuracy is the <code>observedGeneration</code> claim noted in <a href="#suggestion-1">Suggestion 1</a>.</p>
+</div>
+
+<hr>
+
+<h2 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&para;</a></h2>
+
+<div class="card card-neutral">
+<p>Commit <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/aadeeb4"><code>aadeeb4</code></a> ("Fix ObservedGeneration in App Controller") does not match its diff. The message claims the mirroring loop was changed from <code>app.Generation</code> to <code>cond.ObservedGeneration</code>; the diff changes only error handling. All three agents flagged this independently. Either amend the commit to include the actual ObservedGeneration fix and keep the message, or rewrite the message to describe what it actually does (e.g., "Return errors from ConfigMap lookups instead of logging and continuing").</p>
+</div>
+
+<hr>
+
+<h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&para;</a></h2>
+
+<h3 id="retro-claude"><span class="pill pill-claude">Claude</span> <a href="#retro-claude" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>Claude Opus 4.6 produced the most detailed analysis at 125 lines. It traced the ObservedGeneration issue through the LimaVM controller's <code>setCondition</code> helper to explain why the test fails (both values end up as 0 after the fix, since the LimaVM controller never sets ObservedGeneration). It identified the misleading doc claim as a separate suggestion. It missed the stop-path test race condition &mdash; its testing assessment listed the stop tests as adequate coverage without flagging the missing wait.</p>
+<p>Duration: 6 min 59 s. No false positives. 1 unique insight (doc's observedGeneration claim is misleading even after the fix). Coverage miss: did not flag the stop-path race that Codex found.</p>
+</div>
+
+<h3 id="retro-codex"><span class="pill pill-codex">Codex</span> <a href="#retro-codex" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>Codex GPT 5.4 was the only agent to run the actual test suite, which confirmed both failures empirically. It identified two important findings: the ObservedGeneration mismatch and the stop-path race condition. Its analysis was concise and actionable at 103 lines. The stop-path race finding is a unique contribution &mdash; neither Claude nor Gemini caught it.</p>
+<p>Duration: 3 min 48 s. No false positives. 1 unique insight (stop-path race condition, confirmed by running the tests). No coverage misses.</p>
+</div>
+
+<h3 id="retro-gemini"><span class="pill pill-gemini">Gemini</span> <a href="#retro-gemini" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>Gemini 3.1 Pro raised a valid Kubernetes conventions argument: <code>observedGeneration</code> should reflect the generation of the resource it belongs to, not a child resource. This perspective adds value to the design discussion. However, Gemini explicitly claimed the stop tests work "without race conditions," contradicting Codex's empirical test run. Gemini also produced the shortest review at 64 lines, with less depth in the testing assessment.</p>
+<p>Duration: 4 min 31 s. 1 false negative (claimed stop tests have no race conditions). 1 unique insight (Kubernetes conventions argument for keeping <code>app.Generation</code>). Coverage miss: missed the stop-path race.</p>
+</div>
+
+<h3 id="retro-summary">Summary <a href="#retro-summary" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<table class="retro-table">
+<tr>
+  <th>Metric</th>
+  <th><span class="pill pill-claude">Claude</span> Opus 4.6</th>
+  <th><span class="pill pill-codex">Codex</span> GPT 5.4</th>
+  <th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th>
+</tr>
+<tr><td>Duration</td><td>6:59</td><td>3:48</td><td>4:31</td></tr>
+<tr><td>Critical</td><td>1 (rated critical; consolidated as important)</td><td>0</td><td>0</td></tr>
+<tr><td>Important</td><td>0</td><td>2</td><td>1</td></tr>
+<tr><td>Suggestion</td><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>Design observations</td><td>3</td><td>0</td><td>2</td></tr>
+<tr><td>False positives</td><td>0</td><td>0</td><td>1 (claimed no race in stop tests)</td></tr>
+<tr><td>Unique insights</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><td>Files reviewed</td><td>3</td><td>3</td><td>3</td></tr>
+<tr><td>Coverage misses</td><td>1 (stop-path race)</td><td>0</td><td>1 (stop-path race)</td></tr>
+</table>
+
+<p>Codex provided the highest signal-to-noise ratio this round. Running the actual test suite proved decisive: it confirmed one finding empirically and surfaced a second that both other agents missed. Claude contributed the deepest trace through the LimaVM controller internals. Gemini's Kubernetes conventions argument added a valuable alternative perspective, but its false claim about the stop tests having no race conditions is a notable miss.</p>
+</div>
+
+</main>
+
+<script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markdown.min.js"></script>
+<script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+</script>
+</body>
+</html>
