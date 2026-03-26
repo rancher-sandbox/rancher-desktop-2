@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deep Review: 20260325-180207-pr-234</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+</style>
+</head>
+<body>
+<main>
+
+<h1>Deep Review: 20260325-180207-pr-234</h1>
+
+<table class="meta-table">
+<tr><td>Date</td><td>2026-03-25 18:02</td></tr>
+<tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+<tr><td>Round</td><td>2</td></tr>
+<tr><td>Author</td><td><a href="https://github.com/jandubois">@jandubois</a></td></tr>
+<tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/234" class="gh-ref" data-title="Preserve Lima serial logs across VM restarts" data-state="open" data-type="pr">#234</a> &mdash; Preserve Lima serial logs across VM restarts</td></tr>
+<tr><td>Branch</td><td><code>rotate-serial-logs</code></td></tr>
+<tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/2ce15bc"><code>2ce15bc</code></a> Preserve Lima serial logs across VM restarts<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/df1d963"><code>df1d963</code></a> Preserve instance logs on LimaVM deletion when RDD_KEEP_LOGS is set<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/480661b"><code>480661b</code></a> Preserve instance logs in svc delete when RDD_KEEP_LOGS is set</td></tr>
+<tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.6, <span class="pill pill-codex">Codex</span> GPT 5.4, <span class="pill pill-gemini">Gemini</span> 3.1 Pro</td></tr>
+<tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; Windows file-lock race undermines log preservation in CI</td></tr>
+<tr><td>Wall-clock time</td><td><code>14 min 40 s</code></td></tr>
+</table>
+
+<hr>
+
+<h2 id="consolidated-review">Consolidated Review <a href="#consolidated-review" class="pilcrow">&para;</a></h2>
+
+<h3 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>This PR adds three log preservation mechanisms: serial log rotation before each VM start, instance log preservation during LimaVM deletion, and the same during <code>rdd svc delete</code> &mdash; all gated on <code>RDD_KEEP_LOGS</code>. The implementation extracts a clean <code>Rotate</code> helper from <code>Create</code> and introduces a shared <code>PreserveLogs</code> function with atomic directory naming. The main concern is that both preservation paths treat failures as best-effort warnings, then proceed to delete the source directories &mdash; on Windows, where killed processes retain file locks briefly, this race will cause the preservation to fail and the logs to be deleted, defeating the PR&rsquo;s purpose for Windows CI.</p>
+<p><strong>Structure:</strong> 0 critical, 1 important, 4 suggestions.</p>
+</div>
+
+<hr>
+
+<h3 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&para;</a></h3>
+
+<div class="card card-critical">
+<p>None.</p>
+</div>
+
+<hr>
+
+<h3 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&para;</a></h3>
+
+<div class="card card-important">
+<div class="finding-title" id="important-1">
+<span class="finding-num">1.</span> Log preservation failures do not prevent source deletion (important, gap) <span class="pill pill-codex">Codex</span><span class="pill pill-gemini">Gemini</span>
+<a href="#important-1" class="pilcrow">&para;</a>
+</div>
+
+<p>Both preservation paths &mdash; <code>preserveInstanceLogs</code> in the controller and <code>preserveAllInstanceLogs</code> in the service &mdash; log failures as warnings, then allow the caller to delete the source directory. In the controller, <code>preserveInstanceLogs</code> returns void at line 714, and <code>handleDeletion</code> calls <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/480661b9a23952a0a86c548e6584fd1b6e66ffc1/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L82"><code>limainstance.Delete</code></a> at line 82 regardless. In the service, <code>preserveAllInstanceLogs</code> continues to the next instance at line 454, and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/480661b9a23952a0a86c548e6584fd1b6e66ffc1/pkg/service/cmd/service.go#L428"><code>Delete()</code></a> calls <code>os.RemoveAll(instance.ShortDir())</code> at line 428.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/480661b9a23952a0a86c548e6584fd1b6e66ffc1/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L702-L719">pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go</a></div>
+<pre data-start="702" data-line="705,711-714"><code class="language-go">// preserveInstanceLogs moves log files from the Lima instance directory to
+// a subdirectory of the service log directory before the instance is deleted.
+// This is a no-op unless RDD_KEEP_LOGS is set.
+func preserveInstanceLogs(ctx context.Context, inst *limatype.Instance) {
+	if os.Getenv("RDD_KEEP_LOGS") == "" {
+		return
+	}
+
+	logger := log.FromContext(ctx)
+	count, err := instance.PreserveLogs(inst.Dir, inst.Name)
+	if err != nil {
+		logger.Error(err, "Failed to preserve instance logs")
+		return
+	}
+	if count &gt; 0 {
+		logger.Info("Preserved instance logs", "instance", inst.Name, "count", count)
+	}
+}</code></pre>
+
+
+<p>The <code>handleDeletion</code> flow calls <code>preserveInstanceLogs</code> at line 77, then unconditionally proceeds to <code>limainstance.Delete</code> at line 82:</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/480661b9a23952a0a86c548e6584fd1b6e66ffc1/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L48-L88">pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go</a></div>
+<pre data-start="48" data-line="55,77,82"><code class="language-go">	if existingInst != nil {
+		// Only use PID-based force-stop for Running instances. Broken
+		// instances may have stale PID files pointing to recycled processes
+		// on Windows (Lima's ReadPIDFile treats any live PID as valid).
+		// Not tested: simulating stale PID files requires Windows-specific
+		// PID file manipulation that BATS cannot easily reproduce.
+		if existingInst.Status == limatype.StatusRunning {
+			stopInstanceForcibly(ctx, logger, existingInst)
+		} else if existingInst.VMType == limatype.WSL2 {
+			// A "stopped" WSL2 distro can retain kernel state that deadlocks
+			// wsl.exe --unregister. Terminate it without PID-based killing,
+			// since the PIDs may have been recycled on Windows.
+			terminateWSL2Distro(ctx, logger, existingInst.Name)
+		}
+		if runtime.GOOS == "windows" {
+			// Clear PIDs so Lima's Delete &rarr; StopForcibly does not kill
+			// unrelated processes if the PIDs were recycled. Windows recycles
+			// PIDs aggressively, and Lima's ReadPIDFile treats any live PID
+			// as valid. On Unix, PID recycling is rare (wraps around 32768+),
+			// so we let Lima's Delete clean up any surviving driver processes.
+			//
+			// This disables Lima's internal kill retry even if stopInstanceForcibly
+			// failed above. That is intentional: a failed kill means KillTree
+			// could not reach the process (access denied, already reaped), and
+			// the PID may already be recycled. Retrying with a stale PID is
+			// worse than letting Delete proceed without a kill.
+			existingInst.DriverPID = 0
+			existingInst.HostAgentPID = 0
+		}
+		preserveInstanceLogs(ctx, existingInst)
+		logger.Info("Deleting Lima instance", "instance", limaVM.Name)
+		// Use a timeout because Lima's WSL2 driver calls wsl.exe --unregister
+		// which can hang indefinitely if the WSL subsystem is degraded.
+		deleteCtx, deleteCancel := context.WithTimeout(ctx, time.Minute)
+		err = limainstance.Delete(deleteCtx, existingInst, true)
+		deleteCancel()
+		if err != nil {
+			logger.Error(err, "Failed to delete Lima instance")
+			return ctrl.Result{}, err
+		}
+		logger.Info("Deleted Lima instance", "instance", limaVM.Name)</code></pre>
+
+
+<p>In <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/480661b9a23952a0a86c548e6584fd1b6e66ffc1/pkg/service/cmd/service.go#L419-L430"><code>service.go</code></a>, <code>Delete()</code> calls <code>Stop()</code>, then <code>preserveAllInstanceLogs()</code>, then removes the directories unconditionally:</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/480661b9a23952a0a86c548e6584fd1b6e66ffc1/pkg/service/cmd/service.go#L419-L460">pkg/service/cmd/service.go</a></div>
+<pre data-start="419" data-line="423-424,428,451-454"><code class="language-go">func Delete() error {
+	if !Exists() {
+		return fmt.Errorf("%q control plane does not exist", instance.Name())
+	}
+	_ = Stop()
+	preserveAllInstanceLogs()
+	if os.Getenv("RDD_KEEP_LOGS") == "" {
+		_ = os.RemoveAll(instance.LogDir())
+	}
+	_ = os.RemoveAll(instance.ShortDir())
+	return os.RemoveAll(instance.Dir())
+}
+
+// preserveAllInstanceLogs moves .log files from each Lima instance directory
+// to the service log directory before the instance directories are deleted.
+// This is a no-op unless RDD_KEEP_LOGS is set.
+func preserveAllInstanceLogs() {
+	if os.Getenv("RDD_KEEP_LOGS") == "" {
+		return
+	}
+	entries, err := os.ReadDir(instance.LimaHome())
+	if err != nil {
+		if !os.IsNotExist(err) {
+			logrus.WithError(err).Warn("Failed to read Lima instance directory")
+		}
+		return
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		instDir := filepath.Join(instance.LimaHome(), entry.Name())
+		count, err := instance.PreserveLogs(instDir, entry.Name())
+		if err != nil {
+			logrus.WithError(err).WithField("instance", entry.Name()).Warn("Failed to preserve instance logs")
+			continue
+		}
+		if count &gt; 0 {
+			logrus.WithFields(logrus.Fields{"instance": entry.Name(), "count": count}).Info("Preserved instance logs")
+		}
+	}
+}</code></pre>
+
+<p>On Windows, <code>stopInstanceForcibly</code> (line 55) and <code>Stop()</code> (line 423) terminate processes, but Windows does not release file locks until the process handle is fully closed. The subsequent <code>os.Rename</code> calls in <code>PreserveLogs</code> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/480661b9a23952a0a86c548e6584fd1b6e66ffc1/pkg/instance/logs.go#L54">logs.go:54</a>) fail with <code>ERROR_SHARING_VIOLATION</code>, the error is logged, and the source logs are then deleted &mdash; the exact outcome this PR aims to prevent.</p>
+
+<p>On Unix this race is unlikely because killed processes release file descriptors immediately, and <code>os.Rename</code> does not require exclusive access. The practical impact is limited to Windows CI, which is the PR author&rsquo;s primary concern (issue <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/247" class="gh-ref" data-title="Preserve ha.stderr.log files in CI" data-state="open" data-type="issue">#247</a>).</p>
+
+<p><span class="fix-label">Fix:</span> In <code>preserveInstanceLogs</code>, return an error and let <code>handleDeletion</code> decide whether to retry or proceed. In <code>Delete()</code>, add a brief <code>time.Sleep</code> or poll for file accessibility after <code>Stop()</code> on Windows before calling <code>preserveAllInstanceLogs</code>. Alternatively, accept the best-effort design but document the Windows limitation with a TODO.</p>
+
+<pre><code class="language-diff">-func preserveInstanceLogs(ctx context.Context, inst *limatype.Instance) {
++func preserveInstanceLogs(ctx context.Context, inst *limatype.Instance) error {
+     if os.Getenv("RDD_KEEP_LOGS") == "" {
+-        return
++        return nil
+     }
+     logger := log.FromContext(ctx)
+     count, err := instance.PreserveLogs(inst.Dir, inst.Name)
+     if err != nil {
+-        logger.Error(err, "Failed to preserve instance logs")
+-        return
++        return fmt.Errorf("preserve instance logs: %w", err)
+     }
+     if count &gt; 0 {
+         logger.Info("Preserved instance logs", "instance", inst.Name, "count", count)
+     }
++    return nil
+ }</code></pre>
+
+</div>
+
+<hr>
+
+<h3 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&para;</a></h3>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-1">
+<span class="finding-num">1.</span> <code>Rotate</code> could handle nonexistent directory gracefully (suggestion, enhancement) <span class="pill pill-gemini">Gemini</span>
+<a href="#suggestion-1" class="pilcrow">&para;</a>
+</div>
+
+<p><code>Rotate</code> propagates <code>os.ReadDir</code> errors, including <code>fs.ErrNotExist</code>. In <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/480661b9a23952a0a86c548e6584fd1b6e66ffc1/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L410"><code>startInstance</code></a> (line 410 of <code>limavm_lifecycle.go</code>), <code>inst.Dir</code> always exists because <code>store.Inspect</code> has already succeeded, so this does not trigger in practice. However, as a public API, <code>Rotate</code> would be more robust if it treated a missing directory as a no-op &mdash; there are no logs to rotate.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/480661b9a23952a0a86c548e6584fd1b6e66ffc1/pkg/util/logfile/logfile.go#L63-L77">pkg/util/logfile/logfile.go</a></div>
+<pre data-start="63" data-line="66-69"><code class="language-go">func Rotate(dir, name string, keepAll bool) error {
+	pattern := regexp.MustCompile(`^` + regexp.QuoteMeta(name) + `\.(\d+)\.log$`)
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("read log directory %s: %w", dir, err)
+	}
+
+	// Find the highest existing sequence number.
+	maxN := 0
+	var numberedFiles []numberedFile
+	for _, entry := range entries {
+		matches := pattern.FindStringSubmatch(entry.Name())
+		if matches == nil {
+			continue</code></pre>
+
+<p><span class="fix-label">Fix:</span> Return nil for <code>fs.ErrNotExist</code>.</p>
+
+<pre><code class="language-diff"> entries, err := os.ReadDir(dir)
+ if err != nil {
++    if errors.Is(err, fs.ErrNotExist) {
++        return nil
++    }
+     return fmt.Errorf("read log directory %s: %w", dir, err)
+ }</code></pre>
+</div>
+
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-2">
+<span class="finding-num">2.</span> <code>os.Rename</code> fails across filesystems (suggestion, gap) <span class="pill pill-claude">Claude</span><span class="pill pill-gemini">Gemini</span>
+<a href="#suggestion-2" class="pilcrow">&para;</a>
+</div>
+
+<p><code>os.Rename</code> returns <code>EXDEV</code> when source and destination are on different filesystems. In practice, <code>LimaHome()</code> (under <code>~/.rd{suffix}/lima/</code>) and <code>LogDir()</code> (under <code>~/Library/Application Support/rancher-desktop-{instance}/log/</code>) are on the same filesystem. On Windows, both live under <code>%LOCALAPPDATA%</code>. A cross-device failure would require deliberate filesystem layout changes.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/480661b9a23952a0a86c548e6584fd1b6e66ffc1/pkg/instance/logs.go#L49-L58">pkg/instance/logs.go</a></div>
+<pre data-start="49" data-line="54-55"><code class="language-go">	count := 0
+	for _, entry := range logFiles {
+		src := filepath.Join(srcDir, entry.Name())
+		dst := filepath.Join(destDir, entry.Name())
+		if err := os.Rename(src, dst); err != nil {
+			return count, fmt.Errorf("preserve %s: %w", entry.Name(), err)
+		}
+		count++
+	}</code></pre>
+
+<p><span class="fix-label">Fix:</span> If this ever becomes an issue, add a copy-then-delete fallback. For now, a comment noting the assumption suffices.</p>
+</div>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-3">
+<span class="finding-num">3.</span> Empty directory left behind on partial <code>PreserveLogs</code> failure (suggestion, gap) <span class="pill pill-gemini">Gemini</span>
+<a href="#suggestion-3" class="pilcrow">&para;</a>
+</div>
+
+<p><code>nextAvailableDir</code> creates the destination directory before the rename loop. If the first <code>os.Rename</code> fails, the directory is left empty. Successive failures accumulate empty numbered directories (<code>opensuse</code>, <code>opensuse.2</code>, <code>opensuse.3</code>, ...).</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/480661b9a23952a0a86c548e6584fd1b6e66ffc1/pkg/instance/logs.go#L40-L58">pkg/instance/logs.go</a></div>
+<pre data-start="40" data-line="45-47,54-55"><code class="language-go">	logDir := LogDir()
+	if err := os.MkdirAll(logDir, 0o700); err != nil {
+		return 0, fmt.Errorf("create log directory %s: %w", logDir, err)
+	}
+
+	destDir, err := nextAvailableDir(logDir, instanceName)
+	if err != nil {
+		return 0, err
+	}
+
+	count := 0
+	for _, entry := range logFiles {
+		src := filepath.Join(srcDir, entry.Name())
+		dst := filepath.Join(destDir, entry.Name())
+		if err := os.Rename(src, dst); err != nil {
+			return count, fmt.Errorf("preserve %s: %w", entry.Name(), err)
+		}
+		count++
+	}</code></pre>
+
+<p><span class="fix-label">Fix:</span> If <code>count == 0</code> on error return, remove the empty directory.</p>
+
+<pre><code class="language-diff">+    if count == 0 {
++        os.Remove(destDir)
++    }
+     return count, fmt.Errorf("preserve %s: %w", entry.Name(), err)</code></pre>
+</div>
+
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-4">
+<span class="finding-num">4.</span> Test files use different <code>os.IsNotExist</code> conventions (suggestion, regression) <span class="pill pill-claude">Claude</span>
+<a href="#suggestion-4" class="pilcrow">&para;</a>
+</div>
+
+<p><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/480661b9a23952a0a86c548e6584fd1b6e66ffc1/pkg/instance/logs_test.go#L72"><code>logs_test.go</code></a> uses the older <code>os.IsNotExist(err)</code> pattern while <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/480661b9a23952a0a86c548e6584fd1b6e66ffc1/pkg/util/logfile/logfile_test.go"><code>logfile_test.go</code></a> (in the same PR) uses the modern <code>errors.Is(err, fs.ErrNotExist)</code>. Both work, but the inconsistency within one PR is avoidable.</p>
+
+<p><span class="fix-label">Fix:</span> Align <code>logs_test.go</code> to use <code>errors.Is(err, fs.ErrNotExist)</code> to match <code>logfile_test.go</code>.</p>
+</div>
+
+<hr>
+
+<h3 id="design-observations" class="section-design">Design Observations <a href="#design-observations" class="pilcrow">&para;</a></h3>
+
+<div class="card card-design">
+<p><strong>Strengths</strong></p>
+<ul>
+<li><strong>Clean <code>Rotate</code> extraction.</strong> Factoring rotation logic from <code>Create</code> into <code>Rotate</code> enables serial log rotation without creating a new file, while keeping <code>Create</code>&rsquo;s behavior identical. The shared numbering and pruning code eliminates duplication. <span class="pill pill-claude">Claude</span><span class="pill pill-codex">Codex</span><span class="pill pill-gemini">Gemini</span></li>
+<li><strong>Belt-and-suspenders preservation.</strong> The controller&rsquo;s <code>preserveInstanceLogs</code> (API-driven deletion) and the service&rsquo;s <code>preserveAllInstanceLogs</code> (<code>svc delete</code>) cover complementary paths without interfering. If the controller already deleted an instance, <code>preserveAllInstanceLogs</code> finds nothing to move. If the controller was interrupted by <code>Stop()</code>, the service path catches remaining logs. <span class="pill pill-claude">Claude</span></li>
+<li><strong>Atomic directory naming.</strong> <code>nextAvailableDir</code> uses <code>os.Mkdir</code> with <code>fs.ErrExist</code> checks for race-free directory creation. Two concurrent callers cannot claim the same directory name. The 1000-entry limit prevents runaway accumulation. <span class="pill pill-claude">Claude</span></li>
+<li><strong>Log filtering before directory creation.</strong> <code>PreserveLogs</code> checks for <code>.log</code> files before calling <code>nextAvailableDir</code>, avoiding empty directories when no logs exist. <span class="pill pill-claude">Claude</span></li>
+</ul>
+</div>
+
+<hr>
+
+<h3 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>Test coverage is good. New unit tests cover:</p>
+<ul>
+<li><code>logfile.Rotate</code>: no-file (no-op), single rename, sequential numbering, pruning &mdash; 4 tests</li>
+<li><code>instance.PreserveLogs</code>: moves log files, skips non-logs and directories, no-log-files (no-op), nonexistent source &mdash; 4 tests</li>
+<li><code>instance.nextAvailableDir</code>: first call, collision numbering, nonexistent parent &mdash; 3 tests</li>
+</ul>
+<p>Untested scenarios ranked by risk:</p>
+<ol>
+<li><strong>Windows file-lock race in preservation</strong> &mdash; No test covers <code>RDD_KEEP_LOGS=1</code> with a LimaVM deletion while processes still hold file locks. This is the path most likely to fail on Windows CI.</li>
+<li><strong><code>PreserveLogs</code> partial failure</strong> &mdash; If a rename fails midway, the function returns a partial count and an error. No test verifies the destination directory state (some files moved, empty directory left behind).</li>
+<li><strong>End-to-end <code>svc delete</code> with log preservation</strong> &mdash; No integration test covers <code>rdd svc delete</code> preserving instance logs and removing <code>LIMA_HOME</code> afterward.</li>
+</ol>
+</div>
+
+<hr>
+
+<h3 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>Documentation updates are thorough:</p>
+<ul>
+<li><code>environment.md</code> consolidates <code>RDD_KEEP_LOGS</code> behavior into a dedicated &ldquo;Log Preservation&rdquo; section with sub-sections for rotation, preservation, and BATS defaults.</li>
+<li><code>cmd_service.md</code> adds a description for the previously-empty <code>rdd service delete</code> section.</li>
+<li><code>logfile.Rotate</code> and <code>instance.PreserveLogs</code> have complete godoc comments.</li>
+<li>Internal functions (<code>preserveInstanceLogs</code>, <code>preserveAllInstanceLogs</code>, <code>nextAvailableDir</code>) have clear doc comments.</li>
+</ul>
+<p>One minor gap: the header comment in <code>scripts/collect-bats-logs.sh</code> still describes the script as collecting service and hostagent logs, but the script now also collects preserved instance-log directories. <span class="pill pill-codex">Codex</span></p>
+</div>
+
+<hr>
+
+<h3 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<p>The three commits represent a clean progression:</p>
+<ol>
+<li><strong><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/2ce15bc"><code>2ce15bc</code></a></strong> &mdash; Extract <code>Rotate</code>, add serial log rotation. Self-contained.</li>
+<li><strong><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/df1d963"><code>df1d963</code></a></strong> &mdash; Add instance log preservation during LimaVM deletion and <code>ShortDir</code> cleanup.</li>
+<li><strong><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/480661b"><code>480661b</code></a></strong> &mdash; Extract <code>PreserveLogs</code> helper, add <code>svc delete</code> preservation. Refactors the inline implementation from commit 2 into a shared helper.</li>
+</ol>
+<p>Commit messages accurately describe the changes. No fixup commits.</p>
+</div>
+
+<hr>
+
+<h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&para;</a></h2>
+
+<h3 id="retro-claude">Claude Opus 4.6 <a href="#retro-claude" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<ul>
+<li><strong>Unique contributions:</strong> Identified the belt-and-suspenders design strength (controller + service paths complement each other without interfering). Noted the <code>os.IsNotExist</code> vs <code>errors.Is</code> style inconsistency across the PR&rsquo;s test files. Observed that <code>nextAvailableDir</code> uses <code>os.Mkdir</code> for atomic directory creation.</li>
+<li><strong>Accuracy:</strong> High. Both suggestions are valid, correctly scoped, and appropriately rated. No false positives.</li>
+<li><strong>Depth:</strong> Read all changed files, traced into callers. Did not flag the Windows file-lock race that Codex and Gemini identified &mdash; a notable miss given the repo-specific context about Windows process lifecycle issues.</li>
+<li><strong>Coverage:</strong> Complete. All 10 files reviewed with explicit status.</li>
+<li><strong>Signal-to-noise:</strong> Excellent. Two targeted suggestions, no noise. The design strengths section provided genuinely useful observations.</li>
+</ul>
+</div>
+
+<h3 id="retro-codex">Codex GPT 5.4 <a href="#retro-codex" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<ul>
+<li><strong>Unique contributions:</strong> Identified that preservation failures are swallowed before deletion proceeds, tracing both the controller path (line 77 &rarr; line 82) and the service path (line 424 &rarr; line 428). Flagged the <code>ShortDir</code> error handling gap in <code>Delete()</code>.</li>
+<li><strong>Accuracy:</strong> Mostly accurate. Finding 1 correctly identifies the preserve-then-delete race. Finding 2 overstates the severity of the <code>ShortDir</code> error &mdash; the <code>_ = Stop()</code> pattern is pre-existing (commit <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/f10522bf"><code>f10522bf</code></a>), and the new <code>_ = os.RemoveAll(instance.ShortDir())</code> follows the established convention. Codex&rsquo;s fix to propagate <code>Stop()</code> errors is out of scope for this PR.</li>
+<li><strong>Depth:</strong> Traced the full deletion flow through both code paths. Used line-level references.</li>
+<li><strong>Coverage:</strong> Complete. All 10 files reviewed.</li>
+<li><strong>Signal-to-noise:</strong> Good. Finding 1 is the review&rsquo;s most valuable insight. Finding 2 mixes a pre-existing gap with the new change.</li>
+</ul>
+</div>
+
+
+<h3 id="retro-gemini">Gemini 3.1 Pro <a href="#retro-gemini" class="pilcrow">&para;</a></h3>
+
+<div class="card card-neutral">
+<ul>
+<li><strong>Unique contributions:</strong> Flagged the empty directory left behind on partial <code>PreserveLogs</code> failure. Identified the Windows file-lock race from the <code>svc delete</code> perspective. Found the acknowledged limitation about stale PID files on Windows.</li>
+<li><strong>Accuracy:</strong> Mixed. Finding 1 (Rotate on nonexistent directory) overstates severity as IMPORTANT &mdash; the stated scenario (&ldquo;first boot of a fresh VM, <code>inst.Dir</code> may not exist yet&rdquo;) is incorrect because <code>store.Inspect</code> must succeed before <code>startInstance</code> is called, guaranteeing the directory exists. Finding 2 (Windows file locks) is valid and complements Codex&rsquo;s analysis.</li>
+<li><strong>Depth:</strong> Good use of git blame on findings. Traced into <code>StopWithWait</code> and process lifecycle code.</li>
+<li><strong>Coverage:</strong> Complete. All 10 files reviewed. Marked <code>limavm_lifecycle.go</code> as &ldquo;Reviewed, no issues&rdquo; despite the file containing the preservation gap that Codex flagged &mdash; a coverage miss.</li>
+<li><strong>Signal-to-noise:</strong> Good. The empty-directory suggestion is a genuine improvement. The Rotate finding needed severity recalibration.</li>
+</ul>
+</div>
+
+<h3 id="retro-summary">Summary <a href="#retro-summary" class="pilcrow">&para;</a></h3>
+
+<table class="retro-table">
+<thead>
+<tr><th>Metric</th><th>Claude Opus 4.6</th><th>Codex GPT 5.4</th><th>Gemini 3.1 Pro</th></tr>
+</thead>
+<tbody>
+<tr><td>Duration</td><td>6:10</td><td>3:40</td><td>5:39</td></tr>
+<tr><td>Critical</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>Important</td><td>0</td><td>2</td><td>2</td></tr>
+<tr><td>Suggestion</td><td>2</td><td>0</td><td>2</td></tr>
+<tr><td>Design observations</td><td>5</td><td>2</td><td>1</td></tr>
+<tr><td>False positives</td><td>0</td><td>0 (1 overscoped)</td><td>1 (severity inflation)</td></tr>
+<tr><td>Unique insights</td><td>2</td><td>2</td><td>2</td></tr>
+<tr><td>Files reviewed</td><td>10</td><td>10</td><td>10</td></tr>
+<tr><td>Coverage misses</td><td>1 (Windows race)</td><td>0</td><td>1 (controller preserve gap)</td></tr>
+</tbody>
+</table>
+
+<div class="card card-neutral">
+<p>Codex delivered the most actionable finding (preserve-then-delete race) in the shortest time. Gemini independently confirmed the Windows angle and added the empty-directory cleanup suggestion. Claude provided the best design analysis and highest signal-to-noise ratio but missed the review&rsquo;s central finding. The multi-agent approach proved its value: no single agent identified all the important issues.</p>
+</div>
+
+</main>
+<script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+<script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+</script>
+</body>
+</html>
