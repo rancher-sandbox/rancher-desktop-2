@@ -22,6 +22,8 @@ import (
 const (
 	// The reconcilers will trigger on update of a namespace with this name.
 	mockNamespaceName = "rdd-mocks"
+	// The name of the Kubernetes namespace in which the resources will be created.
+	apiNamespace = "rancher-desktop"
 	// The mock controller creates all items in this (container) namespace.
 	containerNamespace = "buildkit"
 
@@ -64,8 +66,10 @@ func (c *controller) GetCRDData() string {
 }
 
 func (c *controller) setupReconciler(ctx context.Context, mgr ctrl.Manager) error {
-	mgr.GetLogger().Info("Setting up Mock NamespaceReconciler")
-	err := (&namespaceReconciler{
+	log := mgr.GetLogger()
+
+	log.Info("Setting up Mock KubeNamespaceReconciler")
+	err := (&kubeNamespaceReconciler{
 		Client:   mgr.GetClient(),
 		Recorder: mgr.GetEventRecorder(controllerLongName),
 	}).SetupWithManager(mgr)
@@ -73,7 +77,16 @@ func (c *controller) setupReconciler(ctx context.Context, mgr ctrl.Manager) erro
 		return err
 	}
 
-	mgr.GetLogger().Info("Setting up Mock ContainerReconciler")
+	log.Info("Setting up Mock ContainerNamespaceReconciler")
+	err = (&containerNamespaceReconciler{
+		Client:   mgr.GetClient(),
+		Recorder: mgr.GetEventRecorder(controllerLongName),
+	}).SetupWithManager(mgr)
+	if err != nil {
+		return err
+	}
+
+	log.Info("Setting up Mock ContainerReconciler")
 	err = (&containerReconciler{
 		Client:   mgr.GetClient(),
 		Recorder: mgr.GetEventRecorder(controllerLongName),
@@ -82,7 +95,7 @@ func (c *controller) setupReconciler(ctx context.Context, mgr ctrl.Manager) erro
 		return err
 	}
 
-	mgr.GetLogger().Info("Setting up Mock ImageReconciler")
+	log.Info("Setting up Mock ImageReconciler")
 	err = (&imageReconciler{
 		Client:   mgr.GetClient(),
 		Recorder: mgr.GetEventRecorder(controllerLongName),
@@ -91,7 +104,7 @@ func (c *controller) setupReconciler(ctx context.Context, mgr ctrl.Manager) erro
 		return err
 	}
 
-	mgr.GetLogger().Info("Setting up Mock VolumeReconciler")
+	log.Info("Setting up Mock VolumeReconciler")
 	err = (&volumeReconciler{
 		Client:   mgr.GetClient(),
 		Recorder: mgr.GetEventRecorder(controllerLongName),

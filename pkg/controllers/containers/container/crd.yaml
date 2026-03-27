@@ -467,7 +467,6 @@ spec:
             - name
             - namespace
             - path
-            - pid
             - status
             type: object
         required:

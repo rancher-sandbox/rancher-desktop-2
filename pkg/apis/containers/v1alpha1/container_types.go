@@ -98,7 +98,7 @@ type ContainerStatus struct {
 	Status ContainerStatusValue `json:"status"`
 	// Pid is the process identifier for the main process in the container.
 	//
-	// +required
+	// +optional
 	Pid int32 `json:"pid"`
 	// ExitCode is the exit status of the main process in the container.
 	//

@@ -16,7 +16,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	metav1apply "k8s.io/client-go/applyconfigurations/meta/v1"
 	"k8s.io/client-go/tools/events"
@@ -79,7 +78,7 @@ func (r *containerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		if inspect.State.Running {
 			state = containersv1alpha1.ContainerStatusRunning
 		}
-		applyConfig := containersv1alpha1apply.Container(inspect.ID, metav1.NamespaceDefault).
+		applyConfig := containersv1alpha1apply.Container(inspect.ID, apiNamespace).
 			WithOwnerReferences(ownerReference).
 			WithSpec(containersv1alpha1apply.ContainerSpec().WithState(state))
 
@@ -109,7 +108,7 @@ func (r *containerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				WithBindings(bindings...))
 		}
 		applyStatus.WithPorts(applyPorts...)
-		applyConfig = containersv1alpha1apply.Container(inspect.ID, metav1.NamespaceDefault).
+		applyConfig = containersv1alpha1apply.Container(inspect.ID, apiNamespace).
 			WithStatus(applyStatus)
 
 		err = r.Client.SubResource("status").Apply(ctx, applyConfig, client.ForceOwnership, client.FieldOwner(controllerLongName))

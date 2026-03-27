@@ -110,7 +110,7 @@ func (r *imageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 					sha256.Sum256([]byte(tag)))
 				statusApplyCopy := *statusApplyConfig
 				errs = append(errs, r.updateImage(ctx,
-					containersv1alpha1apply.Image(name, metav1.NamespaceDefault).
+					containersv1alpha1apply.Image(name, apiNamespace).
 						WithOwnerReferences(ownerReference),
 					statusApplyCopy.
 						WithRepoTag(tag).
@@ -120,7 +120,7 @@ func (r *imageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		} else {
 			// No tags; create a single dangling image.
 			errs = append(errs, r.updateImage(ctx,
-				containersv1alpha1apply.Image(sanitizeKubernetesObjectName(inspect.ID), metav1.NamespaceDefault).
+				containersv1alpha1apply.Image(sanitizeKubernetesObjectName(inspect.ID), apiNamespace).
 					WithOwnerReferences(ownerReference),
 				statusApplyConfig)...,
 			)

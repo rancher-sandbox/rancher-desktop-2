@@ -4,6 +4,7 @@ load '../../helpers/load'
 # and image controllers work as expected.
 
 TEST_DATA_PATH="${PATH_BATS_ROOT}/../pkg/controllers/mock/testdata"
+NAMESPACE="rancher-desktop"
 
 local_setup_file() {
     setup_rdd_control_plane "containers"
@@ -22,14 +23,13 @@ local_teardown_file() {
 
 @test "containers are created" {
     rdd ctl wait --for=create namespace rdd-mocks --timeout=30s
+    rdd ctl wait --for=create namespace "${NAMESPACE}" --timeout=30s
 
     run -0 cat "${TEST_DATA_PATH}/containers.json"
     run -0 jq_output '.[].Id'
-    containers=${output}
+    mapfile -t containers <<<"${output}"
 
-    while IFS= read -r container; do
-        rdd ctl wait --for=create container "${container}" --timeout=30s
-    done <<<"${containers}"
+    rdd ctl wait --for=create --namespace="${NAMESPACE}" container "${containers[@]}" --timeout=30s
 }
 
 @test "images are created" {
@@ -40,8 +40,8 @@ local_teardown_file() {
     images=${output}
 
     while IFS= read -r image; do
-        try --max 30 --delay 1 -- rdd ctl get image --field-selector "status.repoTag=${image}" --output jsonpath='{.items[*].status.repoTag}'
-        assert_line "${image}"
+        rdd ctl wait --for=create --namespace="${NAMESPACE}" image \
+            --field-selector "status.repoTag=${image}" --timeout=30s
     done <<<"${images}"
 }
 
@@ -50,9 +50,7 @@ local_teardown_file() {
 
     run -0 cat "${TEST_DATA_PATH}/volumes.json"
     run -0 jq_output '.[].Name'
-    volumes=${output}
+    mapfile -t volumes <<<"${output}"
 
-    while IFS= read -r volume; do
-        rdd ctl wait --for=create volume "${volume}" --timeout=30s
-    done <<<"${volumes}"
+    rdd ctl wait --for=create --namespace="${NAMESPACE}" volume "${volumes[@]}" --timeout=30s
 }
