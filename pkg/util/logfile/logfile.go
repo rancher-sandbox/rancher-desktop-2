@@ -9,7 +9,9 @@
 package logfile
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -33,11 +35,42 @@ func Create(dir, name string, keepAll bool, header string) (*os.File, error) {
 		return nil, fmt.Errorf("create log directory %s: %w", dir, err)
 	}
 
+	if err := Rotate(dir, name, keepAll); err != nil {
+		return nil, err
+	}
+
+	filePath := filepath.Join(dir, name+".log")
+	f, err := os.Create(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("create log file %s: %w", filePath, err)
+	}
+
+	if header != "" {
+		if _, err := f.WriteString(header); err != nil {
+			f.Close()
+			os.Remove(filePath)
+			return nil, fmt.Errorf("write header to %s: %w", filePath, err)
+		}
+	}
+
+	return f, nil
+}
+
+// Rotate renames {name}.log to {name}.{N}.log without creating a new file.
+// Use this for logs managed by an external process (e.g., VM serial console
+// output written by the VM driver) that would be overwritten on next start.
+//
+// When keepAll is false, old numbered files beyond the retention count
+// are removed.
+func Rotate(dir, name string, keepAll bool) error {
 	pattern := regexp.MustCompile(`^` + regexp.QuoteMeta(name) + `\.(\d+)\.log$`)
 
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, fmt.Errorf("read log directory %s: %w", dir, err)
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("read log directory %s: %w", dir, err)
 	}
 
 	// Find the highest existing sequence number.
@@ -65,29 +98,16 @@ func Create(dir, name string, keepAll bool, header string) (*os.File, error) {
 	if _, err := os.Lstat(filePath); err == nil {
 		numberedName := fmt.Sprintf("%s.%d.log", name, nextN)
 		if err := os.Rename(filePath, filepath.Join(dir, numberedName)); err != nil {
-			return nil, fmt.Errorf("rename %s to %s: %w", filePath, numberedName, err)
+			return fmt.Errorf("rename %s to %s: %w", filePath, numberedName, err)
 		}
 		numberedFiles = append(numberedFiles, numberedFile{n: nextN, name: numberedName})
-	}
-
-	f, err := os.Create(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("create log file %s: %w", filePath, err)
-	}
-
-	if header != "" {
-		if _, err := f.WriteString(header); err != nil {
-			f.Close()
-			os.Remove(filePath)
-			return nil, fmt.Errorf("write header to %s: %w", filePath, err)
-		}
 	}
 
 	if !keepAll {
 		pruneOldFiles(dir, numberedFiles, nextN)
 	}
 
-	return f, nil
+	return nil
 }
 
 // pruneOldFiles removes numbered log files beyond the retention count,

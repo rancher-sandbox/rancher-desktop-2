@@ -10,7 +10,7 @@ These variables control RDD behavior. Set them before running `rdd` commands.
 | --- | --- | --- |
 | `RDD_INSTANCE` | Instance identifier. Determines which control plane and directories to use. Also settable via `rdd --instance`. | `2` |
 | `RDD_DEVELOPER_MODE` | Enables developer mode: exposes hidden CLI flags, detects source tree for local builds. | unset |
-| `RDD_KEEP_LOGS` | When set to any non-empty value, preserves numbered log files instead of pruning old ones. Also prevents log directory removal on `rdd svc delete`. | unset |
+| `RDD_KEEP_LOGS` | Preserves logs for post-mortem debugging. See [Log Preservation](#log-preservation) for details. | unset |
 | `RDD_LOG_LEVEL` | Sets the log level (`fatal`, `error`, `warn`, `info`, `debug`, `trace`). Overridden by `--log-level` flag. When unset, defaults to `debug` in developer mode, `warn` otherwise. | unset |
 | `RDD_LOG_TITLE` | When set, writes this string as the first line of each new log file. Useful for identifying log files from specific test runs or sessions. | unset |
 
@@ -50,3 +50,19 @@ Path variables are listed alphabetically. To retrieve a single path, pass the ke
 ```shell
 rdd svc paths log_dir
 ```
+
+## Log Preservation
+
+When `RDD_KEEP_LOGS` is set to any non-empty value, RDD preserves logs that would otherwise be lost:
+
+- **No pruning.** Log rotation normally keeps the five most recent backups and deletes older ones. With `RDD_KEEP_LOGS`, all numbered backups are retained.
+- **Survives `svc delete`.** `rdd svc delete` normally removes the log directory. With `RDD_KEEP_LOGS`, the log directory is preserved.
+- **Instance logs survive VM deletion.** When a LimaVM resource is deleted, Lima removes the instance directory (which contains hostagent and serial console logs). With `RDD_KEEP_LOGS`, the controller moves all `.log` files to a subdirectory of `RDD_LOG_DIR` named after the instance before deletion. If the subdirectory already exists (from a previous deletion), a numbered suffix is used (e.g., `opensuse.2/`).
+
+### Log rotation
+
+Both service logs (`rdd.stdout`, `rdd.stderr`) and hostagent logs (`ha.stdout`, `ha.stderr`) are rotated on each start: the active file is renamed to a numbered backup (e.g., `ha.stderr.1.log`), and a fresh file is created. Serial console logs (`serial`, `serialp`, `serialv`) are rotated the same way, but no new file is created — the VM driver creates it.
+
+### BATS defaults
+
+BATS tests set `RDD_KEEP_LOGS=1` by default (in `bats/helpers/defaults.bash`), so all test logs are preserved for CI artifact collection. The collection script (`scripts/collect-bats-logs.sh`) gathers both service logs and preserved instance logs into a single output directory.

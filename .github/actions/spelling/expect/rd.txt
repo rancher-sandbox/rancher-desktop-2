@@ -29,5 +29,7 @@ limactl
 limavm
 pidfile
 rosetta
+serialp
+serialv
 syncer
 workdir

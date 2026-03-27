@@ -184,6 +184,80 @@ func TestRenamePreservesContent(t *testing.T) {
 	assert.Equal(t, string(data), "second log\n")
 }
 
+func TestRotateNoFile(t *testing.T) {
+	dir := t.TempDir()
+
+	// Rotate with no existing file should be a no-op.
+	err := Rotate(dir, "test", false)
+	assert.NilError(t, err)
+
+	entries, err := os.ReadDir(dir)
+	assert.NilError(t, err)
+	assert.Equal(t, len(entries), 0, "expected empty directory after rotating nonexistent file")
+}
+
+func TestRotateRenamesFile(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a file to rotate.
+	assert.NilError(t, os.WriteFile(filepath.Join(dir, "serial.log"), []byte("boot 1\n"), 0o644))
+
+	err := Rotate(dir, "serial", false)
+	assert.NilError(t, err)
+
+	// Original should be gone, numbered backup should exist with original content.
+	_, err = os.Stat(filepath.Join(dir, "serial.log"))
+	assert.Assert(t, errors.Is(err, fs.ErrNotExist), "expected serial.log to be renamed")
+
+	data, err := os.ReadFile(filepath.Join(dir, "serial.1.log"))
+	assert.NilError(t, err)
+	assert.Equal(t, string(data), "boot 1\n")
+}
+
+func TestRotateSequentialNumbering(t *testing.T) {
+	dir := t.TempDir()
+
+	for i := 1; i <= 3; i++ {
+		assert.NilError(t, os.WriteFile(filepath.Join(dir, "serial.log"), []byte(fmt.Sprintf("boot %d\n", i)), 0o644))
+		assert.NilError(t, Rotate(dir, "serial", true))
+	}
+
+	// No active file should remain.
+	_, err := os.Stat(filepath.Join(dir, "serial.log"))
+	assert.Assert(t, errors.Is(err, fs.ErrNotExist), "expected serial.log to be renamed")
+
+	// Three numbered backups should exist.
+	for i := 1; i <= 3; i++ {
+		data, err := os.ReadFile(filepath.Join(dir, fmt.Sprintf("serial.%d.log", i)))
+		assert.NilError(t, err, "expected serial.%d.log to exist", i)
+		assert.Equal(t, string(data), fmt.Sprintf("boot %d\n", i))
+	}
+}
+
+func TestRotatePruning(t *testing.T) {
+	dir := t.TempDir()
+
+	count := retentionCount + 2
+	for i := 1; i <= count; i++ {
+		assert.NilError(t, os.WriteFile(filepath.Join(dir, "serial.log"), []byte(fmt.Sprintf("boot %d\n", i)), 0o644))
+		assert.NilError(t, Rotate(dir, "serial", false))
+	}
+
+	// Oldest files should be pruned.
+	for _, n := range []int{1, 2} {
+		name := filepath.Join(dir, fmt.Sprintf("serial.%d.log", n))
+		_, err := os.Stat(name)
+		assert.Assert(t, errors.Is(err, fs.ErrNotExist), "expected %s to be pruned", name)
+	}
+
+	// Recent files should still exist.
+	for n := 3; n <= count; n++ {
+		name := filepath.Join(dir, fmt.Sprintf("serial.%d.log", n))
+		_, err := os.Stat(name)
+		assert.NilError(t, err, "expected %s to exist", name)
+	}
+}
+
 func TestMultipleNamesInSameDir(t *testing.T) {
 	dir := t.TempDir()
 

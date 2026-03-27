@@ -4,15 +4,17 @@
 # SPDX-FileCopyrightText: SUSE LLC
 # SPDX-FileCopyrightText: The Rancher Desktop Authors
 
-# Collect RDD service and Lima hostagent BATS logs into a single directory.
+# Collect BATS logs into a single directory: service logs, preserved instance
+# logs (moved to log_dir during deletion), and Lima instance logs.
 # Usage: scripts/collect-bats-logs.sh [output-dir]
 #
 # Iterates over all BATS instances, resolves their log and Lima home
 # directories via "rdd svc paths", and copies log files into output-dir.
 #
 # Output layout:
-#   output-dir/{instance}/           — service logs (rdd.stdout, rdd.stderr)
-#   output-dir/{instance}/lima-{vm}/ — hostagent logs (ha.stdout, ha.stderr)
+#   output-dir/{instance}/              — service logs (rdd.stdout, rdd.stderr)
+#   output-dir/{instance}/{vm}/         — preserved instance logs
+#   output-dir/{instance}/lima-{vm}/    — hostagent logs (ha.stdout, ha.stderr)
 
 set -o errexit -o nounset -o pipefail
 shopt -s nullglob
@@ -60,7 +62,15 @@ for instance in $(make --no-print-directory -C "${REPO_ROOT}/bats" bats-instance
         collect_logs "$log_dir" "$dest"
     fi
 
-    # Lima hostagent logs (ha.stdout, ha.stderr per VM)
+    # Preserved instance logs (moved to log_dir during instance deletion)
+    if [ -n "${log_dir:-}" ]; then
+        for vm_dir in "$log_dir"/*/; do
+            vm_name=$(basename "$vm_dir")
+            collect_logs "$vm_dir" "$dest/${vm_name}"
+        done
+    fi
+
+    # Lima instance logs (for instances that survived teardown)
     if lima_home=$(resolve_path lima_home); then
         for vm_dir in "$lima_home"/*/; do
             vm_name=$(basename "$vm_dir")

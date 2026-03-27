@@ -101,6 +101,9 @@ Sends SIGTERM signal to control plane process (`rdd.pid`).
 
 ### `rdd service delete`
 
+Stops the control plane and removes the instance directory, the short directory
+(which contains the Lima home), and — unless `RDD_KEEP_LOGS` is set — the log
+directory.
 
 ### `rdd service reset`
 

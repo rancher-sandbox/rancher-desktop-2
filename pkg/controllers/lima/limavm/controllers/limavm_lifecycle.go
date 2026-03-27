@@ -28,6 +28,7 @@ import (
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/logfile"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/process"
 )
@@ -73,6 +74,7 @@ func (r *LimaVMReconciler) handleDeletion(ctx context.Context, limaVM *v1alpha1.
 			existingInst.DriverPID = 0
 			existingInst.HostAgentPID = 0
 		}
+		preserveInstanceLogs(ctx, existingInst)
 		logger.Info("Deleting Lima instance", "instance", limaVM.Name)
 		// Use a timeout because Lima's WSL2 driver calls wsl.exe --unregister
 		// which can hang indefinitely if the WSL subsystem is degraded.
@@ -402,6 +404,14 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 		}{title})
 		header = string(b) + "\n"
 	}
+	// Rotate serial logs before creating hostagent logs. The VM driver
+	// overwrites serial.log on each start; rotating preserves previous boots.
+	for _, name := range []string{"serial", "serialp", "serialv"} {
+		if err := logfile.Rotate(inst.Dir, name, keepLogs); err != nil {
+			logger.Error(err, "Failed to rotate serial log", "name", name)
+		}
+	}
+
 	haStdoutW, err := logfile.Create(inst.Dir, "ha.stdout", keepLogs, header)
 	if err != nil {
 		logger.Error(err, "Failed to create stdout log file")
@@ -686,5 +696,30 @@ func terminateWSL2Distro(ctx context.Context, logger logr.Logger, instName strin
 	defer cancel()
 	if err := exec.CommandContext(wslCtx, "wsl.exe", "--terminate", distroName).Run(); err != nil {
 		logger.V(1).Info("Failed to terminate WSL2 distro", "distro", distroName, "error", err)
+	}
+}
+
+// preserveInstanceLogs moves log files from the Lima instance directory to
+// a subdirectory of the service log directory before the instance is deleted.
+// This is a no-op unless RDD_KEEP_LOGS is set.
+//
+// Errors are logged but do not prevent deletion. On Windows, os.Rename
+// requires FILE_SHARE_DELETE on the source; Go sets this flag since 1.14,
+// but non-Go processes (e.g., QEMU) may not. If rename fails because a
+// process still holds a lock, the logs are lost when the instance directory
+// is deleted afterward.
+func preserveInstanceLogs(ctx context.Context, inst *limatype.Instance) {
+	if os.Getenv("RDD_KEEP_LOGS") == "" {
+		return
+	}
+
+	logger := log.FromContext(ctx)
+	count, err := instance.PreserveLogs(inst.Dir, inst.Name)
+	if err != nil {
+		logger.Error(err, "Failed to preserve instance logs")
+		return
+	}
+	if count > 0 {
+		logger.Info("Preserved instance logs", "instance", inst.Name, "count", count)
 	}
 }
