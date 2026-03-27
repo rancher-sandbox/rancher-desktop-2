@@ -117,7 +117,7 @@ local_setup() {
 @test "verify rd-template ConfigMap exists and contains template data" {
     run -0 rdd ctl get configmap "${VM_NAME}-template" \
         --namespace "${RDD_NAMESPACE}" -o jsonpath='{.data.template}'
-    [[ -n "${output}" ]]
+    assert_output
 }
 
 @test "wait for LimaVM Created condition to be set" {
@@ -143,9 +143,7 @@ local_setup() {
 
     run -0 rdd ctl get app "${APP_NAME}" -o json
     run -0 jq_output '.status.conditions[] | select(.type == "Created") | .lastTransitionTime'
-    local app_ts="${output}"
-
-    [[ "${limavm_ts}" == "${app_ts}" ]]
+    assert_output "${limavm_ts}"
 }
 
 @test "propagating running=true updates LimaVM spec.running" {
@@ -176,9 +174,7 @@ local_setup() {
 
     run -0 rdd ctl get app "${APP_NAME}" -o json
     run -0 jq_output '.status.conditions[] | select(.type == "Running") | .lastTransitionTime'
-    local app_ts="${output}"
-
-    [[ "${limavm_ts}" == "${app_ts}" ]]
+    assert_output "${limavm_ts}"
 }
 
 @test "verify App Running condition observedGeneration reflects App generation" {
@@ -188,8 +184,6 @@ local_setup() {
 
     run -0 rdd ctl get app "${APP_NAME}" -o json
     run -0 jq_output '.status.conditions[] | select(.type == "Running") | .observedGeneration'
-    local observed_gen="${output}"
-
     assert_output "${app_gen}"
 }
 
