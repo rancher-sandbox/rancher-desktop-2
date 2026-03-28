@@ -67,7 +67,7 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 					return ctrl.Result{}, fmt.Errorf("failed to delete input ConfigMap during cleanup: %w", cmErr)
 				}
 			} else if !apierrors.IsNotFound(cmErr) {
-				log.Error(cmErr, "Failed to fetch input ConfigMap during cleanup")
+				return ctrl.Result{}, fmt.Errorf("failed to fetch input ConfigMap during cleanup: %w", cmErr)
 			}
 			return ctrl.Result{}, base.RemoveCleanupFinalizer(ctx, r.Client, &app)
 		case err != nil:
@@ -165,7 +165,7 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 		// reconcile runs rather than relying on implicit LimaVM status activity.
 		return ctrl.Result{Requeue: true}, nil
 	} else if !apierrors.IsNotFound(err) {
-		log.Error(err, "Failed to fetch input ConfigMap")
+		return ctrl.Result{}, fmt.Errorf("failed to fetch input ConfigMap: %w", err)
 	}
 
 	// Propagate spec.running from App into the LimaVM.

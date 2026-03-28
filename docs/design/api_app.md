@@ -6,9 +6,9 @@ The `App` object is part of the `app.rancherdesktop.io` API group.
 
 ### Singleton
 
-There can be only a single `App` object in an RDD instance.
+There can be only a single `App` object in an RDD instance. It is **cluster-scoped** and must be named `app`.
 
-Both the [rdd create](cmd_app.md#rdd-create) command and the [GUI](gui.md) app create the `App` object in the "app-namespace", which is a configuration setting stored in the `config` ConfigMap in the `rdd-system` namespace (`rancher-desktop` by default)[^hardcoded].
+Both the [rdd create](cmd_app.md#rdd-create) command and the [GUI](gui.md) app create the cluster-scoped `App` object, setting its `spec.namespace` to the configured "app-namespace" stored in the `config` ConfigMap in the `rdd-system` namespace (`rancher-desktop` by default)[^hardcoded].
 
 [^hardcoded]: The "app-namespace" is only configurable so that it can be tested that the namespace isn't hardcoded anywhere in the controller.
 
@@ -52,8 +52,7 @@ Consider using `cliPluginsExtraDirs` in `~/.docker/config.json` instead of insta
 apiVersion: app.rancherdesktop.io/v1alpha1
 kind: App
 metadata:
-  name: rancher-desktop
-  namespace: rancher-desktop
+  name: app
 
 spec:
   containerEngine:
@@ -61,6 +60,7 @@ spec:
   kubernetes:
     version: 1.30.0
   running: true
+  namespace: rancher-desktop
 
 status:
   containerEngine:
@@ -73,33 +73,39 @@ status:
   onlineStatus: true
 
   conditions:
-  - type: AppCreated
+  - type: Created
     status: "True"
     reason: Created
-    message: Rancher Desktop App created successfully
-  - type: AppRunning
+    message: Lima instance created successfully
+    lastTransitionTime: "2024-01-01T00:00:00Z"
+  - type: Running
     status: "True"
     reason: Started
-    message: Rancher Desktop App started successfully
+    message: Lima instance is running
+    lastTransitionTime: "2024-01-01T00:00:05Z"
 ```
 
-- **spec**: Has all the usual fields that are in `settings.json` in "Rancher Desktop 1.x".
+- **spec.namespace**: The namespace where the owned `LimaVM` and its ConfigMaps are created. Defaults to `default`. **Immutable after creation** — changing it would orphan resources in the original namespace.
 
-- **spec.running**: Set to `true` when the LimaVM should be running, set to `false` when it should be stopped.
+- **spec.running**: Set to `true` to start the LimaVM, `false` to stop it. The App controller propagates this value to `LimaVM.spec.running` on every reconcile.
 
-- **status.conditions**: Standard Kubernetes conditions tracking the App state.
+- **status.conditions**: Conditions are **mirrored from the owned `LimaVM`** resource. The App controller copies `type`, `status`, `reason`, `message`, and `lastTransitionTime` from the LimaVM's conditions.
 
-  | Type      | Status      | Reason         | Description                                                  |
-  |-----------|-------------|----------------|--------------------------------------------------------------|
-  | `Created` | `Unknown`   | `Pending`      | Reconciler has seen the resource; creation not yet attempted |
-  | `Created` | `True`      | `Created`      | App has created the LimaVM and LimaDisk and is ready         |
-  | `Created` | `False`     | `CreateFailed` | App creation failed                                          |
-  | `Running` | `True`      | `Started`      | App is running                                               |
-  | `Running` | `False`     | `Stopped`      | App is stopped                                               |
-  | `Running` | `False`     | `StartFailed`  | App failed to start                                          |
-  | `Running` | `False`     | `StopFailed`   | App failed to stop cleanly                                   |
+  | Type      | Status      | Reason         | Description                                                       |
+  |-----------|-------------|----------------|-------------------------------------------------------------------|
+  | `Created` | `Unknown`   | `Pending`      | LimaVM controller has started reconciliation                      |
+  | `Created` | `True`      | `Created`      | Lima instance created on disk and ready                           |
+  | `Created` | `False`     | `CreateFailed` | Lima instance creation failed (see `message` for details)         |
+  | `Running` | `Unknown`   | `Reconciling`  | Verifying instance state (e.g. after controller restart)          |
+  | `Running` | `True`      | `Started`      | Lima instance is running                                          |
+  | `Running` | `False`     | `Stopped`      | Lima instance is stopped                                          |
+  | `Running` | `False`     | `Starting`     | Lima instance is starting up                                      |
+  | `Running` | `False`     | `StartFailed`  | Lima instance failed to start                                     |
+  | `Running` | `False`     | `StopFailed`   | Lima instance failed to stop cleanly                              |
 
-Deleting the `App` resource triggers the finalizer to stop the and delete the LimaVM and the LimaDisk.
+  Because conditions are mirrored, `lastTransitionTime` reflects when the **LimaVM** transitioned, not when the App controller copied the value. This makes the timestamp meaningful for staleness checks.
+
+Deleting the `App` resource triggers the finalizer to stop and delete the owned LimaVM (and wait for the LimaVM controller to complete its own cleanup before removing the App finalizer).
 
 ## GUI
 

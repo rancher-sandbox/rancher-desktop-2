@@ -113,7 +113,7 @@ local_setup_file() {
 @test "verify rd-template ConfigMap exists and contains template data" {
     run -0 rdd ctl get configmap "${VM_NAME}-template" \
         --namespace "${RDD_NAMESPACE}" -o jsonpath='{.data.template}'
-    [[ -n "${output}" ]]
+    assert_output
 }
 
 @test "wait for LimaVM Created condition to be set" {
@@ -134,14 +134,12 @@ local_setup_file() {
 
 @test "verify App conditions preserve LimaVM LastTransitionTime" {
     run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${RDD_NAMESPACE}" -o json
-    local limavm_ts
-    limavm_ts=$(jq -r '.status.conditions[] | select(.type == "Created") | .lastTransitionTime' <<<"${output}")
+    run -0 jq_output '.status.conditions[] | select(.type == "Created") | .lastTransitionTime'
+    local limavm_ts="${output}"
 
     run -0 rdd ctl get app "${APP_NAME}" -o json
-    local app_ts
-    app_ts=$(jq -r '.status.conditions[] | select(.type == "Created") | .lastTransitionTime' <<<"${output}")
-
-    [[ "${limavm_ts}" == "${app_ts}" ]]
+    run -0 jq_output '.status.conditions[] | select(.type == "Created") | .lastTransitionTime'
+    assert_output "${limavm_ts}"
 }
 
 @test "propagating running=true updates LimaVM spec.running" {
@@ -150,10 +148,56 @@ local_setup_file() {
         limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=30s
 }
 
+@test "wait for LimaVM Running condition to become true after start" {
+    rdd ctl wait --for=condition=Running \
+        limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=120s
+}
+
+@test "wait for App Running condition to become True" {
+    rdd ctl wait --for=condition=Running app/"${APP_NAME}" --timeout=30s
+}
+
+@test "verify App mirrors LimaVM Running condition as True" {
+    run -0 rdd ctl get app "${APP_NAME}" -o json
+    run -0 jq_output '.status.conditions[] | select(.type == "Running") | .status'
+    assert_output "True"
+}
+
+@test "verify App Running condition preserves LimaVM LastTransitionTime" {
+    run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${RDD_NAMESPACE}" -o json
+    run -0 jq_output '.status.conditions[] | select(.type == "Running") | .lastTransitionTime'
+    local limavm_ts="${output}"
+
+    run -0 rdd ctl get app "${APP_NAME}" -o json
+    run -0 jq_output '.status.conditions[] | select(.type == "Running") | .lastTransitionTime'
+    assert_output "${limavm_ts}"
+}
+
+@test "verify App Running condition observedGeneration reflects App generation" {
+    run -0 rdd ctl get app "${APP_NAME}" -o json
+    run -0 jq_output '.metadata.generation'
+    local app_gen="${output}"
+
+    run -0 rdd ctl get app "${APP_NAME}" -o json
+    run -0 jq_output '.status.conditions[] | select(.type == "Running") | .observedGeneration'
+    assert_output "${app_gen}"
+}
+
 @test "propagating running=false updates LimaVM spec.running" {
     rdd ctl patch app "${APP_NAME}" --type='merge' -p='{"spec":{"running":false}}'
     rdd ctl wait --for=jsonpath='{.spec.running}'=false \
         limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=30s
+}
+
+@test "wait for LimaVM Running condition to become false after stop" {
+    rdd ctl wait --for=condition=Running=False \
+        limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=60s
+}
+
+@test "verify App mirrors LimaVM Running condition as False after stop" {
+    run -0 rdd ctl get app "${APP_NAME}" -o json
+    run -0 jq_output '.status.conditions[] | select(.type == "Running") | .status'
+    assert_output "False"
 }
 
 @test "reject App resource with a name other than 'app'" {
