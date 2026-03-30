@@ -141,6 +141,7 @@ type ContainerStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:ac:generate=true
+// +kubebuilder:resource:categories="all"
 // +kubebuilder:subresource:status
 // +kubebuilder:selectablefield:JSONPath=.status.namespace
 // +kubebuilder:printcolumn:name="Running",type=boolean,JSONPath=`.status.conditions[?(@.type=="Running")].status`

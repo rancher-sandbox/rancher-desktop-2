@@ -37,7 +37,7 @@ type AppStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:scope=Cluster,path=apps
+// +kubebuilder:resource:scope=Cluster,path=apps,categories="all"
 // +kubebuilder:validation:XValidation:rule="self.metadata.name == 'app'",message="App resource must be named 'app'"
 
 // App is the Schema for the apps API.

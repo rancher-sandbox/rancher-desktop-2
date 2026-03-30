@@ -230,6 +230,8 @@ metadata:
 spec:
   group: containers.rancherdesktop.io
   names:
+    categories:
+    - all
     kind: Container
     listKind: ContainerList
     plural: containers

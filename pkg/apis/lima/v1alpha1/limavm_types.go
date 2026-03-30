@@ -91,6 +91,7 @@ type LimaVMStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:ac:generate=true
+// +kubebuilder:resource:categories="all"
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Running",type=boolean,JSONPath=`.spec.running`
 

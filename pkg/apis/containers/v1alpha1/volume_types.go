@@ -47,6 +47,7 @@ type VolumeStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:ac:generate=true
+// +kubebuilder:resource:categories="all"
 // +kubebuilder:subresource:status
 // +kubebuilder:selectablefield:JSONPath=.status.namespace
 // +kubebuilder:printcolumn:name="Driver",type=string,JSONPath=`.status.driver`

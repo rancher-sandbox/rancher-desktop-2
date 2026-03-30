@@ -150,6 +150,8 @@ metadata:
 spec:
   group: containers.rancherdesktop.io
   names:
+    categories:
+    - all
     kind: Volume
     listKind: VolumeList
     plural: volumes

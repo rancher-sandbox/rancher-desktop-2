@@ -10,7 +10,7 @@ import (
 
 // +kubebuilder:object:root=true
 // +kubebuilder:ac:generate=true
-// +kubebuilder:resource:shortName=cns
+// +kubebuilder:resource:shortName=cns,categories="all"
 
 // ContainerNamespace defines a container engine namespace; note that this is distinct
 // from Kubernetes namespaces.

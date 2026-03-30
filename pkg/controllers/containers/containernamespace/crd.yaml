@@ -12,6 +12,8 @@ metadata:
 spec:
   group: containers.rancherdesktop.io
   names:
+    categories:
+    - all
     kind: ContainerNamespace
     listKind: ContainerNamespaceList
     plural: containernamespaces

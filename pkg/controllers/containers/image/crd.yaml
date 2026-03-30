@@ -273,6 +273,8 @@ metadata:
 spec:
   group: containers.rancherdesktop.io
   names:
+    categories:
+    - all
     kind: Image
     listKind: ImageList
     plural: images

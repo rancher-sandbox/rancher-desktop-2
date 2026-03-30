@@ -12,6 +12,8 @@ metadata:
 spec:
   group: lima.rancherdesktop.io
   names:
+    categories:
+    - all
     kind: LimaVM
     listKind: LimaVMList
     plural: limavms

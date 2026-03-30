@@ -12,6 +12,8 @@ metadata:
 spec:
   group: app.rancherdesktop.io
   names:
+    categories:
+    - all
     kind: App
     listKind: AppList
     plural: apps

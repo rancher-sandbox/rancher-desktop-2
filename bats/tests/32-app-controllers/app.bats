@@ -57,6 +57,17 @@ local_setup_file() {
         --namespace "${RDD_NAMESPACE}" --timeout=60s
 }
 
+@test "verify App and LimaVM are in the 'all' category" {
+    run -0 rdd ctl api-resources --categories=all --output=name
+    assert_line apps.app.rancherdesktop.io
+    assert_line limavms.lima.rancherdesktop.io
+}
+
+@test "verify 'get all' returns the LimaVM instance" {
+    run -0 rdd ctl get all --namespace "${RDD_NAMESPACE}" --output=name
+    assert_line "limavm.lima.rancherdesktop.io/${VM_NAME}"
+}
+
 @test "verify LimaVM is named rd" {
     run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${RDD_NAMESPACE}" -o name
     assert_output "limavm.lima.rancherdesktop.io/${VM_NAME}"

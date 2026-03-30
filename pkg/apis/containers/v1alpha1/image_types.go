@@ -61,6 +61,7 @@ type ImageStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:ac:generate=true
+// +kubebuilder:resource:categories="all"
 // +kubebuilder:subresource:status
 // +kubebuilder:selectablefield:JSONPath=.status.namespace
 // +kubebuilder:selectablefield:JSONPath=.status.id
