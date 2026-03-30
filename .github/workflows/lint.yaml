@@ -101,6 +101,8 @@ jobs:
     needs: get-pr-number
     runs-on: ubuntu-latest
     if: ${{ ! needs.get-pr-number.outputs.number }}
+    permissions:
+      contents: read
     steps:
     - run: sudo apt install cpanminus
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -112,6 +114,11 @@ jobs:
         cache: false
         go-version-file: go.mod
     - run: make spelling
+      env:
+        # Pretend this is a push event; we don't need any of the extra
+        # functionality that GitHub pull request integration provides.
+        GITHUB_EVENT_NAME: push
+        GITHUB_TOKEN: ${{ github.token }}
   ltag:
     name: Check license tags
     needs: get-pr-number
