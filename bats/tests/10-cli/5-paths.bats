@@ -20,8 +20,7 @@ ALL_KEYS="args_file config dir lima_home log_dir pid_file short_dir tls_dir"
 @test 'rdd svc paths --output=shell produces shell export statements' {
     run -0 rdd svc paths --output=shell
     for key in ${ALL_KEYS}; do
-        upper_key=$(echo "${key}" | tr '[:lower:]' '[:upper:]')
-        assert_line --regexp "^export RDD_${upper_key}="
+        assert_line --regexp "^export RDD_${key^^}="
     done
 }
 
