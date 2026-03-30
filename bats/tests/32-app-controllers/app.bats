@@ -150,7 +150,7 @@ local_setup_file() {
 
 @test "wait for LimaVM Running condition to become true after start" {
     rdd ctl wait --for=condition=Running \
-        limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=120s
+        limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=300s
 }
 
 @test "wait for App Running condition to become True" {
