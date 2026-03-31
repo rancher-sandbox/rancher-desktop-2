@@ -94,6 +94,7 @@ type ImageList struct {
 	Items           []Image `json:"items"`
 }
 
+// ImagePullRequestSpec defines the parameters for pulling an image.
 type ImagePullRequestSpec struct {
 	// Namespace is the container namespace; refers to a `ContainerNamespace`
 	// object in the same Kubernetes namespace.  If not specified, the image
@@ -107,6 +108,7 @@ type ImagePullRequestSpec struct {
 	RepoTag string `json:"repoTag"`
 }
 
+// ImagePullRequestStatus reports the progress of an image pull request.
 type ImagePullRequestStatus struct {
 	// Conditions represent the state of the image pull request.
 	// Current known condition types include:
@@ -155,6 +157,7 @@ type ImagePullRequestList struct {
 	Items           []ImagePullRequest `json:"items"`
 }
 
+// ImagePushRequestSpec defines the parameters for pushing an image.
 type ImagePushRequestSpec struct {
 	// ImageRef is the image to push.
 	// This must be the name of an Image object in the same Kubernetes namespace.
@@ -163,6 +166,7 @@ type ImagePushRequestSpec struct {
 	ImageRef string `json:"imageRef"`
 }
 
+// ImagePushRequestStatus reports the progress of an image push request.
 type ImagePushRequestStatus struct {
 	// Conditions represent the state of the image push request.
 	// Current known condition types include:
@@ -217,6 +221,7 @@ type ImageScanRequestSpec struct {
 	ImageRef string `json:"imageRef"`
 }
 
+// ImageScanRequestStatus reports the progress and result of an image scan request.
 type ImageScanRequestStatus struct {
 	// Conditions represent the state of the image scan request.
 	// Current known condition types include:

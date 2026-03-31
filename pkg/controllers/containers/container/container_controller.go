@@ -68,10 +68,10 @@ func (c *controller) GetCRDData() string {
 	return controllerCRD
 }
 
-// setupReconciler sets up the ContainerReconciler with the manager.
+// setupReconciler sets up the reconciler with the manager.
 func (c *controller) setupReconciler(mgr ctrl.Manager) error {
-	mgr.GetLogger().Info("Setting up ContainerReconciler")
-	return (&ContainerReconciler{
+	mgr.GetLogger().Info("Setting up reconciler")
+	return (&reconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorder(ControllerName + "-controller"),
@@ -88,7 +88,7 @@ func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 		Operations: []admissionregistrationv1.OperationType{
 			admissionregistrationv1.Update,
 		},
-		Validator: &ContainerImmutableValidator{},
+		Validator: &immutableValidator{},
 	}
 
 	managers, err := base.SetupWebhookForResource(mgr, &v1alpha1.Container{}, mutatingConfig)

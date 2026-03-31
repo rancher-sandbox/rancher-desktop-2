@@ -101,7 +101,6 @@ linters:
       - name: error-strings
       - name: errorf
       - name: exported
-        disabled: true
       - name: increment-decrement
       - name: indent-error-flow
       - name: package-comments
@@ -124,7 +123,6 @@ linters:
       - -QF*
       - -ST1000
       - -ST1001  # duplicates revive.dot-imports
-      - -ST1022
     usetesting:
       os-temp-dir: true
   exclusions:

@@ -124,13 +124,16 @@ func init() {
 	utilruntime.Must(logsapi.AddFeatureGates(utilfeature.DefaultMutableFeatureGate))
 }
 
+// Exists reports whether a control plane instance has been created.
 func Exists() bool {
 	_, err := os.Stat(instance.ArgsFile())
 	return err == nil
 }
 
+// PIDNotFound indicates no running service process was found.
 const PIDNotFound = 0
 
+// PID returns the process ID of the running service, or PIDNotFound if it is not running.
 func PID() int {
 	pidStr, err := os.ReadFile(instance.PIDFile())
 	if err != nil {
@@ -156,10 +159,12 @@ func PID() int {
 	return pid
 }
 
+// Running reports whether the service process is alive.
 func Running() bool {
 	return PID() != PIDNotFound
 }
 
+// Create a new control plane instance with the given arguments.
 func Create(args []string) error {
 	if Exists() {
 		return fmt.Errorf("%q control plane already exists", instance.Name())
@@ -204,6 +209,7 @@ func getRuntimeControllersFromCluster(ctx context.Context) ([]string, error) {
 	return enabledControllers, nil
 }
 
+// Start the service in a background subprocess.
 func Start(ctx context.Context, args []string) error {
 	if !Exists() {
 		return fmt.Errorf("%q create control plane does not exist", instance.Name())
@@ -304,6 +310,7 @@ func checkReadiness(ctx context.Context) error {
 	return readiness.WaitForReadyWithCRDs(ctx, config, enabledControllers, false)
 }
 
+// Wait until the control plane is ready or the context is cancelled.
 func Wait(ctx context.Context) error {
 	if err := checkReadiness(ctx); err == nil {
 		return nil
@@ -324,12 +331,15 @@ func Wait(ctx context.Context) error {
 	}
 }
 
+// WaitWithTimeout calls Wait with a timeout.
 func WaitWithTimeout(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, 90*time.Second) // Increased timeout for CRD establishment
 	defer cancel()
 	return Wait(ctx)
 }
 
+// StopWithWait sends a shutdown signal to the service. If wait is true, it blocks
+// until the process exits or a timeout expires.
 func StopWithWait(wait bool) error {
 	if !Running() {
 		return fmt.Errorf("%q control plane is not running", instance.Name())
@@ -388,6 +398,7 @@ func StopWithWait(wait bool) error {
 	return nil
 }
 
+// Stop the service and wait for the process to exit.
 func Stop() error {
 	// For backward compatibility, always wait
 	return StopWithWait(true)
@@ -416,6 +427,7 @@ func cleanupDiscoveryConfigMap() error {
 	return nil // Don't fail stop operation due to discovery cleanup issues
 }
 
+// Delete the service and remove all instance data.
 func Delete() error {
 	if !Exists() {
 		return fmt.Errorf("%q control plane does not exist", instance.Name())
@@ -465,6 +477,7 @@ func preserveAllInstanceLogs() {
 	}
 }
 
+// ServeArgs returns the saved command-line arguments written by Create.
 func ServeArgs() []string {
 	data, err := os.ReadFile(instance.ArgsFile())
 	if err == nil {

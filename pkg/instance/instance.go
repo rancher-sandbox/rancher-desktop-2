@@ -13,6 +13,7 @@ import (
 	"sync"
 )
 
+// Suffix returns the instance suffix from the RDD_INSTANCE environment variable, defaulting to "2".
 var Suffix = sync.OnceValue(func() string {
 	instance := os.Getenv("RDD_INSTANCE")
 	if instance == "" {
@@ -37,10 +38,12 @@ var Index = sync.OnceValue(func() int {
 	return 100 + (sum % 100)
 })
 
+// Name returns the instance name (e.g., "rancher-desktop-2").
 var Name = sync.OnceValue(func() string {
 	return "rancher-desktop-" + Suffix()
 })
 
+// Dir returns the OS-specific data directory for this instance.
 var Dir = sync.OnceValue(func() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -78,18 +81,22 @@ var LogDir = sync.OnceValue(func() string {
 	}
 })
 
+// ArgsFile returns the path to the saved service arguments file.
 var ArgsFile = sync.OnceValue(func() string {
 	return filepath.Join(Dir(), "args.json")
 })
 
+// Config returns the path to the kubeconfig file.
 var Config = sync.OnceValue(func() string {
 	return filepath.Join(Dir(), "config.yaml")
 })
 
+// PIDFile returns the path to the service PID file.
 var PIDFile = sync.OnceValue(func() string {
 	return filepath.Join(Dir(), "rdd.pid")
 })
 
+// TLSDir returns the path to the TLS certificate directory.
 var TLSDir = sync.OnceValue(func() string {
 	return filepath.Join(Dir(), "tls")
 })

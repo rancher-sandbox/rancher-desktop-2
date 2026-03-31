@@ -76,6 +76,7 @@ type VolumeList struct {
 	Items           []Volume `json:"items"`
 }
 
+// VolumeCreateSpec defines the parameters for creating a volume.
 type VolumeCreateSpec struct {
 	// Name of the volume to create; if not specified, a random name will be
 	// generated.
@@ -94,6 +95,7 @@ type VolumeCreateSpec struct {
 	Driver string `json:"driver"`
 }
 
+// VolumeCreateStatus reports the progress of a volume creation request.
 type VolumeCreateStatus struct {
 	// Conditions represent the state of the volume creation request.
 	// Current known condition types include:

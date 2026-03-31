@@ -13,10 +13,9 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/nxadmtail"
 )
 
-// TailFile prints out all of the given file into the given writer.  If follow
-// is true, wait for more lines to be added to the file at end of file;
-// otherwise, just return at end of file.
-func TailFile(ctx context.Context, writer io.Writer, filePath string, follow bool) error {
+// File prints the contents of filePath to writer. If follow is true, it waits
+// for new lines at EOF; otherwise it returns at EOF.
+func File(ctx context.Context, writer io.Writer, filePath string, follow bool) error {
 	config := nxadmtail.Config{
 		ReOpen:        follow,
 		Follow:        follow,

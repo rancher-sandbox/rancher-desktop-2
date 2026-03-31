@@ -21,8 +21,7 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 )
 
-// ContainerReconciler reconciles a Container object.
-type ContainerReconciler struct {
+type reconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder events.EventRecorder
@@ -33,7 +32,7 @@ type ContainerReconciler struct {
 // +kubebuilder:rbac:groups=containers.rancherdesktop.io,resources=containers/finalizers,verbs=update
 
 // Reconcile implements a container reconciliation loop.
-func (r *ContainerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 
 	var container containersv1alpha1.Container
@@ -79,7 +78,7 @@ func (r *ContainerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 }
 
 // setCondition sets or updates a condition in the container status.
-func (r *ContainerReconciler) setCondition(container *containersv1alpha1.Container, conditionType string, status metav1.ConditionStatus, reason, message string) {
+func (r *reconciler) setCondition(container *containersv1alpha1.Container, conditionType string, status metav1.ConditionStatus, reason, message string) {
 	changed := apimeta.SetStatusCondition(&container.Status.Conditions, metav1.Condition{
 		Type:    conditionType,
 		Status:  status,
@@ -92,7 +91,7 @@ func (r *ContainerReconciler) setCondition(container *containersv1alpha1.Contain
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ContainerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&containersv1alpha1.Container{}).
 		Complete(r)

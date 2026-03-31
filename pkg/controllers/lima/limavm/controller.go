@@ -288,10 +288,13 @@ type ConfigMapValidator struct {
 
 var _ ctrlwebhookadmission.Validator[*corev1.ConfigMap] = &ConfigMapValidator{}
 
+// ValidateCreate validates template data in newly created ConfigMaps.
 func (v *ConfigMapValidator) ValidateCreate(ctx context.Context, configMap *corev1.ConfigMap) (ctrlwebhookadmission.Warnings, error) {
 	return v.validateTemplateConfigMap(ctx, configMap)
 }
 
+// ValidateUpdate rejects removing the template label while an owned finalizer is present,
+// and validates template data in updated ConfigMaps.
 func (v *ConfigMapValidator) ValidateUpdate(ctx context.Context, oldConfigMap, newConfigMap *corev1.ConfigMap) (ctrlwebhookadmission.Warnings, error) {
 	// Reject removing the template label while an owned finalizer is present.
 	// Without the label the ObjectSelector stops routing DELETEs to this webhook,

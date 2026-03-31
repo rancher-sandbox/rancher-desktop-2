@@ -39,6 +39,7 @@ import (
 // ErrStop is returned when the tail of a file has been marked to be stopped.
 var ErrStop = errors.New("tail should now stop")
 
+// Line represents a single line read from a tailed file.
 type Line struct {
 	Text     string    // The contents of the file
 	Num      int       // The line number
@@ -84,6 +85,7 @@ type Config struct {
 	Logger logger
 }
 
+// Tail tracks and reads lines from a file, following appends and rotations.
 type Tail struct {
 	Filename string     // The filename
 	Lines    chan *Line // A consumable channel of *Line

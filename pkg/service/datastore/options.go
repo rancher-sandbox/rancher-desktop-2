@@ -11,6 +11,7 @@ import (
 	etcdversion "go.etcd.io/etcd/api/v3/version"
 )
 
+// Options holds user-configurable datastore settings.
 type Options struct {
 	Enabled        bool
 	EndpointConfig endpoint.Config
@@ -21,10 +22,12 @@ type completedOptions struct {
 	EndpointConfig endpoint.Config
 }
 
+// CompletedOptions wraps finalized Options for passing to NewConfig.
 type CompletedOptions struct {
 	*completedOptions
 }
 
+// NewOptions returns Options with default values.
 func NewOptions() *Options {
 	return &Options{
 		Enabled: false,
@@ -41,7 +44,7 @@ func NewOptions() *Options {
 	}
 }
 
-// Complete defaults fields that have not set by the consumer of this package.
+// Complete the options and return a CompletedOptions for passing to NewConfig.
 func (o Options) Complete() CompletedOptions {
 	ret := CompletedOptions{
 		&completedOptions{

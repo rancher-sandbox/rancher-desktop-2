@@ -574,7 +574,7 @@ func newLimaVMLogsCommand() *cobra.Command {
 			logPath := filepath.Join(instance.LimaHome(), args[0], name)
 			follow, _ := cmd.Flags().GetBool("follow")
 
-			return tail.TailFile(cmd.Context(), cmd.OutOrStdout(), logPath, follow)
+			return tail.File(cmd.Context(), cmd.OutOrStdout(), logPath, follow)
 		},
 	}
 	command.Flags().BoolP("stdout", "o", false, "Print stdout instead of stderr")

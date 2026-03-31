@@ -20,12 +20,14 @@ import (
 
 var reEmptyLine = regexp.MustCompile(`(?m)([\w[:punct:]]) *\n([\w[:punct:]])`)
 
+// Doc strips heredoc indentation and joins hard-wrapped lines into flowing paragraphs.
 func Doc(s string) string {
 	s = heredoc.Doc(s)
 	s = reEmptyLine.ReplaceAllString(s, "$1 $2")
 	return s
 }
 
+// FitTerminal configures Cobra's help template to word-wrap output to the terminal width.
 func FitTerminal(out io.Writer) {
 	cols, _, err := term.TerminalSize(out)
 	if err != nil {

@@ -42,14 +42,17 @@ func IsDryRun(ctx context.Context) bool {
 // validator that needs additional create/update validation.
 type OwnedDeletionGuard[T client.Object] struct{}
 
+// ValidateCreate allows all create requests.
 func (g *OwnedDeletionGuard[T]) ValidateCreate(_ context.Context, _ T) (admission.Warnings, error) {
 	return nil, nil
 }
 
+// ValidateUpdate allows all update requests.
 func (g *OwnedDeletionGuard[T]) ValidateUpdate(_ context.Context, _, _ T) (admission.Warnings, error) {
 	return nil, nil
 }
 
+// ValidateDelete rejects deletion of resources that still have an owned finalizer.
 func (g *OwnedDeletionGuard[T]) ValidateDelete(ctx context.Context, obj T) (admission.Warnings, error) {
 	if IsDryRun(ctx) {
 		klog.V(1).Infof("[DryRun] Webhook validating delete of %s/%s", obj.GetNamespace(), obj.GetName())

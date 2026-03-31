@@ -10,9 +10,11 @@ import (
 )
 
 var (
-	// These variables are set at build time via ldflags.
-	Version   = "v0.0.0-dev"
+	// Version is the semantic version, set at build time via ldflags.
+	Version = "v0.0.0-dev"
+	// GitCommit is the git commit hash, set at build time via ldflags.
 	GitCommit = "unknown"
+	// BuildDate is the build timestamp, set at build time via ldflags.
 	BuildDate = "unknown"
 )
 

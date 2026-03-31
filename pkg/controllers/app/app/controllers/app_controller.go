@@ -32,6 +32,7 @@ const (
 	requeueAfterDeletion = 2 * time.Second
 )
 
+// AppReconciler reconciles the singleton App resource and manages its LimaVM lifecycle.
 type AppReconciler struct {
 	client.Client
 	Scheme           *runtime.Scheme

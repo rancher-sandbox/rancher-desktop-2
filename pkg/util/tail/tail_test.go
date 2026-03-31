@@ -17,7 +17,7 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func TestTailFile(t *testing.T) {
+func TestFile(t *testing.T) {
 	const expected = "This is the last line of text"
 
 	testCases := []struct {
@@ -84,10 +84,10 @@ func TestTailFile(t *testing.T) {
 			// Across a bunch of goroutines, we need to:
 			// - Set up the scanner
 			// - Run the `prepare` function
-			// - Run TailFile until it gets stuck
+			// - Run File until it gets stuck
 			// - Run the `finish` function
-			// - Run TailFile until it gets stuck (again)
-			// - End the TailFile context (so it ends)
+			// - Run File until it gets stuck (again)
+			// - End the File context (so it ends)
 			// - Check that the last line was the expected output
 
 			lastLine := "initial value"
@@ -115,7 +115,7 @@ func TestTailFile(t *testing.T) {
 			assert.NilError(t, tc.prepare(f))
 			wg, tailCtx := errgroup.WithContext(tailCtx)
 			wg.Go(func() error {
-				return TailFile(tailCtx, w, n, tc.follow)
+				return File(tailCtx, w, n, tc.follow)
 			})
 			waitForStuck()
 			assert.NilError(t, tc.finish(f))

@@ -411,6 +411,7 @@ func InitDiscovery(ctx context.Context, client kubernetes.Interface) error {
 	return nil
 }
 
+// CleanupDiscovery deletes the controller manager discovery ConfigMap.
 func CleanupDiscovery(ctx context.Context, client *kubernetes.Clientset) error {
 	err := client.CoreV1().ConfigMaps(RDDSystemNamespace).Delete(ctx, ControllerManagerConfigMapName, metav1.DeleteOptions{})
 	if errors.IsNotFound(err) {

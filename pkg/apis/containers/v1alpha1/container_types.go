@@ -13,6 +13,7 @@ import (
 // ContainerStatusValue describes the status of a container.
 type ContainerStatusValue string
 
+// Possible values for ContainerStatusValue.
 const (
 	ContainerStatusCreated    ContainerStatusValue = "created"
 	ContainerStatusRunning    ContainerStatusValue = "running"

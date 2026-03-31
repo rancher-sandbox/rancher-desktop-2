@@ -79,7 +79,7 @@ func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 		Operations: []admissionregistrationv1.OperationType{
 			admissionregistrationv1.Delete,
 		},
-		Validator: &ContainerNamespaceDeleteValidator{},
+		Validator: &deleteValidator{},
 	}
 
 	managers, err := base.SetupWebhookForResource(mgr, &v1alpha1.ContainerNamespace{}, mutatingConfig)
