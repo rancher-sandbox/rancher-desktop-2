@@ -214,11 +214,10 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to add pass through server to manager: %w", err)
 	}
 
-	// Track webhook setup goroutines
-	var webhookWaitGroup sync.WaitGroup
-	webhookErrors := make(chan error, len(scm.registrations))
-
-	// Register all controllers with the manager and start webhook setup immediately
+	// Register all controllers before launching webhook goroutines.
+	// RegisterWithManager calls AddToScheme, which writes to the scheme map.
+	// Webhook setup reads the scheme via client.Apply. Running both concurrently
+	// causes a fatal "concurrent map read and map write" crash.
 	for _, registration := range scm.registrations {
 		klog.InfoS("Registering controller with shared manager", "controller", registration.GetName())
 
@@ -231,8 +230,13 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 		if err := registration.RegisterWithManager(mgr); err != nil {
 			return fmt.Errorf("failed to register controller %s: %w", registration.GetName(), err)
 		}
+	}
 
-		// Start webhook setup immediately if this controller has webhooks
+	// Now that all scheme mutations are done, set up webhooks in parallel.
+	var webhookWaitGroup sync.WaitGroup
+	webhookErrors := make(chan error, len(scm.registrations))
+
+	for _, registration := range scm.registrations {
 		if webhookController, ok := registration.(base.WebhookController); ok {
 			managers := webhookController.GetWebhookManagers()
 			for i, manager := range managers {
