@@ -8,6 +8,9 @@ package mock
 
 import (
 	"context"
+	"maps"
+	"net/http"
+	"slices"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -33,20 +36,31 @@ const (
 )
 
 func init() {
-	base.RegisterController(&controller{})
+	base.RegisterController(newController())
 }
 
 // controller that creates mock data when started.
 // This creates a "rdd-mocks" namespace to own the created resources, and
 // reconcilers that create mocked resources based on the namespace.
 type controller struct {
+	mgr             ctrl.Manager
 	webhookPort     int
 	webhookManagers []base.WebhookManager
+	passthroughs    map[string]http.Handler
+}
+
+func newController() *controller {
+	c := &controller{}
+	c.passthroughs = map[string]http.Handler{
+		"logs": http.HandlerFunc(c.handleLogs),
+	}
+	return c
 }
 
 var (
-	_ base.Controller        = &controller{}
-	_ base.WebhookController = &controller{}
+	_ base.Controller            = &controller{}
+	_ base.WebhookController     = &controller{}
+	_ base.PassthroughController = &controller{}
 )
 
 func (c *controller) GetName() string {
@@ -63,6 +77,14 @@ func (c *controller) SetWebhookPort(port int) {
 
 func (c *controller) GetCRDData() string {
 	return ""
+}
+
+func (c *controller) GetPassthroughEndpoints() []string {
+	return slices.Collect(maps.Keys(c.passthroughs))
+}
+
+func (c *controller) GetPassthroughHandler(endpoint string) http.Handler {
+	return c.passthroughs[endpoint]
 }
 
 func (c *controller) setupReconciler(ctx context.Context, mgr ctrl.Manager) error {
@@ -148,6 +170,7 @@ func (c *controller) createNamespace(ctx context.Context, mgr ctrl.Manager) erro
 func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
 	mgr.GetLogger().Info("Registering Mock Controller with Manager")
 	ctx := context.Background()
+	c.mgr = mgr
 
 	if err := containersv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return err

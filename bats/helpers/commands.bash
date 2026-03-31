@@ -23,6 +23,22 @@ ctrctl() {
 curl() {
     command "curl${EXE}" "$@"
 }
+
+# Check if curl supports WebSockets; some tests may require it.
+curl_has_websocket_support() {
+    if ! command -v "curl${EXE}" >/dev/null 2>&1; then
+        return 1
+    fi
+    local version
+    version=$(curl --version 2>/dev/null)
+    # `ws` may be the last protocol and precede a new line, so we only test for
+    # space to the left of it.
+    if [[ "${version}" =~ Protocols:.*\ wss? ]]; then
+        return 0
+    fi
+    return 1
+}
+
 rdd() {
     local arg
     local args=("$@")

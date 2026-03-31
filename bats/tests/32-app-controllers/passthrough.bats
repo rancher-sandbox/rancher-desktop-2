@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: SUSE LLC
+# SPDX-FileCopyrightText: The Rancher Desktop Authors
+
 load '../../helpers/load'
 
 local_setup_file() {
@@ -15,10 +19,7 @@ local_setup_file() {
     # We need to use curl for WebSocket support; however, some versions of curl
     # do not support ws:// URLs directly, so we check for that and skip the
     # test if not supported.
-    run -0 curl --version
-    # `ws` may be the last protocol and precede a new line, so we only test for
-    # space to the left of it.
-    if ! [[ "${output}" =~ Protocols:.*\ ws ]]; then
+    if ! curl_has_websocket_support; then
         skip "curl does not support WebSocket"
     fi
     run -0 rdd ctl config view --minify --flatten --output=jsonpath='{.clusters[].cluster.server}'
