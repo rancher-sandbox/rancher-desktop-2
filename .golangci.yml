@@ -104,7 +104,6 @@ linters:
       - name: increment-decrement
       - name: indent-error-flow
       - name: package-comments
-        disabled: true
       - name: range
       - name: receiver-naming
       - name: redefines-builtin-id
@@ -121,7 +120,6 @@ linters:
       checks:
       - all
       - -QF*
-      - -ST1000
       - -ST1001  # duplicates revive.dot-imports
     usetesting:
       os-temp-dir: true

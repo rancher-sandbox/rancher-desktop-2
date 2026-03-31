@@ -4,7 +4,6 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
-// Package process provides cross-platform process utilities.
 package process
 
 import (

@@ -2,6 +2,9 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
+// Package image registers the Image controller. Images reflect container engine
+// images as Kubernetes resources, with each tag represented as a separate Image
+// object.
 package image
 
 import (

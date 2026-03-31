@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
+
+// Package tail reads log files from the end and optionally follows new output,
+// similar to tail -f. It wraps nxadmtail with context cancellation for use in
+// CLI commands like rdd service log.
 package tail
 
 import (

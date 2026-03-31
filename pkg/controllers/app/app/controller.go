@@ -2,6 +2,9 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
+// Package app registers the App controller. The App controller manages the
+// cluster-scoped App singleton that represents the Rancher Desktop application;
+// it creates and owns a LimaVM and mirrors its conditions back to App status.
 package app
 
 import (

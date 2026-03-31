@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
-// Package base provides shared utilities for RDD controllers.
 package base
 
 import (

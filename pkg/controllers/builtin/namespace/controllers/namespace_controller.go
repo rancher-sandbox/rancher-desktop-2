@@ -2,6 +2,9 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
+// Package controllers implements the Namespace reconciler, which handles
+// namespace deletion by deleting all resources within the namespace and
+// removing the kubernetes finalizer.
 package controllers
 
 import (

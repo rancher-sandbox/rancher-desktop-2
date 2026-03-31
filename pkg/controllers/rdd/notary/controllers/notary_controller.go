@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
+// Package controllers implements the Notary reconciler, which watches a
+// ConfigMap key and records each value change into a numbered ConfigMap.
 package controllers
 
 import (

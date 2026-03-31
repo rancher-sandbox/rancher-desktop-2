@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
+// Command app-controller runs the app controller as a standalone process, for
+// development and testing outside the embedded control plane.
 package main
 
 import (

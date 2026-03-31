@@ -2,6 +2,10 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
+// Package developer detects whether the process runs in developer mode.
+// Developer mode is enabled by the RDD_DEVELOPER_MODE environment variable or
+// by detecting the source tree relative to the executable, and exposes hidden
+// CLI flags for development.
 package developer
 
 import (

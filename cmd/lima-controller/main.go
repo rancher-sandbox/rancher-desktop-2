@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
+// Command lima-controller runs the Lima VM controller as a standalone process,
+// for development and testing outside the embedded control plane.
 package main
 
 import (

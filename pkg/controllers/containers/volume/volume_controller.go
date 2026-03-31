@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
+// Package volume registers the Volume controller. Volumes reflect container
+// engine volumes as Kubernetes resources.
 package volume
 
 import (

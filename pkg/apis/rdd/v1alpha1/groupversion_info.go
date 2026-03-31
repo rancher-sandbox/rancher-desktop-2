@@ -2,7 +2,9 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
-// Package v1alpha1 contains API Schema definitions for the rdd v1alpha1 API group
+// Package v1alpha1 defines the rdd.rancherdesktop.io API group, which contains
+// system-level resources: ConfigMapReplicaSet for declarative ConfigMap
+// replication and Notary for tracking configuration changes.
 // +kubebuilder:object:generate=true
 // +kubebuilder:ac:generate=true
 // +groupName=rdd.rancherdesktop.io

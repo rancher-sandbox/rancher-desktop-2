@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
+// Package controllers implements the Demo reconciler, a minimal singleton
+// controller used for development and testing of the controller framework.
 package controllers
 
 import (

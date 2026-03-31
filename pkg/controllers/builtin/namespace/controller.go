@@ -2,6 +2,10 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
+// Package namespace registers the Namespace controller. This controller
+// replaces the standard Kubernetes namespace controller (which requires kubelet)
+// to handle namespace deletion by cleaning up all resources in the namespace
+// and removing the kubernetes finalizer.
 package namespace
 
 import (

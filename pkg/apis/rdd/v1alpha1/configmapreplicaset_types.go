@@ -2,8 +2,6 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
-// Package v1alpha1 contains the API definitions for the configmap replicaset controller.
-// This package defines custom resources that manage ConfigMaps without any pod dependencies.
 package v1alpha1
 
 import (

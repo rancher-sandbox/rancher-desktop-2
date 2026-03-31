@@ -2,8 +2,6 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
-// Package mock contains webhooks and reconcilers to automatically generate
-// mock data on controller startup.
 package mock
 
 import (

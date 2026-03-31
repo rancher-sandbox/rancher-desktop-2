@@ -3,6 +3,9 @@
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 // SPDX-FileCopyrightText: The KCP Authors
 
+// Package readiness waits for the embedded control plane to become operational
+// by polling the API server's /readyz endpoint and checking that expected CRDs
+// are established and webhook configurations are created.
 package readiness
 
 import (

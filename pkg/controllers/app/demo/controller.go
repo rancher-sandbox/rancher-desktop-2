@@ -2,6 +2,10 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
+// Package demo registers the Demo controller. The Demo controller exists for
+// development and testing; it exercises the controller framework with a minimal
+// cluster-scoped singleton and passthrough HTTP endpoints. It will be removed
+// before the first release.
 package demo
 
 import (

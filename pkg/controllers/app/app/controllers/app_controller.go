@@ -2,6 +2,9 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
+// Package controllers implements the App reconciler, which propagates the
+// desired running state to the owned LimaVM and mirrors its conditions back to
+// App status.
 package controllers
 
 import (

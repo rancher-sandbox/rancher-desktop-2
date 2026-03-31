@@ -3,6 +3,9 @@
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 // SPDX-FileCopyrightText: The KCP Authors
 
+// Package admission selects and configures the Kubernetes admission plugins for
+// the embedded API server, including namespace lifecycle, service accounts,
+// webhooks, owner-reference permission enforcement, and event rate limiting.
 package admission
 
 import (

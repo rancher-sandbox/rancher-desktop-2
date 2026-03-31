@@ -2,6 +2,9 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
+// Package configmapreplicaset registers the ConfigMapReplicaSet controller. A
+// ConfigMapReplicaSet declaratively maintains a set of ConfigMaps with identical
+// data, operating at the API level without any pod dependencies.
 package configmapreplicaset
 
 import (

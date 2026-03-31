@@ -2,7 +2,9 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
-// Package containers registers all controllers related to container engines.
+// Package containers is a side-effect aggregator that blank-imports the
+// container-related controller packages (container, containernamespace, image,
+// volume) so their init functions register them with the controller framework.
 package containers
 
 import (

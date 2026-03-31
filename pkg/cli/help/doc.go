@@ -3,6 +3,9 @@
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 // SPDX-FileCopyrightText: The KCP Authors
 
+// Package help provides CLI help text formatting for the rdd command suite,
+// including paragraph reflowing to terminal width and usage template
+// customization.
 package help
 
 import (

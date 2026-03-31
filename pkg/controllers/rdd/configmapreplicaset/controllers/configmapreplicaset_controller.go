@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
-// Package controllers implements the reconciliation logic for custom resources.
-// This controller manages ConfigMaps declaratively without any pod dependencies.
+// Package controllers implements the ConfigMapReplicaSet reconciler, which
+// ensures the desired number of ConfigMap replicas exist with identical data.
 package controllers
 
 import (

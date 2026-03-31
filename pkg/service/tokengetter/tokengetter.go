@@ -3,6 +3,10 @@
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 // SPDX-FileCopyrightText: The KCP Authors
 
+// Package tokengetter implements ServiceAccountTokenGetter for the embedded API
+// server's token authenticator. It reads ServiceAccount and Secret objects
+// directly from the lister cache, avoiding a circular dependency on the API
+// server during authentication.
 package tokengetter
 
 import (

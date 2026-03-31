@@ -3,6 +3,9 @@
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 // SPDX-FileCopyrightText: The KCP Authors
 
+// Command rdd is the Rancher Desktop Daemon CLI. It manages the control plane
+// lifecycle, provides kubectl access to the embedded API server, and controls
+// Lima VMs.
 package main
 
 import (
