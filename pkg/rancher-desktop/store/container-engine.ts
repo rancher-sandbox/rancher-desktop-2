@@ -104,7 +104,7 @@ export const actions = {
       // Refresh all resources to update the namespace filter.
       for (const key of Object.keys(state._watchers)) {
         dispatch(`watch${ key.replace(/^\w/, c => c.toUpperCase()) }`,
-          { options: state._watchers[key as resourceKeys].options });
+          state._watchers[key as resourceKeys].options);
       }
     }
   },

@@ -156,6 +156,7 @@ type RowItem = Container & {
   uptime:            string;
   id:                string;
   imageName:         string | undefined;
+  portsSortKey:      number[];
   availableActions?: Action[];
   stopContainer?:    (this: Container, containers?: Container[]) => void;
   startContainer?:   (this: Container, containers?: Container[]) => void;
@@ -189,7 +190,7 @@ export default defineComponent({
         {
           name:  'ports',
           label: this.t('containers.manage.table.header.ports'),
-          sort:  ['ports', 'status.name', 'imageName'],
+          sort:  ['portsSortKey', 'status.name', 'imageName'],
         },
         {
           name:  'uptime',
@@ -225,78 +226,82 @@ export default defineComponent({
           // Both or running, or neither.
           return a.status.status.localeCompare(b.status.status) || a.metadata.name?.localeCompare(b.metadata.name ?? '') || 0;
         })
-        .map<RowItem>(container => ({
-          ...container,
-          uptime:           container.status.startedAt ? dayjs(container.status.startedAt).toNow(true) : '',
-          id:               container.metadata.name!,
-          imageName: (() => {
-            const image = this.images?.find(image => image.status?.id === container.status?.image);
-            return image?.status?.repoTag ?? container.status?.image;
-          })(),
-          projectGroup:     (() => {
-            const labels = container.metadata.labels ?? {};
-            const k8sPodName = labels['io.kubernetes.pod.name'];
-            const k8sNamespace = labels['io.kubernetes.pod.namespace'];
-            const composeProject = labels['com.docker.compose.project'];
-            if (k8sPodName && k8sNamespace) {
-              return `${ k8sNamespace }/${ k8sPodName }`;
-            } else if (composeProject) {
-              return composeProject;
-            }
-            return 'Standalone Containers';
-          })(),
-          availableActions: [
-            {
-              label:      'Info',
-              action:     'viewInfo',
-              enabled:    true,
-              bulkable:   false,
-            },
-            {
-              label:      'Stop',
-              action:     'stopContainer',
-              enabled:    this.isRunning(container),
-              bulkable:   true,
-              bulkAction: 'stopContainer',
-            },
-            {
-              label:      'Start',
-              action:     'startContainer',
-              enabled:    this.isStopped(container),
-              bulkable:   true,
-              bulkAction: 'startContainer',
-            },
-            {
-              label:      this.t('images.manager.table.action.delete'),
-              action:     'deleteContainer',
-              enabled:    this.isStopped(container),
-              bulkable:   true,
-              bulkAction: 'deleteContainer',
-            },
-          ],
-          stopContainer: (args?: Container[]) => {
-            const containers = Array.isArray(args) ? args : [container];
+        .map<RowItem>(container => {
+          const portList = this.getPortList(container);
+          return {
+            ...container,
+            uptime:           container.status.startedAt ? dayjs(container.status.startedAt).toNow(true) : '',
+            id:               container.metadata.name!,
+            imageName: (() => {
+              const image = this.images?.find(image => image.status?.id === container.status?.image);
+              return image?.status?.repoTag ?? container.status?.image;
+            })(),
+            projectGroup:     (() => {
+              const labels = container.status.labels ?? {};
+              const k8sPodName = labels['io.kubernetes.pod.name'];
+              const k8sNamespace = labels['io.kubernetes.pod.namespace'];
+              const composeProject = labels['com.docker.compose.project'];
+              if (k8sPodName && k8sNamespace) {
+                return `${ k8sNamespace }/${ k8sPodName }`;
+              } else if (composeProject) {
+                return composeProject;
+              }
+              return 'Standalone Containers';
+            })(),
+            availableActions: [
+              {
+                label:      'Info',
+                action:     'viewInfo',
+                enabled:    true,
+                bulkable:   false,
+              },
+              {
+                label:      'Stop',
+                action:     'stopContainer',
+                enabled:    this.isRunning(container),
+                bulkable:   true,
+                bulkAction: 'stopContainer',
+              },
+              {
+                label:      'Start',
+                action:     'startContainer',
+                enabled:    this.isStopped(container),
+                bulkable:   true,
+                bulkAction: 'startContainer',
+              },
+              {
+                label:      this.t('images.manager.table.action.delete'),
+                action:     'deleteContainer',
+                enabled:    this.isStopped(container),
+                bulkable:   true,
+                bulkAction: 'deleteContainer',
+              },
+            ],
+            stopContainer: (args?: Container[]) => {
+              const containers = Array.isArray(args) ? args : [container];
 
-            return Promise.all(containers.map(container =>
-              this.containerSetState({ container, state: 'stopped' })));
-          },
-          startContainer: (args?: Container[]) => {
-            const containers = Array.isArray(args) ? args : [container];
+              return Promise.all(containers.map(container =>
+                this.containerSetState({ container, state: 'stopped' })));
+            },
+            startContainer: (args?: Container[]) => {
+              const containers = Array.isArray(args) ? args : [container];
 
-            return Promise.all(containers.map(container =>
-              this.containerSetState({ container, state: 'running' })));
-          },
-          deleteContainer: (args?: Container[]) => {
-            const containers = Array.isArray(args) ? args : [container];
+              return Promise.all(containers.map(container =>
+                this.containerSetState({ container, state: 'running' })));
+            },
+            deleteContainer: (args?: Container[]) => {
+              const containers = Array.isArray(args) ? args : [container];
 
-            return Promise.all(containers.map(container =>
-              this.containerDelete({ container })));
-          },
-          viewInfo: () => {
-            this.viewInfo(container);
-          },
-          portList: this.getPortList(container),
-        }));
+              return Promise.all(containers.map(container =>
+                this.containerDelete({ container })));
+            },
+            viewInfo: () => {
+              this.viewInfo(container);
+            },
+            portList,
+            portsSortKey: portList.map(([hostPort]) => hostPort).sort((a, b) => a - b),
+          };
+        });
     },
     errorMessage(): string | null {
       if (['containers', 'images', 'namespaces'].includes(this.error?.source ?? '')) {

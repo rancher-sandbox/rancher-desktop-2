@@ -231,7 +231,7 @@ const handleGlobalKeydown = (event: KeyboardEvent) => {
 };
 
 const clearError = () => {
-  if (error.value?.source === 'containers') {
+  if (['containers', 'namespaces'].includes(error.value?.source || '')) {
     store.commit('container-engine/SET_ERROR', undefined);
   }
 };

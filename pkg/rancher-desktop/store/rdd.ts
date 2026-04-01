@@ -20,7 +20,7 @@ const resources = [
   defineResource({
     name:       'systemConfigMaps',
     type:       'ConfigMap',
-    path:       '/api/v1/configmaps',
+    path:       '/api/v1/namespaces/rdd-system/configmaps',
     makeClient: config => config.makeApiClient(RDDClient.CoreV1Api),
     list:       client => client.listNamespacedConfigMap({ namespace: 'rdd-system' }),
   }),

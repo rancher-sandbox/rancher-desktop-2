@@ -21,7 +21,7 @@
     <div
       v-else
       ref="terminalContainer"
-      :class="['terminal-container']"
+      class="terminal-container"
       data-testid="terminal"
     />
   </div>
@@ -84,7 +84,7 @@ const logURL = computed(() => {
   if (!genericLogURL.value || !container.value?.metadata?.name) {
     return undefined;
   }
-  return new URL(container.value.metadata.name, genericLogURL.value);
+  return new URL(container.value.metadata.name, genericLogURL.value).href;
 });
 
 // Ref used for triggering reloads when the connection dies.
@@ -165,7 +165,6 @@ watch(terminalContainer, async(terminalContainer, _oldValue, onCleanup) => {
 
   // Disable key events to allow normal behaviour such as copy/paste.
   t.attachCustomKeyEventHandler(() => false);
-  terminal = t;
   (terminalContainer as any).__xtermTerminal = t;
   t.open(terminalContainer);
 
@@ -178,6 +177,7 @@ watch(terminalContainer, async(terminalContainer, _oldValue, onCleanup) => {
     t.write(buffer);
     buffer = '';
   }
+  terminal = t;
 
   const resizeObserver = new ResizeObserver(fitAddon.fit.bind(fitAddon));
   resizeObserver.observe(terminalContainer);
@@ -197,6 +197,8 @@ watch([logURL, reconnectTrigger], async([logURL], _, cleanUp) => {
   cleanUp(() => {
     streamAborter.abort();
     clearTimeout(revealTimeout);
+    clearTimeout(reconnectTimer);
+    clearTimeout(reconnectResetTimer);
   });
   streamAborter.signal.addEventListener('abort', () => {
     buffer = '';
@@ -298,8 +300,6 @@ watch([logURL, reconnectTrigger], async([logURL], _, cleanUp) => {
       }
       if (!event.wasClean || event.code !== 1000) { // 1000 = normal closure
         errorMessage.value = `WebSocket closed unexpectedly: ${ event.reason || 'code ' + event.code }`;
-      }
-      if (!event.wasClean) {
         handleStreamError();
       }
     });
@@ -309,7 +309,10 @@ watch([logURL, reconnectTrigger], async([logURL], _, cleanUp) => {
   }
 });
 
+let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+
 function handleStreamError() {
+  clearTimeout(reconnectTimer);
   if (!isRunning) {
     // If the container isn't running, we expect the log stream to fail, so
     // don't show a reconnect button in this case.
@@ -320,7 +323,7 @@ function handleStreamError() {
   // streaming watcher.
   if (reconnectAttempts < maxReconnectAttempts) {
     const delay = Math.pow(2, reconnectAttempts) * 1_000;
-    setTimeout(() => {
+    reconnectTimer = setTimeout(() => {
       reconnectAttempts++;
       // Trigger a reconnect.
       reconnectTrigger.value++;
@@ -371,6 +374,8 @@ onBeforeUnmount(() => {
   terminalAborter?.abort();
   clearTimeout(searchDebounceTimer);
   clearTimeout(revealTimeout);
+  clearTimeout(reconnectTimer);
+  clearTimeout(reconnectResetTimer);
 });
 </script>
 
