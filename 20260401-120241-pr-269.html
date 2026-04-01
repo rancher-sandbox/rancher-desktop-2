@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deep Review: 20260401-120241-pr-269</title>
+<style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+</style>
+<script>var Prism = Prism || {}; Prism.manual = true;</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body>
+<main>
+
+<h1 id="title">Deep Review: 20260401-120241-pr-269<a class="pilcrow" href="#title">&para;</a></h1>
+
+<table class="meta-table">
+<tr><td>Date</td><td>2026-04-01 12:02</td></tr>
+<tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+<tr><td>Round</td><td>2</td></tr>
+<tr><td>Author</td><td><a href="https://github.com/Nino-K">@Nino-K</a></td></tr>
+<tr><td>PR</td><td><a class="gh-ref" href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/269" data-title="Add containerEngine and kubernetes fields to the App resource" data-state="open" data-type="pr">#269</a> &mdash; Add containerEngine and kubernetes fields to the App resource</td></tr>
+<tr><td>Branch</td><td><code>implement-k8s-moby-app-resource</code></td></tr>
+<tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/d35ce52"><code>d35ce52</code></a> Update documents to include specs for Kubernetes and container engine<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/aa14a63"><code>aa14a63</code></a> Add containerEngine and kubernetes spec fields</td></tr>
+<tr><td>Reviewers</td><td><span class="pill pill-claude">Claude Opus 4.6</span> <span class="pill pill-codex">Codex GPT 5.4</span> <span class="pill pill-gemini">Gemini 3.1 Pro</span></td></tr>
+<tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; fix the reconcile ordering bug and the nil-map panic; add unit tests for the template helpers</td></tr>
+<tr><td>Wall-clock time</td><td><code>32 min 37 s</code></td></tr>
+</table>
+
+<hr>
+
+<!-- ================================================================ -->
+<!-- EXECUTIVE SUMMARY                                                -->
+<!-- ================================================================ -->
+<h2 id="executive-summary">Executive Summary<a class="pilcrow" href="#executive-summary">&para;</a></h2>
+
+<div class="card card-neutral">
+<p>This PR adds <code>spec.containerEngine.name</code> and <code>spec.kubernetes.{enabled,version}</code> to the App resource. The App controller injects these as Lima template params at creation and propagates changes to the LimaVM's template ConfigMap at runtime. The approach is sound: the template ConfigMap is the correct integration surface until <code>LimaVM.Spec.Params</code> exists. Two bugs need fixing before merge: the template-update early return skips Running-state propagation (causing a spurious VM restart when both change in one update), and empty template data causes a nil-map panic.</p>
+</div>
+
+<hr>
+
+<!-- ================================================================ -->
+<!-- CRITICAL ISSUES                                                  -->
+<!-- ================================================================ -->
+<h2 id="critical-issues" class="section-critical">Critical Issues<a class="pilcrow" href="#critical-issues">&para;</a></h2>
+
+<div class="card card-neutral">
+<p>None.</p>
+</div>
+
+<hr>
+
+<!-- ================================================================ -->
+<!-- IMPORTANT ISSUES                                                 -->
+<!-- ================================================================ -->
+<h2 id="important-issues" class="section-important">Important Issues<a class="pilcrow" href="#important-issues">&para;</a></h2>
+
+<!-- Important-1 -->
+<div class="card card-important">
+<div class="finding-title" id="important-1"><span class="finding-num">1.</span> Early return from template update skips Running-state propagation<a class="pilcrow" href="#important-1">&para;</a></div>
+<p><span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span> &mdash; important, regression</p>
+
+<p>When a single App update changes both template params and <code>spec.running</code>, the template update at line 243 returns early at line 250, skipping the Running propagation at line 256. The LimaVM controller sees the template change while <code>LimaVM.Spec.Running</code> is still <code>true</code>, triggers a restart, and only receives the stop request on the next App reconcile. A user who sets <code>spec.running=false</code> and changes <code>spec.containerEngine.name</code> in one update gets a restart followed by a stop, instead of just a stop.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/aa14a63afcf3245c94612760dd2d5240a3afff51/pkg/controllers/app/app/controllers/app_controller.go#L234-L262">pkg/controllers/app/app/controllers/app_controller.go:234-262</a></div>
+<pre data-start="234" data-line="250,256"><code class="language-go">		if !match {
+			updatedTemplate, err := applySpecToTemplate(currentTemplate, app.Spec)
+			if err != nil {
+				return ctrl.Result{}, fmt.Errorf("failed to apply spec params to template ConfigMap: %w", err)
+			}
+			if templateCM.Data == nil {
+				templateCM.Data = make(map[string]string)
+			}
+			templateCM.Data[limav1alpha1.TemplateConfigMapKey] = updatedTemplate
+			if err := r.Update(ctx, templateCM); err != nil {
+				return ctrl.Result{}, fmt.Errorf("failed to update template ConfigMap with new params: %w", err)
+			}
+			log.Info("Updated template ConfigMap with new params",
+				"containerEngine", app.Spec.ContainerEngine.Name,
+				"kubernetesEnabled", app.Spec.Kubernetes.Enabled,
+				"kubernetesVersion", app.Spec.Kubernetes.Version)
+			return ctrl.Result{}, nil
+		}
+	}
+}
+
+// Propagate spec.running from App into the LimaVM.
+if limaVM.Spec.Running != app.Spec.Running {
+	limaVM.Spec.Running = app.Spec.Running
+	if err := r.Update(ctx, limaVM); err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to propagate running state to LimaVM: %w", err)
+	}
+	return ctrl.Result{}, nil
+}</code></pre>
+
+<p><span class="fix-label">Fix:</span> Move the Running propagation block (lines 255&ndash;262) above the template propagation block (lines 219&ndash;253), so Running state is always delivered first.</p>
+
+<pre><code class="language-diff">+	// Propagate spec.running from App into the LimaVM.
++	if limaVM.Spec.Running != app.Spec.Running {
++		limaVM.Spec.Running = app.Spec.Running
++		if err := r.Update(ctx, limaVM); err != nil {
++			return ctrl.Result{}, fmt.Errorf("failed to propagate running state to LimaVM: %w", err)
++		}
++		return ctrl.Result{}, nil
++	}
++
+ 	// Propagate app spec.containerEngine and spec.kubernetes into the LimaVM's
+ 	// template ConfigMap.
+ 	if limaVM.Status.TemplateConfigMap != "" {
+ 		// ...
+ 	}
+
+-	// Propagate spec.running from App into the LimaVM.
+-	if limaVM.Spec.Running != app.Spec.Running {
+-		// ...
+-	}</code></pre>
+</div>
+
+<!-- Important-2 -->
+<div class="card card-important">
+<div class="finding-title" id="important-2"><span class="finding-num">2.</span> Nil-map panic in <code>applySpecToTemplate</code> on empty template data<a class="pilcrow" href="#important-2">&para;</a></div>
+<p><span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span> &mdash; important, regression</p>
+
+<p>When <code>templateData</code> is empty or null YAML, <code>yaml.Unmarshal</code> succeeds but leaves <code>tmpl</code> as <code>nil</code>. Reading from a nil map is safe in Go, so <code>parseTemplateParams</code> works, but <code>tmpl["param"] = params</code> at line 65 panics. The runtime path at line 235 reaches this code if the template ConfigMap exists but its <code>template</code> key is missing or empty.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/aa14a63afcf3245c94612760dd2d5240a3afff51/pkg/controllers/app/app/controllers/app_controller.go#L43-L71">pkg/controllers/app/app/controllers/app_controller.go:43-71</a></div>
+<pre data-start="43" data-line="44,65"><code class="language-go">func parseTemplateParams(templateData string) (tmpl, params map[string]any, err error) {
+	if err := yaml.Unmarshal([]byte(templateData), &amp;tmpl); err != nil {
+		return nil, nil, fmt.Errorf("failed to parse Lima template: %w", err)
+	}
+
+	params, _ = tmpl["param"].(map[string]any)
+	if params == nil {
+		params = make(map[string]any)
+	}
+
+	return tmpl, params, nil
+}
+
+func applySpecToTemplate(templateData string, spec v1alpha1.AppSpec) (string, error) {
+	tmpl, params, err := parseTemplateParams(templateData)
+	if err != nil {
+		return "", err
+	}
+
+	params["CONTAINER_ENGINE"] = spec.ContainerEngine.Name
+	params["KUBERNETES_ENABLED"] = spec.Kubernetes.Enabled
+	params["KUBERNETES_VERSION"] = spec.Kubernetes.Version
+	tmpl["param"] = params
+
+	data, err := yaml.Marshal(tmpl)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal Lima template: %w", err)
+	}
+	return string(data), nil
+}</code></pre>
+
+<p><span class="fix-label">Fix:</span> Guard against nil <code>tmpl</code> in <code>parseTemplateParams</code>:</p>
+
+<pre><code class="language-diff"> func parseTemplateParams(templateData string) (tmpl, params map[string]any, err error) {
+ 	if err := yaml.Unmarshal([]byte(templateData), &amp;tmpl); err != nil {
+ 		return nil, nil, fmt.Errorf("failed to parse Lima template: %w", err)
+ 	}
++	if tmpl == nil {
++		tmpl = make(map[string]any)
++	}
+ 	params, _ = tmpl["param"].(map[string]any)</code></pre>
+</div>
+
+<!-- Important-3 -->
+<div class="card card-important">
+<div class="finding-title" id="important-3"><span class="finding-num">3.</span> No unit tests for template helper functions<a class="pilcrow" href="#important-3">&para;</a></div>
+<p><span class="pill pill-claude">Claude</span> &mdash; important, gap</p>
+
+<p><code>parseTemplateParams</code>, <code>applySpecToTemplate</code>, and <code>templateParamsMatch</code> are pure functions with no external dependencies &mdash; ideal candidates for table-driven tests. The entire <code>pkg/controllers/app/app/controllers/</code> directory has no test files. Key scenarios to cover:</p>
+
+<ol>
+<li>Round-trip: apply params, then verify <code>templateParamsMatch</code> returns <code>true</code></li>
+<li>Param change detection: modify one param, verify <code>templateParamsMatch</code> returns <code>false</code></li>
+<li>Existing params preserved: applying spec params does not drop unrelated params already in the template</li>
+<li>Empty/nil input: the nil-map fix (finding 2) handles empty template data</li>
+<li>YAML type fidelity: <code>KUBERNETES_ENABLED</code> round-trips as <code>bool</code>, not <code>string</code></li>
+</ol>
+
+<p><span class="fix-label">Fix:</span> Add <code>app_controller_test.go</code> with table-driven tests.</p>
+</div>
+
+<hr>
+
+<!-- ================================================================ -->
+<!-- SUGGESTIONS                                                      -->
+<!-- ================================================================ -->
+<h2 id="suggestions" class="section-suggestion">Suggestions<a class="pilcrow" href="#suggestions">&para;</a></h2>
+
+<!-- Suggestion-1 -->
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-1"><span class="finding-num">1.</span> Type mismatch risk in <code>templateParamsMatch</code> interface equality<a class="pilcrow" href="#suggestion-1">&para;</a></div>
+<p><span class="pill pill-gemini">Gemini</span> &mdash; suggestion, regression</p>
+
+<p>The <code>params</code> map comes from <code>yaml.Unmarshal</code>, which infers Go types from YAML syntax. If someone manually edits the template ConfigMap and writes <code>KUBERNETES_VERSION: 1.30</code> (no quotes, one dot), YAML parses it as <code>float64(1.3)</code>, and the <code>==</code> comparison with the <code>string</code> spec field returns <code>false</code> on every reconcile &mdash; an infinite update loop. In normal operation, the controller writes the ConfigMap, so types stay consistent.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/aa14a63afcf3245c94612760dd2d5240a3afff51/pkg/controllers/app/app/controllers/app_controller.go#L74-L83">pkg/controllers/app/app/controllers/app_controller.go:74-83</a></div>
+<pre data-start="74" data-line="80,81,82"><code class="language-go">func templateParamsMatch(templateData string, spec v1alpha1.AppSpec) (bool, error) {
+	_, params, err := parseTemplateParams(templateData)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse Lima template for comparison: %w", err)
+	}
+
+	return params["CONTAINER_ENGINE"] == spec.ContainerEngine.Name &amp;&amp;
+		params["KUBERNETES_ENABLED"] == spec.Kubernetes.Enabled &amp;&amp;
+		params["KUBERNETES_VERSION"] == spec.Kubernetes.Version, nil
+}</code></pre>
+
+<p><span class="fix-label">Fix:</span> Convert both sides to strings via <code>fmt.Sprintf("%v", ...)</code> before comparing.</p>
+</div>
+
+<!-- Suggestion-2 -->
+<div class="card card-suggestion">
+<div class="finding-title" id="suggestion-2"><span class="finding-num">2.</span> Hardcoded Kubernetes version in multiple files<a class="pilcrow" href="#suggestion-2">&para;</a></div>
+<p><span class="pill pill-claude">Claude</span> &mdash; suggestion, regression</p>
+
+<p>The string <code>"1.30.2"</code> appears as a kubebuilder default in <code>app_types.go</code> and as the param default in <code>lima-template.yaml</code>. Changing the default requires updating both files in lockstep. A constant in the types package would prevent drift.</p>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/aa14a63afcf3245c94612760dd2d5240a3afff51/pkg/api/v1alpha1/app_types.go#L22-L31">pkg/api/v1alpha1/app_types.go:22-31</a></div>
+<pre data-start="22" data-line="29"><code class="language-go">// KubernetesSpec defines the desired Kubernetes configuration.
+type KubernetesSpec struct {
+	// enabled specifies whether Kubernetes should be enabled in the VM.
+	// +kubebuilder:default=false
+	Enabled bool `json:"enabled"`
+	// version is the Kubernetes version to use (e.g. "1.30.2").
+	// +optional
+	// +kubebuilder:default="1.30.2"
+	Version string `json:"version,omitempty"`
+}</code></pre>
+
+<div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/aa14a63afcf3245c94612760dd2d5240a3afff51/pkg/controllers/app/app/lima-template.yaml#L31-L34">pkg/controllers/app/app/lima-template.yaml:31-34</a></div>
+<pre data-start="31" data-line="34"><code class="language-yaml">param:
+  CONTAINER_ENGINE: moby
+  KUBERNETES_ENABLED: false
+  KUBERNETES_VERSION: 1.30.2</code></pre>
+</div>
+
+<hr>
+
+<!-- ================================================================ -->
+<!-- DESIGN OBSERVATIONS                                              -->
+<!-- ================================================================ -->
+<h2 id="design-observations" class="section-design">Design Observations<a class="pilcrow" href="#design-observations">&para;</a></h2>
+
+<h3 id="design-concerns">Concerns<a class="pilcrow" href="#design-concerns">&para;</a></h3>
+
+<div class="card card-design">
+<p><strong>(future)</strong> <strong><code>LimaVM.Spec.Params</code> would eliminate the ordering bug</strong> &mdash; The LimaVM design doc describes a <code>spec.params</code> field that merges params into the template before validation. This field is designed but not yet implemented in the types. Once it exists, the App controller can set both <code>spec.running</code> and <code>spec.params</code> on the LimaVM in one update, and the LimaVM controller handles template materialization &mdash; eliminating the multi-resource ordering problem in finding 1. <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span></p>
+</div>
+
+<div class="card card-design">
+<p><strong>(future)</strong> <strong>YAML key reordering on round-trip</strong> &mdash; The template helpers round-trip YAML through <code>sigs.k8s.io/yaml</code>, which reorders keys alphabetically. The first write reorders the embedded template; subsequent writes are stable. If a future caller passes hand-authored YAML, the cosmetic reordering could produce a spurious template "change" detected by the LimaVM controller. <span class="pill pill-claude">Claude</span></p>
+</div>
+
+<h3 id="design-strengths">Strengths<a class="pilcrow" href="#design-strengths">&para;</a></h3>
+
+<div class="card card-design">
+<ul>
+<li>The create-path injects params into the input ConfigMap before creating the LimaVM, so first boot and runtime updates use the same template representation. <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span></li>
+<li>The <code>templateParamsMatch</code> check before updating avoids spurious ConfigMap writes that would trigger unnecessary LimaVM reconciles and restarts. <span class="pill pill-claude">Claude</span></li>
+<li>The priority chain (template update, running propagation, condition mirroring) is well-ordered aside from the ordering bug; each step returns early so the App's <code>resourceVersion</code> stays current. <span class="pill pill-claude">Claude</span></li>
+</ul>
+</div>
+
+<hr>
+
+<!-- ================================================================ -->
+<!-- TESTING ASSESSMENT                                               -->
+<!-- ================================================================ -->
+<h2 id="testing-assessment">Testing Assessment<a class="pilcrow" href="#testing-assessment">&para;</a></h2>
+
+<div class="card card-neutral">
+<p>The existing BATS tests in <code>bats/tests/32-app-controllers/app.bats</code> cover the App lifecycle but do not exercise <code>containerEngine</code> or <code>kubernetes</code> fields &mdash; they rely on defaults. Untested scenarios, ranked by risk:</p>
+<ol>
+<li><strong>Concurrent template and running change:</strong> update both <code>spec.containerEngine.name</code> and <code>spec.running=false</code> in one operation; verify the VM stops without an intermediate restart</li>
+<li><strong>Runtime param propagation:</strong> change <code>spec.containerEngine.name</code> on a running App; verify the template ConfigMap updates and the LimaVM detects the change</li>
+<li><strong>Kubernetes enabled toggle:</strong> change <code>spec.kubernetes.enabled</code> from <code>false</code> to <code>true</code>; verify the template param changes</li>
+<li><strong>Initial creation with non-default values:</strong> create an App with <code>containerEngine.name: containerd</code>; verify the input ConfigMap has correct params</li>
+<li><strong>Unit tests for pure functions:</strong> <code>parseTemplateParams</code>, <code>applySpecToTemplate</code>, <code>templateParamsMatch</code> (see finding 3)</li>
+</ol>
+</div>
+
+<hr>
+
+<!-- ================================================================ -->
+<!-- DOCUMENTATION ASSESSMENT                                         -->
+<!-- ================================================================ -->
+<h2 id="documentation-assessment">Documentation Assessment<a class="pilcrow" href="#documentation-assessment">&para;</a></h2>
+
+<div class="card card-neutral">
+<p>The design doc (<code>docs/design/api_app.md</code>) documents all three new fields with clear descriptions and a consistent example. The removed status fields reflect the shift to a conditions-only status, matching the implementation.</p>
+<p>One tension: <code>api_app.md</code> line 86 documents direct App-to-template-ConfigMap mutation as intended behavior. The LimaVM design doc (<code>api_lima.md</code> line 62) permits external modification of the template ConfigMap, so this does not violate the LimaVM contract. However, the design doc should note that this pattern is interim &mdash; once <code>LimaVM.Spec.Params</code> is implemented, the App controller should use it instead.</p>
+</div>
+
+<hr>
+
+<!-- ================================================================ -->
+<!-- COMMIT STRUCTURE                                                 -->
+<!-- ================================================================ -->
+<h2 id="commit-structure">Commit Structure<a class="pilcrow" href="#commit-structure">&para;</a></h2>
+
+<div class="card card-neutral">
+<p>Two cleanly separated commits:</p>
+<ol>
+<li><code>d35ce52</code>: design doc updates (spec-first, reasonable for a planned feature)</li>
+<li><code>aa14a63</code>: implementation (types, controller, CRD, template)</li>
+</ol>
+<p>Each commit is self-contained, and the messages describe their changes accurately.</p>
+</div>
+
+<hr>
+
+<!-- ================================================================ -->
+<!-- AGENT PERFORMANCE RETRO                                          -->
+<!-- ================================================================ -->
+<h2 id="agent-retro">Agent Performance Retro<a class="pilcrow" href="#agent-retro">&para;</a></h2>
+
+<h3 id="retro-claude"><span class="pill pill-claude">Claude</span> Claude Opus 4.6<a class="pilcrow" href="#retro-claude">&para;</a></h3>
+<div class="card card-neutral">
+<p>Claude produced the most detailed review with four findings across two severity levels. It correctly identified the nil-map panic (finding 2) and was the only agent to flag the missing unit tests, the hardcoded version duplication, and the CRD YAML quoting concern. It did not identify the reconcile ordering bug &mdash; the highest-impact finding in this review. Its design observations (YAML key reordering, priority chain analysis) were accurate and well-supported.</p>
+</div>
+
+<h3 id="retro-codex"><span class="pill pill-codex">Codex</span> Codex GPT 5.4<a class="pilcrow" href="#retro-codex">&para;</a></h3>
+<div class="card card-neutral">
+<p>Codex produced the most architecturally focused review. It identified the reconcile ordering bug (finding 1) with a precise trace through the LimaVM controller's restart path, and raised the ownership concern with concrete impact analysis. It did not identify the nil-map panic or the missing unit tests. Codex framed the ownership concern as IMPORTANT rather than CRITICAL, correctly calibrating severity for this repo's context (the LimaVM design doc permits external ConfigMap modification).</p>
+</div>
+
+<h3 id="retro-gemini"><span class="pill pill-gemini">Gemini</span> Gemini 3.1 Pro<a class="pilcrow" href="#retro-gemini">&para;</a></h3>
+<div class="card card-neutral">
+<p>Gemini produced the broadest coverage, identifying both the nil-map panic and the ordering bug. It uniquely identified the type-mismatch risk in <code>templateParamsMatch</code>. However, it inflated severity: it rated the nil-map panic as CRITICAL (requires corrupt/empty ConfigMap data &mdash; unlikely in normal operation) and rated the ownership concern as CRITICAL despite the LimaVM design doc explicitly permitting external ConfigMap modification.</p>
+</div>
+
+<h3 id="retro-summary">Summary<a class="pilcrow" href="#retro-summary">&para;</a></h3>
+
+<table class="retro-table">
+<tr><th>Metric</th><th>Claude Opus 4.6</th><th>Codex GPT 5.4</th><th>Gemini 3.1 Pro</th></tr>
+<tr><td>Duration</td><td>12:57</td><td>5:02</td><td>4:02</td></tr>
+<tr><td>Critical</td><td>0</td><td>0</td><td>2 (both downgraded)</td></tr>
+<tr><td>Important</td><td>2</td><td>2</td><td>2</td></tr>
+<tr><td>Suggestion</td><td>2</td><td>0</td><td>1</td></tr>
+<tr><td>Design observations</td><td>4</td><td>2</td><td>2</td></tr>
+<tr><td>False positives</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>Unique insights</td><td>2 (unit tests, version duplication)</td><td>0</td><td>1 (type mismatch)</td></tr>
+<tr><td>Files reviewed</td><td>6</td><td>6</td><td>6</td></tr>
+<tr><td>Coverage misses</td><td>0</td><td>0</td><td>0</td></tr>
+</table>
+
+<div class="card card-neutral" style="margin-top: 1.2rem;">
+<p>Codex provided the highest-value individual finding (the ordering bug with full cross-controller trace). Claude provided the best breadth and the only actionable gap finding (missing tests). Gemini caught the most total issues but needed severity recalibration. All three agents reviewed all changed files.</p>
+</div>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-diff.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+<script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+</script>
+</body>
+</html>
