@@ -55,6 +55,7 @@ export class Tray {
       type:    'normal',
       icon:    '',
     },
+    /* TODO: https://github.com/rancher-sandbox/rancher-desktop-app/issues/26
     {
       id:      'container-engine',
       enabled: false,
@@ -62,6 +63,7 @@ export class Tray {
       type:    'normal',
       icon:    '',
     },
+    */
     { type: 'separator' },
     {
       id:    'main',
@@ -71,12 +73,15 @@ export class Tray {
         openMain();
       },
     },
+    /* TODO: https://github.com/rancher-sandbox/rancher-desktop-app/issues/26
     {
       id:    'preferences',
       label: 'Open preferences dialog',
       type:  'normal',
       click: openPreferences,
     },
+    */
+    /* TODO: https://github.com/rancher-sandbox/rancher-desktop-app/issues/27
     {
       id:      'dashboard',
       enabled: false,
@@ -85,12 +90,15 @@ export class Tray {
       click:   openDashboard,
     },
     { type: 'separator' },
+    */
+    /* TODO: https://github.com/rancher-sandbox/rancher-desktop-app/issues/39
     {
       id:      'contexts',
       label:   'Kubernetes Contexts',
       type:    'submenu',
       submenu: [],
     },
+    */
     { type: 'separator' },
     {
       id:    'quit',

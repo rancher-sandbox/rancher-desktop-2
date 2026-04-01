@@ -45,12 +45,16 @@
       </RouterLink>
     </div>
     <div class="nav-button-container">
+      <!-- TODO: https://github.com/rancher-sandbox/rancher-desktop-app/issues/27 -->
       <dashboard-button
+        v-if="(() => false)()"
         data-testid="dashboard-button"
         class="nav-button"
         @open-dashboard="openDashboard"
       />
+      <!-- TODO: https://github.com/rancher-sandbox/rancher-desktop-app/issues/26 -->
       <preferences-button
+        v-if="(() => false)()"
         data-testid="preferences-button"
         class="nav-button"
         @open-preferences="openPreferences"
