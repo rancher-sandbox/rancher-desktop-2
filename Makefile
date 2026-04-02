@@ -75,6 +75,8 @@ $(GUESTAGENT_BINARY): go.mod go.sum
 $(GUESTAGENT_GZ): $(GUESTAGENT_BINARY)
 	gzip --to-stdout $< > $@
 
+.INTERMEDIATE: $(GUESTAGENT_BINARY)
+
 bin/rdd$(EXE): $(GOLANG_SOURCES) $(GUESTAGENT_GZ)
 	WSLENV=${WSLENV}:CGO_CFLAGS:CGO_ENABLED \
 	CGO_CFLAGS="-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_USE_ALLOCA=1" CGO_ENABLED=1 \
@@ -178,6 +180,7 @@ LTAG_EXCLUDES := \
 	.github/actions/spelling/check-spelling \
 	bats/lib \
 	pkg/util/nxadmtail \
+	$(GUESTAGENT_BINARY) \
 	${NULL}
 ltag:
 	go$(EXE) tool ltag -v -t .ltag -path . --gitignore --excludes="${LTAG_EXCLUDES}"
