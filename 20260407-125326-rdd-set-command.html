@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260407-125326-rdd-set-command</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Deep Review: 20260407-125326-rdd-set-command</h1>
+
+    <table class="meta-table">
+      <tr><td>Date</td><td>2026-04-07 12:53</td></tr>
+      <tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+      <tr><td>Round</td><td>1</td></tr>
+      <tr><td>Mode</td><td>Standard</td></tr>
+      <tr><td>Author</td><td><a href="https://github.com/jandubois">@jandubois</a></td></tr>
+      <tr><td>Branch</td><td><code>rdd-set-command</code></td></tr>
+      <tr><td>Commits</td><td>
+        <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/ec89125">ec89125</a></code> Add <code>rdd set</code> command for App configuration<br>
+        <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/eaa4589">eaa4589</a></code> Merge pull request <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/272" class="gh-ref" data-title="mock controller: Add second container" data-state="merged" data-type="pr">#272</a> from mook-as/mock/extra-containers<br>
+        <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/745523a">745523a</a></code> Merge pull request <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/269" class="gh-ref" data-title="Add containerEngine and kubernetes fields to the App resource" data-state="merged" data-type="pr">#269</a><br>
+        <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/7ddd968">7ddd968</a></code> Merge pull request <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/248" class="gh-ref" data-title="App controller Stop and Start LimaVM" data-state="merged" data-type="pr">#248</a><br>
+        <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/40d93a2">40d93a2</a></code> Merge pull request <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/236" class="gh-ref" data-title="Implement App controller lifecycle for LimaVM" data-state="merged" data-type="pr">#236</a><br>
+        <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/e74f7df">e74f7df</a></code> Merge pull request <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/242" class="gh-ref" data-title="Run Lima BATS tests on Windows via MSYS2" data-state="merged" data-type="pr">#242</a><br>
+        <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/90e31c7">90e31c7</a></code> Merge pull request <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/238" class="gh-ref" data-title="Split RDD finalizer into /cleanup and /owned" data-state="merged" data-type="pr">#238</a><br>
+        <em>(70+ commits total; merge commits shown)</em>
+      </td></tr>
+      <tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.6, <span class="pill pill-codex">Codex</span> GPT 5.4, <span class="pill pill-gemini">Gemini</span> 3.1 Pro</td></tr>
+      <tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> — One stall bug in the App controller and a <code>--dry-run</code> semantic issue need attention before merge</td></tr>
+      <tr><td>Wall-clock time</td><td>26 min 39 s</td></tr>
+    </table>
+
+    <h2 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">¶</a></h2>
+    <div class="card card-neutral">
+      <p>This branch adds the <code>rdd set</code> CLI command for dynamic App configuration via CRD schema introspection, extends the App controller to manage LimaVM lifecycle and propagate containerEngine/kubernetes settings, and introduces extensive supporting infrastructure: MSYS2/Windows BATS support, SSH key pre-generation on Windows, serial log rotation, finalizer refactoring, godoc enforcement, mock controller enhancements, and dependency updates. The review found no critical bugs, but identified an important stall condition in the App controller's template update path and a <code>--dry-run</code> flag that creates real resources.</p>
+    </div>
+
+    <hr>
+
+    <h3 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">¶</a></h3>
+    <div class="card card-critical">
+      <p>None.</p>
+    </div>
+
+    <hr>
+
+    <h3 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">¶</a></h3>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I1">
+        <span class="finding-num">I1.</span> App controller stalls after template ConfigMap update <span class="pill pill-gemini">Gemini</span>
+        <a href="#I1" class="pilcrow">¶</a>
+      </div>
+      <p>After updating the template ConfigMap (line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/app/app/controllers/app_controller.go#L207">207</a>), the reconciler returns <code>ctrl.Result{}, nil</code> at line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/app/app/controllers/app_controller.go#L214">214</a>. The App reconciler <code>Owns(&amp;limav1alpha1.LimaVM{})</code> but does not own or watch ConfigMaps. When the VM is stopped, the template ConfigMap update produces no LimaVM status change, so no watch event fires. The reconciler never re-triggers and never reaches the <code>running=true</code> propagation at line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/app/app/controllers/app_controller.go#L219">219</a>.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/app/app/controllers/app_controller.go#L201-L221">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+      <pre data-start="201" data-line="214"><code class="language-go">			desired := applySpecToTemplate(r.LimaTemplateData, app.Spec)
+			if templateCM.Data[limav1alpha1.TemplateConfigMapKey] != desired {
+				if templateCM.Data == nil {
+					templateCM.Data = make(map[string]string)
+				}
+				templateCM.Data[limav1alpha1.TemplateConfigMapKey] = desired
+				if err := r.Update(ctx, templateCM); err != nil {
+					return ctrl.Result{}, fmt.Errorf("failed to update template ConfigMap: %w", err)
+				}
+				log.Info("Updated template ConfigMap",
+					"containerEngine", app.Spec.ContainerEngine.Name,
+					"kubernetesEnabled", app.Spec.Kubernetes.Enabled,
+					"kubernetesVersion", app.Spec.Kubernetes.Version)
+				return ctrl.Result{}, nil
+			}
+		}
+	}
+
+	if !limaVM.Spec.Running && app.Spec.Running {
+		limaVM.Spec.Running = true
+		if err := r.Update(ctx, limaVM); err != nil {</code></pre>
+
+      <p>This manifests when a user runs <code>rdd set containerEngine.name=containerd running=true</code>: the App object receives both changes in a single patch, but the reconciler processes the template change first, returns early, and never propagates the running state.</p>
+
+      <p>The reconciler declares <code>Owns(&amp;limav1alpha1.LimaVM{})</code> but not ConfigMaps:</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/app/app/controllers/app_controller.go#L255-L260">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+      <pre data-start="255" data-line="258"><code class="language-go">func (r *AppReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&v1alpha1.App{}).
+		Owns(&limav1alpha1.LimaVM{}).
+		Complete(r)
+}</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Return <code>ctrl.Result{Requeue: true}, nil</code> so the reconciler re-evaluates after the template update:</p>
+      <pre><code class="language-diff"> 				return ctrl.Result{}, nil
++				return ctrl.Result{Requeue: true}, nil</code></pre>
+    </div>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I2">
+        <span class="finding-num">I2.</span> <code>rdd set --dry-run</code> creates real App, LimaVM, and disk instance <span class="pill pill-claude">Claude</span>
+        <a href="#I2" class="pilcrow">¶</a>
+      </div>
+      <p>When no App exists, <code>createAndPatchApp</code> creates a real App (line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/cmd/rdd/set.go#L266">266</a>, no <code>DryRunAll</code> option) before performing a dry-run patch (line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/cmd/rdd/set.go#L285">285</a>). The real App triggers the App controller, which creates a LimaVM, which creates a Lima instance on disk. The <code>--dry-run</code> flag applies only to the patch step, not the creation chain.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/cmd/rdd/set.go#L262-L287">cmd/rdd/set.go</a></div>
+      <pre data-start="262" data-line="266,279-285"><code class="language-go">		"spec":       createSpec,
+		},
+	}
+
+	_, err = dynClient.Resource(appGVR).Create(ctx, obj, metav1.CreateOptions{})
+	if apierrors.IsAlreadyExists(err) {
+		// Race: another rdd set created it concurrently. Retry as patch.
+		var app appv1alpha1.App
+		if err := c.Get(ctx, client.ObjectKey{Name: "app"}, &app); err != nil {
+			return fmt.Errorf("failed to get App after concurrent create: %w", err)
+		}
+		return patchApp(ctx, c, &app, specMap, dryRun)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to create App: %w", err)
+	}
+
+	if dryRun {
+		logrus.Info("App created with defaults")
+		var app appv1alpha1.App
+		if err := c.Get(ctx, client.ObjectKey{Name: "app"}, &app); err != nil {
+			return fmt.Errorf("failed to get App: %w", err)
+		}
+		return patchApp(ctx, c, &app, specMap, true)
+	}</code></pre>
+
+      <p>The design doc (<code>cmd_app.md</code>) and BATS test (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/bats/tests/32-app-controllers/set.bats#L131-L137"><code>set.bats:131-137</code></a>) confirm this is intentional: the admission controller needs a real App to validate the patch. But the semantic mismatch between <code>--dry-run</code> and "creates persistent resources" is a usability hazard.</p>
+      <p><span class="fix-label">Fix:</span> Document this behavior in the <code>--dry-run</code> flag description. Consider whether the create step should also use <code>DryRunAll</code> (the subsequent patch would fail with NotFound, which could be caught and reported as "App does not exist; dry-run cannot validate without creating it").</p>
+    </div>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I3">
+        <span class="finding-num">I3.</span> App controller writes directly to LimaVM-owned ConfigMap <span class="pill pill-claude">Claude</span>
+        <a href="#I3" class="pilcrow">¶</a>
+      </div>
+      <p>The App controller fetches the template ConfigMap from <code>limaVM.Status.TemplateConfigMap</code> (owned by the LimaVM resource) and updates it directly at lines <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/app/app/controllers/app_controller.go#L194-L217">194-217</a>. Per <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/docs/design/controllers.md"><code>docs/design/controllers.md</code></a>: "Each controller cleans up only the resources it owns." The App controller should communicate desired state through the LimaVM spec or its own ConfigMap, not by reaching into LimaVM's internal state.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/app/app/controllers/app_controller.go#L194-L217">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+      <pre data-start="194" data-line="202,206-207"><code class="language-go">	if limaVM.Status.TemplateConfigMap != "" {
+		templateCM := &corev1.ConfigMap{}
+		if err := r.Get(ctx, client.ObjectKey{Name: limaVM.Status.TemplateConfigMap, Namespace: namespace}, templateCM); err != nil {
+			if !apierrors.IsNotFound(err) {
+				return ctrl.Result{}, fmt.Errorf("failed to fetch LimaVM template ConfigMap: %w", err)
+			}
+		} else {
+			desired := applySpecToTemplate(r.LimaTemplateData, app.Spec)
+			if templateCM.Data[limav1alpha1.TemplateConfigMapKey] != desired {
+				if templateCM.Data == nil {
+					templateCM.Data = make(map[string]string)
+				}
+				templateCM.Data[limav1alpha1.TemplateConfigMapKey] = desired
+				if err := r.Update(ctx, templateCM); err != nil {
+					return ctrl.Result{}, fmt.Errorf("failed to update template ConfigMap: %w", err)
+				}
+				log.Info("Updated template ConfigMap",
+					"containerEngine", app.Spec.ContainerEngine.Name,
+					"kubernetesEnabled", app.Spec.Kubernetes.Enabled,
+					"kubernetesVersion", app.Spec.Kubernetes.Version)
+				return ctrl.Result{}, nil
+			}
+		}
+	}</code></pre>
+
+      <p><span class="fix-label">Fix:</span> If this boundary crossing is an accepted pragmatic choice, document it with a comment citing the design exception. Otherwise, consider adding a <code>LimaVMSpec.TemplateOverrides</code> field or having the App controller re-create its input ConfigMap.</p>
+    </div>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I4">
+        <span class="finding-num">I4.</span> <code>coerceValue</code> rejects empty strings, preventing optional fields from being cleared <span class="pill pill-claude">Claude</span>
+        <a href="#I4" class="pilcrow">¶</a>
+      </div>
+      <p>The blanket empty-string rejection at line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/cmd/rdd/set.go#L450">450</a> means <code>rdd set kubernetes.version=</code> fails with "value must not be empty." Since <code>kubernetes.version</code> is an optional string (<code>json:"version,omitempty"</code> in <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/apis/app/v1alpha1/app_types.go"><code>app_types.go</code></a>), setting it to empty is a valid way to unset it. No alternative exists via <code>rdd set</code>.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/cmd/rdd/set.go#L448-L457">cmd/rdd/set.go</a></div>
+      <pre data-start="448" data-line="450-452"><code class="language-go">// coerceValue converts a raw string to the Go type indicated by the schema.
+func coerceValue(schema *apiextensionsv1.JSONSchemaProps, raw string) (any, error) {
+	if raw == "" {
+		return nil, fmt.Errorf("value must not be empty")
+	}
+
+	// Check enum constraints (applies to all types, but mainly strings).
+	if len(schema.Enum) > 0 {
+		var validValues []string
+		found := false</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Allow empty strings for string-type fields. The merge patch sets the field to <code>""</code>, which <code>omitempty</code> treats as unset:</p>
+      <pre><code class="language-diff">-if raw == "" {
+-    return nil, fmt.Errorf("value must not be empty")
+-}
++// Allow empty strings for optional string fields (clears the value).
++// Required fields are validated by the API server.</code></pre>
+    </div>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I5">
+        <span class="finding-num">I5.</span> <code>fillRequiredFields</code> silently skips required enum string fields <span class="pill pill-claude">Claude</span>
+        <a href="#I5" class="pilcrow">¶</a>
+      </div>
+      <p>When a required string field has enum constraints (line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/cmd/rdd/set.go#L310">310</a>), <code>fillRequiredFields</code> sets no default. All current CRD enum fields have kubebuilder defaults, so this is safe today. If a future revision adds a required enum field without a default, the dynamic Create at line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/cmd/rdd/set.go#L266">266</a> fails with a validation error whose cause is unclear.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/cmd/rdd/set.go#L304-L315">cmd/rdd/set.go</a></div>
+      <pre data-start="304" data-line="310-313"><code class="language-go">		switch prop.Type {
+		case "boolean":
+			specMap[name] = false
+		case "integer":
+			specMap[name] = int64(0)
+		case "string":
+			if len(prop.Enum) == 0 {
+				specMap[name] = ""
+			}
+		}
+	}
+	for name, val := range specMap {</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Use the first enum value as the default:</p>
+      <pre><code class="language-diff"> case "string":
+     if len(prop.Enum) == 0 {
+         specMap[name] = ""
++    } else {
++        var first string
++        if json.Unmarshal(prop.Enum[0].Raw, &first) == nil {
++            specMap[name] = first
++        }
+     }</code></pre>
+    </div>
+
+    <hr>
+
+    <h3 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">¶</a></h3>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S1">
+        <span class="finding-num">S1.</span> <code>applySpecToTemplate</code> uses string concatenation for YAML <span class="pill pill-claude">Claude</span>
+        <a href="#S1" class="pilcrow">¶</a>
+      </div>
+      <p>Building YAML via string concatenation is fragile. The current values are safe (enum-constrained strings and booleans), but if a future field accepts free-form strings, YAML injection becomes possible.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/app/app/controllers/app_controller.go#L45-L52">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+      <pre data-start="45" data-line="46-51"><code class="language-go">func applySpecToTemplate(baseTemplate string, spec v1alpha1.AppSpec) string {
+	return baseTemplate + fmt.Sprintf(
+		"\nparam:\n  CONTAINER_ENGINE: %s\n  KUBERNETES_ENABLED: %v\n  KUBERNETES_VERSION: %s\n",
+		spec.ContainerEngine.Name,
+		spec.Kubernetes.Enabled,
+		spec.Kubernetes.Version,
+	)
+}</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Consider using <code>gopkg.in/yaml.v3</code> to unmarshal-merge-remarshal, or add a comment documenting the safety preconditions.</p>
+    </div>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S2">
+        <span class="finding-num">S2.</span> <code>rdd set</code> help output starts the service as a side effect <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span>
+        <a href="#S2" class="pilcrow">¶</a>
+      </div>
+      <p>Running <code>rdd set --help</code> calls <code>fetchPropertyHelp</code>, which calls <code>ensureServiceRunning</code> — potentially starting the entire control plane just to display help text. The function also uses <code>context.Background()</code> instead of accepting the command context, making the operation uncancellable.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/cmd/rdd/set.go#L86-L96">cmd/rdd/set.go</a></div>
+      <pre data-start="86" data-line="87-88"><code class="language-go">func fetchPropertyHelp() string {
+	ctx := context.Background()
+	if err := ensureServiceRunning(ctx); err != nil {
+		return ""
+	}
+	config, err := service.GetKubeRestConfig()
+	if err != nil {
+		return ""
+	}
+	schema, err := fetchSpecSchema(ctx, config)
+	if err != nil {</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Skip the CRD property lookup when the service is not already running, or at minimum check <code>Running()</code> before <code>ensureServiceRunning</code>. Accept a <code>context.Context</code> parameter for cancellation support.</p>
+    </div>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S3">
+        <span class="finding-num">S3.</span> <code>resolvePropertyPath</code> error message omits the invalid segment <span class="pill pill-claude">Claude</span>
+        <a href="#S3" class="pilcrow">¶</a>
+      </div>
+      <p>When the first path segment is invalid (<code>path == ""</code>), the error says "unknown property" without identifying which property was invalid. The <code>segment</code> variable contains the name but is not included in the message.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/cmd/rdd/set.go#L415-L424">cmd/rdd/set.go</a></div>
+      <pre data-start="415" data-line="422-423"><code class="language-go">		if !ok {
+			path := strings.Join(segments[:i], ".")
+			validNames := listProperties(current, "")
+			if path != "" {
+				return nil, fmt.Errorf("unknown property %q under %q; valid properties: %s",
+					segment, path, strings.Join(validNames, ", "))
+			}
+			return nil, fmt.Errorf("unknown property; valid properties: %s",
+				strings.Join(listProperties(schema, ""), ", "))
+		}</code></pre>
+
+      <p><span class="fix-label">Fix:</span></p>
+      <pre><code class="language-diff">-return nil, fmt.Errorf("unknown property; valid properties: %s",
++return nil, fmt.Errorf("unknown property %q; valid properties: %s",
++    segment, strings.Join(listProperties(schema, ""), ", "))</code></pre>
+    </div>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S4">
+        <span class="finding-num">S4.</span> Unsafe rename on Windows in SSH key generation <span class="pill pill-gemini">Gemini</span>
+        <a href="#S4" class="pilcrow">¶</a>
+      </div>
+      <p>On Windows, <code>os.Rename</code> fails when the destination file exists. The preceding <code>_ = os.Remove(pubPath)</code> at line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/lima/limavm/controllers/ssh_keys.go#L44">44</a> is best-effort — if it fails (e.g., a lingering file lock from an orphaned SSH process), the rename at line <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/lima/limavm/controllers/ssh_keys.go#L65">65</a> fails and aborts controller initialization.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/lima/limavm/controllers/ssh_keys.go#L42-L75">pkg/controllers/lima/limavm/controllers/ssh_keys.go</a></div>
+      <pre data-start="42" data-line="44,65,70"><code class="language-go">	// Remove orphaned public key (e.g. from a previous partial rename
+	// failure). On Windows, os.Rename fails if the destination exists.
+	_ = os.Remove(pubPath)
+	configDir := filepath.Dir(privPath)
+	if err := os.MkdirAll(configDir, 0o700); err != nil {
+		return fmt.Errorf("could not create %q: %w", configDir, err)
+	}
+	// Generate into a temporary path and rename on success, so an
+	// interrupted ssh-keygen does not leave a partial key that blocks
+	// future attempts.
+	tmpPath := privPath + ".tmp"
+	// Clean up stale temp files from a prior crash so ssh-keygen does not
+	// prompt "Overwrite (y/n)?" and hang waiting for a TTY that doesn't exist.
+	_ = os.Remove(tmpPath)
+	_ = os.Remove(tmpPath + ".pub")
+	cmd := exec.CommandContext(ctx, "ssh-keygen", "-t", "ed25519", "-q", "-N", "",
+		"-C", "lima", "-f", tmpPath)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		// Clean up any partial files left by ssh-keygen.
+		_ = os.Remove(tmpPath)
+		_ = os.Remove(tmpPath + ".pub")
+		return fmt.Errorf("failed to generate SSH key: %s: %w", out, err)
+	}
+	if err := os.Rename(tmpPath+".pub", pubPath); err != nil {
+		_ = os.Remove(tmpPath)
+		_ = os.Remove(tmpPath + ".pub")
+		return fmt.Errorf("failed to rename public key: %w", err)
+	}
+	if err := os.Rename(tmpPath, privPath); err != nil {
+		_ = os.Remove(pubPath)
+		_ = os.Remove(tmpPath)
+		return fmt.Errorf("failed to rename private key: %w", err)
+	}</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Check the removal result before renaming, or use a resilient replace wrapper that handles existing destinations on Windows.</p>
+    </div>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S5">
+        <span class="finding-num">S5.</span> <code>kubernetes.enabled</code> defaults inconsistency risk <span class="pill pill-claude">Claude</span>
+        <a href="#S5" class="pilcrow">¶</a>
+      </div>
+      <p><code>ContainerEngine</code> has matching parent-level and field-level defaults (<code>moby</code>). <code>Kubernetes</code> has no parent-level default, which is safe today (both levels default to zero values). If someone later adds <code>+kubebuilder:default=true</code> to <code>Enabled</code> without a parent-level default, the defaulted value would depend on the request shape.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/apis/app/v1alpha1/app_types.go#L45-L52">pkg/apis/app/v1alpha1/app_types.go</a></div>
+      <pre data-start="45" data-line="48,52"><code class="language-go">	// containerEngine specifies the container engine configuration.
+	// +optional
+	// +kubebuilder:default={name:"moby"}
+	ContainerEngine ContainerEngineSpec `json:"containerEngine,omitempty"`
+	// kubernetes specifies the Kubernetes configuration.
+	// +optional
+	Kubernetes KubernetesSpec `json:"kubernetes,omitempty"`
+}</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Add a comment noting this pattern to prevent future inconsistency.</p>
+    </div>
+
+    <hr>
+
+    <h2 id="design-observations">Design Observations <a href="#design-observations" class="pilcrow">¶</a></h2>
+
+    <h3>Concerns</h3>
+
+    <div class="card card-design">
+      <p><strong>(in-scope)</strong> The App controller's template propagation (writing to a LimaVM-owned ConfigMap) couples it to LimaVM's internal storage mechanism. A cleaner alternative: the App controller writes to its own "desired template" ConfigMap, and the LimaVM controller watches for changes and merges. This eliminates the cross-controller write and makes data flow unidirectional (App → own ConfigMap → LimaVM reads). <span class="pill pill-claude">Claude</span></p>
+    </div>
+
+    <div class="card card-design">
+      <p><strong>(future)</strong> The <code>rdd set</code> command derives its property schema from the CRD at runtime, which is elegant and auto-extensible. It currently supports only leaf scalar types. When array or map fields are added to AppSpec, the command needs extension. The <code>coerceValue</code> function correctly returns an error for unsupported types, but suggesting <code>rdd ctl patch</code> for complex types would improve the UX. <span class="pill pill-claude">Claude</span></p>
+    </div>
+
+    <div class="card card-design">
+      <p><strong>(future)</strong> The divergence between Unix <code>kill(-pgid)</code> and Windows <code>taskkill /T</code> is a recurring source of bugs in hostagent lifecycle management. Using Windows Job Objects when launching the hostagent would eliminate reliance on PID files and <code>taskkill</code> tree traversal, making cleanup reliable even after parent crashes. <span class="pill pill-gemini">Gemini</span></p>
+    </div>
+
+    <h3>Strengths</h3>
+
+    <div class="card card-design">
+      <ul>
+        <li>The SSH key pre-generation on Windows handles partial crash state thoroughly: stale temp files, corrupt private keys, missing public keys, and orphaned public keys, with test coverage for each scenario. <span class="pill pill-claude">Claude</span></li>
+        <li>The finalizer split (cleanup vs. owned-by-Kind) with the <code>OwnedDeletionGuard</code> webhook produces excellent user-facing error messages. <span class="pill pill-claude">Claude</span></li>
+        <li>The CRD schema introspection in <code>rdd set</code> dynamically derives types and help strings, preventing drift between the API and the CLI. <span class="pill pill-gemini">Gemini</span></li>
+        <li>The hostagent watcher design cleanly separates event-driven phase tracking (in-memory) from K8s condition updates (reconciler), avoiding races. <span class="pill pill-claude">Claude</span></li>
+      </ul>
+    </div>
+
+    <hr>
+
+    <h2 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">¶</a></h2>
+    <div class="card card-neutral">
+      <ol>
+        <li><strong>No unit tests for <code>rdd set</code> command logic</strong> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/cmd/rdd/set.go"><code>cmd/rdd/set.go</code></a> is 530 lines of new code with complex functions (<code>buildNestedMap</code>, <code>resolvePropertyPath</code>, <code>coerceValue</code>, <code>fillRequiredFields</code>, <code>collectEntries</code>) that are testable in isolation. Only BATS integration tests exist.</li>
+        <li><strong>No test for template propagation while VM is stopped</strong> — The stall in <a href="#I1">I1</a> has no integration test.</li>
+        <li><strong>No test for concurrent App creation race</strong> — The <code>AlreadyExists</code> handler at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/cmd/rdd/set.go#L267-L273"><code>set.go:267-273</code></a> is untested.</li>
+        <li><strong>Windows <code>StatusBroken</code> cleanup untested</strong> — The <code>KillTree</code> call on a dead parent process leaves orphaned children on Windows, but no test covers this scenario.</li>
+      </ol>
+    </div>
+
+    <hr>
+
+    <h2 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">¶</a></h2>
+    <div class="card card-neutral">
+      <ul>
+        <li>The design docs (<code>cmd_app.md</code>, <code>api_app.md</code>, <code>controllers.md</code>) are updated and accurately reflect the new behavior.</li>
+        <li>The <code>--dry-run</code> side effect (real App creation) should be documented more prominently in both <code>cmd_app.md</code> and the command's help text.</li>
+        <li>Several exported functions in the mock controller lack Godoc comments.</li>
+      </ul>
+    </div>
+
+    <hr>
+
+    <h2 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">¶</a></h2>
+    <div class="card card-neutral">
+      <p>The branch bundles many independent features across 70+ commits: MSYS2 support, serial log rotation, SSH key pre-generation, finalizer refactoring, godoc enforcement, mock controller enhancements, and the <code>rdd set</code> command. Several are independently reviewable and would reduce review load as separate PRs. The "Address review #N findings" commits are acceptable per the convention for review feedback. The top commit (<code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/ec89125">ec89125</a></code>) bundles the <code>rdd set</code> implementation cleanly in a single commit.</p>
+    </div>
+
+    <hr>
+
+    <h2 id="acknowledged-limitations">Acknowledged Limitations <a href="#acknowledged-limitations" class="pilcrow">¶</a></h2>
+    <div class="card card-neutral">
+      <ul>
+        <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L487-L488"><code>limavm_lifecycle.go:487-488</code></a>: "TODO: Non-blocking stop: send SIGINT and return immediately; the watcher detects the Exiting event and triggers a reconcile." Stop is currently blocking.</li>
+        <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/lima/limavm/controllers/limavm_controller.go#L505-L506"><code>limavm_controller.go:505-506</code></a>: "TODO: Wait on all hostagents in parallel instead of sequentially."</li>
+        <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L223-L231"><code>limavm_lifecycle.go:223-231</code></a>: PID recycling on Windows for StatusBroken instances — documented with a note about process identity validation or Job Objects.</li>
+        <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L49-L53"><code>limavm_lifecycle.go:49-53</code></a>: "Not tested: simulating stale PID files requires Windows-specific PID file manipulation that BATS cannot easily reproduce."</li>
+        <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ec891250032ab308b7755eb06c262ccc05cf7c53/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L565-L566"><code>limavm_lifecycle.go:565-566</code></a>: "Not tested: the forceStop fallback requires a hostagent that ignores shutdown signals."</li>
+      </ul>
+    </div>
+
+    <hr>
+
+    <h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">¶</a></h2>
+
+    <h3><span class="pill pill-claude">Claude</span></h3>
+    <div class="card card-neutral">
+      <p>Claude Opus 4.6 produced a thorough review (350 lines) in 510 seconds, reading 40 files and running 15 shell commands (13 of which were <code>git blame</code> or <code>git diff</code>). It identified 4 important issues and 5 suggestions, all with verified line numbers and code snippets.</p>
+      <p><strong>Unique contributions:</strong> <a href="#I2">I2</a> (<code>--dry-run</code> creating real resources), <a href="#I3">I3</a> (cross-controller ConfigMap write), <a href="#I4">I4</a> (<code>coerceValue</code> empty string rejection), <a href="#I5">I5</a> (<code>fillRequiredFields</code> enum gap), <a href="#S1">S1</a> (YAML concatenation fragility), <a href="#S3">S3</a> (error message missing segment), <a href="#S5">S5</a> (kubebuilder defaults risk).</p>
+      <p><strong>Accuracy:</strong> No false positives. All findings were verified against the code.</p>
+      <p><strong>Depth:</strong> Excellent. Read all high-risk files, ran <code>git blame</code> extensively, traced cross-controller interactions, and verified CRD schema against code.</p>
+      <p><strong>Coverage:</strong> Complete — every changed file accounted for in the coverage summary.</p>
+      <p><strong>Tool call highlights:</strong> 40 Read calls and 13 git commands show systematic file-by-file review with blame verification. No redundant diff fetches.</p>
+    </div>
+
+    <h3><span class="pill pill-codex">Codex</span></h3>
+    <div class="card card-neutral">
+      <p>Codex GPT 5.4 produced <strong>empty output</strong>. It spent its context reading files (design docs, controller code, diff stats) but never produced a structured review. The stderr log shows it read the prompt, began reading files, and exhausted its context without writing findings.</p>
+    </div>
+
+    <h3><span class="pill pill-gemini">Gemini</span></h3>
+    <div class="card card-neutral">
+      <p>Gemini 3.1 Pro produced a focused review (284 lines) in 210 seconds, using 20 tool calls (5 file reads, 13 shell commands, 2 grep searches). It identified 2 critical issues (downgraded to important during consolidation), 3 important issues, and 1 suggestion.</p>
+      <p><strong>Unique contributions:</strong> <a href="#I1">I1</a> (template update stall — the highest-value finding in this review).</p>
+      <p><strong>Accuracy:</strong> One severity inflation: C2 (orphaned Windows processes) was rated critical, but it is a pre-existing gap documented in the project context. C1 (template update stall) was rated critical but downgraded to important because the system remains consistent and the fix is trivial.</p>
+      <p><strong>Depth:</strong> Good for the time spent. Gemini did not run <code>git blame</code> (known quota limitation), so it could not distinguish regressions from pre-existing issues.</p>
+      <p><strong>Coverage misses:</strong> Gemini marked <code>cmd/rdd/set.go</code> as only covering I1 (context.Background), missing the empty-string, enum-default, and error-message issues that Claude found.</p>
+      <p><strong>Tool call highlights:</strong> 5 file reads and 13 shell commands, with no <code>git blame</code> calls.</p>
+    </div>
+
+    <h3>Summary</h3>
+    <div class="card card-neutral">
+      <table class="retro-table">
+        <tr>
+          <th></th>
+          <th><span class="pill pill-claude">Claude</span> Opus 4.6</th>
+          <th><span class="pill pill-codex">Codex</span> GPT 5.4</th>
+          <th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th>
+        </tr>
+        <tr><td>Duration</td><td>510s</td><td>N/A (failed)</td><td>210s</td></tr>
+        <tr><td>Findings</td><td>0C 4I 5S</td><td>—</td><td>0C 3I 1S</td></tr>
+        <tr><td>Tool calls</td><td>55 (Read 40, Bash 15)</td><td>—</td><td>20 (shell 13, read 5, grep 2)</td></tr>
+        <tr><td>Design observations</td><td>2</td><td>—</td><td>1</td></tr>
+        <tr><td>False positives</td><td>0</td><td>—</td><td>0</td></tr>
+        <tr><td>Unique insights</td><td>7</td><td>—</td><td>1</td></tr>
+        <tr><td>Files reviewed</td><td>143</td><td>—</td><td>143</td></tr>
+        <tr><td>Coverage misses</td><td>0</td><td>—</td><td>3</td></tr>
+      </table>
+
+      <p><strong>Reconciliation:</strong> Gemini C1 (template stall): critical → important <a href="#I1">I1</a>. Severity reduced because the system remains consistent (the App object correctly has <code>running=true</code>; only propagation stalls) and the fix is trivial. Gemini C2 (orphaned Windows processes): critical → dropped (design observation). Pre-existing platform limitation documented in the project context. Gemini I2 (unsafe rename on Windows): important → suggestion <a href="#S4">S4</a>. Rare scenario, surfaces clearly on retry. Gemini I3 (missing context.Background comment): important → merged into <a href="#S2">S2</a>.</p>
+
+      <p>Claude provided the most value: more findings, deeper analysis, and no severity inflation. Gemini's single unique insight (<a href="#I1">I1</a>, the template stall) was the most impactful finding in the review. Codex failed entirely.</p>
+    </div>
+
+  </main>
+
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  <script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+  </script>
+</body>
+</html>
