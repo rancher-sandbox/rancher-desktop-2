@@ -18,6 +18,7 @@ const progress: Progress = { current: 0, max: 0 };
 let callback: (event: Event | undefined, progress: Progress) => void = () => {};
 
 mockModules({
+  '@pkg/entry/store':       undefined,
   '@pkg/utils/ipcRenderer': {
     ipcRenderer: {
       on(name: string, cb: typeof callback) {

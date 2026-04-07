@@ -642,6 +642,7 @@ TKE
 tmpconfig
 tmpfiles
 tmutil
+TOCTTOU
 toggleable
 togglefullscreen
 tonistiigi

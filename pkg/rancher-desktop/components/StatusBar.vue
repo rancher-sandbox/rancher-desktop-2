@@ -4,6 +4,7 @@ import { mapGetters } from 'vuex';
 
 import BackendProgress from '@pkg/components/BackendProgress.vue';
 import StatusBarItem, { StatusBarItemData } from '@pkg/components/StatusBarItem.vue';
+import { mapTypedGetters } from '@pkg/entry/store';
 
 interface BarItem {
   name:       string,
@@ -17,14 +18,15 @@ export default defineComponent({
   components: { BackendProgress, StatusBarItem },
   computed:   {
     ...mapGetters('preferences', ['getPreferences']),
+    ...mapTypedGetters('rdd', ['app']),
     kubernetesVersion(): string {
       return this.getPreferences.kubernetes.version;
     },
     kubernetesEnabled(): boolean {
-      return this.getPreferences.kubernetes.enabled;
+      return !!this.app?.spec?.kubernetes?.enabled;
     },
     containerEngine(): string {
-      return this.getPreferences.containerEngine.name;
+      return this.app?.spec?.containerEngine?.name || 'unknown';
     },
     items(): BarItem[] {
       return [

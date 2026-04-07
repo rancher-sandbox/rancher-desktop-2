@@ -111,7 +111,7 @@ function configureRDDAuthentication(kubeConfig: KubeConfig) {
         responseHeaders: {
           ...details.responseHeaders,
           'Access-Control-Allow-Origin':  '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
           'Access-Control-Allow-Headers': 'Authorization, Content-Type',
         },
       });

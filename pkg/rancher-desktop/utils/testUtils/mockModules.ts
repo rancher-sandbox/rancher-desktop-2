@@ -3,6 +3,14 @@ import path from 'node:path';
 import { jest } from '@jest/globals';
 
 const defaultOverrides = {
+  '@pkg/entry/store': {
+    mapTypedGetters(module: string, arg: string[] | Record<string, string>) {
+      const props = Array.isArray(arg) ? arg : Object.values(arg);
+      return Object.defineProperties({},
+        Object.fromEntries(props.map((prop) => [prop, { get: jest.fn() }])),
+      ) as Record<string, unknown>;
+    },
+  },
   '@pkg/utils/logging': (() => {
     class Log {
       log = jest.fn();

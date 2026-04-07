@@ -104,6 +104,13 @@ export default {
 
     ipcRenderer.send('backend-state-check');
 
+    this.watchApps().then(() => {
+      return this.ensureAppStarted();
+    }).catch(error => {
+      console.error(error);
+      this.$store.commit('rdd/SET_ERROR', error);
+    });
+
     ipcRenderer.on('route', (event, args) => {
       this.goToRoute(args);
     });
@@ -142,10 +149,13 @@ export default {
     ipcRenderer.removeAllListeners('backend-locked');
     ipcRenderer.removeAllListeners('backend-unlocked');
     ipcRenderer.removeAllListeners('window/blur');
+
+    this.unwatchApps();
   },
 
   methods: {
     ...mapTypedActions('rdd-connection', ['fetchConfig']),
+    ...mapTypedActions('rdd', ['ensureAppStarted', 'watchApps', 'unwatchApps']),
     async fetch() {
       await this.fetchConfig();
     },

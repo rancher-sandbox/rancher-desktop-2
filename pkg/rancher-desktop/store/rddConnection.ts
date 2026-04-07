@@ -6,6 +6,7 @@ import { Plugin } from 'vuex';
 
 import { ActionContext, ActionTree, Commit, MutationsType } from '@pkg/store/ts-helpers';
 import ipcRenderer from '@pkg/utils/ipcRenderer';
+import Latch from '@pkg/utils/latch';
 import { UpperSnakeCase } from '@pkg/utils/typeUtils';
 import * as RDDClient from '@rdd-client';
 
@@ -328,6 +329,8 @@ type ResourceWatchActionsReturnItem<StateName extends string, StateItem extends 
   [key in StateName as ResourceActionName<'unwatch', key>]: (
     context: ActionContext<ResourceStateItem<StateName, StateItem>>,
   ) => void;
+} & {
+  [key in StateName as ResourceActionName<'waitForWatch', key>]: () => Promise<void>;
 };
 
 /** ResourceWatchActionsReturn defines the return type of resourceWatchActions(). */
@@ -346,7 +349,7 @@ IntersectMapped<{ [K in keyof T]: ResourceWatchActionsReturn<T[K]> }> {
   type StateName = ResourceNames<T>;
 
   const result: Partial<Record<
-    ResourceActionName<'setupWatch' | 'watch' | 'unwatch', StateName>,
+    ResourceActionName<'setupWatch' | 'watch' | 'unwatch' | 'waitForWatch', StateName>,
     unknown >> = {};
 
   for (const r of resources) {
@@ -376,7 +379,7 @@ IntersectMapped<{ [K in keyof T]: ResourceWatchActionsReturn<T[K]> }> {
             commit('rdd-connection/SET_ERROR', undefined, { root: true });
             return result;
           },
-          async(error) => {
+          async(error) => { // doneFn
             commit('rdd-connection/SET_ERROR', error, { root: true });
             await dispatch('rdd-connection/notifyDisconnected', null, { root: true });
             if (error) {
@@ -395,7 +398,7 @@ IntersectMapped<{ [K in keyof T]: ResourceWatchActionsReturn<T[K]> }> {
           },
           rootState['rdd-connection'].watch,
           commit,
-          undefined,
+          undefined, // namespace
           () => r.labelSelector?.(actionContext),
           () => r.fieldSelector?.(actionContext),
         );
@@ -468,6 +471,20 @@ IntersectMapped<{ [K in keyof T]: ResourceWatchActionsReturn<T[K]> }> {
           watcherInfo.watcher.close();
         }
       };
+    result[resourceActionName('waitForWatch', r.name as ResourceNames<T>)] =
+      async(actionContext: ActionContext<State>) => {
+        const { state, dispatch } = actionContext;
+
+        while (true) {
+          const watcher = state._watchers[r.name]?.watcher;
+          if (watcher) {
+            return await watcher.loaded;
+          }
+
+          // Watcher isn't set up yet; make sure it is.
+          await dispatch(resourceActionName('setupWatch', r.name));
+        }
+      };
   }
 
   return result as ReturnType<typeof resourceWatchActions<T>>;
@@ -484,6 +501,7 @@ class Watcher<
   #type:        K;
   #namespace?:  string;
   #items:       readonly T[] = [];
+  #loaded = Latch();
   #notifyDelay: ReturnType<typeof setTimeout> | undefined;
   #commit:      Commit<any>;
   #doneFn:      (error?: any) => void;
@@ -508,6 +526,9 @@ class Watcher<
     this.#namespace = namespace;
     this.#commit = commit;
     this.#doneFn = doneFn;
+    // Attach a fallback catch handler so that initial disconnects do not show
+    // as errors.
+    this.#loaded.catch(() => { /* ignore */ });
     this.#watcher = new RDDClient.ListWatch<T>(
       path,
       watch,
@@ -533,6 +554,7 @@ class Watcher<
       // `err` is an object that calls `toString()` on `console.log`, so we
       // need to re-convert it to a plain object for better debugging.
       console.debug(`${ type } watch error`, JSON.parse(JSON.stringify(err)));
+      this.#loaded.reject(err);
       doneFn(err);
     });
   }
@@ -541,12 +563,19 @@ class Watcher<
     this.#watcher.start().catch(err => {
       console.debug(`Watch ${ this.#type } ended:`, err);
       this.#doneFn(err);
+      this.#loaded.reject(err);
     });
   }
 
+  get loaded(): Promise<void> {
+    return this.#loaded;
+  }
+
   protected onChange() {
-    // ListWatch calls this once per element, but we only need to batch the
-    // results, so set up a delay.
+    // ListWatch calls this synchronously once per element, but we only need to
+    // batch the results, so set up a delay that gets triggered soon.  Ideally
+    // we'd use `queueMicrotask`, but that doesn't allow us to check if it's
+    // already queued.
     if (this.#notifyDelay) {
       return;
     }
@@ -555,7 +584,8 @@ class Watcher<
       this.#notifyDelay = undefined;
       this.#items = this.#watcher?.list(this.#namespace) ?? [];
       this.#commit(key, this.#items);
-    }, 500);
+      this.#loaded.resolve();
+    }, 0);
   }
 
   close() {

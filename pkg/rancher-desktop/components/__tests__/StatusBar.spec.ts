@@ -3,7 +3,7 @@ import { shallowMount, VueWrapper } from '@vue/test-utils';
 
 import mockModules from '@pkg/utils/testUtils/mockModules';
 
-mockModules({ electron: undefined });
+mockModules({ '@pkg/entry/store': undefined, electron: undefined });
 
 const { default: StatusBar } = await import('@pkg/components/StatusBar.vue');
 const { default: StatusBarItem } = await import('@pkg/components/StatusBarItem.vue');
@@ -15,6 +15,17 @@ describe('StatusBar.vue', () => {
     wrapper = shallowMount(StatusBar, {
       computed: {
         ...StatusBar.computed,
+        app: jest.fn().mockReturnValue({
+          spec: {
+            containerEngine: {
+              name: 'containerd',
+            },
+            kubernetes: {
+              version: '1.27.7',
+              enabled: true,
+            },
+          },
+        }),
         getPreferences: jest.fn().mockReturnValue({
           kubernetes:      { version: '1.27.7', enabled: true },
           containerEngine: { name: 'containerd' },

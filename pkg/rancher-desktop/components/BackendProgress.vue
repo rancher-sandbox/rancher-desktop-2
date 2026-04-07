@@ -28,7 +28,7 @@
 import { defineComponent } from 'vue';
 
 import RdProgress from '@pkg/components/RdProgress.vue';
-import { ipcRenderer } from '@pkg/utils/ipcRenderer';
+import { mapTypedGetters } from '@pkg/entry/store';
 
 export default defineComponent({
   name:       'backend-progress',
@@ -52,11 +52,12 @@ export default defineComponent({
   },
 
   computed: {
+    ...mapTypedGetters('rdd', ['running']),
     progressDetails(): string {
       return this.progress.description || '';
     },
     progressIndeterminate(): boolean {
-      return this.progress.max <= 0;
+      return !this.running;
     },
     progressBusy(): boolean {
       return this.progressIndeterminate || this.progress.current < this.progress.max;
