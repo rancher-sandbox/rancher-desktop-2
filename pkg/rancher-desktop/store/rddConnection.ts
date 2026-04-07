@@ -18,7 +18,7 @@ export interface RDDConnectionState {
   error:               any;
   watch:               RDDClient.Watch;
   disconnectCallbacks: Record<string, () => void>;
-  /** Kubernetes namespace RDD objects live in. */
+  /** Kubernetes namespace RDD objects live in; must not be empty. */
   namespace:           string;
 };
 
@@ -134,11 +134,13 @@ type IntersectMapped<T> =
  * It avoids invariance issues that arise from using ResourceType directly.
  */
 interface ResourceTypeLike {
-  name:       string;
-  type?:      string;
-  path:       string;
-  makeClient: (config: RDDClient.KubeConfig) => any;
-  list:       (client: any, options: ListResourceOptions<any>) => Promise<RDDClient.KubernetesListObject<any>>;
+  name:           string;
+  type?:          string;
+  path:           (namespace: string) => string;
+  labelSelector?: (state: any) => string | undefined;
+  fieldSelector?: (state: any) => string | undefined
+  makeClient:     (config: RDDClient.KubeConfig) => any;
+  list:           (client: any, options: ListResourceOptions<any>) => Promise<RDDClient.KubernetesListObject<any>>;
 }
 
 /**
@@ -146,11 +148,15 @@ interface ResourceTypeLike {
  * `list` method.
  */
 export interface ListResourceOptions<State> {
-  /** Kubernetes namespace the objects live in; if not set, lists in all namespaces. */
-  namespace?:      string,
+  /** Kubernetes namespace the objects live in; must not be empty. */
+  namespace:       string,
   /** The associated state object. */
   state:           State,
   connectionState: RDDConnectionState,
+  /** Any label selectors */
+  labelSelector?:  string,
+  /** Any field selectors */
+  fieldSelector?:  string,
 }
 
 /**
@@ -158,15 +164,22 @@ export interface ListResourceOptions<State> {
  */
 interface ResourceType<C, StateName extends string, TypeName extends string> extends ResourceTypeLike {
   /** The name of the state, typically plural. */
-  name:       StateName;
+  name:           StateName;
   /** The name of the resource kind, used in the API name. */
-  type?:      TypeName;
-  /** The API path to the resources. */
-  path:       string;
+  type?:          TypeName;
+  /**
+   * The API path to the resources, given the Kubernetes namespace.  The
+   * namespace is required.
+   */
+  path:           (namespace: string) => string;
+  /** Optional label selector to filter resources. */
+  labelSelector?: (state: ResourceStateItem<StateName, ItemType<C, TypeName>>) => string | undefined;
+  /** Optional field selector to filter resources. */
+  fieldSelector?: (state: ResourceStateItem<StateName, ItemType<C, TypeName>>) => string | undefined;
   /** A function which returns the type of client needed to list the resource. */
-  makeClient: (config: RDDClient.KubeConfig) => C,
+  makeClient:     (config: RDDClient.KubeConfig) => C,
   /** A function which lists the resource. */
-  list:       (client: C, options: ListResourceOptions<ResourceStateItem<StateName, ItemType<C, TypeName>>>) => Promise<RDDClient.KubernetesListObject<ItemType<C, TypeName>>>;
+  list:           (client: C, options: ListResourceOptions<ResourceStateItem<StateName, ItemType<C, TypeName>>>) => Promise<RDDClient.KubernetesListObject<ItemType<C, TypeName>>>;
 }
 
 /**
@@ -199,10 +212,11 @@ export function listNamespacedResource<
 >(typeName: TypeName)
   : (client: C, options: ListResourceOptions<any>) => ReturnType<C[`listNamespaced${ TypeName }`]> {
   return (client: C, options: ListResourceOptions<any>) => {
-    if (options.namespace) {
-      return client[`listNamespaced${ typeName }`]({ namespace: options.namespace });
-    }
-    return client[`list${ typeName }ForAllNamespaces`]();
+    return client[`listNamespaced${ typeName }`]({
+      namespace:     options.namespace,
+      fieldSelector: options.fieldSelector,
+      labelSelector: options.labelSelector,
+    });
   };
 }
 
@@ -273,7 +287,10 @@ type WatchActionName<StateName extends string> = `watch${ Capitalize<StateName> 
  * watching a resource.
  */
 interface ResourceWatchActionsOptions {
-  /** The Kubernetes namespace the RDD objects live in. */
+  /**
+   * The Kubernetes namespace the RDD objects live in.  If not given, defaults
+   * to the current namespace in the RDD connection state.
+   */
   namespace?: string,
   /** Callback that is invoked when an error occurs. */
   callback?:  (error: Error) => void,
@@ -314,13 +331,15 @@ IntersectMapped<{ [K in keyof T]: ResourceWatchActionsReturn<T[K]> }> {
         const client = r.makeClient(rddState.config);
         const watcher = new Watcher(
           r.name,
-          r.path,
+          r.path(options?.namespace || rddState.namespace),
           async() => {
             // If this throws, the `doneFn` callback gets called with the exception.
             const listOptions: ListResourceOptions<any> = {
-              namespace:       options?.namespace ?? rddState.namespace,
+              namespace:       options?.namespace || rddState.namespace,
               state,
               connectionState: rddState,
+              fieldSelector:   r.fieldSelector?.(state),
+              labelSelector:   r.labelSelector?.(state),
             };
             const result = await r.list(client, listOptions);
             commit('rdd-connection/SET_ERROR', undefined, { root: true });
@@ -344,7 +363,11 @@ IntersectMapped<{ [K in keyof T]: ResourceWatchActionsReturn<T[K]> }> {
             }, 1_000);
           },
           rootState['rdd-connection'].watch,
-          commit);
+          commit,
+          undefined,
+          r.labelSelector?.(state),
+          r.fieldSelector?.(state),
+        );
         commit('SET__WATCHERS', { ...state._watchers, [r.name]: { watcher, options } } as any);
         debounceTimer = setTimeout(() => watcher.start(), 500);
         await dispatch('rdd-connection/registerDisconnectCallback',
@@ -387,6 +410,8 @@ class Watcher<
     watch: RDDClient.Watch,
     commit: Commit<any>,
     namespace?: string,
+    labelSelector?: string,
+    fieldSelector?: string,
   ) {
     this.#type = type;
     this.#namespace = namespace;
@@ -396,7 +421,10 @@ class Watcher<
       path,
       watch,
       listFn,
-      false);
+      false,
+      labelSelector,
+      fieldSelector,
+    );
     this.#watcher.on('change', this.onChange.bind(this));
     this.#watcher.on('connect', this.onChange.bind(this));
     this.#watcher.on('error', (err) => {

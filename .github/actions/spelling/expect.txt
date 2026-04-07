@@ -111,6 +111,7 @@ constrainttemplate
 containerapi
 containerd
 CONTAINERENGINE
+containernamespaces
 containernetworking
 cooldown
 copypac

@@ -4,52 +4,45 @@ import * as RDDClient from '@rdd-client';
 
 type ContainerEngineState = ReturnType<typeof state>;
 
-function listContainerNamespacedResource<
-  TypeName extends string,
-  C extends Record<
-    `listNamespaced${ TypeName }`,
-    (param: any, options?: RDDClient.ConfigurationOptions) => any
-  >,
->(typeName: TypeName) {
-  return (client: C, untypedOptions: ListResourceOptions<any>): ReturnType<C[`listNamespaced${ TypeName }`]> => {
-    const options: ListResourceOptions<ContainerEngineState> = untypedOptions;
-    const request: Parameters<C[`listNamespaced${ TypeName }`]>[0] = {
-      namespace: options.connectionState.namespace,
-    };
-
-    if (options.state.currentNamespace) {
-      request.fieldSelector = `status.namespace=${ options.state.currentNamespace }`;
-    }
-
-    return client[`listNamespaced${ typeName }`](request);
+function namespacedResourcePath(typePlural: string) {
+  return function(namespace: string) {
+    return `/apis/containers.rancherdesktop.io/v1alpha1/namespaces/${ namespace }/${ typePlural }`;
   };
+}
+
+function resourceFieldSelector(untypedState: any): string | undefined {
+  const state: ContainerEngineState = untypedState;
+  return state.currentNamespace ? `status.namespace=${ state.currentNamespace }` : undefined;
 }
 
 const resources = [
   defineResource({
-    name:       'containers',
-    path:       '/apis/containers.rancherdesktop.io/v1alpha1/containers',
-    makeClient: config => config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api),
-    list:       listContainerNamespacedResource('Container'),
+    name:          'containers',
+    path:          namespacedResourcePath('containers'),
+    makeClient:    config => config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api),
+    list:          listNamespacedResource('Container'),
+    fieldSelector: resourceFieldSelector,
   }),
   defineResource({
-    name:       'images',
-    path:       '/apis/containers.rancherdesktop.io/v1alpha1/images',
-    makeClient: config => config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api),
-    list:       listContainerNamespacedResource('Image'),
+    name:          'images',
+    path:          namespacedResourcePath('images'),
+    makeClient:    config => config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api),
+    list:          listNamespacedResource('Image'),
+    fieldSelector: resourceFieldSelector,
   }),
   defineResource({
-    name:       'namespaces',
-    type:       'containerNamespace',
-    path:       '/apis/containers.rancherdesktop.io/v1alpha1/containernamespaces',
-    makeClient: config => config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api),
-    list:       listNamespacedResource('ContainerNamespace'),
+    name:          'namespaces',
+    type:          'containerNamespace',
+    path:          namespacedResourcePath('containernamespaces'),
+    makeClient:    config => config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api),
+    list:          listNamespacedResource('ContainerNamespace'),
   }),
   defineResource({
-    name:       'volumes',
-    path:       '/apis/containers.rancherdesktop.io/v1alpha1/volumes',
-    makeClient: config => config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api),
-    list:       listContainerNamespacedResource('Volume'),
+    name:          'volumes',
+    path:          namespacedResourcePath('volumes'),
+    makeClient:    config => config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api),
+    list:          listNamespacedResource('Volume'),
+    fieldSelector: resourceFieldSelector,
   }),
 ] as const;
 

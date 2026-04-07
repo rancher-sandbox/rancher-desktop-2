@@ -7,26 +7,26 @@ type RDDState = ReturnType<typeof state>;
 const resources = [
   defineResource({
     name:       'namespaces',
-    path:       '/api/v1/namespaces',
+    path:       () => '/api/v1/namespaces',
     makeClient: config => config.makeApiClient(RDDClient.CoreV1Api),
     list:       client => client.listNamespace(),
   }),
   defineResource({
     name:       'configMaps',
-    path:       '/api/v1/configmaps',
+    path:       (namespace) => `/api/v1/namespaces/${ namespace }/configmaps`,
     makeClient: config => config.makeApiClient(RDDClient.CoreV1Api),
     list:       listNamespacedResource('ConfigMap'),
   }),
   defineResource({
     name:       'systemConfigMaps',
     type:       'ConfigMap',
-    path:       '/api/v1/namespaces/rdd-system/configmaps',
+    path:       () => '/api/v1/namespaces/rdd-system/configmaps',
     makeClient: config => config.makeApiClient(RDDClient.CoreV1Api),
     list:       client => client.listNamespacedConfigMap({ namespace: 'rdd-system' }),
   }),
   defineResource({
     name:       'apps',
-    path:       '/apis/apps.rancherdesktop.io/v1alpha1/apps',
+    path:       () => '/apis/app.rancherdesktop.io/v1alpha1/apps',
     makeClient: config => config.makeApiClient(RDDClient.AppRancherdesktopIoV1alpha1Api),
     list:       client => client.listApp(),
   }),
