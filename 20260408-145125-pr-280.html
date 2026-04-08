@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260408-145125-pr-280</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block.
+ * The filename is a GitHub permalink to the displayed line range.
+ * Text color is light gray (#adbac7) for the bar, green (#7ee787)
+ * for the hyperlink — matching GitHub's dark-mode file header. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Deep Review: 20260408-145125-pr-280</h1>
+
+    <table class="meta-table">
+      <tr><td>Date</td><td>2026-04-08 14:51</td></tr>
+      <tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+      <tr><td>Round</td><td>1</td></tr>
+      <tr><td>Author</td><td><a href="https://github.com/jandubois">@jandubois</a></td></tr>
+      <tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/280" class="gh-ref" data-title="Add host-switch virtual network for WSL2 instances" data-state="open" data-type="pr">#280</a> — Add host-switch virtual network for WSL2 instances</td></tr>
+      <tr><td>Branch</td><td><code>host-switch</code></td></tr>
+      <tr><td>Commits</td><td>
+        <code><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/a53d4b9">a53d4b9</a></code> Add host-switch virtual network for WSL2 instances
+      </td></tr>
+      <tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.6, <span class="pill pill-codex">Codex</span> GPT 5.4, <span class="pill pill-gemini">Gemini</span> 3.1 Pro</td></tr>
+      <tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> — lifecycle integration gaps (I1-I2) and a concurrency bug (I3) need attention; the core networking logic is sound</td></tr>
+      <tr><td>Wall-clock time</td><td>33 min 29 s</td></tr>
+    </table>
+
+    <h2 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&#182;</a></h2>
+    <div class="card card-neutral">
+      <p>This PR ports the host-switch networking module into the LimaVM controller as an in-process goroutine, enabling WSL2 instances to get network connectivity via a gvisor-tap-vsock virtual L2 network over AF_VSOCK. The implementation is well-structured with clean platform separation and thorough design documentation. The key findings involve lifecycle integration: the host-switch goroutine can leak on restart and startup failure paths, and the vsock discovery loop spawns unbounded detached goroutines that risk a panic on channel close. All issues have straightforward fixes.</p>
+    </div>
+
+    <hr>
+
+    <h3 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&#182;</a></h3>
+    <div class="card card-critical">
+      <p>None.</p>
+    </div>
+
+    <hr>
+
+    <h3 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&#182;</a></h3>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I1">
+        <span class="finding-num">I1.</span> Missing <code>stopHostSwitch</code> in <code>handleRestartNeeded</code> leaks goroutine on restart <span class="pill pill-claude">Claude</span>
+        <a href="#I1" class="pilcrow">&#182;</a>
+      </div>
+
+      <p>Every other shutdown path calls <code>stopHostSwitch</code> alongside <code>stopWatcher</code>: <code>stopInstance</code> at line 502, <code>handleDeletion</code> at line 40, <code>handleWatchedState</code> crash recovery at line 213, and <code>shutdownAllHostagents</code> at line 547. The <code>handleRestartNeeded(phaseRunning)</code> branch is the only path that stops the watcher without stopping the host-switch. On the next reconcile, <code>startHostSwitch</code> overwrites the map entry (line 58) without cancelling the old goroutine, leaking a vsock listener, a virtual network, and the errgroup goroutines.</p>
+
+      <p>While <code>handleRestartNeeded</code> predates this PR (confirmed via <code>git blame</code>), the lifecycle pattern it should follow was introduced by this PR.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a53d4b99714210bc0f4dd6e95826f72ec8c79c8e/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L325-L341">pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go</a></div>
+      <pre data-start="325" data-line="331,332"><code class="language-go">func (r *LimaVMReconciler) handleRestartNeeded(ctx context.Context, limaVM *v1alpha1.LimaVM, phase instancePhase) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+
+	switch phase {
+	case phaseRunning:
+		logger.Info("Restart needed: stopping running instance")
+		r.shutdownHostagent(ctx, limaVM.Name, nil)
+		r.stopWatcher(limaVM.Name)
+
+		// Clear restartNeeded and set Stopped condition in one write.
+		// This is inlined (rather than calling stopInstance) so both changes
+		// land in a single patch — stopInstance's updateCondition would take
+		// its own DeepCopy and miss the RestartNeeded change.
+		patch := client.MergeFrom(limaVM.DeepCopy())
+		limaVM.Status.RestartNeeded = false
+		r.setCondition(limaVM, ConditionRunning, metav1.ConditionFalse, ReasonStopped, "Stopped for restart")
+		return ctrl.Result{}, r.Status().Patch(ctx, limaVM, patch)</code></pre>
+
+      <p><span class="fix-label">Fix:</span></p>
+      <pre><code class="language-diff"> 	case phaseRunning:
+ 		logger.Info("Restart needed: stopping running instance")
+ 		r.shutdownHostagent(ctx, limaVM.Name, nil)
+ 		r.stopWatcher(limaVM.Name)
++		r.stopHostSwitch(limaVM.Name)</code></pre>
+    </div>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I2">
+        <span class="finding-num">I2.</span> <code>startHostSwitch</code> overwrites state without cancelling existing goroutine; leaked on <code>startInstance</code> failure <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span>
+        <a href="#I2" class="pilcrow">&#182;</a>
+      </div>
+
+      <p><code>startHostSwitch</code> unconditionally overwrites <code>hostSwitchStates[name]</code> at line 58. If the map already has an entry for this instance (from a previous call), the old goroutine's cancel function is discarded, and the goroutine runs until the manager shuts down.</p>
+
+      <p>This manifests through two paths. First, <code>startInstance</code> calls <code>startHostSwitch</code> at line 446, but neither the <code>haCmd.Start()</code> failure at line 454 nor the <code>waitForPIDFile</code> failure at line 463 calls <code>stopHostSwitch</code>. On retry, <code>startHostSwitch</code> orphans the previous goroutine. Second, any code path that calls <code>startHostSwitch</code> twice for the same instance (e.g., I1's restart path) leaks the first goroutine.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a53d4b99714210bc0f4dd6e95826f72ec8c79c8e/pkg/controllers/lima/limavm/controllers/hostswitch_windows.go#L46-L66">pkg/controllers/lima/limavm/controllers/hostswitch_windows.go</a></div>
+      <pre data-start="46" data-line="57-62"><code class="language-go">// startHostSwitch launches the host-switch goroutine for a WSL2 instance.
+// It must be called before the hostagent starts, because the guest's
+// network-setup.service performs a vsock handshake during early boot.
+func (r *LimaVMReconciler) startHostSwitch(ctx context.Context, name string, inst *limatype.Instance) {
+	if inst.VMType != limatype.WSL2 {
+		return
+	}
+
+	hsCtx, hsCancel := context.WithCancel(ctx)
+	done := make(chan struct{})
+
+	r.hostSwitchMu.Lock()
+	r.hostSwitchStates[name] = &amp;hostSwitchState{
+		cancel: hsCancel,
+		done:   done,
+	}
+	r.hostSwitchMu.Unlock()
+
+	logger := logr.FromContextOrDiscard(ctx).WithValues("instance", name, "component", "host-switch")
+	go r.runHostSwitch(hsCtx, logger, done)
+}</code></pre>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a53d4b99714210bc0f4dd6e95826f72ec8c79c8e/pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go#L443-L469">pkg/controllers/lima/limavm/controllers/limavm_lifecycle.go</a></div>
+      <pre data-start="443" data-line="446,454,463"><code class="language-go">	// Start the host-switch virtual network for WSL2 instances. This must
+	// happen before the hostagent starts, because the guest's
+	// network-setup.service performs a vsock handshake during early boot.
+	r.startHostSwitch(ctx, limaVM.Name, inst)
+
+	// Start hostagent in background.
+	haCmd := exec.CommandContext(ctx, rddPath, args...)
+	process.SetGroup(haCmd)
+	haCmd.Stdout = haStdoutW
+	haCmd.Stderr = haStderrW
+
+	if err := haCmd.Start(); err != nil {
+		logger.Error(err, "Failed to start hostagent")
+		if updateErr := r.updateCondition(ctx, limaVM, ConditionRunning, metav1.ConditionFalse, ReasonStartFailed, err.Error()); updateErr != nil {
+			logger.Error(updateErr, "Failed to update status after hostagent start failure")
+		}
+		return ctrl.Result{}, err
+	}
+
+	// Wait for PID file to be created (indicates hostagent has started)
+	if err := r.waitForPIDFile(haPIDPath, haStderrPath); err != nil {
+		logger.Error(err, "Hostagent did not start")
+		if updateErr := r.updateCondition(ctx, limaVM, ConditionRunning, metav1.ConditionFalse, ReasonStartFailed, err.Error()); updateErr != nil {
+			logger.Error(updateErr, "Failed to update status after hostagent startup failure")
+		}
+		return ctrl.Result{}, err
+	}</code></pre>
+
+      <p><span class="fix-label">Fix (two parts):</span> Make <code>startHostSwitch</code> idempotent — stop any existing goroutine before starting a new one:</p>
+      <pre><code class="language-diff"> func (r *LimaVMReconciler) startHostSwitch(ctx context.Context, name string, inst *limatype.Instance) {
+ 	if inst.VMType != limatype.WSL2 {
+ 		return
+ 	}
+
++	r.stopHostSwitch(name)
++
+ 	hsCtx, hsCancel := context.WithCancel(ctx)</code></pre>
+
+      <p>Add cleanup on <code>startInstance</code> error paths after line 446:</p>
+      <pre><code class="language-diff"> 	if err := haCmd.Start(); err != nil {
+ 		logger.Error(err, "Failed to start hostagent")
++		r.stopHostSwitch(limaVM.Name)
+ 		...
+ 		return ctrl.Result{}, err
+ 	}
+
+ 	if err := r.waitForPIDFile(haPIDPath, haStderrPath); err != nil {
+ 		logger.Error(err, "Hostagent did not start")
++		r.stopHostSwitch(limaVM.Name)
+ 		...
+ 		return ctrl.Result{}, err
+ 	}</code></pre>
+    </div>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I3">
+        <span class="finding-num">I3.</span> Unbounded detached goroutines in <code>attemptHandshake</code> with potential panic on channel close <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span>
+        <a href="#I3" class="pilcrow">&#182;</a>
+      </div>
+
+      <p><code>attemptHandshake</code> spawns a new detached goroutine every second (line 299). Each goroutine blocks in <code>hvsock.Dial</code>, which accepts no context and has no built-in timeout. On a host with several unresponsive Hyper-V VMs, goroutines accumulate at one per GUID per second.</p>
+
+      <p>Worse, these detached goroutines outlive the WaitGroup. When <code>getVMGUID</code> receives a match from <code>found</code> and returns, <code>defer cancel()</code> fires, all <code>attemptHandshake</code> functions return, <code>wg.Wait()</code> completes, and <code>close(found)</code> executes. A detached goroutine that completed its dial before cancellation but reaches the <code>found &lt;- vmGUID</code> send after <code>close(found)</code> triggers a panic. The <code>select { ... default: }</code> does not protect against sends on a closed channel.</p>
+
+      <p>Additionally, <code>readSignature</code> (line 331) and <code>signalListenerReady</code> (line 340) perform I/O without deadlines. A peer that connects but sends incomplete data blocks the goroutine indefinitely.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a53d4b99714210bc0f4dd6e95826f72ec8c79c8e/pkg/controllers/lima/limavm/controllers/hostswitch_windows.go#L289-L327">pkg/controllers/lima/limavm/controllers/hostswitch_windows.go</a></div>
+      <pre data-start="289" data-line="299-325"><code class="language-go">func attemptHandshake(ctx context.Context, logger logr.Logger, vmGUID hvsock.GUID, found chan&lt;- hvsock.GUID) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case &lt;-ctx.Done():
+			return
+		case &lt;-ticker.C:
+			// Dial in a goroutine to avoid blocking on hvsock.Dial timeout.
+			go func() {
+				conn, err := getVsockConnection(vmGUID, vsockHandshakePort)
+				if ctx.Err() != nil {
+					if conn != nil {
+						conn.Close()
+					}
+					return
+				}
+				if err != nil {
+					logger.V(1).Info("Handshake dial failed", "vmGUID", vmGUID.String(), "error", err)
+					return
+				}
+
+				sig, err := readSignature(conn)
+				conn.Close()
+				if err != nil {
+					logger.V(1).Info("Handshake read failed", "vmGUID", vmGUID.String(), "error", err)
+					return
+				}
+				if sig == signaturePhrase {
+					logger.V(1).Info("Signature matched", "vmGUID", vmGUID.String())
+					select {
+					case found &lt;- vmGUID:
+					default:
+					}
+				}
+			}()
+		}
+	}
+}</code></pre>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a53d4b99714210bc0f4dd6e95826f72ec8c79c8e/pkg/controllers/lima/limavm/controllers/hostswitch_windows.go#L330-L348">pkg/controllers/lima/limavm/controllers/hostswitch_windows.go</a></div>
+      <pre data-start="330" data-line="333,346"><code class="language-go">// readSignature reads the signature phrase from the peer.
+func readSignature(conn net.Conn) (string, error) {
+	buf := make([]byte, len(signaturePhrase))
+	if _, err := io.ReadFull(conn, buf); err != nil {
+		return "", err
+	}
+	return string(buf), nil
+}
+
+// signalListenerReady tells the guest that the data listener is ready.
+func signalListenerReady(vmGUID hvsock.GUID) error {
+	conn, err := getVsockConnection(vmGUID, vsockHandshakePort)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	_, err = conn.Write([]byte(readySignal))
+	return err
+}</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Make the handshake sequential and add I/O deadlines. This eliminates the goroutine leak, the panic risk, and the missing-deadline problem in one change:</p>
+      <pre><code class="language-go">func attemptHandshake(ctx context.Context, logger logr.Logger, vmGUID hvsock.GUID, found chan&lt;- hvsock.GUID) {
+	for {
+		if ctx.Err() != nil {
+			return
+		}
+		conn, err := getVsockConnection(vmGUID, vsockHandshakePort)
+		if err != nil {
+			select {
+			case &lt;-ctx.Done():
+				return
+			case &lt;-time.After(time.Second):
+			}
+			continue
+		}
+		conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+		sig, err := readSignature(conn)
+		conn.Close()
+		if err != nil {
+			logger.V(1).Info("Handshake read failed", "vmGUID", vmGUID.String(), "error", err)
+			continue
+		}
+		if sig == signaturePhrase {
+			logger.V(1).Info("Signature matched", "vmGUID", vmGUID.String())
+			found &lt;- vmGUID
+			return
+		}
+		// Wrong VM — stop probing this GUID.
+		return
+	}
+}</code></pre>
+
+      <p>Also add a write deadline in <code>signalListenerReady</code>:</p>
+      <pre><code class="language-diff"> func signalListenerReady(vmGUID hvsock.GUID) error {
+ 	conn, err := getVsockConnection(vmGUID, vsockHandshakePort)
+ 	if err != nil {
+ 		return err
+ 	}
+ 	defer conn.Close()
++	conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
+ 	_, err = conn.Write([]byte(readySignal))
+ 	return err
+ }</code></pre>
+    </div>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I4">
+        <span class="finding-num">I4.</span> Vsock listener leaked on early return in <code>runHostSwitch</code> <span class="pill pill-claude">Claude</span>
+        <a href="#I4" class="pilcrow">&#182;</a>
+      </div>
+
+      <p>After <code>vsockHandshake</code> returns a listener at line 96, two error paths return without closing it: <code>virtualnetwork.New</code> failure (line 104) and <code>vn.Listen</code> failure (line 135). The listener holds an AF_VSOCK socket bound to a VM GUID + service ID. Each leaked listener blocks that service ID until the socket is garbage collected.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a53d4b99714210bc0f4dd6e95826f72ec8c79c8e/pkg/controllers/lima/limavm/controllers/hostswitch_windows.go#L87-L139">pkg/controllers/lima/limavm/controllers/hostswitch_windows.go</a></div>
+      <pre data-start="87" data-line="96,104,135"><code class="language-go">func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger, done chan struct{}) {
+	defer close(done)
+
+	subnet, err := validateSubnet(defaultSubnet)
+	if err != nil {
+		logger.Error(err, "Invalid subnet configuration")
+		return
+	}
+
+	ln, err := vsockHandshake(ctx, logger)
+	if err != nil {
+		logger.Error(err, "Vsock handshake failed")
+		return
+	}
+
+	cfg := newVirtualNetworkConfig(*subnet)
+	vn, err := virtualnetwork.New(&amp;cfg)
+	if err != nil {
+		logger.Error(err, "Failed to create virtual network")
+		return
+	}
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	// Accept vsock connections and feed them into the virtual network.
+	g.Go(func() error {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				// Listener closed (context cancelled).
+				return nil //nolint:nilerr // Expected on shutdown.
+			}
+			if err := vn.AcceptStdio(ctx, conn); err != nil {
+				logger.Error(err, "Failed to accept connection into virtual network")
+			} else {
+				logger.Info("Accepted vsock connection")
+			}
+		}
+	})
+
+	// Close the listener when the context is cancelled.
+	g.Go(func() error {
+		&lt;-ctx.Done()
+		return ln.Close()
+	})
+
+	// Start the port-forwarding API server inside the virtual network.
+	apiAddr := fmt.Sprintf("%s:80", cfg.GatewayIP)
+	vnLn, err := vn.Listen("tcp", apiAddr)
+	if err != nil {
+		logger.Error(err, "Failed to listen on API address", "addr", apiAddr)
+		return
+	}</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Add explicit <code>ln.Close()</code> to each early-return path after line 96:</p>
+      <pre><code class="language-diff"> 	cfg := newVirtualNetworkConfig(*subnet)
+ 	vn, err := virtualnetwork.New(&amp;cfg)
+ 	if err != nil {
++		ln.Close()
+ 		logger.Error(err, "Failed to create virtual network")
+ 		return
+ 	}
+ ...
+ 	vnLn, err := vn.Listen("tcp", apiAddr)
+ 	if err != nil {
++		ln.Close()
+ 		logger.Error(err, "Failed to listen on API address", "addr", apiAddr)
+ 		return
+ 	}</code></pre>
+    </div>
+
+    <hr>
+
+    <h3 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&#182;</a></h3>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S1">
+        <span class="finding-num">S1.</span> HTTP <code>Serve</code> returns a non-<code>ErrServerClosed</code> error on clean shutdown <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span>
+        <a href="#S1" class="pilcrow">&#182;</a>
+      </div>
+
+      <p>On shutdown, closing <code>vnLn</code> causes <code>s.Serve</code> to return a network error (not <code>http.ErrServerClosed</code>, which only <code>Server.Shutdown</code>/<code>Server.Close</code> produce). This passes the error filter, causing <code>g.Wait()</code> to return an error and log "Host-switch exited with error" on every clean shutdown.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a53d4b99714210bc0f4dd6e95826f72ec8c79c8e/pkg/controllers/lima/limavm/controllers/hostswitch_windows.go#L145-L160">pkg/controllers/lima/limavm/controllers/hostswitch_windows.go</a></div>
+      <pre data-start="145" data-line="156"><code class="language-go">	g.Go(func() error {
+		&lt;-ctx.Done()
+		return vnLn.Close()
+	})
+	g.Go(func() error {
+		s := &amp;http.Server{
+			Handler:      mux,
+			ReadTimeout:  10 * time.Second,
+			WriteTimeout: 10 * time.Second,
+		}
+		err := s.Serve(vnLn)
+		if err != nil &amp;&amp; !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+		return nil
+	})</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Also filter <code>net.ErrClosed</code>:</p>
+      <pre><code class="language-diff"> 		err := s.Serve(vnLn)
+-		if err != nil &amp;&amp; !errors.Is(err, http.ErrServerClosed) {
++		if err != nil &amp;&amp; !errors.Is(err, http.ErrServerClosed) &amp;&amp; !errors.Is(err, net.ErrClosed) {
+ 			return err
+ 		}</code></pre>
+    </div>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S2">
+        <span class="finding-num">S2.</span> No unit tests for platform-independent helpers <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span>
+        <a href="#S2" class="pilcrow">&#182;</a>
+      </div>
+
+      <p><code>validateSubnet</code> is pure logic in <code>hostswitch.go</code> (no build tag) and trivially testable on any platform. <code>newVirtualNetworkConfig</code> maps the subnet struct into gvisor-tap-vsock configuration and is also portable.</p>
+
+      <p><span class="fix-label">Fix:</span> Add <code>hostswitch_test.go</code> (no build tag) with table-driven tests for <code>validateSubnet</code> covering the default subnet, a custom subnet, an invalid CIDR, and an IPv6 CIDR. Optionally test <code>newVirtualNetworkConfig</code> to verify DNS zones, DHCP leases, and NAT mappings match the subnet.</p>
+    </div>
+
+    <hr>
+
+    <h2 id="design-observations">Design Observations <a href="#design-observations" class="pilcrow">&#182;</a></h2>
+
+    <h3>Concerns</h3>
+
+    <div class="card card-design">
+      <p><strong>(future)</strong> <code>startHostSwitch</code> is fire-and-forget: it spawns a goroutine and returns immediately. If the goroutine fails (handshake timeout, virtual network error), the reconciler has no signal. The guest's <code>network-setup.service</code> blocks, the hostagent eventually times out, and the watcher reports <code>phaseStopped</code> — but the root cause is buried in logs. A future improvement could have the goroutine report failure back to the reconciler (via a status field or reconcile enqueue) so networking failures surface in the LimaVM conditions. <span class="pill pill-codex">Codex</span> <span class="pill pill-claude">Claude</span></p>
+    </div>
+
+    <h3>Strengths</h3>
+
+    <div class="card card-design">
+      <ul>
+        <li>Clean platform separation: shared types in <code>hostswitch.go</code>, Windows implementation in <code>hostswitch_windows.go</code>, no-op stubs in <code>hostswitch_other.go</code>. The <code>!windows</code> build tag ensures zero overhead on non-Windows platforms. <span class="pill pill-claude">Claude</span></li>
+        <li>The design doc (<code>networking.md</code>) is thorough — architecture diagram, protocol specification, lifecycle sequence diagrams, and future work. It gives future reviewers a concrete model instead of leaving the Windows networking path implicit. <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span></li>
+        <li>The handshake design handles multi-VM discovery correctly: parallel signature checks per GUID with a buffered channel for first-match semantics. <span class="pill pill-claude">Claude</span></li>
+        <li>Promoting <code>go-winio</code>, <code>gvisor-tap-vsock</code>, and <code>virtsock</code> from indirect to direct dependencies correctly reflects their new status as first-party imports. <span class="pill pill-claude">Claude</span></li>
+      </ul>
+    </div>
+
+    <hr>
+
+    <h2 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&#182;</a></h2>
+    <div class="card card-neutral">
+      <ol>
+        <li><strong>No integration tests for host-switch lifecycle</strong> — The host-switch requires a running WSL2 VM, which limits integration testing. However, the lifecycle integration (start/stop ordering, error path cleanup) could be tested by verifying state map operations and cancel function calls with mock interfaces.</li>
+        <li><strong>No unit tests for <code>validateSubnet</code></strong> — Pure function, platform-independent, trivially testable (see <a href="#S2">S2</a>).</li>
+        <li><strong>No unit tests for <code>newVirtualNetworkConfig</code></strong> — Verifying DNS zones, DHCP leases, and NAT mappings catches configuration regressions.</li>
+        <li><strong>No test for the host-switch dying after startup succeeds</strong> — The most important recovery path introduced by this PR is unverified.</li>
+      </ol>
+    </div>
+
+    <hr>
+
+    <h2 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&#182;</a></h2>
+    <div class="card card-neutral">
+      <p>The <code>networking.md</code> design doc is comprehensive and well-structured. The <code>api_lima.md</code> cross-reference is appropriate. Once I1 is fixed, the doc should describe what happens when the host-switch exits unexpectedly — the crash recovery section covers the hostagent but not the host-switch.</p>
+    </div>
+
+    <hr>
+
+    <h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&#182;</a></h2>
+
+    <h3><span class="pill pill-claude">Claude</span></h3>
+    <div class="card card-neutral">
+      <p>Claude Opus 4.6 read all 9 changed files plus the hostagent watcher, then ran 7 <code>git blame</code> commands to verify which changes were introduced by this PR. It identified the most architecturally significant finding (I1: missing <code>stopHostSwitch</code> in <code>handleRestartNeeded</code>) by systematically tracing every shutdown path and confirming the gap with <code>git blame</code>. It also found the vsock listener leak (I4) that both other agents missed. The HTTP shutdown issue was correctly scoped as a suggestion.</p>
+      <p>Claude did not flag the <code>attemptHandshake</code> goroutine leak or the panic risk. Its Coverage Summary accounts for all files, but the handshake concurrency analysis was shallow — it praised the parallel design as a strength without examining the goroutine lifecycle.</p>
+      <p><strong>Tool call highlights:</strong> 23 calls. 10 Read, 8 Bash (7 <code>git blame</code>, 1 <code>git diff</code>), 5 Grep. Heavy <code>git blame</code> usage explains the accurate regression vs. gap classifications.</p>
+    </div>
+
+    <h3><span class="pill pill-codex">Codex</span></h3>
+    <div class="card card-neutral">
+      <p>Codex GPT 5.4 made 52 tool calls — the highest count — reading all changed files, test files, the hostagent watcher, and even upstream dependency source code (<code>gvisor-tap-vsock</code>, <code>virtsock</code>). It ran <code>go test</code> to check for existing test coverage and verified the WSL2 image integration path. The finding about host-switch failures being invisible to the reconciler (folded into the design observation) demonstrates good architectural thinking.</p>
+      <p>Codex identified the goroutine overwrite (I2) and unbounded probing (I3) but did not flag the panic risk on the closed channel or the missing <code>handleRestartNeeded</code> path (I1). It also missed the vsock listener leak (I4).</p>
+      <p><strong>Tool call highlights:</strong> 52 calls. 51 <code>exec_command</code>, 1 <code>write_stdin</code>. Shell commands: 21 <code>sed -n</code> (file reads), 11 <code>nl</code> (numbered listings), 9 <code>rg</code> (search), 5 <code>git blame</code>. Codex used <code>go doc</code> to inspect upstream APIs and <code>go test</code> to verify test state — more thorough upstream analysis than the other agents.</p>
+    </div>
+
+    <h3><span class="pill pill-gemini">Gemini</span></h3>
+    <div class="card card-neutral">
+      <p>Gemini 3.1 Pro made 13 tool calls — the fewest. It focused on the <code>hostswitch_windows.go</code> file (3 reads) and attempted a live build (<code>make build</code>). It identified the closed-channel panic (part of I3) that Codex missed, provided a complete sequential-handshake fix, and flagged the missing I/O deadlines. The HTTP server shutdown finding was initially rated important but is correctly a suggestion.</p>
+      <p>Gemini raised a concern about context lifetime decoupling — that the reconcile context might be per-reconcile in controller-runtime v0.15+. This is invalid for v0.23.3, where the reconcile context is the manager's context (the existing <code>startWatcher</code> uses the same pattern). Gemini did not run <code>git blame</code>, so it could not distinguish regressions from pre-existing issues.</p>
+      <p><strong>Tool call highlights:</strong> 13 calls. 7 <code>grep_search</code>, 4 <code>read_file</code>, 2 <code>run_shell_command</code> (1 attempted live test, 1 <code>make build</code>). No <code>git blame</code> usage — consistent with the known limitation.</p>
+    </div>
+
+    <h3>Summary</h3>
+    <div class="card card-neutral">
+      <table class="retro-table">
+        <tr>
+          <th></th>
+          <th><span class="pill pill-claude">Claude</span> Opus 4.6</th>
+          <th><span class="pill pill-codex">Codex</span> GPT 5.4</th>
+          <th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th>
+        </tr>
+        <tr><td>Duration</td><td>340s</td><td>228s</td><td>257s</td></tr>
+        <tr><td>Findings</td><td>0C 2I 2S</td><td>0C 2I 1S</td><td>0C 2I 1S</td></tr>
+        <tr><td>Tool calls</td><td>23 (Read 10, Bash 8, Grep 5)</td><td>52 (exec_command 51)</td><td>13 (grep_search 7, read_file 4)</td></tr>
+        <tr><td>Design observations</td><td>1 concern, 4 strengths</td><td>1 concern, 1 strength</td><td>1 concern (invalid)</td></tr>
+        <tr><td>False positives</td><td>0</td><td>0</td><td>1 (context lifetime)</td></tr>
+        <tr><td>Unique insights</td><td>I1 (handleRestartNeeded), I4 (listener leak)</td><td>upstream API inspection</td><td>Panic on closed channel, I/O deadlines</td></tr>
+        <tr><td>Files reviewed</td><td>9/9</td><td>9/9</td><td>7/9</td></tr>
+        <tr><td>Coverage misses</td><td>0</td><td>0</td><td>2 (api_lima.md, lima-images-wsl2.yaml marked trivial)</td></tr>
+      </table>
+
+      <p><strong>Reconciliation:</strong> Gemini C1 (critical, goroutine leak + panic): downgraded to important I3 — the panic requires a specific timing window (detached goroutine must complete dial before context cancellation but send after channel close) that is unlikely under normal operation. Gemini C2 (critical, missing I/O deadlines): merged into I3 fix recommendation as part of the sequential handshake — the deadlines are needed for the fix to work correctly, not a standalone critical issue. Gemini I2 (important, HTTP shutdown): downgraded to suggestion S1 — spurious log does not affect functionality. Codex I1 (important, host-switch failure invisible): reclassified as design observation — the system self-heals through the watcher; visibility is a future improvement.</p>
+
+      <p>Claude provided the most thorough lifecycle analysis (I1, I4), Codex the deepest upstream investigation, and Gemini the strongest concurrency analysis (panic risk, I/O deadlines).</p>
+    </div>
+
+    <hr>
+
+    <h2 id="review-process-notes">Review Process Notes <a href="#review-process-notes" class="pilcrow">&#182;</a></h2>
+    <div class="card card-neutral">
+      <p><strong>Repo context updates</strong></p>
+      <ul>
+        <li><strong>[repo] Add:</strong> "The host-switch goroutine (<code>hostswitch_windows.go</code>) uses fire-and-forget lifecycle — failures are logged but not surfaced to the reconciler. When reviewing changes to the host-switch, verify that every shutdown path in <code>limavm_lifecycle.go</code> calls <code>stopHostSwitch</code> alongside <code>stopWatcher</code>." Why: Claude's I1 finding (missing <code>stopHostSwitch</code> in <code>handleRestartNeeded</code>) was unique — the other two agents missed this gap because they did not systematically enumerate all shutdown paths. Future reviews of lifecycle changes need this context.</li>
+      </ul>
+    </div>
+
+  </main>
+
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  <script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+  </script>
+</body>
+</html>
