@@ -24,6 +24,7 @@ import (
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/help"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/developer"
+	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/diag" // installs Lima decompression timing hook (temporary diagnostic)
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/hostagent"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/version"
 )

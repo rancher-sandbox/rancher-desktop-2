@@ -147,11 +147,49 @@ jobs:
         wsl --status
       continue-on-error: true
 
+    # === Diagnostic instrumentation for slow second-VM provisioning on
+    # === Windows CI. See pkg/diag/gzip_timer.go and the windows-*.ps1
+    # === scripts. This is temporary; remove once root cause is understood.
+    - name: "Windows: capture machine info (diag)"
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path rdd-logs/_diag | Out-Null
+        pwsh -File scripts/windows-machine-info.ps1 -OutputPath rdd-logs/_diag/machine-info.txt
+      continue-on-error: true
+
+    - name: "Windows: start perf sampler (diag)"
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path rdd-logs/_diag | Out-Null
+        $proc = Start-Process pwsh -PassThru -WindowStyle Hidden -ArgumentList @(
+          '-NoProfile',
+          '-File', 'scripts/windows-perf-sampler.ps1',
+          '-OutputPath', 'rdd-logs/_diag/perf-sampler.jsonl'
+        )
+        $proc.Id | Set-Content -Path rdd-logs/_diag/perf-sampler.pid
+        Write-Output "perf-sampler started, pid=$($proc.Id)"
+      continue-on-error: true
+
     - run: make -C bats --keep-going --jobs=$(nproc) --output-sync=target
       shell: run-in-shell {0}
       env:
         RDD_TRACE: true
         RDD_LOG_LEVEL: trace
+
+    - name: "Windows: stop perf sampler (diag)"
+      if: always() && runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $pidFile = 'rdd-logs/_diag/perf-sampler.pid'
+        if (Test-Path $pidFile) {
+          $samplerPid = Get-Content $pidFile
+          Stop-Process -Id $samplerPid -Force -ErrorAction SilentlyContinue
+          Remove-Item $pidFile -Force -ErrorAction SilentlyContinue
+          Write-Output "stopped perf-sampler pid=$samplerPid"
+        }
+      continue-on-error: true
 
     - name: Collect RDD logs
       if: always()
