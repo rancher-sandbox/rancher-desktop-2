@@ -94,6 +94,25 @@ jobs:
         Get-Service -ErrorAction Continue -Name @('W3SVC', 'docker') |
           Stop-Service
 
+        # Free CPU by disabling Microsoft Compatibility Telemetry. The
+        # windows-latest runner has only 2 vCPUs, and CompatTelRunner.exe
+        # was the single largest CPU consumer in our diagnostic runs
+        # (~317 CPU-seconds over a 24-minute BATS job, ~22% of one core).
+        # On a 2-vCPU machine that crowds out gzip/xz decompression and
+        # causes intermittent BATS timeouts when the runner happens to
+        # be saturated during a Lima cache-hit decompression. Stopping
+        # the running process is not enough on its own — the
+        # Microsoft Compatibility Appraiser and related scheduled tasks
+        # under \Microsoft\Windows\Application Experience\ will respawn
+        # it within minutes. Disabling the tasks (and the DiagTrack
+        # service for good measure) keeps it dead for the duration of
+        # the job.
+        Stop-Process -Name CompatTelRunner -Force -ErrorAction SilentlyContinue
+        Get-ScheduledTask -TaskPath '\Microsoft\Windows\Application Experience\' -ErrorAction SilentlyContinue |
+          Disable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
+        Get-Service -Name DiagTrack -ErrorAction SilentlyContinue |
+          Stop-Service -Force -ErrorAction SilentlyContinue
+
         # Update any pre-installed WSL
         # Sometimes this fails; retry in a loop.
         do { wsl --update } while ( -not $? )

@@ -56,13 +56,18 @@ func (t *decompressTimer) Levels() []logrus.Level {
 }
 
 func (t *decompressTimer) Fire(entry *logrus.Entry) error {
+	msg := entry.Message
 	switch {
-	case strings.HasPrefix(entry.Message, "decompressing ."):
+	case strings.HasPrefix(msg, "decompressing ."):
 		t.mu.Lock()
 		t.start = time.Now()
 		t.pending = true
 		t.mu.Unlock()
-	case strings.HasPrefix(entry.Message, "Using cache "):
+	// "Using cache <path>" is logged after a cache-hit Download() returns.
+	// "Downloaded <description> from <url>" is logged after a cache-miss
+	// fetch (download + decompress). Both bracket the same decompressLocal
+	// invocation, so we accept either as the end marker.
+	case strings.HasPrefix(msg, "Using cache "), strings.HasPrefix(msg, "Downloaded "):
 		t.mu.Lock()
 		if !t.pending {
 			t.mu.Unlock()
