@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260408-175512-pr-280</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block.
+ * The filename is a GitHub permalink to the displayed line range.
+ * Text color is light gray (#adbac7) for the bar, green (#7ee787)
+ * for the hyperlink — matching GitHub's dark-mode file header. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Deep Review: 20260408-175512-pr-280</h1>
+
+    <table class="meta-table">
+      <tr><td>Date</td><td>2026-04-08 17:55</td></tr>
+      <tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+      <tr><td>Round</td><td>3</td></tr>
+      <tr><td>Author</td><td><a href="https://github.com/jandubois">@jandubois</a></td></tr>
+      <tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/280" class="gh-ref" data-title="Add host-switch virtual network for WSL2 instances" data-state="open" data-type="pr">#280</a> &mdash; Add host-switch virtual network for WSL2 instances</td></tr>
+      <tr><td>Branch</td><td><code>host-switch</code></td></tr>
+      <tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/a29eda1"><code>a29eda1</code></a> Add host-switch virtual network for WSL2 instances<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/d498946"><code>d498946</code></a> Fix go-mod-k8s-sync checkout for cross-repository PRs</td></tr>
+      <tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.6, <span class="pill pill-codex">Codex</span> GPT 5.4, <span class="pill pill-gemini">Gemini</span> 3.1 Pro</td></tr>
+      <tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; two important issues: accept loop swallows unexpected errors, and one-shot registry read fails when no WSL2 VM exists yet</td></tr>
+      <tr><td>Wall-clock time</td><td><code>32 min 27 s</code></td></tr>
+    </table>
+
+    <hr>
+
+    <h2 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+      <p>This PR ports the host-switch networking logic from rancher-desktop into the LimaVM controller as an in-process goroutine. The goroutine performs a vsock handshake with the WSL2 guest, then runs a gvisor-tap-vsock virtual network providing DNS, DHCP, and NAT. A second commit fixes the CI workflow for cross-repository PRs. The lifecycle integration is thorough &mdash; every start, stop, restart, crash, and shutdown path correctly pairs <code>startHostSwitch</code> and <code>stopHostSwitch</code>. Two issues need attention: the vsock accept loop silently swallows unexpected errors, and the registry-based VM discovery reads only once, failing immediately on fresh systems where no WSL2 VM exists yet.</p>
+    </div>
+
+    <hr>
+    <h2 id="critical-issues">Critical Issues <a href="#critical-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-critical">
+      <p>None.</p>
+    </div>
+
+    <hr>
+
+    <h2 id="important-issues">Important Issues <a href="#important-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I1">
+        <span class="finding-num">I1.</span> Accept loop swallows unexpected errors <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span>
+        <a href="#I1" class="pilcrow">&#182;</a>
+      </div>
+
+      <p>The accept goroutine returns <code>nil</code> for all <code>Accept</code> failures, not just the <code>net.ErrClosed</code> expected during shutdown. If <code>Accept</code> fails for an unexpected reason (resource exhaustion, OS-level socket error), the goroutine exits silently. Because it returns <code>nil</code>, the errgroup does not cancel the shared context. The HTTP server and context-wait goroutines keep running, but no new vsock connections can be accepted. The guest retains its existing connection but cannot reconnect after a network restart. The only external symptom is a &ldquo;Host-switch stopped&rdquo; log at line 241 &mdash; no error is surfaced.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d498946e1266b85f6e35ff0de51fa1da83414874/pkg/controllers/lima/limavm/controllers/hostswitch_windows.go#L195-L210">pkg/controllers/lima/limavm/controllers/hostswitch_windows.go</a></div>
+      <pre data-start="195" data-line="200-203"><code class="language-go">	g, ctx := errgroup.WithContext(ctx)
+
+	// Accept vsock connections and feed them into the virtual network.
+	g.Go(func() error {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				// Listener closed (context cancelled).
+				return nil //nolint:nilerr // Expected on shutdown.
+			}
+			if err := vn.AcceptStdio(ctx, conn); err != nil {
+				logger.Error(err, "Failed to accept connection into virtual network")
+			} else {
+				logger.Info("Accepted vsock connection")
+			}
+		}
+	})</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Distinguish shutdown from unexpected errors.</p>
+
+      <pre><code class="language-diff"> 		conn, err := ln.Accept()
+ 		if err != nil {
+-			// Listener closed (context cancelled).
+-			return nil //nolint:nilerr // Expected on shutdown.
++			if errors.Is(err, net.ErrClosed) {
++				return nil // Listener closed during shutdown.
++			}
++			return fmt.Errorf("vsock accept failed: %w", err)
+ 		}</code></pre>
+
+      <p>This propagates unexpected errors through the errgroup, which cancels the context and triggers clean shutdown of all goroutines. The error is then logged at line 239.</p>
+    </div>
+    <div class="card card-important">
+      <div class="finding-title" id="I2">
+        <span class="finding-num">I2.</span> Registry-based VM discovery is one-shot; fails when no WSL2 VM exists <span class="pill pill-gemini">Gemini</span>
+        <a href="#I2" class="pilcrow">&#182;</a>
+      </div>
+
+      <p><code>getVMGUID</code> reads the Hyper-V registry once and launches handshake goroutines for each GUID found. If the registry key is absent or contains zero entries &mdash; which happens on a fresh system where no other WSL2 distro is running &mdash; the function returns an error immediately. Because <code>startHostSwitch</code> runs before the hostagent boots the WSL2 VM (by design, since the guest blocks on the handshake), the utility VM may not exist yet.</p>
+
+      <p>When another WSL2 distro is already running, the shared utility VM&rsquo;s GUID is in the registry, and <code>attemptHandshake</code> polls it every second until the opensuse distro&rsquo;s <code>network-setup</code> starts listening. The bug manifests only when no WSL2 VM exists at startup time.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d498946e1266b85f6e35ff0de51fa1da83414874/pkg/controllers/lima/limavm/controllers/hostswitch_windows.go#L304-L322">pkg/controllers/lima/limavm/controllers/hostswitch_windows.go</a></div>
+      <pre data-start="304" data-line="307-322"><code class="language-go">// getVMGUID enumerates running Hyper-V VMs from the registry and handshakes
+// with each in parallel to find the one running our distro.
+func getVMGUID(ctx context.Context, logger logr.Logger) (hvsock.GUID, error) {
+	key, err := registry.OpenKey(
+		registry.LOCAL_MACHINE,
+		`SOFTWARE\Microsoft\Windows NT\CurrentVersion\HostComputeService\VolatileStore\ComputeSystem`,
+		registry.ENUMERATE_SUB_KEYS)
+	if err != nil {
+		return hvsock.GUIDZero, fmt.Errorf("cannot open registry key (is a WSL VM running?): %w", err)
+	}
+
+	names, err := key.ReadSubKeyNames(0)
+	key.Close()
+	if err != nil {
+		return hvsock.GUIDZero, fmt.Errorf("cannot read VM IDs from registry: %w", err)
+	}
+	if len(names) == 0 {
+		return hvsock.GUIDZero, errors.New("no running Hyper-V VMs found")
+	}</code></pre>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d498946e1266b85f6e35ff0de51fa1da83414874/pkg/controllers/lima/limavm/controllers/hostswitch_windows.go#L343-L358">pkg/controllers/lima/limavm/controllers/hostswitch_windows.go</a></div>
+      <pre data-start="343" data-line="343-358"><code class="language-go">	// Close found channel when all handshake goroutines finish, so the
+	// select below can detect "no match" without blocking forever.
+	go func() {
+		wg.Wait()
+		close(found)
+	}()
+
+	select {
+	case vmGUID, ok := &lt;-found:
+		if !ok {
+			return hvsock.GUIDZero, errors.New("no VM matched the signature phrase")
+		}
+		return vmGUID, nil
+	case &lt;-ctx.Done():
+		return hvsock.GUIDZero, fmt.Errorf("VM GUID discovery timed out: %w", ctx.Err())
+	}
+}</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Retry registry reads within the handshake timeout loop, spawning handshake goroutines for newly discovered GUIDs as they appear.</p>
+
+      <pre><code class="language-diff"> func getVMGUID(ctx context.Context, logger logr.Logger) (hvsock.GUID, error) {
+-	key, err := registry.OpenKey(...)
+-	// ... one-shot read
++	ticker := time.NewTicker(time.Second)
++	defer ticker.Stop()
++
++	seen := make(map[hvsock.GUID]bool)
++	found := make(chan hvsock.GUID, 1)
++
++	for {
++		select {
++		case &lt;-ctx.Done():
++			return hvsock.GUIDZero, fmt.Errorf("VM GUID discovery timed out: %w", ctx.Err())
++		case vmGUID := &lt;-found:
++			return vmGUID, nil
++		case &lt;-ticker.C:
++			key, err := registry.OpenKey(...)
++			if err != nil {
++				continue // VM not running yet
++			}
++			names, _ := key.ReadSubKeyNames(0)
++			key.Close()
++			for _, name := range names {
++				vmGUID, err := hvsock.GUIDFromString(name)
++				if err == nil &amp;&amp; !seen[vmGUID] {
++					seen[vmGUID] = true
++					go attemptHandshake(ctx, logger, vmGUID, found)
++				}
++			}
++		}
++	}
+ }</code></pre>
+
+      <p>This merges the current <code>getVMGUID</code> and <code>attemptHandshake</code> polling into a single retry loop: the registry is re-scanned each tick, and handshake goroutines are spawned only for newly discovered GUIDs. The existing 5-minute <code>handshakeTimeout</code> bounds the total wait.</p>
+    </div>
+
+    <hr>
+    <h2 id="suggestions">Suggestions <a href="#suggestions" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S1">
+        <span class="finding-num">S1.</span> VM discovery cannot distinguish multiple opensuse instances <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span>
+        <a href="#S1" class="pilcrow">&#182;</a>
+      </div>
+
+      <p><code>getVMGUID</code> matches the first VM that sends the fixed <code>signaturePhrase</code> (line 98). If two WSL2 VMs run the opensuse distro simultaneously, two host-switch goroutines could bind to the same guest while the other gets no networking. In the current architecture (one App, one LimaVM, one WSL2 instance), this cannot happen. But the code&rsquo;s structure &mdash; one host-switch per instance name, map-based state tracking &mdash; implies multi-instance support.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d498946e1266b85f6e35ff0de51fa1da83414874/pkg/controllers/lima/limavm/controllers/hostswitch_windows.go#L364-L398">pkg/controllers/lima/limavm/controllers/hostswitch_windows.go</a></div>
+      <pre data-start="364" data-line="391-394"><code class="language-go">func attemptHandshake(ctx context.Context, logger logr.Logger, vmGUID hvsock.GUID, found chan&lt;- hvsock.GUID) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case &lt;-ctx.Done():
+			return
+		case &lt;-ticker.C:
+			conn, err := getVsockConnection(vmGUID, vsockHandshakePort)
+			if ctx.Err() != nil {
+				if conn != nil {
+					conn.Close()
+				}
+				return
+			}
+			if err != nil {
+				logger.V(1).Info("Handshake dial failed", "vmGUID", vmGUID.String(), "error", err)
+				continue
+			}
+
+			sig, err := readSignature(conn)
+			conn.Close()
+			if err != nil {
+				logger.V(1).Info("Handshake read failed", "vmGUID", vmGUID.String(), "error", err)
+				continue
+			}
+			if sig == signaturePhrase {
+				logger.V(1).Info("Signature matched", "vmGUID", vmGUID.String())
+				found &lt;- vmGUID
+				return
+			}
+			// Valid signature from a different distro; no point retrying.
+			logger.V(1).Info("Signature mismatch", "vmGUID", vmGUID.String())
+			return
+		}
+	}
+}</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Add a comment documenting the single-instance constraint.</p>
+
+      <pre><code class="language-diff"> // getVMGUID enumerates running Hyper-V VMs from the registry and handshakes
+-// with each in parallel to find the one running our distro.
++// with each in parallel to find the one running our distro. This assumes
++// only one opensuse WSL2 instance runs at a time; with multiple instances,
++// the signature-based discovery would be ambiguous.</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S2">
+        <span class="finding-num">S2.</span> <code>startHostSwitch</code> inline cancel-wait duplicates <code>stopHostSwitch</code> <span class="pill pill-gemini">Gemini</span>
+        <a href="#S2" class="pilcrow">&#182;</a>
+      </div>
+
+      <p>The inline cancel-and-wait duplicates <code>stopHostSwitch</code>&rsquo;s logic. The unlock-wait-relock pattern also opens a narrow window where a concurrent <code>shutdownAllHostagents</code> call could delete the old entry from the map, wait on it, and then <code>startHostSwitch</code> would insert a new running entry &mdash; leaving a host-switch the manager believes it stopped. In practice this requires a shutdown racing with a startup, which is extremely unlikely.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d498946e1266b85f6e35ff0de51fa1da83414874/pkg/controllers/lima/limavm/controllers/hostswitch_windows.go#L113-L131">pkg/controllers/lima/limavm/controllers/hostswitch_windows.go</a></div>
+      <pre data-start="113" data-line="116-122"><code class="language-go">	hsCtx, hsCancel := context.WithCancel(ctx)
+	done := make(chan struct{})
+
+	r.hostSwitchMu.Lock()
+	if old, exists := r.hostSwitchStates[name]; exists {
+		r.hostSwitchMu.Unlock()
+		old.cancel()
+		&lt;-old.done
+		r.hostSwitchMu.Lock()
+	}
+	r.hostSwitchStates[name] = &amp;hostSwitchState{
+		cancel: hsCancel,
+		done:   done,
+	}
+	r.hostSwitchMu.Unlock()
+
+	logger := logr.FromContextOrDiscard(ctx).WithValues("instance", name, "component", "host-switch")
+	go r.runHostSwitch(hsCtx, logger, done)
+}</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Delegate to the existing <code>stopHostSwitch</code> method.</p>
+
+      <pre><code class="language-diff">-	r.hostSwitchMu.Lock()
+-	if old, exists := r.hostSwitchStates[name]; exists {
+-		r.hostSwitchMu.Unlock()
+-		old.cancel()
+-		&lt;-old.done
+-		r.hostSwitchMu.Lock()
+-	}
++	r.stopHostSwitch(name)
++
++	r.hostSwitchMu.Lock()
+ 	r.hostSwitchStates[name] = &amp;hostSwitchState{</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S3">
+        <span class="finding-num">S3.</span> <code>signalListenerReady</code> leaks goroutine when <code>hvsock.Dial</code> hangs <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span>
+        <a href="#S3" class="pilcrow">&#182;</a>
+      </div>
+
+      <p>The comment at lines 416&ndash;418 says the <code>select</code> &ldquo;prevents an indefinite hang,&rdquo; but it prevents only the caller from hanging. If <code>hvsock.Dial</code> blocks forever, the background goroutine leaks. This is a known limitation of the hvsock library (no cancelable dial), already documented in the code. The goroutine typically leaks only during process shutdown, when it is about to be cleaned up anyway.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d498946e1266b85f6e35ff0de51fa1da83414874/pkg/controllers/lima/limavm/controllers/hostswitch_windows.go#L415-L437">pkg/controllers/lima/limavm/controllers/hostswitch_windows.go</a></div>
+      <pre data-start="415" data-line="422-437"><code class="language-go">// signalListenerReady tells the guest that the data listener is ready.
+// The dial is wrapped in a goroutine because hvsock.Dial does not accept
+// a context; the select on ctx.Done prevents an indefinite hang if the
+// VM becomes unresponsive between discovery and signaling.
+func signalListenerReady(ctx context.Context, vmGUID hvsock.GUID) error {
+	type result struct{ err error }
+	ch := make(chan result, 1)
+	go func() {
+		conn, err := getVsockConnection(vmGUID, vsockHandshakePort)
+		if err != nil {
+			ch &lt;- result{err}
+			return
+		}
+		defer conn.Close()
+		_, err = conn.Write([]byte(readySignal))
+		ch &lt;- result{err}
+	}()
+	select {
+	case r := &lt;-ch:
+		return r.err
+	case &lt;-ctx.Done():
+		return ctx.Err()
+	}
+}</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Correct the comment to avoid implying the goroutine is canceled.</p>
+
+      <pre><code class="language-diff"> // signalListenerReady tells the guest that the data listener is ready.
+-// The dial is wrapped in a goroutine because hvsock.Dial does not accept
+-// a context; the select on ctx.Done prevents an indefinite hang if the
+-// VM becomes unresponsive between discovery and signaling.
++// The dial is wrapped in a goroutine because hvsock.Dial does not accept
++// a context. The select on ctx.Done prevents the caller from hanging, but
++// the dial goroutine itself may leak if the VM becomes unresponsive.</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S4">
+        <span class="finding-num">S4.</span> Platform-independent logic locked behind Windows build constraint <span class="pill pill-claude">Claude</span>
+        <a href="#S4" class="pilcrow">&#182;</a>
+      </div>
+
+      <p><code>validateSubnet</code> and <code>newVirtualNetworkConfig</code> use only <code>net.ParseCIDR</code> and <code>net.IPv4</code> &mdash; no Windows-specific APIs. Because they reside in <code>hostswitch_windows.go</code>, the tests run only on Windows CI. Extracting these functions and their types into a <code>hostswitch_config.go</code> (no build constraint) would let the tests run on all platforms.</p>
+    </div>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S5">
+        <span class="finding-num">S5.</span> <code>AcceptStdio</code> blocks accept loop, serializing connections <span class="pill pill-claude">Claude</span>
+        <a href="#S5" class="pilcrow">&#182;</a>
+      </div>
+
+      <p><code>AcceptStdio</code> blocks until the connection closes, so the accept goroutine handles one connection at a time. This is correct because each VM runs a single <code>vm-switch</code> process &mdash; reconnections are serial (old connection EOF, then accept new connection). A clarifying comment would prevent a future contributor from &ldquo;fixing&rdquo; this with <code>go vn.AcceptStdio(...)</code>.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d498946e1266b85f6e35ff0de51fa1da83414874/pkg/controllers/lima/limavm/controllers/hostswitch_windows.go#L198-L210">pkg/controllers/lima/limavm/controllers/hostswitch_windows.go</a></div>
+      <pre data-start="198" data-line="205"><code class="language-go">	g.Go(func() error {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				// Listener closed (context cancelled).
+				return nil //nolint:nilerr // Expected on shutdown.
+			}
+			if err := vn.AcceptStdio(ctx, conn); err != nil {
+				logger.Error(err, "Failed to accept connection into virtual network")
+			} else {
+				logger.Info("Accepted vsock connection")
+			}
+		}
+	})</code></pre>
+
+      <p><span class="fix-label">Fix:</span> Add a clarifying comment.</p>
+
+      <pre><code class="language-diff">+		// AcceptStdio blocks until the connection closes, so the loop
++		// handles one connection at a time. This is correct: each VM
++		// runs a single vm-switch process, and reconnections are serial.
+ 		if err := vn.AcceptStdio(ctx, conn); err != nil {</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S6">
+        <span class="finding-num">S6.</span> <code>attemptHandshake</code> delays first probe by 1 second <span class="pill pill-gemini">Gemini</span>
+        <a href="#S6" class="pilcrow">&#182;</a>
+      </div>
+
+      <p><code>time.NewTicker</code> fires its first event after the specified duration, so the first handshake probe is delayed by 1 second. Adding an immediate attempt before entering the ticker loop would shave a second off networking availability on every boot.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d498946e1266b85f6e35ff0de51fa1da83414874/pkg/controllers/lima/limavm/controllers/hostswitch_windows.go#L361-L372">pkg/controllers/lima/limavm/controllers/hostswitch_windows.go</a></div>
+      <pre data-start="361" data-line="365"><code class="language-go">// attemptHandshake polls a single VM GUID once per second, trying to match
+// the signature phrase. Each probe runs synchronously to avoid goroutine
+// leaks and panics from sending on a closed channel.
+func attemptHandshake(ctx context.Context, logger logr.Logger, vmGUID hvsock.GUID, found chan&lt;- hvsock.GUID) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case &lt;-ctx.Done():
+			return
+		case &lt;-ticker.C:
+	</code></pre>
+    </div>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S7">
+        <span class="finding-num">S7.</span> Networking doc overstates Phase 1 identification <span class="pill pill-codex">Codex</span>
+        <a href="#S7" class="pilcrow">&#182;</a>
+      </div>
+
+      <p>The doc describes the signature phrase as sufficient to identify &ldquo;the correct&rdquo; VM, which holds only while at most one matching opensuse guest is running. The text should document the single-instance constraint, consistent with S1.</p>
+    </div>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S8">
+        <span class="finding-num">S8.</span> <code>validateSubnet</code> ignores CIDR mask <span class="pill pill-gemini">Gemini</span>
+        <a href="#S8" class="pilcrow">&#182;</a>
+      </div>
+
+      <p><code>validateSubnet</code> hardcodes the fourth octet to <code>.1</code>, <code>.2</code>, and <code>.254</code> without checking the mask. For a <code>/25</code> subnet, <code>.254</code> would fall outside the valid range. Since the function is called only with the hardcoded <code>defaultSubnet = "192.168.127.0/24"</code>, this cannot happen today. A defensive assertion (<code>ones != 24 &rarr; error</code>) would guard against future misuse.</p>
+
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d498946e1266b85f6e35ff0de51fa1da83414874/pkg/controllers/lima/limavm/controllers/hostswitch_windows.go#L66-L86">pkg/controllers/lima/limavm/controllers/hostswitch_windows.go</a></div>
+      <pre data-start="66" data-line="69,77,83"><code class="language-go">// validateSubnet parses a CIDR subnet and derives the gateway, DHCP lease,
+// and static DNS host addresses used by the virtual network.
+func validateSubnet(subnet string) (*hostSwitchSubnet, error) {
+	ip, _, err := net.ParseCIDR(subnet)
+	if err != nil {
+		return nil, fmt.Errorf("invalid subnet %q: %w", subnet, err)
+	}
+	ipv4 := ip.To4()
+	if ipv4 == nil {
+		return nil, fmt.Errorf("subnet %q is not IPv4", subnet)
+	}
+	tapIP := net.IPv4(ipv4[0], ipv4[1], ipv4[2], 2).String()
+	return &amp;hostSwitchSubnet{
+		GatewayIP: net.IPv4(ipv4[0], ipv4[1], ipv4[2], 1).String(),
+		StaticDHCPLease: map[string]string{
+			tapIP: tapDeviceMacAddr,
+		},
+		StaticDNSHost: net.IPv4(ipv4[0], ipv4[1], ipv4[2], 254).String(),
+		SubnetCIDR:    subnet,
+	}, nil
+}</code></pre>
+    </div>
+
+    <hr>
+    <h2 id="design-observations">Design Observations <a href="#design-observations" class="pilcrow">&#182;</a></h2>
+
+    <h3 id="design-concerns">Concerns <a href="#design-concerns" class="pilcrow">&#182;</a></h3>
+
+    <div class="card card-design">
+      <ol>
+        <li><strong>(future)</strong> The discovery protocol needs per-instance identity, not a product-wide signature string. Moving to an instance token or GUID mapping would eliminate the class of cross-instance misbinding bugs behind S1 and make the &ldquo;one goroutine per instance&rdquo; contract enforceable. <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span></li>
+        <li><strong>(future)</strong> The host-switch should integrate with the reconciler&rsquo;s state machine rather than running as an unobserved side goroutine. A readiness/health channel between <code>startInstance</code> and <code>runHostSwitch</code> would make startup sequencing explicit and let the reconciler handle host-switch failures the same way it handles hostagent exits. The author acknowledges this in a code comment (see Acknowledged Limitations). <span class="pill pill-codex">Codex</span></li>
+      </ol>
+    </div>
+
+    <h3 id="design-strengths">Strengths <a href="#design-strengths" class="pilcrow">&#182;</a></h3>
+
+    <div class="card card-design">
+      <ul>
+        <li><strong>Thorough lifecycle integration.</strong> Every code path that stops a hostagent also stops the host-switch: <code>handleDeletion</code> (line 40), <code>handleWatchedState</code> crash path (line 213), stopped-not-shouldRun path (line 268), <code>handleRestartNeeded</code> (line 334), <code>startInstance</code> failure paths (lines 458, 468), <code>stopInstance</code> (line 506), and <code>shutdownAllHostagents</code> (line 543). All eight call sites are correctly paired. <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span></li>
+        <li><strong>Errgroup structure avoids goroutine leaks.</strong> The API listener is set up before launching errgroup goroutines. The listener-close goroutines ensure <code>Accept</code> and <code>Serve</code> unblock on context cancellation &mdash; a well-designed shutdown cascade. <span class="pill pill-claude">Claude</span></li>
+        <li><strong>Clean platform isolation via <code>hostSwitchPlatform</code> embedding.</strong> No <code>if runtime.GOOS == "windows"</code> checks in the controller; the compiler ensures all methods exist on all platforms. <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span></li>
+        <li><strong>Design document matches implementation.</strong> Every constant, port, MAC address, and subnet in <code>networking.md</code> matches the code. Lifecycle sequence diagrams correctly reflect the implementation. <span class="pill pill-claude">Claude</span></li>
+      </ul>
+    </div>
+
+    <hr>
+    <h2 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+      <ol>
+        <li><strong>No integration test for host-switch lifecycle</strong> &mdash; The host-switch requires a running WSL2 VM, which CI cannot provide. Unit tests cover <code>validateSubnet</code> and <code>newVirtualNetworkConfig</code>, which are the testable pure-logic components. This is a reasonable trade-off.</li>
+        <li><strong>Handshake logic untested</strong> &mdash; <code>getVMGUID</code>, <code>attemptHandshake</code>, <code>readSignature</code>, and <code>signalListenerReady</code> depend on vsock and Windows registry, making them impractical to test without a real VM.</li>
+        <li><strong>No coverage for concurrent start/stop</strong> &mdash; No test exercises a host-switch surviving concurrent start and stop events, though this is difficult to trigger in practice (reconciles are serialized).</li>
+      </ol>
+    </div>
+
+    <hr>
+
+    <h2 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+      <ul>
+        <li><code>networking.md</code> is thorough and well-structured: protocol constants, lifecycle sequences, and architecture are all documented.</li>
+        <li>The <code>api_lima.md</code> cross-reference at line 327 correctly points to the new doc.</li>
+        <li>S7 notes that the Phase 1 description should document the single-instance constraint.</li>
+      </ul>
+    </div>
+
+    <hr>
+
+    <h2 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+      <p>The two commits are well-scoped. The CI workflow fix (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/d498946"><code>d498946</code></a>) is independent of the host-switch feature and could have been a separate PR, but bundling it is acceptable given its small size. The PR body clearly separates the two changes with a horizontal rule.</p>
+    </div>
+
+    <hr>
+    <h2 id="acknowledged-limitations">Acknowledged Limitations <a href="#acknowledged-limitations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+      <ol>
+        <li><strong>Host-switch failure invisible to reconciler</strong> &mdash; <code>hostswitch_windows.go:152-157</code>: &ldquo;If the goroutine exits due to an error (not context cancellation), the controller is not notified: the guest loses DHCP/DNS/NAT and must be restarted manually. Integrating host-switch health into the controller&rsquo;s state machine (enqueue a reconcile on unexpected exit) would allow automatic recovery but requires non-trivial plumbing.&rdquo; This limitation becomes more relevant once I2 is fixed (the retry loop means the goroutine can fail later, not just at startup).</li>
+        <li><strong><code>hvsock.Dial</code> does not accept a context</strong> &mdash; <code>hostswitch_windows.go:416-418</code>: The goroutine wrapping <code>hvsock.Dial</code> may leak if the dial blocks indefinitely. The process is typically exiting when this happens.</li>
+        <li><strong>Sequential shutdown</strong> &mdash; <code>limavm_controller.go:508</code> (pre-existing): <code>shutdownAllHostagents</code> waits on each hostagent sequentially. Adding <code>stopHostSwitch(name)</code> at line 543 adds to per-instance shutdown time, but the stop is fast (context cancel, goroutine exits).</li>
+      </ol>
+    </div>
+
+    <hr>
+    <h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&#182;</a></h2>
+
+    <h3 id="retro-claude"><span class="pill pill-claude">Claude</span> <a href="#retro-claude" class="pilcrow">&#182;</a></h3>
+
+    <div class="card card-neutral">
+      <p>Claude produced the most thorough analysis of the lifecycle integration, tracing all eight <code>startHostSwitch</code>/<code>stopHostSwitch</code> call sites and confirming each was correctly paired. It uniquely investigated the <code>AcceptStdio</code> blocking behavior by reading the upstream gvisor-tap-vsock source (<code>tap/switch.go</code>), providing concrete evidence for S5. Its coverage was complete &mdash; every file reviewed with detailed notes. It used <code>git blame</code> four times to verify regression attribution.</p>
+      <p>Claude missed the one-shot registry read bug (I2) despite reading the <code>getVMGUID</code> function. This is the most significant coverage gap: the timing between <code>startHostSwitch</code> and the hostagent starting the VM is the central design constraint, and Claude acknowledged the ordering without questioning whether the registry would contain entries at that point.</p>
+    </div>
+
+    <h3 id="retro-codex"><span class="pill pill-codex">Codex</span> <a href="#retro-codex" class="pilcrow">&#182;</a></h3>
+
+    <div class="card card-neutral">
+      <p>Codex provided the deepest analysis of the startup sequencing problem, identifying that host-switch failures are invisible to the reconciler (moved to Acknowledged Limitations since the author documented this). It uniquely raised the multi-instance ambiguity as an important issue (downgraded to S1 since the current architecture supports only one WSL2 instance). Codex ran <code>go test</code> and fetched PR review comments via <code>gh api</code>, showing initiative in gathering evidence. It used <code>git blame</code> ten times &mdash; the most of any agent.</p>
+      <p>Codex also missed the one-shot registry bug. Like Claude, it focused on what happens after the handshake rather than whether the handshake&rsquo;s prerequisites are met.</p>
+    </div>
+
+    <h3 id="retro-gemini"><span class="pill pill-gemini">Gemini</span> <a href="#retro-gemini" class="pilcrow">&#182;</a></h3>
+
+    <div class="card card-neutral">
+      <p>Gemini uniquely identified the one-shot registry read bug (I2, originally rated C1). This was the most important unique finding across all agents: neither Claude nor Codex caught the timing issue despite reading the same code. Gemini also identified the <code>startHostSwitch</code> race condition (S2) and the <code>validateSubnet</code> mask issue (S8).</p>
+      <p>However, Gemini&rsquo;s tool usage was minimal (7 calls vs. 39 for Claude and 47 for Codex). It never ran <code>git blame</code>, so its regression classifications lack blame evidence. The <code>signalListenerReady</code> leak finding (S3) and the <code>AcceptStdio</code> serialization concern (S5) overlap with Claude and Codex but without the upstream source verification that Claude performed.</p>
+      <p>Gemini rated the registry bug as CRITICAL. The consolidated report downgrades it to IMPORTANT because the bug requires no other WSL2 distro to be running &mdash; on most developer machines, WSL2 is already active, keeping the utility VM&rsquo;s GUID in the registry.</p>
+    </div>
+    <h3 id="retro-tool-highlights">Tool call highlights <a href="#retro-tool-highlights" class="pilcrow">&#182;</a></h3>
+
+    <div class="card card-neutral">
+      <ul>
+        <li><strong><span class="pill pill-claude">Claude</span></strong>: 4 <code>git blame</code> calls, verified upstream <code>AcceptStdio</code> behavior in <code>gvisor-tap-vsock</code> source. Thorough context-building.</li>
+        <li><strong><span class="pill pill-codex">Codex</span></strong>: 10 <code>git blame</code> calls, ran <code>go test</code>, fetched PR comments via <code>gh api</code>. Most comprehensive tool usage.</li>
+        <li><strong><span class="pill pill-gemini">Gemini</span></strong>: No <code>git blame</code>, only 7 total tool calls. Unable to verify regression classifications. Read only <code>limavm_lifecycle.go</code> in full; other files accessed only via grep.</li>
+      </ul>
+    </div>
+
+    <h3 id="retro-summary">Summary <a href="#retro-summary" class="pilcrow">&#182;</a></h3>
+
+    <table class="retro-table">
+      <tr>
+        <th></th>
+        <th><span class="pill pill-claude">Claude</span> Opus 4.6</th>
+        <th><span class="pill pill-codex">Codex</span> GPT 5.4</th>
+        <th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th>
+      </tr>
+      <tr><td>Duration</td><td>482s</td><td>410s</td><td>261s</td></tr>
+      <tr><td>Findings</td><td>0C 1I 3S</td><td>0C 0I 3S</td><td>0C 2I 3S</td></tr>
+      <tr><td>Tool calls</td><td>39 (Read 23, Bash 11)</td><td>47 (exec_command 45)</td><td>7 (grep_search 5)</td></tr>
+      <tr><td>Design observations</td><td>4 strengths</td><td>2 concerns, 2 strengths</td><td>1 concern, 1 strength</td></tr>
+      <tr><td>False positives</td><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td>Unique insights</td><td>S5 (AcceptStdio blocking)</td><td>Host-switch health (&rarr; ack&rsquo;d limitation)</td><td>I2 (one-shot registry), S2, S8</td></tr>
+      <tr><td>Files reviewed</td><td>11/11</td><td>11/11</td><td>11/11</td></tr>
+      <tr><td>Coverage misses</td><td>Missed I2</td><td>Missed I1, I2</td><td>0</td></tr>
+    </table>
+
+    <h3 id="retro-totals">Totals <a href="#retro-totals" class="pilcrow">&#182;</a></h3>
+
+    <table class="retro-table">
+      <tr>
+        <th></th>
+        <th><span class="pill pill-claude">Claude</span> Opus 4.6</th>
+        <th><span class="pill pill-codex">Codex</span> GPT 5.4</th>
+        <th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th>
+      </tr>
+      <tr><td>Totals</td><td>0C 1I 3S</td><td>0C 0I 3S</td><td>0C 2I 3S</td></tr>
+      <tr><td>Downgraded</td><td>0</td><td>2 (I1&rarr;ack&rsquo;d, I2&rarr;S1)</td><td>1 (C1&rarr;I2)</td></tr>
+      <tr><td>Dropped</td><td>0</td><td>0</td><td>0</td></tr>
+    </table>
+
+    <h3 id="retro-reconciliation">Reconciliation <a href="#retro-reconciliation" class="pilcrow">&#182;</a></h3>
+
+    <div class="card card-neutral">
+      <p>Gemini C1 (one-shot registry) &rarr; consolidated I2 (downgraded from critical to important: only triggers when no other WSL2 distro is running). Codex I1 (startup failure invisible) &rarr; acknowledged limitation (author already documented this in code comment at <code>hostswitch_windows.go:152-157</code>). Codex I2 (multi-instance ambiguity) &rarr; consolidated S1 (downgraded from important to suggestion: current architecture supports only one WSL2 instance).</p>
+    </div>
+
+    <hr>
+    <h2 id="review-process-notes">Review Process Notes <a href="#review-process-notes" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+      <p>No suggestions for this round. The prompt guided all three agents to the accept-loop error handling issue independently. The one-shot registry bug was caught by the agent that focused more on timing constraints than on code tracing &mdash; a reminder that different analytical styles complement each other.</p>
+    </div>
+
+  </main>
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+  </script>
+</body>
+</html>
