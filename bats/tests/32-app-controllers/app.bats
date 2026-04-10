@@ -195,15 +195,43 @@ local_setup_file() {
     assert_output "${app_gen}"
 }
 
-@test "propagating running=false updates LimaVM spec.running" {
-    rdd ctl patch app "${APP_NAME}" --type='merge' -p='{"spec":{"running":false}}'
-    rdd ctl wait --for=jsonpath='{.spec.running}'=false \
-        limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=30s
+@test "wait for dockerd to be ready with moby container engine" {
+    try --max 10 --delay 3 -- rdd limavm shell "${VM_NAME}" sudo docker info
 }
 
-@test "wait for LimaVM Running condition to become false after stop" {
+@test "containerd is not running with moby container engine" {
+    run rdd limavm shell "${VM_NAME}" sudo systemctl is-active containerd
+    assert_line "inactive"
+}
+
+@test "switch container engine to containerd without stopping VM" {
+    rdd set containerEngine.name=containerd
+    # The reconciler detects the template change, stops the VM, and restarts it.
+    rdd ctl wait --for=condition=Running=False \
+        limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=2m
+    rdd ctl wait --for=condition=Running \
+        limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=7m
+}
+
+@test "wait for containerd to be ready with containerd engine" {
+    try --max 10 --delay 3 -- rdd limavm shell "${VM_NAME}" sudo nerdctl --address /run/k3s/containerd/containerd.sock info
+}
+
+@test "dockerd is not running with containerd engine" {
+    run rdd limavm shell "${VM_NAME}" sudo systemctl is-active docker
+    assert_line "inactive"
+}
+
+@test "stop VM and restore moby engine after containerd test" {
+    rdd set running=false containerEngine.name=moby
     rdd ctl wait --for=condition=Running=False \
         limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=60s
+}
+
+@test "propagating running=false updates LimaVM spec.running" {
+    run -0 rdd ctl get limavm "${VM_NAME}" --namespace "${RDD_NAMESPACE}" \
+        -o jsonpath='{.spec.running}'
+    assert_output "false"
 }
 
 @test "verify App mirrors LimaVM Running condition as False after stop" {

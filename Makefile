@@ -64,6 +64,7 @@ endef
 endif
 
 GOLANG_SOURCES := $(shell find . -name '*.go') go.mod go.sum
+EMBEDDED_SOURCES := $(shell find ./cmd ./pkg -name '*.yaml' -o -name '*.json')
 
 # Build the Lima guest agent from our Go dependency and compress it for embedding.
 $(GUESTAGENT_BINARY): go.mod go.sum
@@ -77,7 +78,7 @@ $(GUESTAGENT_GZ): $(GUESTAGENT_BINARY)
 
 .INTERMEDIATE: $(GUESTAGENT_BINARY)
 
-bin/rdd$(EXE): $(GOLANG_SOURCES) $(GUESTAGENT_GZ)
+bin/rdd$(EXE): $(GOLANG_SOURCES) $(EMBEDDED_SOURCES) $(GUESTAGENT_GZ)
 	WSLENV=${WSLENV}:CGO_CFLAGS:CGO_ENABLED \
 	CGO_CFLAGS="-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_USE_ALLOCA=1" CGO_ENABLED=1 \
 	go$(EXE) build -tags="$(TAGS)" -gcflags="all=${GCFLAGS}" -ldflags="$(LDFLAGS)" -o $@ ./cmd/rdd
@@ -97,7 +98,7 @@ endif
 
 # Generate build targets for API group controllers
 define CONTROLLER_TARGETS
-bin/$(1)-controller$$(EXE): $$(GOLANG_SOURCES)
+bin/$(1)-controller$$(EXE): $$(GOLANG_SOURCES) $$(EMBEDDED_SOURCES)
 	WSLENV=${WSLENV}:CGO_ENABLED CGO_ENABLED=$$(or $$(CGO_ENABLED_$(1)),0) \
 	go$$(EXE) build -tags="$(TAGS)" -gcflags="all=$${GCFLAGS}" -ldflags="$(LDFLAGS)" -o $$@ ./cmd/$(1)-controller
 	$$(call ATTACH_ENTITLEMENTS,$$@)
