@@ -221,13 +221,21 @@ jobs:
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Force -Path rdd-logs/_diag | Out-Null
-        $proc = Start-Process pwsh -PassThru -WindowStyle Hidden -ArgumentList @(
-          '-NoProfile',
-          '-File', 'scripts/windows-perf-sampler.ps1',
-          '-OutputPath', 'rdd-logs/_diag/perf-sampler.jsonl'
-        )
-        $proc.Id | Set-Content -Path rdd-logs/_diag/perf-sampler.pid
-        Write-Output "perf-sampler started, pid=$($proc.Id)"
+        logman.exe create counter rdd-perf-sampler `
+          -c "\Processor(_Total)\% Processor Time" `
+             "\System\Processor Queue Length" `
+             "\Memory\Available MBytes" `
+             "\Memory\% Committed Bytes In Use" `
+             "\PhysicalDisk(_Total)\% Disk Time" `
+             "\PhysicalDisk(_Total)\Disk Read Bytes/sec" `
+             "\PhysicalDisk(_Total)\Disk Write Bytes/sec" `
+             "\PhysicalDisk(_Total)\Avg. Disk sec/Read" `
+             "\PhysicalDisk(_Total)\Avg. Disk sec/Write" `
+             "\PhysicalDisk(_Total)\Current Disk Queue Length" `
+             "\Process(*)\% Processor Time" `
+             "\Process(*)\Working Set" `
+          -o ./rdd-logs/_diag/perf-sampler -f tsv -si 1
+        logman.exe start rdd-perf-sampler
       continue-on-error: true
 
     - run: make -C bats --keep-going --jobs=$(nproc) --output-sync=target
@@ -240,13 +248,7 @@ jobs:
       if: always() && runner.os == 'Windows'
       shell: pwsh
       run: |
-        $pidFile = 'rdd-logs/_diag/perf-sampler.pid'
-        if (Test-Path $pidFile) {
-          $samplerPid = Get-Content $pidFile
-          Stop-Process -Id $samplerPid -Force -ErrorAction SilentlyContinue
-          Remove-Item $pidFile -Force -ErrorAction SilentlyContinue
-          Write-Output "stopped perf-sampler pid=$samplerPid"
-        }
+        logman.exe stop rdd-perf-sampler
       continue-on-error: true
 
     - name: Collect RDD logs
