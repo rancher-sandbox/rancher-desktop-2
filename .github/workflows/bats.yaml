@@ -147,11 +147,34 @@ jobs:
         wsl --status
       continue-on-error: true
 
+    - name: "Windows: capture machine info"
+      if: runner.os == 'Windows'
+      uses: ./.github/actions/windows-machine-info
+      with:
+        output-path: rdd-logs/_diag/machine-info.txt
+      continue-on-error: true
+
+    - name: "Windows: start perf sampler"
+      if: runner.os == 'Windows'
+      uses: ./.github/actions/windows-perf-sampler
+      with:
+        command: start
+        output-path: rdd-logs/_diag/perf-sampler.jsonl
+      continue-on-error: true
+
     - run: make -C bats --keep-going --jobs=$(nproc) --output-sync=target
       shell: run-in-shell {0}
       env:
         RDD_TRACE: true
         RDD_LOG_LEVEL: trace
+
+    - name: "Windows: stop perf sampler"
+      if: always() && runner.os == 'Windows'
+      uses: ./.github/actions/windows-perf-sampler
+      with:
+        command: stop
+        output-path: rdd-logs/_diag/perf-sampler.jsonl
+      continue-on-error: true
 
     - name: Collect RDD logs
       if: always()

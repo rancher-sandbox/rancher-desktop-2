@@ -1,0 +1,45 @@
+name: Windows Perf Sampler
+description: >-
+  Sample CPU, disk, and memory counters once per second in the background.
+  The JSONL output can be correlated against rdd.stderr timestamps to find
+  what contended for CPU/disk during slow windows.
+
+inputs:
+  command:
+    description: '"start" to launch the sampler, "stop" to terminate it.'
+    required: true
+  output-path:
+    description: Path for the JSONL output file.
+    required: true
+
+runs:
+  using: composite
+  steps:
+  - name: Start perf sampler
+    if: runner.os == 'Windows' && inputs.command == 'start'
+    shell: pwsh
+    run: |
+      $outputPath = "${{ inputs.output-path }}"
+      $dir = Split-Path -Parent $outputPath
+      if ($dir -and -not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+      }
+      $proc = Start-Process pwsh -PassThru -WindowStyle Hidden -ArgumentList @(
+        '-NoProfile',
+        '-File', '${{ github.action_path }}/perf-sampler.ps1',
+        '-OutputPath', $outputPath
+      )
+      $proc.Id | Set-Content -Path "$outputPath.pid"
+      Write-Output "perf-sampler started, pid=$($proc.Id)"
+
+  - name: Stop perf sampler
+    if: runner.os == 'Windows' && inputs.command == 'stop'
+    shell: pwsh
+    run: |
+      $pidFile = "${{ inputs.output-path }}.pid"
+      if (Test-Path $pidFile) {
+        $samplerPid = Get-Content $pidFile
+        Stop-Process -Id $samplerPid -Force -ErrorAction SilentlyContinue
+        Remove-Item $pidFile -Force -ErrorAction SilentlyContinue
+        Write-Output "stopped perf-sampler pid=$samplerPid"
+      }
