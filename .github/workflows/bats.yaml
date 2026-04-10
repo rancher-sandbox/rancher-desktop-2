@@ -97,57 +97,52 @@ jobs:
         # Free CPU by disabling Microsoft Compatibility Telemetry. The
         # windows-latest runner has only 2 vCPUs, and CompatTelRunner.exe
         # was the single largest CPU consumer in our diagnostic runs
-        # (~317 CPU-seconds over a 24-minute BATS job, ~22% of one core).
+        # (~340 CPU-seconds over a 24-minute BATS job, ~22% of one core).
         # On a 2-vCPU machine that crowds out gzip/xz decompression and
         # causes intermittent BATS timeouts when the runner happens to
         # be saturated during a Lima cache-hit decompression.
         #
-        # Disabling scheduled tasks doesn't work reliably on Windows
-        # Server 2025: the legacy task names ("Microsoft Compatibility
-        # Appraiser", "ProgramDataUpdater") no longer exist, and a new
-        # set of triggers we haven't enumerated still respawns
-        # CompatTelRunner.exe every 1-3 minutes throughout the run.
-        # The robust fix is to take ownership of the binary and rename
-        # it so nothing can launch it for the duration of the job.
+        # Disabling scheduled tasks doesn't work on Windows Server 2025:
+        # the legacy task names ("Microsoft Compatibility Appraiser",
+        # "ProgramDataUpdater") no longer exist, and the discovery step
+        # below confirmed there are NO scheduled tasks whose action
+        # references CompatTelRunner — so the launcher must be a service,
+        # WMI subscription, or similar that we cannot reliably enumerate
+        # across Windows versions.
+        #
+        # Use the Image File Execution Options (IFEO) "Debugger" hook
+        # instead. This is a documented Windows mechanism: when anything
+        # tries to launch CompatTelRunner.exe, Windows redirects the
+        # exec to taskkill.exe (which exits immediately on the nonsense
+        # args). It is registry-only, admin-permissions only, and works
+        # regardless of what is launching the binary. See
+        # https://github.com/adolfintel/Windows10-Privacy/issues/4
+        Write-Output "--- IFEO Debugger redirect for CompatTelRunner.exe ---"
+        $ifeo = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\CompatTelRunner.exe'
+        New-Item -Path $ifeo -Force | Out-Null
+        New-ItemProperty -Path $ifeo -Name Debugger `
+          -Value "$env:WINDIR\System32\taskkill.exe" `
+          -PropertyType String -Force | Out-Null
+        # Kill any instance already running so we start clean.
+        Get-Process CompatTelRunner -ErrorAction SilentlyContinue |
+          Stop-Process -Force -ErrorAction SilentlyContinue
 
-        # 1. Discovery: log every scheduled task that references CompatTel
-        # so we can extend the disable list if rename fails on a future
-        # Windows image.
+        # Stop the DiagTrack service (Connected User Experiences and
+        # Telemetry) for completeness; this is one of CompatTelRunner's
+        # sibling chatty processes.
+        sc.exe stop diagtrack
+        sc.exe config diagtrack start= disabled
+
+        # Discovery: log every scheduled task whose action references
+        # CompatTel so a future debugger has data if the IFEO trick
+        # ever stops working on a new Windows image.
         Write-Output "--- Scheduled tasks referencing CompatTel ---"
         Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object {
           $_.Actions | Where-Object { $_.Execute -match 'CompatTel' }
         } | Select-Object TaskPath, TaskName, State | Format-Table -AutoSize
 
-        # 2. Stop the running instance(s).
-        Write-Output "--- Stopping CompatTelRunner.exe ---"
-        Get-Process CompatTelRunner -ErrorAction SilentlyContinue |
-          Stop-Process -Force -ErrorAction SilentlyContinue
-
-        # 3. Take ownership and rename CompatTelRunner.exe so the
-        # remaining unknown launchers fail to exec it. This is owned by
-        # TrustedInstaller; takeown.exe + icacls.exe is the supported
-        # admin path.
-        $exe = "$env:WINDIR\System32\CompatTelRunner.exe"
-        if (Test-Path $exe) {
-          Write-Output "--- Renaming CompatTelRunner.exe ---"
-          takeown.exe /f $exe /a
-          icacls.exe $exe /grant 'BUILTIN\Administrators:F'
-          Move-Item -Path $exe -Destination "$exe.disabled" -Force -ErrorAction Continue
-          if (Test-Path $exe) {
-            Write-Output "WARNING: rename failed, $exe still exists"
-          } else {
-            Write-Output "OK: $exe -> $exe.disabled"
-          }
-        } else {
-          Write-Output "CompatTelRunner.exe not found at $exe"
-        }
-
-        # 4. Stop the DiagTrack service (Connected User Experiences and
-        # Telemetry) for completeness; this is one of CompatTelRunner's
-        # sibling chatty processes.
-        Write-Output "--- DiagTrack service ---"
-        sc.exe stop diagtrack
-        sc.exe config diagtrack start= disabled
+        Write-Output "--- Verification ---"
+        Get-ItemProperty -Path $ifeo -Name Debugger | Select-Object Debugger
         Get-Service DiagTrack -ErrorAction SilentlyContinue |
           Format-List Name,Status,StartType
 
