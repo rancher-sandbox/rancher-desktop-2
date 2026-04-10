@@ -49,17 +49,20 @@ sequenceDiagram
     participant Reg as Windows Registry
     participant NS as network-setup (guest)
 
-    HS->>Reg: Enumerate running VM GUIDs
-    Reg-->>HS: [GUID-A, GUID-B, ...]
-
-    par For each GUID
-        HS->>NS: Dial vsock port 6669
-        NS-->>HS: Send signature phrase
-        HS->>HS: Compare signature
+    loop Every 1s until match or timeout
+        HS->>Reg: Enumerate running VM GUIDs
+        Reg-->>HS: [GUID-A, GUID-B, ...] (may be empty)
+        par For each newly-seen GUID
+            HS->>NS: Dial vsock port 6669
+            NS-->>HS: Send signature phrase
+            HS->>HS: Compare signature
+        end
     end
 
     Note over HS: Match found for GUID-A
 ```
+
+The registry is rescanned every second because `startHostSwitch` runs before the hostagent boots the WSL2 VM. On a fresh system where no other WSL2 distro is running, the utility VM may not yet appear in the registry when the first scan runs.
 
 The signature phrase is `"github.com/rancher-sandbox/rancher-desktop/src/go/networking"`. This is a fixed protocol constant shared between host-switch and the guest's `network-setup` binary. Because the signature is product-wide rather than per-instance, this discovery assumes only one opensuse WSL2 instance runs at a time.
 
@@ -107,12 +110,12 @@ sequenceDiagram
     participant G as Guest (opensuse)
 
     R->>HS: startHostSwitch()
-    Note over HS: Begin vsock handshake loop
+    Note over HS: Begin registry scan + handshake loop
     R->>HA: Start hostagent process
     HA->>G: Boot WSL2 distro
-    G->>G: network-setup.service starts
-    G->>HS: Vsock handshake (port 6669)
-    HS->>G: "READY" signal
+    G->>G: network-setup.service starts (listens on 6669)
+    HS->>G: Dial port 6669, read signature
+    HS->>G: Dial port 6669, send "READY"
     G->>HS: Data connection (port 6656)
     G->>G: DHCP → 192.168.127.2
     G->>G: Container services start
@@ -136,23 +139,23 @@ sequenceDiagram
 
 ### Crash Recovery
 
-If the hostagent crashes, the watcher detects the exit and triggers a reconcile. The reconciler stops the old host-switch and starts fresh.
+If the hostagent crashes, the watcher detects the exit and triggers a reconcile. The reconciler tears down the stale host-switch, starts a fresh one, and relaunches the hostagent.
 
 ```mermaid
 sequenceDiagram
     participant R as Reconciler
     participant W as Watcher
-    participant HS as Host-Switch (old)
-    participant HS2 as Host-Switch (new)
+    participant HS as Host-Switch
     participant HA as Hostagent
 
     HA->>HA: Crash
     W->>R: Enqueue reconcile (phase=Stopped)
     R->>W: stopWatcher()
     R->>HS: stopHostSwitch()
-    R->>HS2: startHostSwitch()
+    Note over HS: Goroutine exits
+    R->>HS: startHostSwitch() (fresh goroutine)
     R->>HA: Start new hostagent
-    Note over HS2,HA: Fresh handshake cycle
+    Note over HS,HA: New handshake cycle
 ```
 
 ### Control Plane Restart
@@ -175,7 +178,7 @@ The `shutdownAllHostagents` runnable stops each host-switch after its hostagent 
 
 ### Dependencies
 
-The host-switch uses [gvisor-tap-vsock](https://github.com/containers/gvisor-tap-vsock) for the virtual network stack and [go-winio](https://github.com/microsoft/go-winio) / [virtsock](https://github.com/linuxkit/virtsock) for AF_VSOCK on Windows. All three are already transitive dependencies via Lima.
+The host-switch uses [gvisor-tap-vsock](https://github.com/containers/gvisor-tap-vsock) for the virtual network stack and [go-winio](https://github.com/microsoft/go-winio) / [virtsock](https://github.com/linuxkit/virtsock) for AF_VSOCK on Windows. All three are direct dependencies; they were previously pulled in transitively via Lima.
 
 ## Future Work
 
