@@ -154,14 +154,6 @@ jobs:
         output-path: rdd-logs/_diag/machine-info.txt
       continue-on-error: true
 
-    - name: "Windows: start perf sampler"
-      if: runner.os == 'Windows'
-      uses: ./.github/actions/windows-perf-sampler
-      with:
-        command: start
-        output-path: rdd-logs/_diag/perf-sampler.jsonl
-      continue-on-error: true
-
     - name: "Windows: start typeperf sampler"
       if: runner.os == 'Windows'
       uses: ./.github/actions/windows-typeperf-sampler
@@ -182,14 +174,6 @@ jobs:
       with:
         command: stop
         output-dir: rdd-logs/_diag
-      continue-on-error: true
-
-    - name: "Windows: stop perf sampler"
-      if: always() && runner.os == 'Windows'
-      uses: ./.github/actions/windows-perf-sampler
-      with:
-        command: stop
-        output-path: rdd-logs/_diag/perf-sampler.jsonl
       continue-on-error: true
 
     - name: Collect RDD logs
