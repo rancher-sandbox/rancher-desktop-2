@@ -27,7 +27,7 @@ portForwards:
   hostPortRange:
   - 0
   - 0
-  hostSocket: "{{.Home}}/.rd/docker.sock"
+  hostSocket: "{{.Home}}/.rd2/docker.sock"
 provision:
 - mode: system
   script: |
@@ -75,6 +75,16 @@ provision:
         # Remove stale kubeconfig so k3s regenerates it on start.
         rm -f /etc/rancher/k3s/k3s.yaml
     fi
+
+    # Work around distro bug: ExecStartPre sets HTTPS_PROXY even without
+    # OpenResty. Fix the drop-in and remove the stale env file.
+    for conf in /usr/local/lib/systemd/system/{docker,containerd}.service.d/allowed-images.conf; do
+        if grep -q 'if $ALLOWED_IMAGES' "$conf" 2>/dev/null; then
+            sed -i 's/if \$ALLOWED_IMAGES/if [ -f \/usr\/local\/openresty\/nginx\/conf\/allowed-images.conf ]/' "$conf"
+        fi
+    done
+    rm -f /etc/sysconfig/allowed-images.env
+    systemctl daemon-reload
 
     systemctl start rancher-desktop.target
 
