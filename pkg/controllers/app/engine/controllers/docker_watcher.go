@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	cerrdefs "github.com/containerd/errdefs"
@@ -66,14 +67,21 @@ func newDockerWatcher(ctx context.Context, k8s client.Client, reconcileChan chan
 		reconcileChan: reconcileChan,
 	}
 
-	// Perform initial full sync before starting the event stream.
+	// Capture a Docker-relative timestamp before fullSync begins. The
+	// run() goroutine passes this to the event stream as the Since
+	// filter, so any mutation that happens while fullSync is snapshotting
+	// state is replayed once the stream opens. Without this, the window
+	// between the List-based snapshot and the event subscription is a
+	// blind spot during VM startup.
+	since := strconv.FormatInt(time.Now().Unix(), 10)
+
 	if err := w.fullSync(watchCtx); err != nil {
 		watchCancel()
 		cli.Close()
 		return nil, fmt.Errorf("failed to perform initial sync: %w", err)
 	}
 
-	go w.run(watchCtx)
+	go w.run(watchCtx, since)
 
 	return w, nil
 }
@@ -95,10 +103,22 @@ func (w *dockerWatcher) alive() bool {
 	}
 }
 
-// run is the main watcher goroutine that processes Docker events.
-func (w *dockerWatcher) run(ctx context.Context) {
+// run is the main watcher goroutine that processes Docker events. The
+// since parameter is the "Since" filter passed to the Docker events
+// endpoint, captured before the initial fullSync so events that
+// happened during the sync window are replayed once the stream opens.
+func (w *dockerWatcher) run(ctx context.Context, since string) {
 	log := logf.FromContext(ctx).WithName("docker-watcher")
 	defer close(w.done)
+	// Recover from panics in event handling so an unexpected Docker
+	// event shape cannot crash the whole app-controller process. The
+	// engine reconciler notices the dead watcher via alive() on the
+	// next reconcile and starts a fresh one.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error(nil, "panic in Docker watcher goroutine", "recovered", r)
+		}
+	}()
 
 	eventFilter := dockerclient.Filters{}.
 		Add("type", string(events.ContainerEventType)).
@@ -106,6 +126,7 @@ func (w *dockerWatcher) run(ctx context.Context) {
 		Add("type", string(events.VolumeEventType))
 
 	result := w.cli.Events(ctx, dockerclient.EventsListOptions{
+		Since:   since,
 		Filters: eventFilter,
 	})
 
@@ -185,12 +206,22 @@ func (w *dockerWatcher) handleImageEvent(ctx context.Context, msg events.Message
 		events.ActionImport,
 		events.ActionLoad,
 		events.ActionTag:
+		// Tag events may transition a dangling mirror into a tagged one
+		// (or vice versa on untag). reconcileImageByID applies the
+		// current tag set and prunes K8s mirrors whose names are no
+		// longer in that set, so stale dangling or stale-tag mirrors do
+		// not accumulate between watcher restarts.
 		log.V(1).Info("Image event", "action", msg.Action, "id", msg.Actor.ID)
-		return w.syncImage(ctx, msg.Actor.ID)
+		return w.reconcileImageByID(ctx, msg.Actor.ID)
 
 	case events.ActionUnTag:
+		// Docker's untag event does not propagate the removed tag name —
+		// Actor.ID and Attributes["name"] both carry the image ID hash
+		// (see moby daemon/images/image_delete.go). Re-inspect the image
+		// and let reconcileImageByID prune any K8s mirrors whose
+		// RepoTag is no longer present.
 		log.V(1).Info("Image untagged", "id", msg.Actor.ID)
-		return w.removeImageByTag(ctx, msg.Actor.ID)
+		return w.reconcileImageByID(ctx, msg.Actor.ID)
 
 	case events.ActionDelete:
 		log.V(1).Info("Image deleted", "id", msg.Actor.ID)
@@ -229,24 +260,34 @@ func (w *dockerWatcher) handleVolumeEvent(ctx context.Context, msg events.Messag
 // Update error propagates so the event handler retries on the next
 // reconcile instead of stripping the mirror while leaving a stale
 // object behind.
+//
+// The obj parameter is used as an empty object template: callers may
+// pass either a zero-valued struct (e.g. &containersv1alpha1.Volume{})
+// or a slice element from a prior List; in both cases each retry
+// iteration starts from a fresh copy via DeepCopyObject and writes only
+// that copy, so caller state is never observed.
 func (w *dockerWatcher) removeMirrorResource(ctx context.Context, obj client.Object, name string) error {
 	key := client.ObjectKey{Name: name, Namespace: apiNamespace}
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		if err := w.k8s.Get(ctx, key, obj); err != nil {
+		latest := obj.DeepCopyObject().(client.Object)
+		if err := w.k8s.Get(ctx, key, latest); err != nil {
 			if apierrors.IsNotFound(err) {
 				return nil
 			}
 			return err
 		}
-		if !removeFinalizer(obj, mirrorFinalizer) {
+		if !removeFinalizer(latest, mirrorFinalizer) {
 			return nil
 		}
-		return w.k8s.Update(ctx, obj)
+		return w.k8s.Update(ctx, latest)
 	})
 	if retryErr != nil {
 		return fmt.Errorf("failed to remove finalizer from %s: %w", name, retryErr)
 	}
-	return client.IgnoreNotFound(w.k8s.Delete(ctx, obj))
+	deleteTarget := obj.DeepCopyObject().(client.Object)
+	deleteTarget.SetName(name)
+	deleteTarget.SetNamespace(apiNamespace)
+	return client.IgnoreNotFound(w.k8s.Delete(ctx, deleteTarget))
 }
 
 // reconcileContainerState checks if the user set spec.state to "running" or
@@ -268,9 +309,17 @@ func (w *dockerWatcher) reconcileContainerState(ctx context.Context, c *containe
 	// desired != actual is guaranteed by the early return above, so each
 	// branch just dispatches to Docker. ContainerStop handles paused /
 	// restarting containers natively — filtering by actual == running
-	// would silently drop the user's intent in those states.
+	// would silently drop the user's intent in those states. For the
+	// symmetric direction (desired=running, actual=paused), Docker
+	// rejects ContainerStart with "container is paused, unpause before
+	// starting", so dispatch ContainerUnpause explicitly instead.
 	switch desired {
 	case containersv1alpha1.ContainerStatusRunning:
+		if actual == containersv1alpha1.ContainerStatusPaused {
+			log.Info("Unpausing container", "id", c.Name)
+			_, err := w.cli.ContainerUnpause(ctx, c.Name, dockerclient.ContainerUnpauseOptions{})
+			return err
+		}
 		log.Info("Starting container", "id", c.Name)
 		_, err := w.cli.ContainerStart(ctx, c.Name, dockerclient.ContainerStartOptions{})
 		return err
@@ -286,6 +335,13 @@ func (w *dockerWatcher) reconcileContainerState(ctx context.Context, c *containe
 // treated as success (the container is already gone); all other errors
 // are returned so the caller keeps the mirror finalizer in place and
 // retries on the next reconcile.
+//
+// Force: true matches the asymmetry between container and image
+// deletion: deleting a Container mirror through the K8s API expresses
+// the user's intent to remove that container, so Docker is instructed
+// to stop it first if running. Images, in contrast, use Force: false
+// so in-use images are kept and the finalizer retries until the last
+// consumer goes away.
 func (w *dockerWatcher) deleteContainer(ctx context.Context, id string) error {
 	_, err := w.cli.ContainerRemove(ctx, id, dockerclient.ContainerRemoveOptions{Force: true})
 	if cerrdefs.IsNotFound(err) {

@@ -441,6 +441,15 @@ func patchApp(ctx context.Context, c client.Client, app *appv1alpha1.App, specMa
 // containerEngine.name) are not waited on. This requires a "Reconciled"
 // condition with observedGeneration on the App resource so the CLI can
 // detect when the full reconcile chain has settled.
+//
+// Known hazard until the "Reconciled" condition lands: `rdd set
+// containerEngine.name=<other> running=true` on an already-running VM
+// returns immediately because the stale ContainerEngineReady=True from
+// the previous backend satisfies the precondition check before the
+// reconciler has observed the new spec. Users who switch backends
+// on a running VM should either stop first (`rdd set running=false`)
+// or re-query ContainerEngineReady after the set completes to confirm
+// the backend has finished transitioning.
 func waitForDesiredState(ctx context.Context, config *rest.Config, properties map[string]string, timeout time.Duration) error {
 	runningVal, ok := properties["running"]
 	if !ok {
@@ -504,8 +513,11 @@ func watchCondition(ctx context.Context, config *rest.Config, satisfied func(*un
 	}
 
 	if _, err := watchtools.UntilWithSync(ctx, lw, &unstructured.Unstructured{}, precondition, condition); err != nil {
-		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		if errors.Is(err, context.DeadlineExceeded) {
 			return errors.New("timed out waiting for App state")
+		}
+		if errors.Is(err, context.Canceled) {
+			return errors.New("wait cancelled")
 		}
 		return fmt.Errorf("failed to watch App: %w", err)
 	}

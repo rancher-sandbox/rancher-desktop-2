@@ -124,8 +124,15 @@ var LimaHome = sync.OnceValue(func() string {
 // (e.g., ~/.rd2/docker.sock). This is the host-side socket that Lima
 // port-forwards from the guest's /var/run/docker.sock.
 //
-// TODO: use ShortDir() once the Lima template derives the socket path from
-// the instance suffix instead of hardcoding ".rd2".
+// TODO: use ShortDir() once the Lima template derives the socket path
+// from the instance suffix instead of hardcoding ".rd2". The two
+// hardcodes (here and in pkg/controllers/app/app/lima-template.yaml)
+// must move together — either both parameterized on RDD_INSTANCE or
+// neither — or the watcher will open a different socket from the one
+// Lima is port-forwarding to, and mirroring will silently diverge per
+// instance. Until then, multi-instance BATS runs cannot share the
+// same host and the engine.bats test has a parallel TODO at line
+// 12-14.
 var DockerSocket = sync.OnceValue(func() string {
 	home, err := os.UserHomeDir()
 	if err != nil {

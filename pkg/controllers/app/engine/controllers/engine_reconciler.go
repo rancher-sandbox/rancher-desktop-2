@@ -92,26 +92,26 @@ func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 	}
 	r.watcherMu.Unlock()
 
-	// Watcher died unexpectedly (Docker socket gone, engine restarted, etc.).
-	// Clean up mirror resources and set the condition to Disconnected.
+	// A watcher that dies while the App is still running is treated as a
+	// transient disconnect: log it, clear the watcher pointer, and fall
+	// through to the normal reconcile flow. If wantWatcher is still true
+	// below, the reconciler starts a fresh watcher whose fullSync
+	// reconciles any drift in place — downstream clients see no churn
+	// because the existing mirror resources keep their identity. An
+	// actual stop or backend change is handled by the !wantWatcher
+	// branch below, which does sweep the mirrors.
 	if watcherDied {
-		log.Info("Docker watcher died, cleaning up mirror resources")
-		if err := r.cleanupMirrorResources(ctx); err != nil {
-			log.Error(err, "Failed to clean up mirror resources")
-			return ctrl.Result{}, err
-		}
-		if err := r.setEngineCondition(ctx, &app, metav1.ConditionFalse, "Disconnected", "Container engine connection lost"); err != nil {
-			return ctrl.Result{}, err
-		}
-		return ctrl.Result{}, nil
+		log.Info("Docker watcher died, will attempt to reconnect")
 	}
 
 	// The watcher should only run when the App is Running with the moby
 	// backend. In every other state (stopped, containerd, both) we stop
-	// the watcher and sweep mirror resources. Cleanup runs on every
-	// reconcile in that state so transient errors are retried on the
-	// next requeue without relying on the in-memory watcher pointer as
-	// the retry trigger.
+	// the watcher and sweep mirror resources. The sweep is gated on the
+	// current ContainerEngineReady reason: once the condition reflects
+	// the terminal state, cleanup would be a no-op against an empty
+	// namespace, so we short-circuit to avoid four empty List calls per
+	// unrelated reconcile. On failure, the condition stays pending and
+	// the next requeue re-tries the sweep.
 	wantWatcher := running && engineIsDocker
 	if !wantWatcher {
 		if watcherRunning {
@@ -119,18 +119,23 @@ func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 				"running", running, "engine", app.Spec.ContainerEngine.Name)
 			r.stopWatcher()
 		}
-		if err := r.cleanupMirrorResources(ctx); err != nil {
-			log.Error(err, "Failed to clean up mirror resources")
-			return ctrl.Result{}, err
+		terminalReason := "Stopped"
+		terminalStatus := metav1.ConditionFalse
+		terminalMessage := "Container engine stopped"
+		if running && !engineIsDocker {
+			terminalReason = "NotApplicable"
+			terminalStatus = metav1.ConditionTrue
+			terminalMessage = "Engine mirroring is only supported with the moby backend"
 		}
-		switch {
-		case running && !engineIsDocker:
-			return ctrl.Result{}, r.setEngineCondition(ctx, &app, metav1.ConditionTrue, "NotApplicable",
-				"Engine mirroring is only supported with the moby backend")
-		default:
-			return ctrl.Result{}, r.setEngineCondition(ctx, &app, metav1.ConditionFalse, "Stopped",
-				"Container engine stopped")
+		current := meta.FindStatusCondition(app.Status.Conditions, conditionContainerEngineReady)
+		alreadyClean := !watcherDied && current != nil && current.Reason == terminalReason && current.Status == terminalStatus
+		if !alreadyClean {
+			if err := r.cleanupMirrorResources(ctx); err != nil {
+				log.Error(err, "Failed to clean up mirror resources")
+				return ctrl.Result{}, err
+			}
 		}
+		return ctrl.Result{}, r.setEngineCondition(ctx, &app, terminalStatus, terminalReason, terminalMessage)
 	}
 
 	if !watcherRunning {
@@ -280,7 +285,11 @@ func (r *EngineReconciler) deleteAllOfType(ctx context.Context, list client.Obje
 }
 
 // reconcileContainerSpecs handles container spec.state changes by calling
-// Docker start/stop.
+// Docker start/stop. Per-container errors are collected with errors.Join
+// and returned so controller-runtime requeues with backoff — matching
+// the pattern in processContainerFinalizers. Without the return, a
+// failed start/stop would get exactly one attempt (the watch event from
+// the original spec.state patch) and then sit forever.
 func (r *EngineReconciler) reconcileContainerSpecs(ctx context.Context) error {
 	r.watcherMu.Lock()
 	w := r.watcher
@@ -294,17 +303,17 @@ func (r *EngineReconciler) reconcileContainerSpecs(ctx context.Context) error {
 		return err
 	}
 
+	var errs []error
 	for i := range containers.Items {
 		c := &containers.Items[i]
 		if c.DeletionTimestamp != nil {
 			continue
 		}
 		if err := w.reconcileContainerState(ctx, c); err != nil {
-			logf.FromContext(ctx).Error(err, "Failed to reconcile container state",
-				"container", c.Name)
+			errs = append(errs, fmt.Errorf("container %s: %w", c.Name, err))
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 // processFinalizers handles resources with a deletion timestamp by deleting
@@ -347,7 +356,10 @@ func (r *EngineReconciler) processContainerFinalizers(ctx context.Context, w *do
 			continue
 		}
 		if removeFinalizer(c, mirrorFinalizer) {
-			if err := r.Update(ctx, c); err != nil {
+			// NotFound is benign: a concurrent Docker destroy event may
+			// already have stripped the finalizer and deleted the
+			// mirror between our List and Update.
+			if err := client.IgnoreNotFound(r.Update(ctx, c)); err != nil {
 				errs = append(errs, fmt.Errorf("failed to remove finalizer from container %s: %w", c.Name, err))
 			}
 		}
@@ -371,7 +383,7 @@ func (r *EngineReconciler) processImageFinalizers(ctx context.Context, w *docker
 			continue
 		}
 		if removeFinalizer(img, mirrorFinalizer) {
-			if err := r.Update(ctx, img); err != nil {
+			if err := client.IgnoreNotFound(r.Update(ctx, img)); err != nil {
 				errs = append(errs, fmt.Errorf("failed to remove finalizer from image %s: %w", img.Name, err))
 			}
 		}
@@ -395,7 +407,7 @@ func (r *EngineReconciler) processVolumeFinalizers(ctx context.Context, w *docke
 			continue
 		}
 		if removeFinalizer(v, mirrorFinalizer) {
-			if err := r.Update(ctx, v); err != nil {
+			if err := client.IgnoreNotFound(r.Update(ctx, v)); err != nil {
 				errs = append(errs, fmt.Errorf("failed to remove finalizer from volume %s: %w", v.Name, err))
 			}
 		}

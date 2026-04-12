@@ -37,6 +37,31 @@ local_setup_file() {
         --field-selector "status.repoTag=busybox:latest" --timeout=30s
 }
 
+@test "docker rmi of one tag removes only the tag mirror" {
+    # Docker's untag event carries the image ID hash, not the tag
+    # name, so the engine cannot match the event payload against
+    # status.repoTag directly. reconcileImageByID re-inspects the
+    # image and prunes K8s mirrors whose tags are no longer present
+    # in Docker's current RepoTags.
+    docker tag busybox:latest busybox:alias
+    rdd ctl wait --for=create --namespace="${NAMESPACE}" image \
+        --field-selector "status.repoTag=busybox:alias" --timeout=30s
+
+    # Sanity check: the original tag is still mirrored.
+    run -0 rdd ctl get image --namespace="${NAMESPACE}" \
+        --field-selector "status.repoTag=busybox:latest" -o name
+    assert_output
+
+    docker rmi busybox:alias
+    rdd ctl wait --for=delete --namespace="${NAMESPACE}" image \
+        --field-selector "status.repoTag=busybox:alias" --timeout=30s
+
+    # busybox:latest must remain because the image still has that tag.
+    run -0 rdd ctl get image --namespace="${NAMESPACE}" \
+        --field-selector "status.repoTag=busybox:latest" -o name
+    assert_output
+}
+
 # --- Container lifecycle mirroring ---
 
 @test "docker run creates Container resource with status=running" {
@@ -138,8 +163,8 @@ local_setup_file() {
     # Resolve the Image K8s name from its repoTag.
     run -0 rdd ctl get image --namespace="${NAMESPACE}" \
         --field-selector "status.repoTag=busybox:latest" -o name
+    assert_output
     image_ref=${output}
-    [ -n "${image_ref}" ]
 
     # Docker will refuse to remove an image referenced by a running
     # container. With I3 fixed, processImageFinalizers leaves the
@@ -149,7 +174,7 @@ local_setup_file() {
 
     run -0 rdd ctl get "${image_ref}" --namespace="${NAMESPACE}" \
         -o jsonpath='{.metadata.deletionTimestamp}'
-    [ -n "${output}" ]
+    assert_output
     run -0 rdd ctl get "${image_ref}" --namespace="${NAMESPACE}" \
         -o jsonpath='{.metadata.finalizers[0]}'
     assert_output "engine.rancherdesktop.io/docker-mirror"
@@ -217,6 +242,35 @@ local_setup_file() {
 
     run -0 docker inspect test-state --format '{{.State.Status}}'
     assert_output "exited"
+}
+
+@test "patching spec.state=running unpauses a paused container" {
+    # Docker rejects ContainerStart on a paused container with
+    # "container is paused, unpause before starting". The reconciler
+    # must dispatch ContainerUnpause when desired=running and
+    # actual=paused, symmetric with the ContainerStop path above.
+    docker run -d --name test-unpause busybox sleep 3600
+
+    run -0 docker inspect test-unpause --format '{{.Id}}'
+    cid=${output}
+
+    rdd ctl wait --for=jsonpath='{.status.status}'=running \
+        --namespace="${NAMESPACE}" container/"${cid}" --timeout=30s
+
+    docker pause test-unpause
+    rdd ctl wait --for=jsonpath='{.status.status}'=paused \
+        --namespace="${NAMESPACE}" container/"${cid}" --timeout=30s
+
+    rdd ctl patch container "${cid}" --namespace="${NAMESPACE}" \
+        --type=merge -p '{"spec":{"state":"running"}}'
+
+    rdd ctl wait --for=jsonpath='{.status.status}'=running \
+        --namespace="${NAMESPACE}" container/"${cid}" --timeout=30s
+
+    run -0 docker inspect test-unpause --format '{{.State.Status}}'
+    assert_output "running"
+
+    docker rm --force test-unpause
 }
 
 # --- Cleanup on shutdown ---

@@ -476,9 +476,14 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 	// The watcher enqueues reconciles as phase transitions occur.
 	r.startWatcher(ctx, limaVM.Name, limaVM.Namespace, haCmd, inst.Dir, begin)
 
-	// pgid equals pid because SetGroup made the hostagent a new group leader.
-	// Recording it lets post-mortem leak detection attribute orphaned
-	// grandchildren (qemu) back to the hostagent that spawned them.
+	// On Unix, SetGroup() sets Setpgid=true which makes the hostagent a
+	// new process group leader, so pgid == pid. The "pgid" log field
+	// reflects that Unix-only semantics and is consumed by
+	// bats-with-timeout.sh for post-mortem leak detection (attributing
+	// orphaned qemu grandchildren back to their hostagent ancestor).
+	// On Windows, SetGroup() sets CREATE_NEW_PROCESS_GROUP instead —
+	// a different console-control-event concept — and this log field
+	// will need to be renamed or recalculated when Windows CI arrives.
 	logger.Info("Hostagent started, watcher active",
 		"instance", limaVM.Name,
 		"pid", haCmd.Process.Pid,

@@ -30,15 +30,19 @@ strongly urged to use the relevant CLI or other API instead.
 ## Engine Mirroring
 
 The engine controller (`pkg/controllers/app/engine/`) watches the `App` resource
-for the `Running` condition.  When the VM is running, the controller:
+for the `Running` condition.  When the VM is running with the `moby` backend,
+the controller:
 
-1. Connects to the container engine via the host socket.
-2. Creates the `rancher-desktop` K8s namespace and the appropriate
-   `ContainerNamespace` resource (`moby` for dockerd, engine-specific
-   namespaces for containerd).
+1. Connects to the Docker engine via the host socket.
+2. Creates the `rancher-desktop` K8s namespace and the `moby`
+   `ContainerNamespace` resource.
 3. Lists all containers, images, and volumes and creates corresponding K8s
    resources.
-4. Watches the engine event stream for create, update, and delete events.
+4. Watches the Docker event stream for create, update, and delete events.
+
+Containerd mirroring is not implemented yet; with `containerEngine.name=containerd`
+the controller sets `ContainerEngineReady` to `True` with reason `NotApplicable`
+and takes no mirroring action.
 
 The controller sets the `ContainerEngineReady` condition on the `App` resource
 to `True` after the initial sync completes.  Scripts can wait for readiness:
@@ -304,12 +308,16 @@ status:
 ```
 
 #### Untag image
-Delete the `Image` object; the finalizer will untag the image.  If all tags of
-an image are removed, _and_ it is not in use by a container (running or not),
-then the image itself is removed.
+Delete the `Image` object through the K8s API; the finalizer handler runs
+`ImageRemove` on the corresponding Docker image reference.  Docker keeps the
+underlying image as long as another tag or a running container references it,
+so removing one tag does not necessarily delete the image itself.
 
-If a container is using an image via a tag, then removing that tag may end up
-creating a new `Image` object to represent the untagged image.
+The engine controller mirrors Docker untag events in the reverse direction:
+when Docker emits an `untag` event, the controller re-inspects the image and
+removes any K8s `Image` resources whose `.status.repoTag` is no longer present
+in Docker's current tag list.  If the untag leaves the image dangling, a new
+K8s `Image` object (without `.status.repoTag`) is created to represent it.
 
 #### Delete untagged image
 Delete the `Image` object (which does not have any `.status.repoTag` set).  An

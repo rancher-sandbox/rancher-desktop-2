@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	cerrdefs "github.com/containerd/errdefs"
 	mobyimage "github.com/moby/moby/api/types/image"
 	dockerclient "github.com/moby/moby/client"
 
@@ -77,21 +78,15 @@ func (w *dockerWatcher) syncAllImages(ctx context.Context) error {
 	return errors.Join(errs...)
 }
 
-// syncImage inspects a single image by ID and creates/updates K8s resources.
-func (w *dockerWatcher) syncImage(ctx context.Context, id string) error {
-	result, err := w.cli.ImageInspect(ctx, id)
-	if err != nil {
-		return fmt.Errorf("failed to inspect image %s: %w", id, err)
-	}
-
-	_, err2 := w.applyImageFromInspect(ctx, result.InspectResponse)
-	return err2
-}
-
 // syncImageFromSummary creates K8s resources from a Docker image summary.
-// Returns the K8s resource names that were created.
+// Returns the K8s resource names that were created. NotFound races
+// during fullSync are treated as success; the stale K8s mirror is
+// pruned later by syncAllImages' remove-stale step.
 func (w *dockerWatcher) syncImageFromSummary(ctx context.Context, summary mobyimage.Summary) ([]string, error) {
 	result, err := w.cli.ImageInspect(ctx, summary.ID)
+	if cerrdefs.IsNotFound(err) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to inspect image %s: %w", summary.ID, err)
 	}
@@ -102,18 +97,6 @@ func (w *dockerWatcher) syncImageFromSummary(ctx context.Context, summary mobyim
 // InspectResponse. One resource per tag, plus one for dangling images.
 // Returns the K8s resource names that were created.
 func (w *dockerWatcher) applyImageFromInspect(ctx context.Context, inspect mobyimage.InspectResponse) ([]string, error) {
-	statusApply := containersv1alpha1apply.ImageStatus().
-		WithID(inspect.ID).
-		WithRepoDigests(inspect.RepoDigests...).
-		WithArchitecture(inspect.Architecture).
-		WithOS(inspect.Os).
-		WithSize(inspect.Size).
-		WithLabels(inspect.Config.Labels)
-
-	if t, err := time.Parse(time.RFC3339Nano, inspect.Created); err == nil {
-		statusApply.WithCreatedAt(metav1.NewTime(t))
-	}
-
 	var names []string
 	var errs []error
 
@@ -125,11 +108,10 @@ func (w *dockerWatcher) applyImageFromInspect(ctx context.Context, inspect mobyi
 				sha256.Sum256([]byte(tag)))
 			names = append(names, name)
 
-			statusCopy := *statusApply
 			if err := w.applyImage(ctx,
 				containersv1alpha1apply.Image(name, apiNamespace).
 					WithFinalizers(mirrorFinalizer),
-				statusCopy.
+				imageStatusFromInspect(inspect).
 					WithRepoTag(tag).
 					WithNamespace(containerNamespace),
 			); err != nil {
@@ -143,13 +125,33 @@ func (w *dockerWatcher) applyImageFromInspect(ctx context.Context, inspect mobyi
 		if err := w.applyImage(ctx,
 			containersv1alpha1apply.Image(name, apiNamespace).
 				WithFinalizers(mirrorFinalizer),
-			statusApply,
+			imageStatusFromInspect(inspect),
 		); err != nil {
 			errs = append(errs, err)
 		}
 	}
 
 	return names, errors.Join(errs...)
+}
+
+// imageStatusFromInspect builds a fresh ImageStatus apply config from a
+// Docker inspect response. Returning a new value per call avoids the
+// aliasing trap of a shallow struct copy — slice/map WithX calls on
+// one "copy" would otherwise mutate the backing memory shared with
+// other callers.
+func imageStatusFromInspect(inspect mobyimage.InspectResponse) *containersv1alpha1apply.ImageStatusApplyConfiguration {
+	statusApply := containersv1alpha1apply.ImageStatus().
+		WithID(inspect.ID).
+		WithRepoDigests(inspect.RepoDigests...).
+		WithArchitecture(inspect.Architecture).
+		WithOS(inspect.Os).
+		WithSize(inspect.Size).
+		WithLabels(inspect.Config.Labels)
+
+	if t, err := time.Parse(time.RFC3339Nano, inspect.Created); err == nil {
+		statusApply.WithCreatedAt(metav1.NewTime(t))
+	}
+	return statusApply
 }
 
 // applyImage creates or updates a single Image resource and its status.
@@ -175,18 +177,48 @@ func (w *dockerWatcher) applyImage(
 	return nil
 }
 
-// removeImageByTag finds and removes the Image resource for a specific tag.
-func (w *dockerWatcher) removeImageByTag(ctx context.Context, tag string) error {
+// reconcileImageByID re-inspects an image and reconciles every K8s Image
+// mirror whose status.id matches. Tags still present are re-applied; K8s
+// resources for tags that are no longer present are deleted. If the
+// image has been fully removed, all mirrors with that status.id are
+// deleted instead.
+//
+// This is the path for events that carry an image ID but not the tag
+// name — notably Docker's untag events, where the event payload only
+// contains the image ID (see handleImageEvent).
+func (w *dockerWatcher) reconcileImageByID(ctx context.Context, id string) error {
+	result, err := w.cli.ImageInspect(ctx, id)
+	if cerrdefs.IsNotFound(err) {
+		return w.removeImagesByID(ctx, id)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to inspect image %s: %w", id, err)
+	}
+
+	freshNames, applyErr := w.applyImageFromInspect(ctx, result.InspectResponse)
+	keep := make(map[string]bool, len(freshNames))
+	for _, n := range freshNames {
+		keep[n] = true
+	}
+
 	var images containersv1alpha1.ImageList
 	if err := w.k8s.List(ctx, &images, client.InNamespace(apiNamespace)); err != nil {
-		return err
+		return errors.Join(applyErr, err)
 	}
+	errs := []error{applyErr}
 	for i := range images.Items {
-		if images.Items[i].Status.RepoTag == tag {
-			return w.removeMirrorResource(ctx, &images.Items[i], images.Items[i].Name)
+		img := &images.Items[i]
+		if img.Status.ID != result.InspectResponse.ID {
+			continue
+		}
+		if keep[img.Name] {
+			continue
+		}
+		if err := w.removeMirrorResource(ctx, img, img.Name); err != nil {
+			errs = append(errs, err)
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 // removeImagesByID finds and removes all Image resources for a given image ID.

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	cerrdefs "github.com/containerd/errdefs"
 	mobyvolume "github.com/moby/moby/api/types/volume"
 	dockerclient "github.com/moby/moby/client"
 
@@ -105,8 +106,14 @@ func (w *dockerWatcher) syncAllVolumes(ctx context.Context) error {
 }
 
 // syncVolume looks up a single volume by name and creates/updates the K8s resource.
+// NotFound is treated as success: the volume raced a concurrent delete
+// between List and Inspect, and syncAllVolumes' remove-stale step
+// prunes the K8s mirror later in the same sync.
 func (w *dockerWatcher) syncVolume(ctx context.Context, name string) error {
 	result, err := w.cli.VolumeInspect(ctx, name, dockerclient.VolumeInspectOptions{})
+	if cerrdefs.IsNotFound(err) {
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("failed to inspect volume %s: %w", name, err)
 	}

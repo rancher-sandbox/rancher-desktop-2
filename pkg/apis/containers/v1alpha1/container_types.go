@@ -53,7 +53,12 @@ type ContainerPort struct {
 
 // ContainerSpec defines the configuration the container was created with.
 type ContainerSpec struct {
-	// State is the desired state of the container.
+	// State is the desired state of the container. The engine controller
+	// creates mirrored containers with state=unknown, meaning "mirror
+	// status from Docker but take no start/stop action". Setting the
+	// field to running or created expresses user intent: the reconciler
+	// then dispatches ContainerStart, ContainerUnpause, or ContainerStop
+	// as needed until status.status matches.
 	//
 	// +required
 	// +kubebuilder:default:=unknown

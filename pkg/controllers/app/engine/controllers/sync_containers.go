@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	cerrdefs "github.com/containerd/errdefs"
 	mobycontainer "github.com/moby/moby/api/types/container"
 	dockerclient "github.com/moby/moby/client"
 
@@ -71,8 +72,14 @@ func (w *dockerWatcher) syncAllContainers(ctx context.Context) error {
 }
 
 // syncContainer inspects a single container and creates/updates the K8s resource.
+// NotFound is treated as success: the container raced a concurrent delete
+// between List and Inspect, and the stale K8s mirror will be pruned by
+// syncAllContainers' remove-stale step later in the same sync.
 func (w *dockerWatcher) syncContainer(ctx context.Context, id string) error {
 	result, err := w.cli.ContainerInspect(ctx, id, dockerclient.ContainerInspectOptions{})
+	if cerrdefs.IsNotFound(err) {
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("failed to inspect container %s: %w", id, err)
 	}
@@ -98,13 +105,20 @@ func (w *dockerWatcher) applyContainer(ctx context.Context, inspect mobycontaine
 	// "unknown" on creation — meaning the engine mirrors Docker state without
 	// expressing intent. The user can later set it to "running" or "created"
 	// to control the container; the reconciler ignores "unknown".
+	//
+	// Deliberately omit ForceOwnership on the create apply: if a user
+	// patch to spec.state landed in the window between the Get above
+	// and this Apply, ForceOwnership would silently clobber it. Without
+	// the flag, the Apply succeeds on a fresh resource (no other owner
+	// for spec.state yet) and fails loudly on a concurrent conflict
+	// (the Get-NotFound observation was racy).
 	var existing containersv1alpha1.Container
 	err := w.k8s.Get(ctx, client.ObjectKey{Name: inspect.ID, Namespace: apiNamespace}, &existing)
 	if apierrors.IsNotFound(err) {
 		applyConfig := containersv1alpha1apply.Container(inspect.ID, apiNamespace).
 			WithFinalizers(mirrorFinalizer).
 			WithSpec(containersv1alpha1apply.ContainerSpec().WithState(containersv1alpha1.ContainerStatusUnknown))
-		if err := w.k8s.Apply(ctx, applyConfig, client.ForceOwnership, client.FieldOwner(controllerName)); err != nil {
+		if err := w.k8s.Apply(ctx, applyConfig, client.FieldOwner(controllerName)); err != nil {
 			return fmt.Errorf("failed to create container %s: %w", inspect.ID, err)
 		}
 	} else if err != nil {
