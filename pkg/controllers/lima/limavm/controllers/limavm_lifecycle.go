@@ -476,7 +476,13 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 	// The watcher enqueues reconciles as phase transitions occur.
 	r.startWatcher(ctx, limaVM.Name, limaVM.Namespace, haCmd, inst.Dir, begin)
 
-	logger.Info("Hostagent started, watcher active", "instance", limaVM.Name)
+	// pgid equals pid because SetGroup made the hostagent a new group leader.
+	// Recording it lets post-mortem leak detection attribute orphaned
+	// grandchildren (qemu) back to the hostagent that spawned them.
+	logger.Info("Hostagent started, watcher active",
+		"instance", limaVM.Name,
+		"pid", haCmd.Process.Pid,
+		"pgid", haCmd.Process.Pid)
 	return ctrl.Result{}, nil
 }
 
