@@ -82,5 +82,8 @@ rdd() {
             export WSLENV
         fi
     fi
-    "${PATH_REPO_ROOT}/bin/rdd${EXE}" "${args[@]}"
+    # Close BATS's internal fds 3 and 4 so any daemon rdd spawns (hostagent,
+    # qemu) cannot inherit them. A grandchild that keeps fd 3 open will hang
+    # bats when it next tries to capture output via run/$(...).
+    "${PATH_REPO_ROOT}/bin/rdd${EXE}" "${args[@]}" 3>&- 4>&-
 }
