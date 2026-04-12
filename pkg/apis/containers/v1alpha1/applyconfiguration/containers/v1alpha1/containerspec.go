@@ -11,7 +11,12 @@ import (
 //
 // ContainerSpec defines the configuration the container was created with.
 type ContainerSpecApplyConfiguration struct {
-	// State is the desired state of the container.
+	// State is the desired state of the container. The engine controller
+	// creates every Container mirror with state=unknown, meaning "mirror
+	// Docker container status but take no start/stop action". Setting
+	// the field to running or created expresses user intent: the
+	// reconciler then dispatches ContainerStart, ContainerUnpause, or
+	// ContainerStop as needed until status.status matches.
 	State *containersv1alpha1.ContainerStatusValue `json:"state,omitempty"`
 }
 
