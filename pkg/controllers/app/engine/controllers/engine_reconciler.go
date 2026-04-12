@@ -43,6 +43,10 @@ const (
 	// mirrorFinalizer is added to mirror resources so K8s deletions can be
 	// forwarded to Docker before the resource is removed.
 	mirrorFinalizer = "engine.rancherdesktop.io/docker-mirror"
+
+	// conditionContainerEngineReady is set on the App resource when the engine
+	// controller has connected to Docker and completed the initial sync.
+	conditionContainerEngineReady = "ContainerEngineReady"
 )
 
 // engineEvent is sent from the Docker watcher goroutine to the reconciler.
@@ -78,12 +82,24 @@ func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 
 	r.watcherMu.Lock()
 	watcherRunning := r.watcher != nil
+	// Detect a watcher that died (event stream error). Clean it up so the
+	// next branch restarts it.
+	if watcherRunning && !r.watcher.alive() {
+		log.Info("Docker watcher died, cleaning up")
+		r.watcher.stop()
+		r.watcher = nil
+		watcherRunning = false
+	}
 	r.watcherMu.Unlock()
 
 	if running && !watcherRunning {
 		log.Info("App is running, starting Docker watcher")
 		if err := r.startWatcher(ctx); err != nil {
 			log.Error(err, "Failed to start Docker watcher")
+			_ = r.setEngineCondition(ctx, &app, metav1.ConditionFalse, "ConnectFailed", err.Error())
+			return ctrl.Result{}, err
+		}
+		if err := r.setEngineCondition(ctx, &app, metav1.ConditionTrue, "Connected", "Docker engine synced"); err != nil {
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, nil
@@ -92,6 +108,9 @@ func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 	if !running && watcherRunning {
 		log.Info("App is not running, stopping Docker watcher")
 		r.stopWatcher()
+		if err := r.setEngineCondition(ctx, &app, metav1.ConditionFalse, "Disconnected", "Docker engine not available"); err != nil {
+			return ctrl.Result{}, err
+		}
 		if err := r.cleanupMirrorResources(ctx); err != nil {
 			log.Error(err, "Failed to clean up mirror resources")
 			return ctrl.Result{}, err
@@ -143,6 +162,21 @@ func (r *EngineReconciler) stopWatcher() {
 	if w != nil {
 		w.stop()
 	}
+}
+
+// setEngineCondition updates the ContainerEngineReady condition on the App resource.
+func (r *EngineReconciler) setEngineCondition(ctx context.Context, app *appv1alpha1.App, status metav1.ConditionStatus, reason, message string) error {
+	changed := meta.SetStatusCondition(&app.Status.Conditions, metav1.Condition{
+		Type:               conditionContainerEngineReady,
+		Status:             status,
+		Reason:             reason,
+		Message:            message,
+		ObservedGeneration: app.Generation,
+	})
+	if !changed {
+		return nil
+	}
+	return r.Status().Update(ctx, app)
 }
 
 // cleanupMirrorResources removes all mirror resources (finalizers stripped first).

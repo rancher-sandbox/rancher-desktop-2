@@ -282,7 +282,8 @@ spec:
                 - enum:
                   - created
                   - running
-                default: running
+                  - unknown
+                default: unknown
                 description: State is the desired state of the container.
                 type: string
             required:

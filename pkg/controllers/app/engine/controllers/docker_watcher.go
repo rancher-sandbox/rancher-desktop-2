@@ -86,6 +86,16 @@ func (w *dockerWatcher) stop() {
 	w.cli.Close()
 }
 
+// alive returns true if the watcher goroutine is still running.
+func (w *dockerWatcher) alive() bool {
+	select {
+	case <-w.done:
+		return false
+	default:
+		return true
+	}
+}
+
 // run is the main watcher goroutine that processes Docker events.
 func (w *dockerWatcher) run(ctx context.Context) {
 	log := logf.FromContext(ctx).WithName("docker-watcher")
@@ -226,12 +236,16 @@ func (w *dockerWatcher) removeMirrorResource(ctx context.Context, obj client.Obj
 	return client.IgnoreNotFound(w.k8s.Delete(ctx, obj))
 }
 
-// reconcileContainerState checks if a container's spec.state differs from its
-// status and calls Docker start/stop accordingly.
+// reconcileContainerState checks if the user set spec.state to "running" or
+// "created" and calls Docker start/stop accordingly. The engine creates
+// containers with spec.state="unknown", which the reconciler ignores.
 func (w *dockerWatcher) reconcileContainerState(ctx context.Context, c *containersv1alpha1.Container) error {
 	desired := c.Spec.State
-	actual := c.Status.Status
+	if desired == containersv1alpha1.ContainerStatusUnknown {
+		return nil
+	}
 
+	actual := c.Status.Status
 	if desired == actual {
 		return nil
 	}
@@ -296,6 +310,10 @@ func (w *dockerWatcher) deleteVolume(ctx context.Context, name string) {
 func (w *dockerWatcher) fullSync(ctx context.Context) error {
 	log := logf.FromContext(ctx).WithName("docker-watcher")
 	log.Info("Starting full sync")
+
+	if err := w.ensureNamespace(ctx); err != nil {
+		return fmt.Errorf("failed to ensure namespace: %w", err)
+	}
 
 	var errs []error
 

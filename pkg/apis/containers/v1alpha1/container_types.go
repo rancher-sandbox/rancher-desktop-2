@@ -56,8 +56,8 @@ type ContainerSpec struct {
 	// State is the desired state of the container.
 	//
 	// +required
-	// +kubebuilder:default:=running
-	// +kubebuilder:validation:Enum=created;running
+	// +kubebuilder:default:=unknown
+	// +kubebuilder:validation:Enum=created;running;unknown
 	State ContainerStatusValue `json:"state"`
 }
 

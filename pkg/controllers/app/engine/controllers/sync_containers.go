@@ -14,6 +14,7 @@ import (
 	mobycontainer "github.com/moby/moby/api/types/container"
 	dockerclient "github.com/moby/moby/client"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -72,22 +73,27 @@ func (w *dockerWatcher) syncContainer(ctx context.Context, id string) error {
 }
 
 // applyContainer creates or updates a Container resource from a Docker
-// InspectResponse, using the same pattern as the mock controller.
+// InspectResponse. The spec is only set on creation; subsequent syncs
+// update only the status subresource so user-initiated spec.state
+// changes (start/stop) are not overwritten.
 func (w *dockerWatcher) applyContainer(ctx context.Context, inspect mobycontainer.InspectResponse) error {
 	namespace, name := parseContainerName(inspect.Name)
 
-	state := containersv1alpha1.ContainerStatusCreated
-	if inspect.State.Running {
-		state = containersv1alpha1.ContainerStatusRunning
-	}
-
-	applyConfig := containersv1alpha1apply.Container(inspect.ID, apiNamespace).
-		WithFinalizers(mirrorFinalizer).
-		WithSpec(containersv1alpha1apply.ContainerSpec().WithState(state))
-
-	err := w.k8s.Apply(ctx, applyConfig, client.ForceOwnership, client.FieldOwner(controllerName))
-	if err != nil {
-		return fmt.Errorf("failed to apply container %s: %w", inspect.ID, err)
+	// Create the resource if it doesn't exist. spec.state is always set to
+	// "unknown" on creation — meaning the engine mirrors Docker state without
+	// expressing intent. The user can later set it to "running" or "created"
+	// to control the container; the reconciler ignores "unknown".
+	var existing containersv1alpha1.Container
+	err := w.k8s.Get(ctx, client.ObjectKey{Name: inspect.ID, Namespace: apiNamespace}, &existing)
+	if apierrors.IsNotFound(err) {
+		applyConfig := containersv1alpha1apply.Container(inspect.ID, apiNamespace).
+			WithFinalizers(mirrorFinalizer).
+			WithSpec(containersv1alpha1apply.ContainerSpec().WithState(containersv1alpha1.ContainerStatusUnknown))
+		if err := w.k8s.Apply(ctx, applyConfig, client.ForceOwnership, client.FieldOwner(controllerName)); err != nil {
+			return fmt.Errorf("failed to create container %s: %w", inspect.ID, err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to get container %s: %w", inspect.ID, err)
 	}
 
 	// Build status.
@@ -156,3 +162,4 @@ func parseContainerName(fullName string) (namespace, name string) {
 	}
 	return namespace, name
 }
+
