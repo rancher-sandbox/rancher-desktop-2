@@ -269,6 +269,13 @@ local_setup_file() {
     run -0 docker inspect test-state --format '{{.Id}}'
     cid=${output}
 
+    # Park the reconciler on spec.state=unknown before pausing. With
+    # spec.state=running, the reconciler would race us by auto-unpausing
+    # (desired=running, actual=paused → ContainerUnpause) before our
+    # wait can observe status=paused.
+    rdd ctl patch container "${cid}" --namespace="${NAMESPACE}" \
+        --type=merge -p '{"spec":{"state":"unknown"}}'
+
     docker pause test-state
     rdd ctl wait --for=jsonpath='{.status.status}'=paused \
         --namespace="${NAMESPACE}" container/"${cid}" --timeout=30s
