@@ -8,11 +8,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
 	cerrdefs "github.com/containerd/errdefs"
 	mobycontainer "github.com/moby/moby/api/types/container"
+	mobynetwork "github.com/moby/moby/api/types/network"
 	dockerclient "github.com/moby/moby/client"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -131,17 +133,26 @@ func (w *dockerWatcher) applyContainer(ctx context.Context, inspect mobycontaine
 		}
 	} else if err != nil {
 		return fmt.Errorf("failed to get container %s: %w", inspect.ID, err)
-	} else {
+	} else if existing.DeletionTimestamp == nil {
 		// Re-assert the mirror finalizer on every sync of an existing
 		// Container so a user that `kubectl edit`s it away cannot
 		// bypass the engine-side Docker cleanup on a subsequent delete.
-		// Applying only metadata.finalizers with ForceOwnership cannot
-		// clobber user-owned fields: our field manager touches only the
-		// finalizer slot it already owned on create.
+		// Skip the re-assertion once the mirror is Terminating: adding
+		// a finalizer to a deleting object is rejected by the API
+		// server, and processContainerFinalizers is about to strip the
+		// finalizer anyway.
+		//
+		// The apply uses a dedicated finalizerFieldOwner rather than
+		// controllerName. SSA treats fields absent from an apply config
+		// as released by that manager; releasing spec from controllerName
+		// would prune spec (no other manager owns it) and fail the
+		// required-field validation on the Container CRD. A separate
+		// manager that only ever touches finalizers keeps controllerName's
+		// spec ownership untouched.
 		finalizerOnly := containersv1alpha1apply.Container(inspect.ID, apiNamespace).
 			WithFinalizers(mirrorFinalizer)
 		if err := w.k8s.Apply(ctx, finalizerOnly,
-			client.ForceOwnership, client.FieldOwner(controllerName)); err != nil {
+			client.ForceOwnership, client.FieldOwner(finalizerFieldOwner)); err != nil {
 			return fmt.Errorf("failed to reassert container finalizer %s: %w", inspect.ID, err)
 		}
 	}
@@ -154,7 +165,7 @@ func (w *dockerWatcher) applyContainer(ctx context.Context, inspect mobycontaine
 		WithArgs(inspect.Args...).
 		WithImage(inspect.Image).
 		WithLabels(inspect.Config.Labels).
-		WithStatus(containersv1alpha1.ContainerStatusValue(inspect.State.Status)).
+		WithStatus(mapDockerContainerState(string(inspect.State.Status))).
 		WithPid(int32(inspect.State.Pid)).
 		WithExitCode(int32(inspect.State.ExitCode))
 
@@ -172,10 +183,23 @@ func (w *dockerWatcher) applyContainer(ctx context.Context, inspect mobycontaine
 		statusApply.WithFinishedAt(metav1.NewTime(t))
 	}
 
-	// Port bindings.
+	// Port bindings. Go map iteration is randomized, so sort by port
+	// name before building the apply slice: even with
+	// +listType=map +listMapKey=name on Status.Ports, the entries land
+	// in the stored object in the order we provide, and a stable order
+	// avoids spurious resourceVersion churn when consumers render the
+	// list or diff it.
 	var applyPorts []*containersv1alpha1apply.ContainerPortApplyConfiguration
 	if inspect.NetworkSettings != nil {
-		for portName, ports := range inspect.NetworkSettings.Ports {
+		portNames := make([]mobynetwork.Port, 0, len(inspect.NetworkSettings.Ports))
+		for p := range inspect.NetworkSettings.Ports {
+			portNames = append(portNames, p)
+		}
+		sort.Slice(portNames, func(i, j int) bool {
+			return portNames[i].String() < portNames[j].String()
+		})
+		for _, portName := range portNames {
+			ports := inspect.NetworkSettings.Ports[portName]
 			var bindings []*containersv1alpha1apply.ContainerPortBindingApplyConfiguration
 			for _, port := range ports {
 				bindings = append(bindings, containersv1alpha1apply.ContainerPortBinding().
@@ -211,4 +235,24 @@ func parseContainerName(fullName string) (namespace, name string) {
 		return containerNamespace, namespace
 	}
 	return namespace, name
+}
+
+// mapDockerContainerState maps a free-form Docker State.Status string to
+// the CRD enum. Unknown values are mapped to ContainerStatusUnknown so a
+// new Docker state (hypothetical "initializing", "error", etc.) does not
+// fail SSA validation and silently drop the mirror update — the Docker
+// API contract permits adding new state strings in minor releases.
+func mapDockerContainerState(s string) containersv1alpha1.ContainerStatusValue {
+	switch v := containersv1alpha1.ContainerStatusValue(s); v {
+	case containersv1alpha1.ContainerStatusCreated,
+		containersv1alpha1.ContainerStatusRunning,
+		containersv1alpha1.ContainerStatusPausing,
+		containersv1alpha1.ContainerStatusPaused,
+		containersv1alpha1.ContainerStatusRestarting,
+		containersv1alpha1.ContainerStatusRemoving,
+		containersv1alpha1.ContainerStatusExited,
+		containersv1alpha1.ContainerStatusDead:
+		return v
+	}
+	return containersv1alpha1.ContainerStatusUnknown
 }

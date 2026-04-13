@@ -288,38 +288,51 @@ func setAction(ctx context.Context, args []string, dryRun bool, timeout time.Dur
 
 	specMap := buildNestedMap(coerced)
 
-	// Get-or-create the App, then patch with the specified values.
-	var app appv1alpha1.App
+	// Get-or-create the App, then patch with the specified values. Capture
+	// the post-write generation so the wait predicate can reject stale
+	// condition snapshots left over from a previous reconcile — see the
+	// "Known hazard" comment on waitForDesiredState for background.
+	var (
+		app       appv1alpha1.App
+		targetGen int64
+	)
 	err = c.Get(ctx, client.ObjectKey{Name: "app"}, &app)
 	switch {
 	case apierrors.IsNotFound(err):
-		if err := createAndPatchApp(ctx, c, restConfig, specMap, specSchema, dryRun); err != nil {
+		gen, err := createAndPatchApp(ctx, c, restConfig, specMap, specSchema, dryRun)
+		if err != nil {
 			return err
 		}
+		targetGen = gen
 	case err != nil:
 		return fmt.Errorf("failed to get App: %w", err)
 	default:
-		if err := patchApp(ctx, c, &app, specMap, dryRun); err != nil {
+		gen, err := patchApp(ctx, c, &app, specMap, dryRun)
+		if err != nil {
 			return err
 		}
+		targetGen = gen
 	}
 
 	if dryRun || timeout == 0 {
 		return nil
 	}
-	return waitForDesiredState(ctx, restConfig, properties, timeout)
+	return waitForDesiredState(ctx, restConfig, properties, timeout, targetGen)
 }
 
 // createAndPatchApp creates the App using the dynamic client so that only the
 // user-specified fields (plus required fields with zero values) are sent. The
-// API server fills in CRD defaults for omitted fields.
+// API server fills in CRD defaults for omitted fields. The returned
+// generation is the metadata.generation of the resource after the write
+// completes; the caller uses it to filter stale condition snapshots in
+// the post-write wait.
 //
 // In dry-run mode the create uses only required defaults (so the App exists for
 // admission validation), then a dry-run patch carries the user's values.
-func createAndPatchApp(ctx context.Context, c client.Client, config *rest.Config, specMap map[string]any, specSchema *apiextensionsv1.JSONSchemaProps, dryRun bool) error {
+func createAndPatchApp(ctx context.Context, c client.Client, config *rest.Config, specMap map[string]any, specSchema *apiextensionsv1.JSONSchemaProps, dryRun bool) (int64, error) {
 	dynClient, err := dynamic.NewForConfig(config)
 	if err != nil {
-		return fmt.Errorf("failed to create dynamic client: %w", err)
+		return 0, fmt.Errorf("failed to create dynamic client: %w", err)
 	}
 
 	createSpec := specMap
@@ -338,30 +351,30 @@ func createAndPatchApp(ctx context.Context, c client.Client, config *rest.Config
 		},
 	}
 
-	_, err = dynClient.Resource(appGVR).Create(ctx, obj, metav1.CreateOptions{})
+	created, err := dynClient.Resource(appGVR).Create(ctx, obj, metav1.CreateOptions{})
 	if apierrors.IsAlreadyExists(err) {
 		// Race: another rdd set created it concurrently. Retry as patch.
 		var app appv1alpha1.App
 		if err := c.Get(ctx, client.ObjectKey{Name: "app"}, &app); err != nil {
-			return fmt.Errorf("failed to get App after concurrent create: %w", err)
+			return 0, fmt.Errorf("failed to get App after concurrent create: %w", err)
 		}
 		return patchApp(ctx, c, &app, specMap, dryRun)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to create App: %w", err)
+		return 0, fmt.Errorf("failed to create App: %w", err)
 	}
 
 	if dryRun {
 		logrus.Info("App created with defaults")
 		var app appv1alpha1.App
 		if err := c.Get(ctx, client.ObjectKey{Name: "app"}, &app); err != nil {
-			return fmt.Errorf("failed to get App: %w", err)
+			return 0, fmt.Errorf("failed to get App: %w", err)
 		}
 		return patchApp(ctx, c, &app, specMap, true)
 	}
 
 	logrus.Info("App created")
-	return nil
+	return created.GetGeneration(), nil
 }
 
 // fillRequiredFields adds zero values for required fields that are missing
@@ -405,12 +418,15 @@ func fillRequiredFields(specMap map[string]any, schema *apiextensionsv1.JSONSche
 }
 
 // patchApp applies a merge patch with the given spec properties. In dry-run
-// mode, the API server validates the patch but does not persist it.
-func patchApp(ctx context.Context, c client.Client, app *appv1alpha1.App, specMap map[string]any, dryRun bool) error {
+// mode, the API server validates the patch but does not persist it. The
+// returned generation is the App's metadata.generation after the patch
+// completes; the caller uses it to filter stale condition snapshots in
+// the post-write wait.
+func patchApp(ctx context.Context, c client.Client, app *appv1alpha1.App, specMap map[string]any, dryRun bool) (int64, error) {
 	patchObj := map[string]any{"spec": specMap}
 	patchBytes, err := json.Marshal(patchObj)
 	if err != nil {
-		return fmt.Errorf("failed to marshal patch: %w", err)
+		return 0, fmt.Errorf("failed to marshal patch: %w", err)
 	}
 
 	var opts []client.PatchOption
@@ -419,7 +435,7 @@ func patchApp(ctx context.Context, c client.Client, app *appv1alpha1.App, specMa
 	}
 
 	if err := c.Patch(ctx, app, client.RawPatch(types.MergePatchType, patchBytes), opts...); err != nil {
-		return fmt.Errorf("failed to update App: %w", err)
+		return 0, fmt.Errorf("failed to update App: %w", err)
 	}
 
 	if dryRun {
@@ -427,7 +443,7 @@ func patchApp(ctx context.Context, c client.Client, app *appv1alpha1.App, specMa
 	} else {
 		logrus.Info("App updated")
 	}
-	return nil
+	return app.Generation, nil
 }
 
 // waitForDesiredState waits for the App to reach the state implied by the
@@ -437,20 +453,18 @@ func patchApp(ctx context.Context, c client.Client, app *appv1alpha1.App, specMa
 // stopped, which is stricter than "container engine disconnected".
 // Other property changes do not wait.
 //
-// TODO: changes that trigger a VM restart without changing "running" (e.g.
-// containerEngine.name) are not waited on. This requires a "Reconciled"
-// condition with observedGeneration on the App resource so the CLI can
-// detect when the full reconcile chain has settled.
+// minGen is the App's metadata.generation after our write. The predicate
+// only accepts condition snapshots whose ObservedGeneration >= minGen,
+// so a stale ContainerEngineReady=True from a previous backend (or a
+// stale Running=False from a prior stop) cannot satisfy the wait before
+// the reconciler has observed the new spec. EngineReconciler and
+// AppReconciler both stamp ObservedGeneration when they update conditions.
 //
-// Known hazard until the "Reconciled" condition lands: `rdd set
-// containerEngine.name=<other> running=true` on an already-running VM
-// returns immediately because the stale ContainerEngineReady=True from
-// the previous backend satisfies the precondition check before the
-// reconciler has observed the new spec. Users who switch backends
-// on a running VM should either stop first (`rdd set running=false`)
-// or re-query ContainerEngineReady after the set completes to confirm
-// the backend has finished transitioning.
-func waitForDesiredState(ctx context.Context, config *rest.Config, properties map[string]string, timeout time.Duration) error {
+// TODO: changes that trigger a VM restart without changing "running" (e.g.
+// containerEngine.name alone) are still not waited on. A dedicated
+// "Reconciled" condition on App would let the CLI detect when the full
+// reconcile chain has settled for any property change.
+func waitForDesiredState(ctx context.Context, config *rest.Config, properties map[string]string, timeout time.Duration, minGen int64) error {
 	runningVal, ok := properties["running"]
 	if !ok {
 		return nil
@@ -462,14 +476,20 @@ func waitForDesiredState(ctx context.Context, config *rest.Config, properties ma
 	if runningVal == "true" {
 		logrus.Info("Waiting for container engine to be ready")
 		return watchCondition(ctx, config, func(obj *unstructured.Unstructured) bool {
-			return conditionStatus(obj, "ContainerEngineReady") == metav1.ConditionTrue
+			status, gen, present := conditionInfo(obj, "ContainerEngineReady")
+			return present && gen >= minGen && status == metav1.ConditionTrue
 		})
 	}
 	logrus.Info("Waiting for the VM to stop")
 	return watchCondition(ctx, config, func(obj *unstructured.Unstructured) bool {
-		// Running=False means the VM has stopped. Running absent means
-		// the VM was never started (nothing to wait for).
-		return conditionStatus(obj, "Running") != metav1.ConditionTrue
+		// Running absent means the VM was never started (nothing to
+		// wait for). Otherwise wait until the condition is refreshed
+		// with our generation and reports a non-True status.
+		status, gen, present := conditionInfo(obj, "Running")
+		if !present {
+			return true
+		}
+		return gen >= minGen && status != metav1.ConditionTrue
 	})
 }
 
@@ -524,25 +544,28 @@ func watchCondition(ctx context.Context, config *rest.Config, satisfied func(*un
 	return nil
 }
 
-// conditionStatus returns the status of the named condition on an App, or
-// empty string if the condition is not present.
-func conditionStatus(obj *unstructured.Unstructured, condType string) metav1.ConditionStatus {
+// conditionInfo returns the status, observedGeneration, and presence of
+// the named condition on an App. present is false when the condition is
+// not on the object; callers must check it before trusting the other
+// return values.
+func conditionInfo(obj *unstructured.Unstructured, condType string) (status metav1.ConditionStatus, observedGen int64, present bool) {
 	conditions, found, err := unstructured.NestedSlice(obj.Object, "status", "conditions")
 	if err != nil || !found {
-		return ""
+		return "", 0, false
 	}
 	for _, c := range conditions {
 		cond, ok := c.(map[string]any)
 		if !ok {
 			continue
 		}
-		if cond["type"] == condType {
-			if s, ok := cond["status"].(string); ok {
-				return metav1.ConditionStatus(s)
-			}
+		if cond["type"] != condType {
+			continue
 		}
+		s, _ := cond["status"].(string)
+		gen, _, _ := unstructured.NestedInt64(cond, "observedGeneration")
+		return metav1.ConditionStatus(s), gen, true
 	}
-	return ""
+	return "", 0, false
 }
 
 // getAppKubeClient returns a controller-runtime client with the App scheme

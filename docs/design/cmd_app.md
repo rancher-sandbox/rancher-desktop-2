@@ -2,7 +2,7 @@
 
 The application commands use short option names for usability. Unlike the `rdctl` tool from "Rancher Desktop 1" they will use e.g. `--cpus` instead of `--virtual-machine.number-cpus`.
 
-## `rdd set [--dry-run] PROPERTY=VALUE [PROPERTY=VALUE ...]`
+## `rdd set [--dry-run] [--timeout=DURATION] PROPERTY=VALUE [PROPERTY=VALUE ...]`
 
 Set one or more properties on the App singleton resource. Properties use dot notation for nested fields.
 
@@ -10,7 +10,16 @@ Valid property names and types are derived from the App CRD's OpenAPI schema at 
 
 If the App resource does not exist, it is created with default settings before the specified values are applied.
 
-- `--dry-run`: Validate changes against the API server's admission controller without persisting them. If the App does not exist, it is created with defaults (the VM will not start) so that the admission controller can validate the patch.
+By default, `rdd set` waits for the desired state before returning:
+
+- With `running=true`, it waits for `ContainerEngineReady=True` (the engine watcher has connected to Docker for the `moby` backend, or reports `NotApplicable` for `containerd`).
+- With `running=false`, it waits for the App's `Running` condition to leave `True` — i.e. the VM has actually stopped, which is stricter than "container engine disconnected".
+- Other property changes do not currently trigger a wait. Pure backend swaps (e.g. `rdd set containerEngine.name=containerd` without a `running` argument) return as soon as the patch is accepted.
+
+The wait uses the App's `metadata.generation` after the patch to filter stale condition snapshots, so a leftover `ContainerEngineReady=True` from a prior backend cannot prematurely satisfy the wait.
+
+- `--dry-run`: Validate changes against the API server's admission controller without persisting them. If the App does not exist, it is created with defaults (the VM will not start) so that the admission controller can validate the patch. The wait is skipped in dry-run mode.
+- `--timeout=DURATION`: How long to wait (default `5m`). `--timeout=0` skips the wait entirely and returns as soon as the patch is accepted, preserving the pre-wait legacy behavior.
 
 Examples:
 
@@ -19,6 +28,7 @@ rdd set running=true
 rdd set running=true containerEngine.name=containerd
 rdd set kubernetes.enabled=true kubernetes.version=1.32.2
 rdd set --dry-run running=true
+rdd set --timeout=0 running=true
 ```
 
 ## `rdd create`

@@ -447,7 +447,11 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 	// network-setup.service performs a vsock handshake during early boot.
 	r.startHostSwitch(ctx, limaVM.Name, inst)
 
-	// Start hostagent in background.
+	// Start hostagent in background. SetGroup sets Setpgid=true on Unix
+	// so the child becomes a process-group leader (pgid == pid); that
+	// invariant is what the "pgid" log field below reports. A future
+	// change that drops Setpgid would silently break that log field
+	// and the bats-with-timeout.sh leak-detection that consumes it.
 	haCmd := exec.CommandContext(ctx, rddPath, args...)
 	process.SetGroup(haCmd)
 	haCmd.Stdout = haStdoutW

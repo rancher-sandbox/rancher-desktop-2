@@ -32,6 +32,10 @@ rdd_bin="${script_dir}/../bin/rdd"
 if [ ! -x "$rdd_bin" ] && [ -x "${rdd_bin}.exe" ]; then
     rdd_bin="${rdd_bin}.exe"
 fi
+if [ ! -x "$rdd_bin" ]; then
+    echo "bats-with-timeout: rdd binary not found at $rdd_bin; run 'make' first" >&2
+    exit 2
+fi
 
 # `rdd svc paths log_dir` is a pure local computation (see
 # cmd/rdd/service_paths.go): it resolves the path from the instance

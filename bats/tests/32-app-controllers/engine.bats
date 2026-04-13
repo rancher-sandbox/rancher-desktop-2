@@ -346,6 +346,15 @@ local_setup_file() {
     rdd set --timeout=10s running=false
 }
 
+@test "rdd set --timeout=0 skips the wait entirely" {
+    # --timeout=0 preserves the pre-wait-by-default behavior: the
+    # command returns as soon as the patch is accepted, regardless of
+    # whether ContainerEngineReady has caught up. Use a no-op patch
+    # (running=false on an already-stopped VM) so the test does not
+    # race VM startup.
+    rdd set --timeout=0 running=false
+}
+
 @test "restarting VM restores ContainerEngineReady and moby namespace" {
     rdd set running=true
     rdd ctl wait --for=create --namespace="${NAMESPACE}" \

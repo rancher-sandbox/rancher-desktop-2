@@ -180,7 +180,16 @@ func (w *dockerWatcher) run(ctx context.Context, since string) {
 			log.Error(err, "Docker event stream error")
 			w.enqueueReconcile()
 			return
-		case msg := <-result.Messages:
+		case msg, ok := <-result.Messages:
+			if !ok {
+				// The daemon closed the event stream without writing to
+				// result.Err. Treat the same way as an error: wake the
+				// reconciler so it observes the dead watcher and starts
+				// a fresh one.
+				log.Info("Docker event stream closed")
+				w.enqueueReconcile()
+				return
+			}
 			if err := w.handleEvent(ctx, msg); err != nil {
 				log.Error(err, "Failed to handle Docker event",
 					"type", msg.Type, "action", msg.Action, "actor", msg.Actor.ID)
@@ -328,9 +337,27 @@ func (w *dockerWatcher) removeMirrorResource(ctx context.Context, obj client.Obj
 	return client.IgnoreNotFound(w.k8s.Delete(ctx, deleteTarget))
 }
 
-// reconcileContainerState checks if the user set spec.state to "running" or
-// "created" and calls Docker start/stop accordingly. The engine creates
-// Containers with spec.state="unknown", which the reconciler ignores.
+// reconcileContainerState checks the Container's spec.state against the
+// observed status and dispatches the Docker action that bridges them.
+// The engine creates Containers with spec.state="unknown", which the
+// reconciler ignores.
+//
+// Full state matrix (rows=desired from the spec.state enum, columns=actual
+// from Docker). The webhook restricts desired to {unknown, created,
+// running}; actual can be any value in the CRD enum.
+//
+//	desired \ actual  | running | paused   | created | exited | dead | pausing/restarting | removing | unknown
+//	------------------+---------+----------+---------+--------+------+--------------------+----------+--------
+//	running           | nil     | unpause  | start   | start  | start| start              | start    | start
+//	created           | stop    | stop     | nil     | nil    | nil  | stop               | stop     | stop
+//
+// ContainerStop handles paused/restarting containers natively, so the
+// created branch always dispatches Stop from any non-stopped state. The
+// running branch handles paused explicitly because Docker rejects
+// ContainerStart on a paused container. isStopped() treats
+// created/exited/dead as terminal stopped states: the user's intent
+// ("do not run") is already satisfied and redispatching Stop would be
+// wasted work on every unrelated reconcile event.
 func (w *dockerWatcher) reconcileContainerState(ctx context.Context, c *containersv1alpha1.Container) error {
 	desired := c.Spec.State
 	if desired == containersv1alpha1.ContainerStatusUnknown {
@@ -338,21 +365,13 @@ func (w *dockerWatcher) reconcileContainerState(ctx context.Context, c *containe
 	}
 
 	actual := c.Status.Status
-	if desired == actual {
-		return nil
-	}
-
 	log := logf.FromContext(ctx).WithName("docker-watcher")
 
-	// desired != actual is guaranteed by the early return above, so each
-	// branch just dispatches to Docker. ContainerStop handles paused /
-	// restarting containers natively — filtering by actual == running
-	// would silently drop the user's intent in those states. For the
-	// symmetric direction (desired=running, actual=paused), Docker
-	// rejects ContainerStart with "container is paused, unpause before
-	// starting", so dispatch ContainerUnpause explicitly instead.
 	switch desired {
 	case containersv1alpha1.ContainerStatusRunning:
+		if actual == containersv1alpha1.ContainerStatusRunning {
+			return nil
+		}
 		if actual == containersv1alpha1.ContainerStatusPaused {
 			log.Info("Unpausing container", "id", c.Name)
 			_, err := w.cli.ContainerUnpause(ctx, c.Name, dockerclient.ContainerUnpauseOptions{})
@@ -362,11 +381,29 @@ func (w *dockerWatcher) reconcileContainerState(ctx context.Context, c *containe
 		_, err := w.cli.ContainerStart(ctx, c.Name, dockerclient.ContainerStartOptions{})
 		return err
 	case containersv1alpha1.ContainerStatusCreated:
+		if isStopped(actual) {
+			return nil
+		}
 		log.Info("Stopping container", "id", c.Name)
 		_, err := w.cli.ContainerStop(ctx, c.Name, dockerclient.ContainerStopOptions{})
 		return err
 	}
 	return nil
+}
+
+// isStopped reports whether a container status represents a terminal
+// non-running state. Every state listed here satisfies a desired state
+// of "created": the container is not running, cannot transition without
+// a user action (start/rm), and dispatching ContainerStop again would
+// be a no-op.
+func isStopped(s containersv1alpha1.ContainerStatusValue) bool {
+	switch s {
+	case containersv1alpha1.ContainerStatusCreated,
+		containersv1alpha1.ContainerStatusExited,
+		containersv1alpha1.ContainerStatusDead:
+		return true
+	}
+	return false
 }
 
 // deleteContainer removes a container from Docker. NotFound errors are

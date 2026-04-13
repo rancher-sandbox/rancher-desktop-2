@@ -42,6 +42,13 @@ const (
 	// controllerName is used as the field owner for server-side apply.
 	controllerName = "engine-controller"
 
+	// finalizerFieldOwner is a separate SSA field manager used only to
+	// re-assert the mirror finalizer on existing resources. Keeping it
+	// distinct from controllerName prevents a finalizer-only apply from
+	// dropping controllerName's ownership of spec — which would cause
+	// spec to be pruned and the CRD's required-field validation to fail.
+	finalizerFieldOwner = controllerName + "-finalizer"
+
 	// mirrorFinalizer is added to mirror resources so user deletions can
 	// be forwarded to Docker before the resource is removed.
 	mirrorFinalizer = "engine.rancherdesktop.io/docker-mirror"
@@ -224,6 +231,14 @@ func (r *EngineReconciler) setEngineCondition(ctx context.Context, app *appv1alp
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		latest := &appv1alpha1.App{}
 		if err := r.Get(ctx, client.ObjectKey{Name: app.Name}, latest); err != nil {
+			// The App can be deleted concurrently with the reconciler
+			// (e.g., rdd svc delete mid-reconcile). Treat NotFound as a
+			// no-op so we do not propagate a spurious error that would
+			// requeue only to be IgnoreNotFound-dropped on the next
+			// reconcile.
+			if apierrors.IsNotFound(err) {
+				return nil
+			}
 			return err
 		}
 		changed := meta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
@@ -387,13 +402,27 @@ func (r *EngineReconciler) processContainerFinalizers(ctx context.Context, w *do
 			errs = append(errs, fmt.Errorf("failed to delete container %s from Docker: %w", c.Name, err))
 			continue
 		}
-		if removeFinalizer(c, mirrorFinalizer) {
-			// NotFound is benign: a concurrent Docker destroy event may
-			// already have stripped the finalizer and deleted the
-			// mirror between our List and Update.
-			if err := client.IgnoreNotFound(r.Update(ctx, c)); err != nil {
-				errs = append(errs, fmt.Errorf("failed to remove finalizer from Container %s: %w", c.Name, err))
+		// Strip the finalizer with retry-on-conflict so a stale cache
+		// does not force a whole-reconcile requeue just to reach the
+		// same idempotent deleteContainer call. NotFound is benign: a
+		// concurrent Docker destroy event may already have stripped
+		// the finalizer and deleted the mirror.
+		key := client.ObjectKeyFromObject(c)
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			latest := &containersv1alpha1.Container{}
+			if err := r.Get(ctx, key, latest); err != nil {
+				if apierrors.IsNotFound(err) {
+					return nil
+				}
+				return err
 			}
+			if !removeFinalizer(latest, mirrorFinalizer) {
+				return nil
+			}
+			return r.Update(ctx, latest)
+		})
+		if retryErr != nil {
+			errs = append(errs, fmt.Errorf("failed to remove finalizer from Container %s: %w", c.Name, retryErr))
 		}
 	}
 	return errors.Join(errs...)
@@ -410,9 +439,17 @@ func (r *EngineReconciler) processImageFinalizers(ctx context.Context, w *docker
 		if img.DeletionTimestamp == nil || !hasFinalizer(img, mirrorFinalizer) {
 			continue
 		}
-		if err := w.deleteImage(ctx, img); err != nil {
-			errs = append(errs, fmt.Errorf("failed to delete image %s from Docker: %w", img.Name, err))
-			continue
+		// An Image mirror with no engine-populated status has no Docker
+		// reference to forward the delete to — either a user created it
+		// as a bare skeleton or it landed in the startup race window
+		// before applyImage ran. Symmetric with processVolumeFinalizers'
+		// empty-Status.Name guard: strip the finalizer and let the
+		// Delete proceed.
+		if img.Status.ID != "" || img.Status.RepoTag != "" {
+			if err := w.deleteImage(ctx, img); err != nil {
+				errs = append(errs, fmt.Errorf("failed to delete image %s from Docker: %w", img.Name, err))
+				continue
+			}
 		}
 		if removeFinalizer(img, mirrorFinalizer) {
 			if err := client.IgnoreNotFound(r.Update(ctx, img)); err != nil {

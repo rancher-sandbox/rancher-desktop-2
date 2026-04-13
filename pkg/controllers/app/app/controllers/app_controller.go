@@ -17,6 +17,7 @@ import (
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -226,28 +227,38 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 		return ctrl.Result{}, nil
 	}
 
-	// Mirror LimaVM status conditions onto the App status.
-	// The priority chain above returns after every other action, so the App's
-	// resourceVersion from the initial Get is still current — no re-read needed.
-	// Truncate messages defensively: the LimaVM controller already truncates at
-	// source, but guarding here ensures a future bypass can't cause the App
-	// status update to fail CRD validation.
-	statusChanged := false
-	for _, cond := range limaVM.Status.Conditions {
-		statusChanged = apimeta.SetStatusCondition(&app.Status.Conditions, metav1.Condition{
-			Type:               cond.Type,
-			Status:             cond.Status,
-			Reason:             cond.Reason,
-			Message:            base.TruncateConditionMessage(cond.Message),
-			ObservedGeneration: app.Generation,
-			LastTransitionTime: cond.LastTransitionTime,
-		}) || statusChanged
-	}
-	if statusChanged {
-		if err := r.Status().Update(ctx, &app); err != nil {
-			log.Error(err, "Unable to update App status")
-			return ctrl.Result{}, err
+	// Mirror LimaVM status conditions onto the App status. The engine
+	// reconciler writes ContainerEngineReady on the same object, so the
+	// App's resourceVersion from the initial Get can be stale by the time
+	// we write. retry.RetryOnConflict + re-Get matches the pattern in
+	// EngineReconciler.setEngineCondition so concurrent writers no longer
+	// 409-loop through controller-runtime requeue. Truncate messages
+	// defensively: the LimaVM controller already truncates at source, but
+	// guarding here ensures a future bypass can't cause the App status
+	// update to fail CRD validation.
+	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		latest := &v1alpha1.App{}
+		if err := r.Get(ctx, client.ObjectKeyFromObject(&app), latest); err != nil {
+			return err
 		}
+		changed := false
+		for _, cond := range limaVM.Status.Conditions {
+			changed = apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+				Type:               cond.Type,
+				Status:             cond.Status,
+				Reason:             cond.Reason,
+				Message:            base.TruncateConditionMessage(cond.Message),
+				ObservedGeneration: latest.Generation,
+				LastTransitionTime: cond.LastTransitionTime,
+			}) || changed
+		}
+		if !changed {
+			return nil
+		}
+		return r.Status().Update(ctx, latest)
+	}); err != nil {
+		log.Error(err, "Unable to update App status")
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
