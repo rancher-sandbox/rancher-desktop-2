@@ -10,6 +10,8 @@ load '../../helpers/load'
 APP_NAME="app"
 VM_NAME="rd"
 INPUT_CM_NAME="rd"
+APP_VALIDATOR_CONFIG="app-validator"
+K3S_VERSION="1.32.0"
 
 delete_app() {
     # Stop the VM first so the LimaVM finalizer clears quickly.
@@ -296,6 +298,17 @@ EOF
     delete_app
 }
 
+@test "unsupported Kubernetes version is rejected by admission webhook" {
+    delete_app
+    run -1 rdd set running=false kubernetes.enabled=true kubernetes.version=1.31.99
+    assert_output --partial "not supported"
+}
+
+@test "unsupported version does not create App resource" {
+    run -1 rdd ctl get app "${APP_NAME}"
+    assert_output --partial "not found"
+}
+
 @test "valid Kubernetes version allows LimaVM creation" {
     skip_on_windows "Kubernetes tests require further setup on Windows"
     delete_app
@@ -344,4 +357,109 @@ EOF
     rdd ctl wait --for=condition=Running=False \
         limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=60s
     delete_app
+}
+
+# --- Admission webhook: --dry-run=server validation ---
+
+@test "webhook configuration is registered" {
+    rdd ctl wait --for=create ValidatingWebhookConfiguration "${APP_VALIDATOR_CONFIG}" --timeout=60s
+
+    run -0 rdd ctl get ValidatingWebhookConfiguration "${APP_VALIDATOR_CONFIG}" \
+        -o jsonpath='{.webhooks[0].name}'
+    assert_output "app-validator.app.rancherdesktop.io"
+}
+
+@test "dry-run accepts valid App settings" {
+    run -0 rdd ctl apply --dry-run=server -f - <<EOF
+apiVersion: app.rancherdesktop.io/v1alpha1
+kind: App
+metadata:
+  name: app
+spec:
+  running: false
+  containerEngine:
+    name: containerd
+  kubernetes:
+    enabled: false
+EOF
+}
+
+@test "dry-run accepts valid containerEngine moby" {
+    run -0 rdd ctl apply --dry-run=server -f - <<EOF
+apiVersion: app.rancherdesktop.io/v1alpha1
+kind: App
+metadata:
+  name: app
+spec:
+  running: false
+  containerEngine:
+    name: moby
+  kubernetes:
+    enabled: false
+EOF
+}
+
+@test "dry-run rejects invalid containerEngine name" {
+    run -1 rdd ctl apply --dry-run=server -f - <<EOF
+apiVersion: app.rancherdesktop.io/v1alpha1
+kind: App
+metadata:
+  name: app
+spec:
+  running: false
+  containerEngine:
+    name: kvm
+  kubernetes:
+    enabled: false
+EOF
+    assert_output --partial "containerEngine.name"
+}
+
+@test "dry-run rejects kubernetes.enabled=true with empty version" {
+    run -1 rdd ctl apply --dry-run=server -f - <<EOF
+apiVersion: app.rancherdesktop.io/v1alpha1
+kind: App
+metadata:
+  name: app
+spec:
+  running: false
+  containerEngine:
+    name: moby
+  kubernetes:
+    enabled: true
+EOF
+    assert_output --partial "kubernetes.version must not be empty"
+}
+
+@test "dry-run rejects unsupported kubernetes.version" {
+    run -1 rdd ctl apply --dry-run=server -f - <<EOF
+apiVersion: app.rancherdesktop.io/v1alpha1
+kind: App
+metadata:
+  name: app
+spec:
+  running: false
+  containerEngine:
+    name: moby
+  kubernetes:
+    enabled: true
+    version: "0.0.0"
+EOF
+    assert_output --partial "not supported"
+}
+
+@test "dry-run accepts supported kubernetes.version" {
+    run -0 rdd ctl apply --dry-run=server -f - <<EOF
+apiVersion: app.rancherdesktop.io/v1alpha1
+kind: App
+metadata:
+  name: app
+spec:
+  running: false
+  containerEngine:
+    name: moby
+  kubernetes:
+    enabled: true
+    version: "${K3S_VERSION}"
+EOF
 }

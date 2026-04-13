@@ -125,7 +125,8 @@ local_setup_file() {
     run -0 get_app_field '.spec.kubernetes.version'
     assert_output "1.32.2"
 
-    rdd set kubernetes.version=
+    # Clear both together: webhook rejects an empty version when enabled=true.
+    rdd set kubernetes.enabled=false kubernetes.version=
 
     run -0 get_app_field '.spec.kubernetes.version'
     assert_output ""
