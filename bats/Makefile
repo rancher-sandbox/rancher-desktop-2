@@ -5,10 +5,12 @@
 # BATS integration testing targets
 BATS_CORE := ./lib/bats-core/bin/bats
 
-# Per-target timeout (seconds) to prevent hanging CI jobs.
-# Override with BATS_TIMEOUT=0 to disable.
+# Per-target timeout (seconds) to prevent hanging CI jobs. Use `=` so $@
+# resolves to each target at recipe time. Setting BATS_TIMEOUT=0 disables
+# the wrapper entirely, which also disables support-bundle capture; for
+# long local runs, set a large value (e.g. 86400) instead of 0.
 BATS_TIMEOUT ?= 1800
-BATS := $(if $(filter-out 0,$(BATS_TIMEOUT)),timeout $(BATS_TIMEOUT)) $(BATS_CORE)
+BATS = $(if $(filter-out 0,$(BATS_TIMEOUT)),../scripts/bats-with-timeout.sh $(BATS_TIMEOUT) $@) $(BATS_CORE)
 
 default: bats-all
 

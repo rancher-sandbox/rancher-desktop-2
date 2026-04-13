@@ -447,7 +447,9 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 	// network-setup.service performs a vsock handshake during early boot.
 	r.startHostSwitch(ctx, limaVM.Name, inst)
 
-	// Start hostagent in background.
+	// SetGroup makes the hostagent a new process-group leader (pgid == pid
+	// on Unix), which lets bats-with-timeout.sh attribute leaked qemu
+	// grandchildren back to their hostagent ancestor via pgid.
 	haCmd := exec.CommandContext(ctx, rddPath, args...)
 	process.SetGroup(haCmd)
 	haCmd.Stdout = haStdoutW
@@ -476,7 +478,10 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 	// The watcher enqueues reconciles as phase transitions occur.
 	r.startWatcher(ctx, limaVM.Name, limaVM.Namespace, haCmd, inst.Dir, begin)
 
-	logger.Info("Hostagent started, watcher active", "instance", limaVM.Name)
+	logger.Info("Hostagent started, watcher active",
+		"instance", limaVM.Name,
+		"pid", haCmd.Process.Pid,
+		"pgid", haCmd.Process.Pid)
 	return ctrl.Result{}, nil
 }
 
