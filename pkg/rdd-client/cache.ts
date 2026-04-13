@@ -83,9 +83,9 @@ export class ListWatch<T extends KubernetesObject> implements ObjectCache<T>, In
     await this.doneHandler(null);
   }
 
-  public stop(): Promise<void> {
+  public stop(reason?: any): Promise<void> {
     this.stopped = true;
-    this._stop();
+    this._stop(reason);
     return Promise.resolve();
   }
 
@@ -155,9 +155,9 @@ export class ListWatch<T extends KubernetesObject> implements ObjectCache<T>, In
     return this.resourceVersion;
   }
 
-  private _stop(): void {
+  private _stop(reason?: any): void {
     if (this.request) {
-      this.request.abort();
+      this.request.abort(reason);
       this.request = undefined;
     }
   }

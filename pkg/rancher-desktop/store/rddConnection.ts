@@ -534,6 +534,8 @@ ResourceWatchActionsReturn<T> {
   };
 }
 
+const errorManuallyStopped = new Error('Manually stopped');
+
 /**
  * A watcher is used to watch a resource type.
  * This is kept in the per-module `_watchers` state.
@@ -584,7 +586,11 @@ class Watcher<
     this.#watcher.on('change', this.onChange.bind(this));
     this.#watcher.on('connect', this.onChange.bind(this));
     this.#watcher.on('error', (err) => {
-      if (err.code === 429) {
+      if (Object.is(err, errorManuallyStopped)) {
+        // The watcher errored out because we called stop(); do not propagate
+        // this as an actual error.
+        return;
+      } else if (err.code === 429) {
         // We can get this if we request too early (when the backend restarts),
         // with a message of "storage is (re)initializing".  Just retry.
         let delay = 0.1;
@@ -633,6 +639,6 @@ class Watcher<
   }
 
   close() {
-    this.#watcher.stop();
+    this.#watcher.stop(errorManuallyStopped);
   }
 }
