@@ -135,6 +135,135 @@ dump_sockets() {
     fi
 }
 
+# Capture evidence of memory pressure or external process kills.
+#
+# macOS jetsam and the Linux OOM killer terminate processes with SIGKILL,
+# which Go cannot catch — so the daemon leaves no crash log behind. The
+# only evidence lives in kernel / unified-log messages. Without this
+# dump, a daemon that vanished because the runner ran out of memory is
+# indistinguishable from one that hung.
+dump_memory_pressure() {
+    echo "=== Memory stats ==="
+    case "$(uname)" in
+        Darwin)
+            vm_stat 2>&1 || true
+            echo
+            sysctl vm.swapusage 2>&1 || true
+            ;;
+        Linux)
+            free -h 2>&1 || true
+            ;;
+    esac
+
+    echo
+    echo "=== Top processes by memory (top 20) ==="
+    case "$(uname)" in
+        Darwin)
+            # -l 1: one sample; -n 20: limit rows; -o mem: sort by memory;
+            # -stats: only columns we need.
+            top -l 1 -n 20 -o mem -stats pid,command,mem,state 2>&1 | tail -25 || true
+            ;;
+        Linux)
+            ps -eo pid,pgid,pmem,rss,comm --sort=-rss 2>&1 | head -21 || true
+            ;;
+    esac
+
+    echo
+    echo "=== Memory pressure / OOM events ==="
+    case "$(uname)" in
+        Darwin)
+            # Jetsam (macOS memory pressure killer) entries land in the
+            # unified log with sender=kernel. --last 1h covers any single
+            # bats target (30-min timeout + slack). --style compact keeps
+            # output small.
+            if command -v log >/dev/null 2>&1; then
+                log show --style compact --last 1h \
+                    --predicate '(sender == "kernel") AND ((eventMessage CONTAINS[c] "jetsam") OR (eventMessage CONTAINS[c] "memorystatus") OR (eventMessage CONTAINS[c] "low swap") OR (eventMessage CONTAINS[c] "lowmem"))' \
+                    2>&1 | tail -100 || true
+            fi
+            ;;
+        Linux)
+            # OOM killer activations appear in dmesg. The ring buffer is
+            # capped, so tail is sufficient.
+            if command -v dmesg >/dev/null 2>&1; then
+                dmesg 2>/dev/null | grep -iE 'oom|killed process|out of memory' | tail -50 || true
+            fi
+            ;;
+    esac
+}
+
+# Run a command with a wall-clock timeout. Used by dump_api_state so a
+# dead or hung API server cannot freeze the support bundle capture.
+# Polls at 1-second resolution, matching the main script's timeout loop,
+# and avoids a GNU coreutils `timeout` dependency (not on macOS).
+run_with_timeout() {
+    local seconds=$1
+    shift
+    "$@" &
+    local pid=$!
+    local deadline=$(($(date +%s) + seconds))
+    while kill -0 "$pid" 2>/dev/null; do
+        if [ "$(date +%s)" -ge "$deadline" ]; then
+            kill -TERM "$pid" 2>/dev/null || true
+            sleep 1
+            kill -KILL "$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+            echo "[run_with_timeout: $* exceeded ${seconds}s, killed]"
+            return 124
+        fi
+        sleep 1
+    done
+    wait "$pid"
+}
+
+# Snapshot the current state of the rdd API server and (if wired up) the
+# forwarded Docker daemon. Runs every command under run_with_timeout so
+# a hung or dead daemon cannot block the capture — the common case for
+# the failures this bundle is meant to diagnose.
+dump_api_state() {
+    if [ ! -x "$rdd_bin" ]; then
+        return
+    fi
+
+    # The rdd CLI picks up RDD_INSTANCE from the environment, so we do
+    # not need to pass it.
+    echo "=== rdd ctl get (overview) ==="
+    run_with_timeout 10 "$rdd_bin" ctl get apps,limavms,containers,images,volumes,containernamespaces \
+        --all-namespaces 2>&1 || true
+
+    echo
+    echo "=== rdd ctl get events (by time) ==="
+    run_with_timeout 10 "$rdd_bin" ctl get events --all-namespaces \
+        --sort-by=.lastTimestamp 2>&1 | tail -100 || true
+
+    echo
+    echo "=== rdd ctl get (full YAML) ==="
+    run_with_timeout 15 "$rdd_bin" ctl get apps,limavms,containers,images,volumes,containernamespaces \
+        --all-namespaces --output=yaml 2>&1 || true
+
+    # Docker state: test suites that exercise the container engine
+    # forward the guest Docker socket to a host path. Skip silently
+    # when it is not wired up (most bats targets do not use Docker).
+    local docker_sock="${HOME}/.rd2/docker.sock"
+    if [ -S "$docker_sock" ] && command -v docker >/dev/null 2>&1; then
+        echo
+        echo "=== docker ps -a (DOCKER_HOST=unix://${docker_sock}) ==="
+        DOCKER_HOST="unix://${docker_sock}" \
+            run_with_timeout 10 docker ps --all --no-trunc 2>&1 || true
+
+        echo
+        echo "=== docker inspect (all containers) ==="
+        local ids
+        ids=$(DOCKER_HOST="unix://${docker_sock}" \
+            run_with_timeout 10 docker ps --all --quiet 2>/dev/null || true)
+        if [ -n "$ids" ]; then
+            # shellcheck disable=SC2086  # intentional word splitting
+            DOCKER_HOST="unix://${docker_sock}" \
+                run_with_timeout 10 docker inspect $ids 2>&1 || true
+        fi
+    fi
+}
+
 # Non-destructive capture: reads only, signals nothing. Safe to call at
 # any time. Unfiltered so sibling parallel bats targets show up too.
 capture_state() {
@@ -159,6 +288,12 @@ capture_state() {
 
         echo
         dump_sockets
+
+        echo
+        dump_memory_pressure
+
+        echo
+        dump_api_state
 
         echo
         echo "=== End of support bundle (${context}) ==="
