@@ -84,7 +84,7 @@ export class Watch {
           let match: RegExpExecArray | null;
 
           lastLine += value ?? '';
-          while ((match = /^(.*?)\r?\n(.*?)$/.exec(lastLine))) {
+          while ((match = /^(.*?)\r?\n(.*?)$/m.exec(lastLine))) {
             const [, line, remaining] = match;
             lastLine = remaining;
             try {
