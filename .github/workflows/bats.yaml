@@ -44,6 +44,13 @@ jobs:
         - macos-15-intel
         - ubuntu-latest
         - windows-latest
+        # bats-app runs on its own runner so its WSL2 VM does not collide
+        # with bats-lima's on Windows (Lima hard-codes SSH port 22 per
+        # instance), and so bats-app can grow independently of the rest
+        # of the suite.
+        target:
+        - bats-non-app
+        - bats-app
     runs-on: ${{ matrix.runs-on }}
     steps:
     - name: "Linux: Install prerequisites"
@@ -173,7 +180,7 @@ jobs:
         output-dir: rdd-logs/_diag
       continue-on-error: true
 
-    - run: make -C bats --keep-going --jobs=$(nproc) --output-sync=target
+    - run: make -C bats ${{ matrix.target }} --keep-going --jobs=$(nproc) --output-sync=target
       shell: run-in-shell {0}
       env:
         RDD_TRACE: true
@@ -196,6 +203,6 @@ jobs:
       if: always()
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
-        name: rdd-logs-${{ matrix.runs-on }}
+        name: rdd-logs-${{ matrix.runs-on }}-${{ matrix.target }}
         path: rdd-logs/
         if-no-files-found: ignore

@@ -13,6 +13,7 @@ BATS_TIMEOUT ?= 1800
 BATS = $(if $(filter-out 0,$(BATS_TIMEOUT)),../scripts/bats-with-timeout.sh $(BATS_TIMEOUT)) $(BATS_CORE)
 
 default: bats-all
+.PHONY: default
 
 # Check if BATS core exists
 check-bats:
@@ -84,9 +85,21 @@ bats-containers: check-bats build-rdd build-mock-controller
 bats-controllers: bats-builtin bats-rdd bats-app bats-lima bats-containers
 .PHONY: bats-controllers
 
-# Run all BATS tests.
-bats-all: bats-helpers bats-cli bats-service bats-controllers
+# Run all BATS tests. bats-app is serialized with the rest of the suite
+# via recursive make because bats-app and bats-lima each boot a WSL2 VM
+# and Lima's WSL2 driver hard-codes SSH to guest port 22 per instance,
+# so two VMs in parallel collide on Windows localhost forwarding. CI
+# splits the two halves onto separate runners via `bats-non-app` + the
+# `bats-app` target; `-j` still parallelizes within each half.
+bats-all:
+	$(MAKE) bats-non-app
+	$(MAKE) bats-app
 .PHONY: bats-all
+
+# Everything bats-all runs except bats-app. CI runs this alongside
+# bats-app on a separate runner.
+bats-non-app: bats-helpers bats-cli bats-service bats-builtin bats-rdd bats-lima bats-containers
+.PHONY: bats-non-app
 
 # Run specific BATS test file
 # Usage: make bats-file FILE=bats/tests/31-rdd-controllers/configmapreplicaset.bats
