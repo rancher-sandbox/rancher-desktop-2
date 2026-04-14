@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260414-144550-pr-302</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block.
+ * The filename is a GitHub permalink to the displayed line range.
+ * Text color is light gray (#adbac7) for the bar, green (#7ee787)
+ * for the hyperlink — matching GitHub's dark-mode file header. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Deep Review: 20260414-144550-pr-302</h1>
+
+    <table class="meta-table">
+      <tr><td>Date</td><td>2026-04-14 14:45</td></tr>
+      <tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+      <tr><td>Round</td><td>1</td></tr>
+      <tr><td>Author</td><td><a href="https://github.com/Nino-K">@Nino-K</a></td></tr>
+      <tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/302" class="gh-ref" data-title="Validating admission controller app settings" data-state="open" data-type="pr">#302</a> — Validating admission controller app settings</td></tr>
+      <tr><td>Branch</td><td><code>validating-admission-controller-app-settings</code></td></tr>
+      <tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/af58638"><code>af58638</code></a> Add validating admission webhook for App settings<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/a9f48a7"><code>a9f48a7</code></a> Add bats tests to verify the validating admission controller</td></tr>
+      <tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.6, <span class="pill pill-codex">Codex</span> GPT 5.4, <span class="pill pill-gemini">Gemini</span> 3.1 Pro</td></tr>
+      <tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; remove redundant containerEngine check and cache the parsed k3s-versions map; other items are nice-to-have.</td></tr>
+      <tr><td>Wall-clock time</td><td><code>21 min 56 s</code></td></tr>
+    </table>
+
+    <hr>
+
+    <hr>
+    <h2 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>This PR introduces a validating admission webhook for the singleton <code>App</code> resource and wires it into the shared webhook framework already used by LimaVM and Notary. Validation covers three invariants: <code>containerEngine.name</code> must be <code>moby</code> or <code>containerd</code>, <code>kubernetes.version</code> must appear in the bundled <code>k3s-versions.json</code>, and a non-empty version is required when <code>kubernetes.enabled</code> is true. BATS coverage is added via <code>rdd ctl apply --dry-run=server</code>, and the existing <code>set.bats</code> is adjusted to clear <code>kubernetes.enabled</code> and <code>kubernetes.version</code> atomically so it does not trip the new rule.</p>
+    <p>The implementation is clean and pattern-consistent, but two items deserve attention before merge. First, the <code>containerEngine.name</code> check in the webhook is unreachable — the CRD schema already enforces the same enum and the API server validates it before the webhook runs. Second, the webhook re-parses <code>k3s-versions.json</code> on every admission request; parsing it once at controller setup would both eliminate redundant work and surface a malformed fixture at startup instead of deferring the error to the first user request. The remaining findings are test-coverage gaps: no assertion for the <code>UPDATE</code> admission path, a hard-coded k3s version that will age out of the bundled fixture, and missing unit tests for <code>parseK3sVersions</code>&#39;s normalization behavior.</p>
+    <p><strong>Structure</strong>: 0 critical, 0 important, 5 suggestions, plus 1 future design observation and 1 documentation fix.</p>
+    </div>
+    <hr>
+    <h2 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-critical">
+    <p>None.</p>
+    </div>
+    <hr>
+    <h2 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-important">
+    <p>None.</p>
+    </div>
+    <hr>
+    <h2 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S1">
+        <span class="finding-num">S1.</span> <code>containerEngine.name</code> check in webhook is unreachable <span class="pill pill-claude">Claude</span><a href="#S1" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/pkg/controllers/app/app/controllers/app_webhook.go#L33-L46">pkg/controllers/app/app/controllers/app_webhook.go</a></div>
+      <pre data-start="33" data-line="38-41"><code class="language-go">func (v *AppValidator) ValidateDelete(_ context.Context, _ *v1alpha1.App) (ctrlwebhookadmission.Warnings, error) {
+	return nil, nil
+}
+
+func (v *AppValidator) validate(app *v1alpha1.App) (ctrlwebhookadmission.Warnings, error) {
+	engine := app.Spec.ContainerEngine.Name
+	if engine != &quot;moby&quot; &amp;&amp; engine != &quot;containerd&quot; {
+		return nil, fmt.Errorf(&quot;spec.containerEngine.name %q is invalid; must be \&quot;moby\&quot; or \&quot;containerd\&quot;&quot;, engine)
+	}
+
+	k8s := app.Spec.Kubernetes
+	if k8s.Enabled &amp;&amp; k8s.Version == &quot;&quot; {
+		return nil, errors.New(&quot;spec.kubernetes.version must not be empty when spec.kubernetes.enabled is true&quot;)
+	}</code></pre>
+    <p>The CRD schema at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/pkg/controllers/app/app/crd.yaml#L60-L62"><code>pkg/controllers/app/app/crd.yaml:60-62</code></a> already pins <code>containerEngine.name</code> to <code>enum: [moby, containerd]</code> with a default of <code>moby</code>. The Kubernetes admission pipeline validates the CRD schema before dispatching to validating webhooks, so any value outside the enum is rejected by the API server before <code>AppValidator.validate</code> ever sees the object. The webhook branch is dead code, and it introduces a maintenance hazard: if a third engine is added to the CRD enum, the webhook would silently reject it until someone remembers to update both places.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/pkg/controllers/app/app/crd.yaml#L55-L67">pkg/controllers/app/app/crd.yaml</a></div>
+      <pre data-start="55" data-line="60-62"><code class="language-yaml">                  name:
+                    default: moby
+                    description: |-
+                      name specifies the container engine to use.
+                      Valid values are &quot;moby&quot; (Docker-compatible) and &quot;containerd&quot;.
+                    enum:
+                    - moby
+                    - containerd
+                    type: string
+                required:
+                - name
+                type: object
+              kubernetes:</code></pre>
+    <p>The BATS case <code>&quot;dry-run rejects invalid containerEngine name&quot;</code> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/bats/tests/32-app-controllers/app.bats#L402"><code>bats/tests/32-app-controllers/app.bats:402</code></a>) keeps passing regardless because its assertion is <code>assert_output --partial &quot;containerEngine.name&quot;</code>, which matches the CRD error (<code>Unsupported value: &quot;kvm&quot;: supported values: &quot;moby&quot;, &quot;containerd&quot;</code>) just as well as the webhook error.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/bats/tests/32-app-controllers/app.bats#L397-L407">bats/tests/32-app-controllers/app.bats</a></div>
+      <pre data-start="397" data-line="402"><code class="language-plaintext">  kubernetes:
+    enabled: false
+EOF
+}
+
+@test &quot;dry-run rejects invalid containerEngine name&quot; {
+    run -1 rdd ctl apply --dry-run=server -f - &lt;&lt;EOF
+apiVersion: app.rancherdesktop.io/v1alpha1
+kind: App
+metadata:
+  name: app</code></pre>
+    <p>Fix: drop the engine check from <code>validate</code> entirely and rely on the CRD enum as the authoritative source.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S2">
+        <span class="finding-num">S2.</span> <code>parseK3sVersions</code> re-parses embedded JSON on every admission request <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span><a href="#S2" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/pkg/controllers/app/app/controllers/app_webhook.go#L43-L59">pkg/controllers/app/app/controllers/app_webhook.go</a></div>
+      <pre data-start="43" data-line="48-56"><code class="language-go">	k8s := app.Spec.Kubernetes
+	if k8s.Enabled &amp;&amp; k8s.Version == &quot;&quot; {
+		return nil, errors.New(&quot;spec.kubernetes.version must not be empty when spec.kubernetes.enabled is true&quot;)
+	}
+
+	if k8s.Version != &quot;&quot; {
+		supported, err := parseK3sVersions(v.K3sVersionsData)
+		if err != nil {
+			return nil, fmt.Errorf(&quot;failed to load supported Kubernetes versions: %w&quot;, err)
+		}
+		if _, ok := supported[k8s.Version]; !ok {
+			return nil, fmt.Errorf(&quot;spec.kubernetes.version %q is not supported; see the bundled k3s-versions.json for valid versions&quot;, k8s.Version)
+		}
+	}
+
+	return nil, nil
+}</code></pre>
+    <p><code>K3sVersionsData</code> is a compile-time <code>//go:embed</code> constant; it never changes at runtime. Re-parsing it on every create/update is wasted work and, more importantly, defers malformed-JSON detection to the first user request that happens to set a version. Parse once in a constructor so a bad fixture blocks controller startup instead of failing admission.</p>
+    <p>Fix: introduce <code>NewAppValidator(k3sVersionsData string) (*AppValidator, error)</code> that calls <code>parseK3sVersions</code> once and stores the resulting map. Replace <code>AppValidator{K3sVersionsData: k3sVersionsData}</code> in <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/pkg/controllers/app/app/controller.go#L123"><code>controller.go:123</code></a> with a <code>NewAppValidator(...)</code> call whose error propagates out of <code>setupWebhook</code>. The per-request path then becomes a single map lookup. Gemini flagged this as important; the runtime cost is negligible for RDD&#39;s single-user workload, so it is recorded here as a suggestion — but the fail-fast-at-startup argument still stands on its own.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S3">
+        <span class="finding-num">S3.</span> Hard-coded <code>K3S_VERSION=&quot;1.32.0&quot;</code> will age out of the bundled fixture <span class="pill pill-codex">Codex</span><a href="#S3" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/bats/tests/32-app-controllers/app.bats#L9-L19">bats/tests/32-app-controllers/app.bats</a></div>
+      <pre data-start="9" data-line="14"><code class="language-bash">
+APP_NAME=&quot;app&quot;
+VM_NAME=&quot;rd&quot;
+INPUT_CM_NAME=&quot;rd&quot;
+APP_VALIDATOR_CONFIG=&quot;app-validator&quot;
+K3S_VERSION=&quot;1.32.0&quot;
+
+delete_app() {
+    # Stop the VM first so the LimaVM finalizer clears quickly.
+    rdd set running=false 2&gt;/dev/null || true
+    rdd ctl delete app &quot;${APP_NAME}&quot; --ignore-not-found</code></pre>
+    <p>The positive-path test pins the oldest version in the current bundled <code>k3s-versions.json</code> (<code>v1.32.0+k3s1</code>). The webhook validates against whatever versions are in the file, not against a stable constant, so a future bundle refresh that drops <code>1.32.0</code> will break this test even though the webhook itself is still correct. The failure mode converts a routine k3s refresh into an unrelated test break.</p>
+    <p>Fix: derive the expected version from the fixture at test runtime (e.g. <code>jq -r &#39;.versions[0]&#39; k3s-versions.json | sed -e &#39;s/^v//&#39; -e &#39;s/+.*//&#39;</code>), or pin to a field intended to stay current such as the bundle&#39;s <code>channels.stable</code> entry.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S4">
+        <span class="finding-num">S4.</span> Webhook&#39;s <code>UPDATE</code> operation has no BATS coverage <span class="pill pill-codex">Codex</span><a href="#S4" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/pkg/controllers/app/app/controller.go#L114-L127">pkg/controllers/app/app/controller.go</a></div>
+      <pre data-start="114" data-line="119-122"><code class="language-go">func (c *controller) setupWebhook(mgr ctrl.Manager) error {
+	validatingConfig := base.WebhookConfig[*v1alpha1.App]{
+		Name:        appValidatorConfigName,
+		WebhookName: appValidatorWebhookName,
+		WebhookPort: c.webhookPort,
+		Operations: []admissionregistrationv1.OperationType{
+			admissionregistrationv1.Create,
+			admissionregistrationv1.Update,
+		},
+		Validator: &amp;controllers.AppValidator{K3sVersionsData: k3sVersionsData},
+	}
+
+	managers, err := base.SetupWebhookForResource(mgr, &amp;v1alpha1.App{}, validatingConfig)
+	if err != nil {</code></pre>
+    <p>The webhook is registered for both <code>Create</code> and <code>Update</code>, and <code>ValidateUpdate</code> is separate plumbing from <code>ValidateCreate</code> in <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/pkg/controllers/app/app/controllers/app_webhook.go#L27-L30"><code>app_webhook.go:27-30</code></a>. Every new dry-run case in the BATS suite uses a create-shaped <code>rdd ctl apply</code> against <code>name: app</code> with no pre-existing object — the update path is never exercised. A regression that only affects updates (e.g., someone bypasses <code>validate</code> on the update path or a framework change silently stops routing updates to the webhook) would still ship green.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/pkg/controllers/app/app/controllers/app_webhook.go#L22-L35">pkg/controllers/app/app/controllers/app_webhook.go</a></div>
+      <pre data-start="22" data-line="27-30"><code class="language-go">// ValidateCreate validates a new App resource.
+func (v *AppValidator) ValidateCreate(_ context.Context, obj *v1alpha1.App) (ctrlwebhookadmission.Warnings, error) {
+	return v.validate(obj)
+}
+
+// ValidateUpdate validates an updated App resource.
+func (v *AppValidator) ValidateUpdate(_ context.Context, _, newObj *v1alpha1.App) (ctrlwebhookadmission.Warnings, error) {
+	return v.validate(newObj)
+}
+
+// ValidateDelete is a no-op; App deletion is governed by the cleanup finalizer.
+func (v *AppValidator) ValidateDelete(_ context.Context, _ *v1alpha1.App) (ctrlwebhookadmission.Warnings, error) {
+	return nil, nil
+}</code></pre>
+    <p>Fix: add at least one <code>--dry-run=server</code> update test that creates a valid <code>App</code>, then reapplies an invalid spec (e.g., an unsupported <code>kubernetes.version</code>) and asserts the update is rejected while the stored object is unchanged.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S5">
+        <span class="finding-num">S5.</span> <code>parseK3sVersions</code> normalization has no unit tests <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span><a href="#S5" class="pilcrow">&#182;</a>
+      </div>
+    <p>The version-stripping logic (<code>TrimPrefix(&quot;v&quot;)</code> and <code>Index(&quot;+&quot;)</code> slice) handles the current bundled format but is only exercised indirectly by BATS tests that go through the full admission pipeline. Edge cases are not covered: multiple versions that normalize to the same key (e.g. <code>v1.32.0+k3s1</code> and <code>v1.32.0+k3s2</code>), an empty <code>versions</code> array, entries without a <code>v</code> prefix, entries without a <code>+</code> suffix, and malformed JSON. A future format tweak in the bundled JSON would only be caught indirectly through a BATS failure.</p>
+    <p>Fix: add a short table-driven unit test in <code>k3s_versions_test.go</code> covering the above cases. <code>parseK3sVersions</code> is a pure function — it is the ideal shape for a unit test.</p>
+    </div>
+    <hr>
+    <h2 id="design-observations" class="section-design">Design Observations <a href="#design-observations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-design">
+    <p><strong>Concerns</strong></p>
+    <ul>
+      <li><em>(future)</em> <em></em>Concurrent writers to <code>App.Status.Conditions</code> without SSA<em></em> — <code>pkg/controllers/app/app/controllers/app_controller.go</code> <span class="pill pill-gemini">Gemini</span>. The App reconciler mirrors LimaVM conditions into <code>App.Status.Conditions</code> via <code>r.Status().Update()</code>, while another controller (<code>EngineReconciler</code>) writes <code>ContainerEngineReady</code> to the same condition list. Two writers on the same subresource without Server-Side Apply risks lost updates and <code>resourceVersion</code> conflicts under load. Out of scope for this PR, which is only adding the admission webhook, but worth filing as a follow-up.</li>
+    </ul>
+    <p><strong>Strengths</strong></p>
+    <ul>
+      <li><em>(in-scope)</em> <strong>Clean reuse of the shared webhook framework</strong> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/pkg/controllers/app/app/controller.go#L114-L132"><code>pkg/controllers/app/app/controller.go:114-132</code></a> <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span>. The setup path uses the existing <code>base.WebhookConfig</code> / <code>SetupWebhookForResource</code> abstraction, exactly matching the LimaVM and Notary webhooks. Certificate management, port allocation via <code>SharedControllerManager</code>, and the <code>base.WebhookController</code> interface are all already established; nothing App-specific was bolted on.</li>
+      <li><em>(in-scope)</em> <strong>Validation lives at the admission boundary, not the reconciler</strong> — <span class="pill pill-codex">Codex</span>. Rejecting invalid desired state at admission time prevents the reconciler from having to reason about partially-invalid specs or creating transient child resources for specs that should never be accepted. This is the right boundary for these invariants.</li>
+      <li><em>(in-scope)</em> <strong>Version normalization bridges two representations</strong> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/pkg/controllers/app/app/controllers/k3s_versions.go#L21-L36"><code>pkg/controllers/app/app/controllers/k3s_versions.go:21-36</code></a> <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span>. Stripping the <code>v</code> prefix and <code>+k3s*</code> suffix from the bundled entries lets users specify versions in the natural <code>1.32.0</code> form in the App spec while still validating against the exact-format entries in the upstream fixture.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>BATS coverage correctly exercises the full admission pipeline (API server → CRD schema → validating webhook) through <code>rdd ctl apply --dry-run=server</code>, which is the right integration level for this change. <code>set.bats</code> is adjusted sensibly to clear <code>kubernetes.enabled</code> and <code>kubernetes.version</code> atomically so it doesn&#39;t trip the new &quot;empty version when enabled&quot; rule.</p>
+    <p>Gaps ranked by risk:</p>
+    <ol>
+      <li><em></em>No <code>UPDATE</code> path coverage<em></em> (S4). The webhook declares both <code>Create</code> and <code>Update</code> operations, but every new case is a create.</li>
+      <li><em></em>No unit tests for <code>parseK3sVersions</code><em></em> (S5). Pure function, easy to cover, currently only exercised indirectly through BATS.</li>
+      <li><strong>Hard-coded version in positive-path test</strong> (S3). Will age out of the bundled fixture over time.</li>
+      <li><em></em>No test for <code>kubernetes.enabled=false</code> with an unsupported version<em></em> — the webhook still validates <code>kubernetes.version</code> when enabled is false (the <code>k8s.Version != &quot;&quot;</code> check at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/pkg/controllers/app/app/controllers/app_webhook.go#L48"><code>app_webhook.go:48</code></a> does not gate on <code>Enabled</code>), which may be intentional but is not documented by a test.</li>
+    </ol>
+    </div>
+    <hr>
+    <h2 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9f48a775996f1499a0bbbeacd87813b5fabf236/docs/design/api_app.md#L90"><code>docs/design/api_app.md:90</code></a> states that <code>spec.kubernetes.version</code> &quot;Defaults to <code>1.30.2</code>&quot;, but the App type has no <code>+kubebuilder:default</code> for that field and the CRD schema carries no default. The mismatch predates this PR, but the new webhook now <strong>rejects</strong> <code>enabled=true</code> with an empty version, which makes the stale docs user-visible: someone who follows the design doc and omits <code>version</code> expecting the <code>1.30.2</code> default will now get an admission error. Update the doc to describe the actual behavior — that <code>kubernetes.version</code> has no default and must be set explicitly when <code>kubernetes.enabled</code> is true. <span class="pill pill-codex">Codex</span></p>
+    <p>The new code itself is adequately documented: exported methods on <code>AppValidator</code> have docstrings, and <code>parseK3sVersions</code> has a clear comment describing the normalization behavior.</p>
+    </div>
+    <hr>
+    <h2 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>Clean two-commit split: <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/af58638"><code>af58638</code></a> adds the webhook implementation and simultaneously adapts the existing <code>set.bats</code> test (which otherwise would break), and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/a9f48a7"><code>a9f48a7</code></a> adds the new BATS coverage. The <code>set.bats</code> adaptation is correctly bundled with the webhook commit so that each commit in isolation leaves the test suite green.</p>
+    </div>
+    <hr>
+    <h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <h3 id="claude"><span class="pill pill-claude">Claude</span> <a href="#claude" class="pilcrow">&#182;</a></h3>
+    <p>Claude was the only agent to notice that the <code>containerEngine.name</code> check in the webhook is unreachable because CRD enum validation fires before validating webhooks in the admission pipeline. That finding required correlating the webhook code against <code>crd.yaml</code> and knowing the order of the admission pipeline — Codex and Gemini both read the webhook code but did not make that connection. Claude also co-raised the parse-once optimization at the correct severity (suggestion) without inflating it. Review content was concise and well-targeted.</p>
+    <h3 id="codex"><span class="pill pill-codex">Codex</span> <a href="#codex" class="pilcrow">&#182;</a></h3>
+    <p>Codex contributed the two most practical test-coverage findings: the missing <code>UPDATE</code> path and the hard-coded <code>1.32.0</code> that will age out of the bundled fixture. Neither is a bug today, but both will bite later, and Codex was the only agent to raise them. It was also the only agent to catch the stale <code>docs/design/api_app.md</code> claim about a <code>1.30.2</code> default, which the new webhook makes user-visible. Codex did not flag the redundant containerEngine check even though its &quot;testing assessment&quot; section correctly notes that create/update coverage is uneven — the dead-code observation was one inference step away.</p>
+    <h3 id="gemini"><span class="pill pill-gemini">Gemini</span> <a href="#gemini" class="pilcrow">&#182;</a></h3>
+    <p>Gemini independently raised the same parse-once observation as Claude but inflated the severity to <em>important</em>. The runtime cost is trivial for a single-user desktop app; the real value of the fix is fail-fast startup validation, which is a suggestion, not an important issue. The finding was downgraded during consolidation. Gemini also surfaced a pre-existing design concern about concurrent writers to <code>App.Status.Conditions</code> without SSA — useful context for follow-up work even though it is out of scope for this PR. Gemini missed both the dead-code containerEngine check and the test-coverage gaps.</p>
+    <h3 id="summary">Summary <a href="#summary" class="pilcrow">&#182;</a></h3>
+    <table class="retro-table">
+      <thead><tr><th></th><th><span class="pill pill-claude">Claude</span> Opus 4.6</th><th><span class="pill pill-codex">Codex</span> GPT 5.4</th><th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th></tr></thead>
+      <tbody>
+        <tr><td>Duration</td><td>7m 23s</td><td>3m 29s</td><td>2m 14s</td></tr>
+        <tr><td>Findings</td><td>2S</td><td>2S</td><td>1S</td></tr>
+        <tr><td>Tool calls</td><td>22 (Read 11, Grep 5, Bash 4)</td><td>34 (shell 28, stdin 6)</td><td>14 (read<em>file 8, grep</em>search 6)</td></tr>
+        <tr><td>Design observations</td><td>3</td><td>2</td><td>3</td></tr>
+        <tr><td>False positives</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>Unique insights</td><td>1</td><td>3</td><td>1</td></tr>
+        <tr><td>Files reviewed</td><td>5</td><td>5</td><td>5</td></tr>
+        <tr><td>Coverage misses</td><td>0</td><td>0</td><td>2</td></tr>
+        <tr><td><strong>Totals</strong></td><td><strong>2S</strong></td><td><strong>2S</strong></td><td><strong>1S</strong></td></tr>
+        <tr><td>Downgraded</td><td>0</td><td>0</td><td>1 (I→S)</td></tr>
+        <tr><td>Dropped</td><td>0</td><td>0</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p>Claude delivered the highest-impact finding of this review (S1). Codex delivered the most findings that will affect future maintenance (S3, S4, documentation fix). Gemini&#39;s only novel contribution was a forward-looking design note; its main finding overlapped with Claude&#39;s and was miscalibrated high. For a small change like this one, Claude and Codex together covered everything actionable.</p>
+    <p><strong>Reconciliation</strong>: Gemini&#39;s I1 (JSON re-parsed on every request, <em>important</em>) was downgraded to <em>suggestion</em> S2 during consolidation. Rationale: the runtime cost is negligible for RDD&#39;s single-user workload, and the fail-fast-at-startup argument — while valid — does not meet the important-severity bar. Claude raised the same finding at suggestion severity (its S2), which matches the consolidated view.</p>
+    </div>
+    <hr>
+    <h2 id="review-process-notes">Review Process Notes <a href="#review-process-notes" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <h3 id="repo-context-updates">Repo context updates <a href="#repo-context-updates" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li>Add the following to <code>deep-review-context.md</code> under a new &quot;Admission webhook coverage&quot; bullet: *When reviewing webhook validation changes, cross-check every webhook rule against the matching CRD schema (<code>crd.yaml</code>). CRD schema validation runs before validating webhooks in the admission pipeline, so any check that duplicates a CRD <code>enum</code>, <code>pattern</code>, <code>maxLength</code>, or <code>required</code> constraint is dead code. Flag such checks as unreachable.* This principle is general enough to apply to every future CRD webhook review, not just this PR.</li>
+      <li>Add the following to <code>deep-review-context.md</code>: *When a webhook is registered for both <code>Create</code> and <code>Update</code> operations, verify the BATS/integration suite exercises both paths. Controller-runtime dispatches these through separate <code>ValidateCreate</code> and <code>ValidateUpdate</code> methods, so a regression that only affects one path can ship green if only the other is tested.* This targets a recurring gap: dry-run create-shaped assertions are the easy thing to write and the update path is routinely forgotten.</li>
+    </ul>
+    </div>
+  </main>
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+  <script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+
+  </script>
+</body>
+</html>
