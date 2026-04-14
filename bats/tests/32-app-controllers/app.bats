@@ -128,9 +128,13 @@ local_setup_file() {
 }
 
 @test "wait for LimaVM Created condition to be set" {
-    # 150s allows time for the opensuse distro image download (~350MB).
+    # Download the opensuse distro image (~350MB) and decompress it. The
+    # Windows CI runner is much slower than macOS/Linux here: xz runs
+    # through Lima's stdin-wrapper pipe and is starved on every read,
+    # stretching a ~34s operation to ~3 minutes. Budget generously until
+    # that upstream slowness is addressed.
     rdd ctl wait --for=condition=Created \
-        limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=150s
+        limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=5m
 }
 
 @test "verify App status mirrors LimaVM Created condition" {
