@@ -193,20 +193,20 @@ h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1
         <span class="finding-num">I1.</span> <code>rdd set running=true</code> hangs on Windows because no controller writes <code>ContainerEngineReady</code> <span class="pill pill-codex">Codex</span><a href="#I1" class="pilcrow">&#182;</a>
       </div>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/cmd/rdd/set.go#L311-L324">cmd/rdd/set.go</a></div>
-      <pre data-start="311" data-line="316-319"><code class="language-go">			return err
+      <pre data-start="311" data-line="316-319"><code class="language-go">		}
+		targetGen = gen
+	case err != nil:
+		return fmt.Errorf(&quot;failed to get App: %w&quot;, err)
+	default:
+		gen, err := patchApp(ctx, c, &amp;app, specMap, dryRun)
+		if err != nil {
+			return err
 		}
 		targetGen = gen
 	}
 
 	if dryRun || timeout == 0 {
-		return nil
-	}
-	return waitForDesiredState(ctx, restConfig, properties, timeout, targetGen)
-}
-
-// createAndPatchApp creates the App using the dynamic client so that
-// only user-specified fields (plus required fields with zero values)
-// are sent; the API server fills in CRD defaults. The returned</code></pre>
+		return nil</code></pre>
       <pre><code class="language-go">// cmd/rdd/set.go:474-479
 if runningVal == &quot;true&quot; {
     logrus.Info(&quot;Waiting for container engine to be ready&quot;)
@@ -234,7 +234,7 @@ func init() {
 
 const (
 	controllerName = &quot;engine&quot;
-	apiGroup       = &quot;app&quot;</code></pre>
+	// apiGroup is &quot;containers&quot; because the reconciler watches</code></pre>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/controllers/app/app/controllers/app_controller.go#L297-L334">pkg/controllers/app/app/controllers/app_controller.go</a></div>
       <pre data-start="297" data-line="302-329"><code class="language-go">			return ctrl.Result{}, fmt.Errorf(&quot;failed to propagate running state to LimaVM: %w&quot;, err)
 		}
@@ -281,8 +281,14 @@ const (
       <div class="finding-title" id="I2">
         <span class="finding-num">I2.</span> <code>rancher-desktop</code> namespace and <code>containernamespace/moby</code> are created once and never repaired <span class="pill pill-codex">Codex</span> <span class="pill pill-claude">Claude</span><a href="#I2" class="pilcrow">&#182;</a>
       </div>
-      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/controllers/app/engine/controllers/engine_reconciler.go#L518-L531">pkg/controllers/app/engine/controllers/engine_reconciler.go</a></div>
-      <pre data-start="518" data-line="523-530"><code class="language-go">		func(_ context.Context, _ client.Object) []reconcile.Request {
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/controllers/app/engine/controllers/engine_reconciler.go#L518-L535">pkg/controllers/app/engine/controllers/engine_reconciler.go</a></div>
+      <pre data-start="518" data-line="523-530"><code class="language-go">// SetupWithManager sets up the controller with the Manager.
+func (r *EngineReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	r.reconcileChan = make(chan event.GenericEvent, 1)
+
+	// Map any Container/Image/Volume event to a reconcile of the App singleton.
+	enqueueApp := handler.EnqueueRequestsFromMapFunc(
+		func(_ context.Context, _ client.Object) []reconcile.Request {
 			return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: appName}}}
 		},
 	)
@@ -293,9 +299,7 @@ const (
 		WatchesRawSource(source.Channel(r.reconcileChan, enqueueApp)).
 		Watches(&amp;containersv1alpha1.Container{}, enqueueApp).
 		Watches(&amp;containersv1alpha1.Image{}, enqueueApp).
-		Watches(&amp;containersv1alpha1.Volume{}, enqueueApp).
-		Complete(r)
-}</code></pre>
+		Watches(&amp;containersv1alpha1.Volume{}, enqueueApp).</code></pre>
     <p>The engine reconciler watches <code>App</code>, <code>Container</code>, <code>Image</code>, and <code>Volume</code> only. <code>corev1.Namespace</code> and <code>containersv1alpha1.ContainerNamespace</code> are absent from the watch set.</p>
     <p><code>ensureNamespace</code> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/controllers/app/engine/controllers/sync_volumes.go#L40-L54"><code>sync_volumes.go:40-54</code></a>) and <code>syncContainerNamespace</code> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/controllers/app/engine/controllers/sync_volumes.go#L61-L66"><code>sync_volumes.go:61-66</code></a>) are only reached from <code>fullSync</code> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/controllers/app/engine/controllers/docker_watcher.go#L426-L451"><code>docker_watcher.go:426-451</code></a>), which runs at watcher startup. Once the watcher is running, a <code>kubectl delete namespace rancher-desktop</code> or <code>kubectl delete containernamespace moby</code> produces no event that the reconciler cares about. The namespace stays gone — which cascade-deletes every mirror resource in it — and the ContainerNamespace stays gone until the next VM stop/start or Docker reconnect.</p>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/controllers/app/engine/controllers/sync_volumes.go#L35-L71">pkg/controllers/app/engine/controllers/sync_volumes.go</a></div>
@@ -383,7 +387,11 @@ func (w *dockerWatcher) fullSync(ctx context.Context) error {
 
 const (
 	controllerName = &quot;engine&quot;
-	apiGroup       = &quot;app&quot;
+	// apiGroup is &quot;containers&quot; because the reconciler watches
+	// Container, Image, and Volume from that group and needs
+	// their CRDs at startup. Grouping engine with its dependencies
+	// keeps --controllers selections from splitting the two apart.
+	apiGroup = &quot;containers&quot;
 )
 
 type controller struct{}
@@ -405,11 +413,7 @@ func (c *controller) GetAPIGroup() string {
 func (c *controller) GetCRDData() string {
 	return &quot;&quot;
 }
-
-func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
-	if err := appv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
-		return err
-	}</code></pre>
+</code></pre>
     <p><code>shouldEnableController</code> selects controllers by either name or API group. Starting with <code>--controllers=app</code> therefore enables the engine controller without enabling the <code>containers</code> API group. But the engine reconciler&#39;s <code>SetupWithManager</code> calls <code>Watches(&amp;containersv1alpha1.Container{}, ...)</code>, <code>Image</code>, and <code>Volume</code> — if those CRDs aren&#39;t installed, the manager start fails (the watch cache can&#39;t establish) or the reconciler endlessly re-attempts.</p>
     <p>The controller also has no CRDs of its own (<code>GetCRDData()</code> returns <code>&quot;&quot;</code>), so the dependency is purely on another controller group&#39;s CRDs. That relationship is invisible to <code>shouldEnableController</code> and to the <code>--controllers</code> help text.</p>
     <p><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/cmd/app-controller/main.go#L12-L20"><code>cmd/app-controller/main.go:12-20</code></a> imports the <code>engine</code> package into the standalone <code>app-controller</code> binary too, which means the standalone binary now also needs the <code>containers</code> API to be installed elsewhere, or it will fail at manager start.</p>
@@ -441,17 +445,17 @@ func main() {
         <span class="finding-num">I4.</span> Nil-pointer dereference on <code>inspect.Config.Labels</code> for containers and images <span class="pill pill-claude">Claude</span><a href="#I4" class="pilcrow">&#182;</a>
       </div>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/controllers/app/engine/controllers/sync_containers.go#L153-L163">pkg/controllers/app/engine/controllers/sync_containers.go</a></div>
-      <pre data-start="153" data-line="158"><code class="language-go">		WithName(name).
-		WithNamespace(namespace).
-		WithPath(inspect.Path).
-		WithArgs(inspect.Args...).
-		WithImage(inspect.Image).
-		WithLabels(inspect.Config.Labels).
-		WithStatus(mapDockerContainerState(string(inspect.State.Status))).
-		WithPid(int32(inspect.State.Pid)).
-		WithExitCode(int32(inspect.State.ExitCode))
+      <pre data-start="153" data-line="158"><code class="language-go">	// the same way.
+	var labels map[string]string
+	if inspect.Config != nil {
+		labels = inspect.Config.Labels
+	}
 
-	if inspect.State.Error != &quot;&quot; {</code></pre>
+	// Build status.
+	statusApply := containersv1alpha1apply.ContainerStatus().
+		WithName(name).
+		WithNamespace(namespace).
+		WithPath(inspect.Path).</code></pre>
       <pre><code class="language-go">// sync_images.go:157-163
 statusApply := containersv1alpha1apply.ImageStatus().
     WithID(inspect.ID).
@@ -462,17 +466,17 @@ statusApply := containersv1alpha1apply.ImageStatus().
     WithLabels(inspect.Config.Labels)</code></pre>
     <p><code>mobycontainer.InspectResponse.Config</code> is <code>*container.Config</code> and <code>mobyimage.InspectResponse.Config</code> is <code>*dockerspec.DockerOCIImageConfig</code> (verified in moby <code>api@v1.54.1</code>). Both are pointers that can be nil — the container path also explicitly guards <code>inspect.NetworkSettings</code> a few lines down (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/controllers/app/engine/controllers/sync_containers.go#L182"><code>sync_containers.go:182</code></a>), showing the authors already know these fields are nilable.</p>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/controllers/app/engine/controllers/sync_containers.go#L177-L187">pkg/controllers/app/engine/controllers/sync_containers.go</a></div>
-      <pre data-start="177" data-line="182"><code class="language-go">	// Sort port bindings by name before applying. Go map iteration is
+      <pre data-start="177" data-line="182"><code class="language-go">	}
+	if t, err := time.Parse(time.RFC3339Nano, inspect.State.StartedAt); err == nil &amp;&amp; !t.IsZero() {
+		statusApply.WithStartedAt(metav1.NewTime(t))
+	}
+	if t, err := time.Parse(time.RFC3339Nano, inspect.State.FinishedAt); err == nil &amp;&amp; !t.IsZero() {
+		statusApply.WithFinishedAt(metav1.NewTime(t))
+	}
+
+	// Sort port bindings by name before applying. Go map iteration is
 	// randomized, and even with +listType=map the entries land in the
-	// stored object in the order we send them — a stable order avoids
-	// spurious resourceVersion churn on every sync.
-	var applyPorts []*containersv1alpha1apply.ContainerPortApplyConfiguration
-	if inspect.NetworkSettings != nil {
-		portNames := make([]mobynetwork.Port, 0, len(inspect.NetworkSettings.Ports))
-		for p := range inspect.NetworkSettings.Ports {
-			portNames = append(portNames, p)
-		}
-		sort.Slice(portNames, func(i, j int) bool {</code></pre>
+	// stored object in the order we send them — a stable order avoids</code></pre>
     <p>Nil <code>Config</code> is unlikely for a freshly inspected container but possible for legacy/multi-platform images or when a Docker-side bug corrupts an image record. A panic in the Docker watcher goroutine is partially caught by the <code>recover</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/controllers/app/engine/controllers/docker_watcher.go#L144-L149"><code>docker_watcher.go:144-149</code></a>, but that recover only logs and returns — the watcher goroutine exits, the reconciler detects a dead watcher and reconnects, and the panic rechecks the same input on the next sync, reproducing the crash. That&#39;s an infinite reconnect loop on a single bad image, not a clean failure.</p>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/controllers/app/engine/controllers/docker_watcher.go#L139-L154">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
       <pre data-start="139" data-line="144-149"><code class="language-go">	// the reconciler could wake, see alive()==true on the about-to-exit
@@ -506,28 +510,21 @@ if inspect.Config != nil {
       <div class="finding-title" id="S1">
         <span class="finding-num">S1.</span> Webhook state-enum check duplicates the CRD schema <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span><a href="#S1" class="pilcrow">&#182;</a>
       </div>
-      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/controllers/containers/container/container_webhooks.go#L32-L52">pkg/controllers/containers/container/container_webhooks.go</a></div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/controllers/containers/container/container_webhooks.go#L32-L45">pkg/controllers/containers/container/container_webhooks.go</a></div>
       <pre data-start="32" data-line="37-47"><code class="language-go">
 // ValidateUpdate implements [ctrlwebhookadmission.Validator].
 // Only spec.state changes are allowed; all other spec fields are immutable.
+// The CRD schema already constrains spec.state to the valid enum
+// ({created, running, unknown}), so this webhook only enforces that
+// nothing else in the spec changes.
 func (c *immutableValidator) ValidateUpdate(_ context.Context, oldContainer, newContainer *v1alpha1.Container) (warnings ctrlwebhookadmission.Warnings, err error) {
-	if oldContainer.Spec.State != newContainer.Spec.State {
-		// Allow state transitions between &quot;created&quot;, &quot;running&quot;, and &quot;unknown&quot;.
-		switch newContainer.Spec.State {
-		case v1alpha1.ContainerStatusCreated, v1alpha1.ContainerStatusRunning, v1alpha1.ContainerStatusUnknown:
-			// Valid transition.
-		default:
-			return nil, fmt.Errorf(&quot;invalid target state %q: must be %q, %q, or %q&quot;,
-				newContainer.Spec.State,
-				v1alpha1.ContainerStatusCreated,
-				v1alpha1.ContainerStatusRunning,
-				v1alpha1.ContainerStatusUnknown)
-		}
-		// Compare specs with state normalized to check nothing else changed.
-		oldCopy := oldContainer.Spec
-		oldCopy.State = newContainer.Spec.State
-		if !equality.Semantic.DeepEqual(oldCopy, newContainer.Spec) {
-			return nil, fmt.Errorf(&quot;only spec.state may be changed: old: %v, new: %v&quot;, oldContainer.Spec, newContainer.Spec)</code></pre>
+	oldCopy := oldContainer.Spec
+	oldCopy.State = newContainer.Spec.State
+	if !equality.Semantic.DeepEqual(oldCopy, newContainer.Spec) {
+		return nil, fmt.Errorf(&quot;only spec.state may be changed: old: %v, new: %v&quot;, oldContainer.Spec, newContainer.Spec)
+	}
+	return nil, nil
+}</code></pre>
     <p><code>spec.state</code> is declared with <code>+kubebuilder:validation:Enum=created;running;unknown</code> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/apis/containers/v1alpha1/container_types.go#L69"><code>container_types.go:69</code></a>), and the CRD schema runs before validating admission webhooks. Any out-of-enum value is rejected with a 400 before this webhook executes, so the <code>switch</code> is unreachable.</p>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/587bfe269e8249974e0b77cfad21a15b83e85478/pkg/apis/containers/v1alpha1/container_types.go#L64-L74">pkg/apis/containers/v1alpha1/container_types.go</a></div>
       <pre data-start="64" data-line="69"><code class="language-go">	// &quot;created&quot; is satisfied by any non-running state (created,
