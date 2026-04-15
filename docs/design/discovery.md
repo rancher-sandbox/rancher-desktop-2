@@ -53,6 +53,8 @@ Ordering both steps before the annotation keeps the "ready = clients may proceed
 
 The ConfigMap is recreated on every control plane startup, so a stale `ready` from a previous crash is always cleared before CRD installation begins.
 
+The annotation only covers controllers known at control plane startup. External controllers (for example, the mock controller, or a controller manager started later via `rdd svc create --controllers=...`) can attach at any time, so a client waiting for the ready annotation must not assume that every controller it cares about is already registered. Discover external controllers by reading the ConfigMap directly.
+
 ## Consumers
 
 **Service readiness** -- The control plane queries the ConfigMap to discover which controllers are running across all managers. It uses this to decide when external controllers have finished registering.
