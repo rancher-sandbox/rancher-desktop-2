@@ -227,7 +227,7 @@ local_setup_file() {
     assert_output
     run -0 rdd ctl get "${image_ref}" --namespace="${NAMESPACE}" \
         -o jsonpath='{.metadata.finalizers[0]}'
-    assert_output "engine.rancherdesktop.io/docker-mirror"
+    assert_output "engine.rancherdesktop.io/mirror"
 
     # Remove the container so Docker permits the image removal. The
     # next reconcile's finalizer retry succeeds and the Image mirror

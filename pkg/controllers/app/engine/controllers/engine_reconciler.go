@@ -52,8 +52,8 @@ const (
 	finalizerFieldOwner = controllerName + "-finalizer"
 
 	// mirrorFinalizer is added to mirror resources so user deletions
-	// are forwarded to Docker before the resource is removed.
-	mirrorFinalizer = "engine.rancherdesktop.io/docker-mirror"
+	// are forwarded to the container engine before the resource is removed.
+	mirrorFinalizer = "engine.rancherdesktop.io/mirror"
 
 	// conditionContainerEngineReady goes to True once the engine
 	// controller has connected to Docker and finished the initial sync.

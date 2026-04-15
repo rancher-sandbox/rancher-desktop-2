@@ -26,7 +26,7 @@ Where capitalization alone is ambiguous (sentence start, or prose that
 mentions both the engine object and the resource), the resources are
 called "Container mirrors", "Image mirrors", and "Volume mirrors", after
 the engine controller's role. The code uses the same terminology: the
-finalizer is `engine.rancherdesktop.io/docker-mirror`, the cleanup
+finalizer is `engine.rancherdesktop.io/mirror`, the cleanup
 helper is `cleanupMirrorResources`, and the name helper is
 `volumeMirrorName`.
 
@@ -74,7 +74,7 @@ controller removes all mirror resources and sets `ContainerEngineReady` to
 
 ### Finalizer lifecycle
 
-Each mirror carries the `engine.rancherdesktop.io/docker-mirror`
+Each mirror carries the `engine.rancherdesktop.io/mirror`
 finalizer. A K8s-side delete triggers the finalizer handler, which
 deletes the corresponding engine object and then strips the finalizer
 so the mirror can be garbage-collected.
