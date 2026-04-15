@@ -38,9 +38,6 @@ const (
 	// Docker uses a single namespace called "moby".
 	containerNamespace = "moby"
 
-	// apiNamespace is the Kubernetes namespace for mirror resources.
-	apiNamespace = "rancher-desktop"
-
 	// controllerName is the SSA field owner for engine-controller applies.
 	controllerName = "engine-controller"
 
@@ -73,6 +70,10 @@ type EngineReconciler struct {
 	// reconcileChan receives events from the Docker watcher goroutine.
 	reconcileChan chan event.GenericEvent
 
+	// apiNamespace mirrors App.spec.namespace (immutable). Reconcile
+	// populates it before any mirror operation.
+	apiNamespace string
+
 	// watcherMu protects watcher state.
 	watcherMu sync.Mutex
 	watcher   *dockerWatcher
@@ -97,6 +98,7 @@ func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 	if err := r.Get(ctx, client.ObjectKey{Name: appName}, &app); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	r.apiNamespace = app.GetResourceNamespace()
 
 	running := meta.IsStatusConditionTrue(app.Status.Conditions, "Running")
 	engineIsDocker := app.Spec.ContainerEngine.Name == engineMoby
@@ -221,7 +223,7 @@ func (r *EngineReconciler) startWatcher(_ context.Context) error {
 		return nil
 	}
 
-	w, err := newDockerWatcher(r.watcherCtx, r.Client, r.reconcileChan)
+	w, err := newDockerWatcher(r.watcherCtx, r.Client, r.apiNamespace, r.reconcileChan)
 	if err != nil {
 		return err
 	}
@@ -296,15 +298,15 @@ func (r *EngineReconciler) cleanupMirrorResources(ctx context.Context) error {
 }
 
 // deleteAllOfType lists and removes every resource of the given kind
-// in apiNamespace. Engine is authoritative for Container, Image, and
-// Volume in `rancher-desktop`: this loop deletes every object, not
+// in r.apiNamespace. Engine is authoritative for Container, Image, and
+// Volume in the App's namespace: this loop deletes every object, not
 // just engine-owned mirrors. Coexistence with another writer to these
 // kinds requires an engine-owned label and matching filters here and
 // in the sync_*.go full-sync prune paths. Finalizer removal retries
 // on conflict; per-item errors are collected so one stuck object does
 // not block the rest.
 func (r *EngineReconciler) deleteAllOfType(ctx context.Context, list client.ObjectList) error {
-	if err := r.List(ctx, list, client.InNamespace(apiNamespace)); err != nil {
+	if err := r.List(ctx, list, client.InNamespace(r.apiNamespace)); err != nil {
 		return err
 	}
 
@@ -363,7 +365,7 @@ func (r *EngineReconciler) reconcileContainerSpecs(ctx context.Context) error {
 	}
 
 	var containers containersv1alpha1.ContainerList
-	if err := r.List(ctx, &containers, client.InNamespace(apiNamespace)); err != nil {
+	if err := r.List(ctx, &containers, client.InNamespace(r.apiNamespace)); err != nil {
 		return err
 	}
 
@@ -405,7 +407,7 @@ func (r *EngineReconciler) processFinalizers(ctx context.Context) error {
 // retrying on later reconciles.
 func (r *EngineReconciler) processContainerFinalizers(ctx context.Context, w *dockerWatcher) error {
 	var containers containersv1alpha1.ContainerList
-	if err := r.List(ctx, &containers, client.InNamespace(apiNamespace)); err != nil {
+	if err := r.List(ctx, &containers, client.InNamespace(r.apiNamespace)); err != nil {
 		return err
 	}
 	var errs []error
@@ -445,7 +447,7 @@ func (r *EngineReconciler) processContainerFinalizers(ctx context.Context, w *do
 
 func (r *EngineReconciler) processImageFinalizers(ctx context.Context, w *dockerWatcher) error {
 	var images containersv1alpha1.ImageList
-	if err := r.List(ctx, &images, client.InNamespace(apiNamespace)); err != nil {
+	if err := r.List(ctx, &images, client.InNamespace(r.apiNamespace)); err != nil {
 		return err
 	}
 	var errs []error
@@ -488,7 +490,7 @@ func (r *EngineReconciler) processImageFinalizers(ctx context.Context, w *docker
 
 func (r *EngineReconciler) processVolumeFinalizers(ctx context.Context, w *dockerWatcher) error {
 	var volumes containersv1alpha1.VolumeList
-	if err := r.List(ctx, &volumes, client.InNamespace(apiNamespace)); err != nil {
+	if err := r.List(ctx, &volumes, client.InNamespace(r.apiNamespace)); err != nil {
 		return err
 	}
 	var errs []error

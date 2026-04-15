@@ -78,7 +78,7 @@ func (w *dockerWatcher) syncAllImages(ctx context.Context) error {
 
 	// Remove stale Image mirrors.
 	var imageMirrors containersv1alpha1.ImageList
-	if err := w.k8s.List(ctx, &imageMirrors, client.InNamespace(apiNamespace)); err != nil {
+	if err := w.k8s.List(ctx, &imageMirrors, client.InNamespace(w.apiNamespace)); err != nil {
 		return fmt.Errorf("failed to list Images: %w", err)
 	}
 	for i := range imageMirrors.Items {
@@ -120,7 +120,7 @@ func (w *dockerWatcher) applyImageFromInspect(ctx context.Context, inspect mobyi
 	if len(inspect.RepoTags) > 0 {
 		for i, tag := range inspect.RepoTags {
 			if err := w.applyImage(ctx,
-				containersv1alpha1apply.Image(names[i], apiNamespace).
+				containersv1alpha1apply.Image(names[i], w.apiNamespace).
 					WithFinalizers(mirrorFinalizer),
 				imageStatusFromInspect(inspect).
 					WithRepoTag(tag).
@@ -133,7 +133,7 @@ func (w *dockerWatcher) applyImageFromInspect(ctx context.Context, inspect mobyi
 		// Dangling image (no tags). status.namespace is required by
 		// the CRD, so set it here too.
 		if err := w.applyImage(ctx,
-			containersv1alpha1apply.Image(names[0], apiNamespace).
+			containersv1alpha1apply.Image(names[0], w.apiNamespace).
 				WithFinalizers(mirrorFinalizer),
 			imageStatusFromInspect(inspect).
 				WithNamespace(containerNamespace),
@@ -220,7 +220,7 @@ func (w *dockerWatcher) reconcileImageByID(ctx context.Context, id string) error
 	}
 
 	var images containersv1alpha1.ImageList
-	if err := w.k8s.List(ctx, &images, client.InNamespace(apiNamespace)); err != nil {
+	if err := w.k8s.List(ctx, &images, client.InNamespace(w.apiNamespace)); err != nil {
 		return errors.Join(applyErr, err)
 	}
 	var errs []error
@@ -252,7 +252,7 @@ func (w *dockerWatcher) reconcileImageByID(ctx context.Context, id string) error
 // restart.
 func (w *dockerWatcher) removeImagesByID(ctx context.Context, id string) error {
 	var images containersv1alpha1.ImageList
-	if err := w.k8s.List(ctx, &images, client.InNamespace(apiNamespace)); err != nil {
+	if err := w.k8s.List(ctx, &images, client.InNamespace(w.apiNamespace)); err != nil {
 		return err
 	}
 	var errs []error

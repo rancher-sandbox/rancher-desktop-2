@@ -61,7 +61,7 @@ func (w *dockerWatcher) syncAllContainers(ctx context.Context) error {
 
 	// Remove stale Container mirrors.
 	var containerMirrors containersv1alpha1.ContainerList
-	if err := w.k8s.List(ctx, &containerMirrors, client.InNamespace(apiNamespace)); err != nil {
+	if err := w.k8s.List(ctx, &containerMirrors, client.InNamespace(w.apiNamespace)); err != nil {
 		return fmt.Errorf("failed to list Containers: %w", err)
 	}
 	for i := range containerMirrors.Items {
@@ -117,9 +117,9 @@ func (w *dockerWatcher) applyContainer(ctx context.Context, inspect mobycontaine
 	// Apply succeeds on a fresh resource and fails loudly on a
 	// concurrent conflict.
 	var existing containersv1alpha1.Container
-	err := w.k8s.Get(ctx, client.ObjectKey{Name: inspect.ID, Namespace: apiNamespace}, &existing)
+	err := w.k8s.Get(ctx, client.ObjectKey{Name: inspect.ID, Namespace: w.apiNamespace}, &existing)
 	if apierrors.IsNotFound(err) {
-		applyConfig := containersv1alpha1apply.Container(inspect.ID, apiNamespace).
+		applyConfig := containersv1alpha1apply.Container(inspect.ID, w.apiNamespace).
 			WithFinalizers(mirrorFinalizer).
 			WithSpec(containersv1alpha1apply.ContainerSpec().WithState(containersv1alpha1.ContainerStatusUnknown))
 		if err := w.k8s.Apply(ctx, applyConfig, client.FieldOwner(controllerName)); err != nil {
@@ -140,7 +140,7 @@ func (w *dockerWatcher) applyContainer(ctx context.Context, inspect mobycontaine
 		// manager; releasing spec from controllerName would prune
 		// spec (no other manager owns it) and fail the CRD's
 		// required-field validation.
-		finalizerOnly := containersv1alpha1apply.Container(inspect.ID, apiNamespace).
+		finalizerOnly := containersv1alpha1apply.Container(inspect.ID, w.apiNamespace).
 			WithFinalizers(mirrorFinalizer)
 		if err := w.k8s.Apply(ctx, finalizerOnly,
 			client.ForceOwnership, client.FieldOwner(finalizerFieldOwner)); err != nil {
@@ -221,7 +221,7 @@ func (w *dockerWatcher) applyContainer(ctx context.Context, inspect mobycontaine
 	}
 	statusApply.WithPorts(applyPorts...)
 
-	statusConfig := containersv1alpha1apply.Container(inspect.ID, apiNamespace).
+	statusConfig := containersv1alpha1apply.Container(inspect.ID, w.apiNamespace).
 		WithStatus(statusApply)
 
 	err = w.k8s.SubResource("status").Apply(ctx, statusConfig,

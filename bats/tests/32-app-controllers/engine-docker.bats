@@ -9,10 +9,6 @@ load '../../helpers/load'
 # resources, and that deletions and spec.state changes are forwarded
 # to Docker.
 
-NAMESPACE="rancher-desktop"
-DOCKER_HOST="unix://$(rdd svc paths docker_socket)"
-export DOCKER_HOST
-
 local_setup_file() {
     # The Docker socket access pattern used by these tests is not yet wired
     # up for Windows/WSL2.
@@ -23,12 +19,19 @@ local_setup_file() {
     # set, so no explicit --controllers selection is needed.
     rdd svc delete
     rdd set running=true
+    run -0 rdd svc paths docker_socket
+    export DOCKER_HOST="unix://${output}"
+    # Mirror resources live in App.spec.namespace. Override RDD_NAMESPACE
+    # to whatever the App was created with so the test queries the same
+    # namespace the engine controller uses, regardless of CRD defaults.
+    RDD_NAMESPACE=$(rdd ctl get app app -o jsonpath='{.spec.namespace}')
+    export RDD_NAMESPACE
 }
 
 # --- Startup ---
 
 @test "ContainerNamespace moby exists" {
-    rdd ctl wait --for=create --namespace="${NAMESPACE}" \
+    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" \
         containernamespace/moby --timeout=10s
 }
 
@@ -36,7 +39,7 @@ local_setup_file() {
 
 @test "docker pull creates Image resource" {
     docker pull busybox
-    rdd ctl wait --for=create --namespace="${NAMESPACE}" image \
+    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" image \
         --field-selector "status.repoTag=busybox:latest" --timeout=30s
 }
 
@@ -47,20 +50,20 @@ local_setup_file() {
     # image and prunes Image mirrors whose tags are no longer present
     # in Docker's current RepoTags.
     docker tag busybox:latest busybox:alias
-    rdd ctl wait --for=create --namespace="${NAMESPACE}" image \
+    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" image \
         --field-selector "status.repoTag=busybox:alias" --timeout=30s
 
     # Sanity check: the original tag is still mirrored.
-    run -0 rdd ctl get image --namespace="${NAMESPACE}" \
+    run -0 rdd ctl get image --namespace="${RDD_NAMESPACE}" \
         --field-selector "status.repoTag=busybox:latest" -o name
     assert_output
 
     docker rmi busybox:alias
-    rdd ctl wait --for=delete --namespace="${NAMESPACE}" image \
+    rdd ctl wait --for=delete --namespace="${RDD_NAMESPACE}" image \
         --field-selector "status.repoTag=busybox:alias" --timeout=30s
 
     # busybox:latest must remain because the image still has that tag.
-    run -0 rdd ctl get image --namespace="${NAMESPACE}" \
+    run -0 rdd ctl get image --namespace="${RDD_NAMESPACE}" \
         --field-selector "status.repoTag=busybox:latest" -o name
     assert_output
 }
@@ -83,12 +86,12 @@ local_setup_file() {
     docker rmi --force alpine:latest
 
     # The dangling mirror has no RepoTag — query by status.id instead.
-    rdd ctl wait --for=create --namespace="${NAMESPACE}" image \
+    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" image \
         --field-selector "status.id=${alpine_id}" --timeout=30s
 
     # Sanity check: exactly one mirror exists for this image and it has
     # no RepoTag (the dangling mirror).
-    run -0 rdd ctl get image --namespace="${NAMESPACE}" \
+    run -0 rdd ctl get image --namespace="${RDD_NAMESPACE}" \
         --field-selector "status.id=${alpine_id}" \
         -o jsonpath='{.items[*].status.repoTag}'
     refute_output
@@ -97,12 +100,12 @@ local_setup_file() {
     # reconcileImageByID, which creates a new tagged mirror and prunes
     # the now-stale dangling mirror.
     docker tag "${alpine_id}" dangling-tag-test:v1
-    rdd ctl wait --for=create --namespace="${NAMESPACE}" image \
+    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" image \
         --field-selector "status.repoTag=dangling-tag-test:v1" --timeout=30s
 
     # The dangling mirror must be gone: the only mirror for this image
     # is the new tagged one.
-    run -0 rdd ctl get image --namespace="${NAMESPACE}" \
+    run -0 rdd ctl get image --namespace="${RDD_NAMESPACE}" \
         --field-selector "status.id=${alpine_id}" \
         -o jsonpath='{.items[*].status.repoTag}'
     assert_output "dangling-tag-test:v1"
@@ -120,16 +123,16 @@ local_setup_file() {
     run -0 docker inspect test-lifecycle --format '{{.Id}}'
     cid=${output}
 
-    rdd ctl wait --for=create --namespace="${NAMESPACE}" \
+    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" \
         container/"${cid}" --timeout=30s
     rdd ctl wait --for=jsonpath='{.status.status}'=running \
-        --namespace="${NAMESPACE}" container/"${cid}" --timeout=10s
+        --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=10s
 
-    run -0 rdd ctl get container "${cid}" --namespace="${NAMESPACE}" \
+    run -0 rdd ctl get container "${cid}" --namespace="${RDD_NAMESPACE}" \
         -o jsonpath='{.status.name}'
     assert_output "test-lifecycle"
 
-    run -0 rdd ctl get container "${cid}" --namespace="${NAMESPACE}" \
+    run -0 rdd ctl get container "${cid}" --namespace="${RDD_NAMESPACE}" \
         -o jsonpath='{.spec.state}'
     assert_output "unknown"
 }
@@ -140,7 +143,7 @@ local_setup_file() {
 
     docker stop test-lifecycle
     rdd ctl wait --for=jsonpath='{.status.status}'=exited \
-        --namespace="${NAMESPACE}" container/"${cid}" --timeout=30s
+        --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=30s
 }
 
 @test "docker rm deletes Container resource" {
@@ -148,7 +151,7 @@ local_setup_file() {
     cid=${output}
 
     docker rm test-lifecycle
-    rdd ctl wait --for=delete --namespace="${NAMESPACE}" \
+    rdd ctl wait --for=delete --namespace="${RDD_NAMESPACE}" \
         container/"${cid}" --timeout=30s
 }
 
@@ -162,13 +165,13 @@ local_setup_file() {
 @test "docker volume create creates Volume resource" {
     docker volume create test-vol
 
-    rdd ctl wait --for=create --namespace="${NAMESPACE}" volume \
+    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" volume \
         --field-selector "status.name=test-vol" --timeout=30s
 }
 
 @test "docker volume rm deletes Volume resource" {
     docker volume rm test-vol
-    rdd ctl wait --for=delete --namespace="${NAMESPACE}" volume \
+    rdd ctl wait --for=delete --namespace="${RDD_NAMESPACE}" volume \
         --field-selector "status.name=test-vol" --timeout=30s
 }
 
@@ -178,10 +181,10 @@ local_setup_file() {
     # Docker name into a valid subdomain; the original is preserved
     # in status.name and queryable via the field selector.
     docker volume create My_Vol_Ume
-    rdd ctl wait --for=create --namespace="${NAMESPACE}" volume \
+    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" volume \
         --field-selector "status.name=My_Vol_Ume" --timeout=30s
     docker volume rm My_Vol_Ume
-    rdd ctl wait --for=delete --namespace="${NAMESPACE}" volume \
+    rdd ctl wait --for=delete --namespace="${RDD_NAMESPACE}" volume \
         --field-selector "status.name=My_Vol_Ume" --timeout=30s
 }
 
@@ -193,11 +196,11 @@ local_setup_file() {
     run -0 docker inspect test-delete --format '{{.Id}}'
     cid=${output}
 
-    rdd ctl wait --for=create --namespace="${NAMESPACE}" \
+    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" \
         container/"${cid}" --timeout=30s
 
-    rdd ctl delete container "${cid}" --namespace="${NAMESPACE}"
-    rdd ctl wait --for=delete --namespace="${NAMESPACE}" \
+    rdd ctl delete container "${cid}" --namespace="${RDD_NAMESPACE}"
+    rdd ctl wait --for=delete --namespace="${RDD_NAMESPACE}" \
         container/"${cid}" --timeout=30s
 
     run -1 docker inspect test-delete
@@ -208,10 +211,10 @@ local_setup_file() {
     run -0 docker inspect test-inuse --format '{{.Id}}'
     cid=${output}
     rdd ctl wait --for=jsonpath='{.status.status}'=running \
-        --namespace="${NAMESPACE}" container/"${cid}" --timeout=30s
+        --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=30s
 
     # Resolve the Image mirror name from its repoTag.
-    run -0 rdd ctl get image --namespace="${NAMESPACE}" \
+    run -0 rdd ctl get image --namespace="${RDD_NAMESPACE}" \
         --field-selector "status.repoTag=busybox:latest" -o name
     assert_output
     image_ref=${output}
@@ -220,12 +223,12 @@ local_setup_file() {
     # container. With I3 fixed, processImageFinalizers leaves the
     # finalizer in place and the Image mirror stays (in Terminating
     # state) until the image is actually removable.
-    rdd ctl delete "${image_ref}" --namespace="${NAMESPACE}" --wait=false
+    rdd ctl delete "${image_ref}" --namespace="${RDD_NAMESPACE}" --wait=false
 
-    run -0 rdd ctl get "${image_ref}" --namespace="${NAMESPACE}" \
+    run -0 rdd ctl get "${image_ref}" --namespace="${RDD_NAMESPACE}" \
         -o jsonpath='{.metadata.deletionTimestamp}'
     assert_output
-    run -0 rdd ctl get "${image_ref}" --namespace="${NAMESPACE}" \
+    run -0 rdd ctl get "${image_ref}" --namespace="${RDD_NAMESPACE}" \
         -o jsonpath='{.metadata.finalizers[0]}'
     assert_output "engine.rancherdesktop.io/mirror"
 
@@ -233,7 +236,7 @@ local_setup_file() {
     # next reconcile's finalizer retry succeeds and the Image mirror
     # is finally collected.
     docker rm --force test-inuse
-    rdd ctl wait --for=delete --namespace="${NAMESPACE}" \
+    rdd ctl wait --for=delete --namespace="${RDD_NAMESPACE}" \
         "${image_ref}" --timeout=30s
 }
 
@@ -246,13 +249,13 @@ local_setup_file() {
     cid=${output}
 
     rdd ctl wait --for=jsonpath='{.status.status}'=running \
-        --namespace="${NAMESPACE}" container/"${cid}" --timeout=30s
+        --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=30s
 
-    rdd ctl patch container "${cid}" --namespace="${NAMESPACE}" \
+    rdd ctl patch container "${cid}" --namespace="${RDD_NAMESPACE}" \
         --type=merge -p '{"spec":{"state":"created"}}'
 
     rdd ctl wait --for=jsonpath='{.status.status}'=exited \
-        --namespace="${NAMESPACE}" container/"${cid}" --timeout=30s
+        --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=30s
 
     run -0 docker inspect test-state --format '{{.State.Status}}'
     assert_output "exited"
@@ -262,11 +265,11 @@ local_setup_file() {
     run -0 docker inspect test-state --format '{{.Id}}'
     cid=${output}
 
-    rdd ctl patch container "${cid}" --namespace="${NAMESPACE}" \
+    rdd ctl patch container "${cid}" --namespace="${RDD_NAMESPACE}" \
         --type=merge -p '{"spec":{"state":"running"}}'
 
     rdd ctl wait --for=jsonpath='{.status.status}'=running \
-        --namespace="${NAMESPACE}" container/"${cid}" --timeout=30s
+        --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=30s
 
     run -0 docker inspect test-state --format '{{.State.Status}}'
     assert_output "running"
@@ -284,18 +287,18 @@ local_setup_file() {
     # spec.state=running, the reconciler would race us by auto-unpausing
     # (desired=running, actual=paused → ContainerUnpause) before our
     # wait can observe status=paused.
-    rdd ctl patch container "${cid}" --namespace="${NAMESPACE}" \
+    rdd ctl patch container "${cid}" --namespace="${RDD_NAMESPACE}" \
         --type=merge -p '{"spec":{"state":"unknown"}}'
 
     docker pause test-state
     rdd ctl wait --for=jsonpath='{.status.status}'=paused \
-        --namespace="${NAMESPACE}" container/"${cid}" --timeout=30s
+        --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=30s
 
-    rdd ctl patch container "${cid}" --namespace="${NAMESPACE}" \
+    rdd ctl patch container "${cid}" --namespace="${RDD_NAMESPACE}" \
         --type=merge -p '{"spec":{"state":"created"}}'
 
     rdd ctl wait --for=jsonpath='{.status.status}'=exited \
-        --namespace="${NAMESPACE}" container/"${cid}" --timeout=30s
+        --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=30s
 
     run -0 docker inspect test-state --format '{{.State.Status}}'
     assert_output "exited"
@@ -312,17 +315,17 @@ local_setup_file() {
     cid=${output}
 
     rdd ctl wait --for=jsonpath='{.status.status}'=running \
-        --namespace="${NAMESPACE}" container/"${cid}" --timeout=30s
+        --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=30s
 
     docker pause test-unpause
     rdd ctl wait --for=jsonpath='{.status.status}'=paused \
-        --namespace="${NAMESPACE}" container/"${cid}" --timeout=30s
+        --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=30s
 
-    rdd ctl patch container "${cid}" --namespace="${NAMESPACE}" \
+    rdd ctl patch container "${cid}" --namespace="${RDD_NAMESPACE}" \
         --type=merge -p '{"spec":{"state":"running"}}'
 
     rdd ctl wait --for=jsonpath='{.status.status}'=running \
-        --namespace="${NAMESPACE}" container/"${cid}" --timeout=30s
+        --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=30s
 
     run -0 docker inspect test-unpause --format '{{.State.Status}}'
     assert_output "running"
@@ -334,18 +337,18 @@ local_setup_file() {
 
 @test "stopping VM removes all mirror resources" {
     # Make sure we have at least one resource to verify cleanup.
-    rdd ctl wait --for=create --namespace="${NAMESPACE}" \
+    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" \
         containernamespace/moby --timeout=10s
 
     rdd set running=false
 
-    run -0 rdd ctl get containers --namespace="${NAMESPACE}" --output=name
+    run -0 rdd ctl get containers --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
-    run -0 rdd ctl get images --namespace="${NAMESPACE}" --output=name
+    run -0 rdd ctl get images --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
-    run -0 rdd ctl get volumes --namespace="${NAMESPACE}" --output=name
+    run -0 rdd ctl get volumes --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
-    run -0 rdd ctl get containernamespaces --namespace="${NAMESPACE}" --output=name
+    run -0 rdd ctl get containernamespaces --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
 }
 
@@ -368,15 +371,15 @@ local_setup_file() {
 
 @test "restarting VM restores ContainerEngineReady and moby namespace" {
     rdd set running=true
-    rdd ctl wait --for=create --namespace="${NAMESPACE}" \
+    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" \
         containernamespace/moby --timeout=10s
 }
 
 @test "deleting containernamespace/moby completes without a finalizer hang" {
     # moby ContainerNamespace has no mirror finalizer, so a user delete
     # must return promptly rather than get trapped in Terminating.
-    rdd ctl delete containernamespace/moby --namespace="${NAMESPACE}" --timeout=10s
-    run -0 rdd ctl get containernamespaces --namespace="${NAMESPACE}" --output=name
+    rdd ctl delete containernamespace/moby --namespace="${RDD_NAMESPACE}" --timeout=10s
+    run -0 rdd ctl get containernamespaces --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
 }
 
@@ -398,12 +401,12 @@ local_setup_file() {
     assert_output "NotApplicable"
 
     # No mirror resources should exist in containerd mode.
-    run -0 rdd ctl get containers --namespace="${NAMESPACE}" --output=name
+    run -0 rdd ctl get containers --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
-    run -0 rdd ctl get images --namespace="${NAMESPACE}" --output=name
+    run -0 rdd ctl get images --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
-    run -0 rdd ctl get volumes --namespace="${NAMESPACE}" --output=name
+    run -0 rdd ctl get volumes --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
-    run -0 rdd ctl get containernamespaces --namespace="${NAMESPACE}" --output=name
+    run -0 rdd ctl get containernamespaces --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
 }

@@ -33,6 +33,9 @@ type dockerWatcher struct {
 	cli *dockerclient.Client
 	k8s client.Client
 
+	// apiNamespace is the Kubernetes namespace where mirror resources live.
+	apiNamespace string
+
 	cancel context.CancelFunc
 	done   chan struct{}
 
@@ -42,7 +45,7 @@ type dockerWatcher struct {
 
 // newDockerWatcher creates a Docker client, performs a full sync, and starts
 // the event stream watcher goroutine.
-func newDockerWatcher(ctx context.Context, k8s client.Client, reconcileChan chan<- event.GenericEvent) (*dockerWatcher, error) {
+func newDockerWatcher(ctx context.Context, k8s client.Client, apiNamespace string, reconcileChan chan<- event.GenericEvent) (*dockerWatcher, error) {
 	socketPath := instance.DockerSocket()
 	cli, err := dockerclient.New(
 		dockerclient.WithHost("unix://" + socketPath),
@@ -64,6 +67,7 @@ func newDockerWatcher(ctx context.Context, k8s client.Client, reconcileChan chan
 	w := &dockerWatcher{
 		cli:           cli,
 		k8s:           k8s,
+		apiNamespace:  apiNamespace,
 		cancel:        watchCancel,
 		done:          make(chan struct{}),
 		reconcileChan: reconcileChan,
@@ -295,7 +299,7 @@ func (w *dockerWatcher) handleVolumeEvent(ctx context.Context, msg events.Messag
 // stale cache; NotFound is treated as success. obj is a template —
 // each retry iteration starts from a fresh DeepCopyObject.
 func (w *dockerWatcher) removeMirrorResource(ctx context.Context, obj client.Object, name string) error {
-	key := client.ObjectKey{Name: name, Namespace: apiNamespace}
+	key := client.ObjectKey{Name: name, Namespace: w.apiNamespace}
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		latest := obj.DeepCopyObject().(client.Object)
 		if err := w.k8s.Get(ctx, key, latest); err != nil {
@@ -314,7 +318,7 @@ func (w *dockerWatcher) removeMirrorResource(ctx context.Context, obj client.Obj
 	}
 	deleteTarget := obj.DeepCopyObject().(client.Object)
 	deleteTarget.SetName(name)
-	deleteTarget.SetNamespace(apiNamespace)
+	deleteTarget.SetNamespace(w.apiNamespace)
 	return client.IgnoreNotFound(w.k8s.Delete(ctx, deleteTarget))
 }
 
@@ -423,13 +427,10 @@ func (w *dockerWatcher) deleteVolume(ctx context.Context, name string) error {
 
 // fullSync lists all containers, images, and volumes from Docker and
 // creates corresponding mirror resources. It also removes stale mirrors.
+// The App controller creates and deletes the namespace, so fullSync can assume it exists.
 func (w *dockerWatcher) fullSync(ctx context.Context) error {
 	log := logf.FromContext(ctx).WithName("docker-watcher")
 	log.Info("Starting full sync")
-
-	if err := w.ensureNamespace(ctx); err != nil {
-		return fmt.Errorf("failed to ensure namespace: %w", err)
-	}
 
 	var errs []error
 
