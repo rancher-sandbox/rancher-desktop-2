@@ -10,15 +10,11 @@ Valid property names and types are derived from the App CRD's OpenAPI schema at 
 
 If the App resource does not exist, it is created with default settings before the specified values are applied.
 
-By default, `rdd set` waits for the desired state before returning. The
-property-to-condition mapping is hardcoded; it is not read from the CRD
-schema:
+By default, `rdd set` waits for the reconcile chain to settle before returning. Every property change — `running`, `containerEngine.name`, `kubernetes.enabled`, or any combination — waits for the App's `Settled` condition to reach `True` with `ObservedGeneration` matching the post-patch generation.
 
-- `running=true` waits for `ContainerEngineReady=True` — the engine watcher has connected to Docker on the `moby` backend, or the condition reports `NotApplicable` on `containerd`. If the controller set excludes engine (for example, `--controllers=-engine`, or on Windows where the engine controller does not register yet because the Docker socket transport is not wired up for WSL2), the wait falls back to `Running=True`.
-- `running=false` waits for the App's `Running` condition to leave `True`, meaning the VM has actually stopped. This is stricter than "container engine disconnected".
-- Other property changes do not wait. Pure backend swaps (for example, `rdd set containerEngine.name=containerd` without a `running` argument) return as soon as the patch is accepted.
+`Settled` goes `False` whenever the App controller sees a generation it has not yet caught up with, and back to `True` once the LimaVM has reached a terminal phase (Started or Stopped) and the engine controller has processed the current generation.
 
-The wait filters on the App's post-patch `metadata.generation`, so a leftover `ContainerEngineReady=True` from a prior backend cannot prematurely satisfy it.
+The `ObservedGeneration` filter prevents a stale `Settled=True` from a previous reconcile from prematurely satisfying the wait.
 
 - `--dry-run`: Validate changes against the API server's admission controller without persisting them. If the App does not exist, it is created with defaults (the VM will not start) so the admission controller can validate the patch. The wait is skipped in dry-run mode.
 - `--wait`: Wait for the desired state after the patch is accepted (default `true`). Pass `--wait=false` to return as soon as the patch is accepted.

@@ -6,8 +6,13 @@ load '../../helpers/load'
 
 # Test the `rdd set` command for App configuration.
 # Tests run sequentially and reuse the App across tests to minimize
-# App creations (each triggers a ~200MB VM image copy).
-# Avoids setting running=true to keep tests fast.
+# App creations (each triggers a ~200MB VM image copy). Avoids
+# setting running=true to keep tests fast, and passes --wait=false
+# on every set so the command returns as soon as the patch is
+# accepted: this suite runs with only the app controller (no lima,
+# no engine), so the App reconciler fails to start and Settled is
+# never written. The real wait semantics are covered by
+# engine-docker.bats.
 
 APP_NAME="app"
 
@@ -76,7 +81,7 @@ local_setup_file() {
 # --- Create + defaults (1 App creation) ---
 
 @test "rdd set creates App with defaults" {
-    rdd set running=false
+    rdd set --wait=false running=false
 
     run -0 get_app_field '.metadata.name'
     assert_output "${APP_NAME}"
@@ -91,7 +96,7 @@ local_setup_file() {
     run -0 get_app_field '.spec.containerEngine.name'
     refute_output "containerd"
 
-    rdd set containerEngine.name=containerd
+    rdd set --wait=false containerEngine.name=containerd
 
     run -0 get_app_field '.spec.containerEngine.name'
     assert_output "containerd"
@@ -106,7 +111,7 @@ local_setup_file() {
     run -0 get_app_field '.spec.kubernetes.version'
     refute_output "1.32.2"
 
-    rdd set kubernetes.enabled=true kubernetes.version=1.32.2
+    rdd set --wait=false kubernetes.enabled=true kubernetes.version=1.32.2
 
     # containerEngine.name should still be containerd.
     run -0 get_app_field '.spec.containerEngine.name'
@@ -126,7 +131,7 @@ local_setup_file() {
     assert_output "1.32.2"
 
     # Clear both together: webhook rejects an empty version when enabled=true.
-    rdd set kubernetes.enabled=false kubernetes.version=
+    rdd set --wait=false kubernetes.enabled=false kubernetes.version=
 
     run -0 get_app_field '.spec.kubernetes.version'
     assert_output ""
@@ -151,7 +156,7 @@ local_setup_file() {
 
 @test "rdd set creates App with specified values" {
     delete_app
-    rdd set running=false containerEngine.name=containerd
+    rdd set --wait=false running=false containerEngine.name=containerd
 
     run -0 get_app_field '.spec.containerEngine.name'
     assert_output "containerd"

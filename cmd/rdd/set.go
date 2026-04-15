@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -39,16 +38,9 @@ import (
 	cliexit "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/exit"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/help"
 	service "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/cmd"
-	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
 )
 
-const (
-	appCRDName = "apps.app.rancherdesktop.io"
-
-	// engineControllerName mirrors the unexported controllerName in
-	// pkg/controllers/app/engine/controller.go.
-	engineControllerName = "engine"
-)
+const appCRDName = "apps.app.rancherdesktop.io"
 
 var appGVR = schema.GroupVersionResource{
 	Group:    appv1alpha1.GroupVersion.Group,
@@ -75,11 +67,11 @@ func newSetCommand() *cobra.Command {
 			runtime. If the App resource does not exist, it is created with
 			default settings before applying the specified values.
 
-			By default, rdd set waits for the desired state: when running=true
-			is set, it waits for the container engine to be ready; when
-			running=false, it waits for the VM to stop. Pass --wait=false to
-			return as soon as the patch is accepted, or --timeout=0 to wait
-			indefinitely.
+			By default, rdd set waits for the App's Settled condition
+			to reach True at the new generation. The wait covers every
+			property change and returns only after the full reconcile
+			chain catches up. Pass --wait=false to return as soon as
+			the patch is accepted, or --timeout=0 to wait indefinitely.
 
 			Examples:
 			  rdd set running=true
@@ -329,7 +321,7 @@ func setAction(ctx context.Context, args []string, dryRun, wait bool, timeout ti
 	if dryRun || !wait {
 		return nil
 	}
-	if err := waitForDesiredState(ctx, restConfig, properties, timeout, targetGen); err != nil {
+	if err := waitForDesiredState(ctx, restConfig, timeout, targetGen); err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return cliexit.Timeout(err)
 		}
@@ -472,82 +464,26 @@ func patchApp(ctx context.Context, c client.Client, app *appv1alpha1.App, specMa
 	return app.Generation, nil
 }
 
-// waitForDesiredState waits for the App to reach the state
-// implied by the properties that were set. running=true waits
-// for ContainerEngineReady=True when the engine controller is
-// enabled, or Running=True otherwise. running=false waits for
-// the App's Running condition to go False — stricter than
-// "container engine disconnected" because the VM must actually
-// stop. Other property changes do not wait.
+// waitForDesiredState waits for the App reconcile chain to settle on
+// the new spec. Every property change waits for Settled=True with
+// ObservedGeneration >= minGen. Settled gates on the LimaVM reaching
+// its terminal phase (Started or Stopped) and, when the engine
+// controller is registered, on ContainerEngineReady=True at the
+// current generation.
 //
-// The predicate rejects snapshots with ObservedGeneration < minGen, so a
-// stale ContainerEngineReady=True from a previous reconcile cannot satisfy it.
-//
-// TODO: changes that trigger a VM restart without changing "running"
-// (for example, containerEngine.name alone) are still not waited on.
-// A dedicated "Reconciled" condition on App would let the CLI detect
-// when the full reconcile chain has settled for any property change.
-func waitForDesiredState(ctx context.Context, config *rest.Config, properties map[string]string, timeout time.Duration, minGen int64) error {
-	runningVal, ok := properties["running"]
-	if !ok {
-		return nil
-	}
-
+// Filtering on ObservedGeneration >= minGen blocks a stale
+// Settled=True from a prior reconcile from satisfying the wait
+// before the App controller observes our write.
+func waitForDesiredState(ctx context.Context, config *rest.Config, timeout time.Duration, minGen int64) error {
 	// timeout == 0 means "no deadline", matching kubectl wait.
 	ctx, cancel := watchtools.ContextWithOptionalTimeout(ctx, timeout)
 	defer cancel()
 
-	if runningVal == "true" {
-		// Without the engine controller enabled, nothing stamps
-		// ContainerEngineReady, and waiting on it would hang for
-		// the full timeout on Windows (engine init() skips
-		// registration) or on any run that excludes engine via
-		// --controllers. Discovery errors default to the stricter
-		// ContainerEngineReady wait rather than the Running
-		// fallback.
-		engineEnabled, err := isEngineControllerEnabled(ctx, config)
-		if err != nil {
-			logrus.WithError(err).Debug("Falling back to ContainerEngineReady wait after discovery lookup failed")
-			engineEnabled = true
-		}
-		if engineEnabled {
-			logrus.Info("Waiting for container engine to be ready")
-			return watchCondition(ctx, config, func(obj *unstructured.Unstructured) bool {
-				status, gen, present := conditionInfo(obj, "ContainerEngineReady")
-				return present && gen >= minGen && status == metav1.ConditionTrue
-			})
-		}
-		logrus.Info("Waiting for the VM to start (engine controller not enabled)")
-		return watchCondition(ctx, config, func(obj *unstructured.Unstructured) bool {
-			status, gen, present := conditionInfo(obj, "Running")
-			return present && gen >= minGen && status == metav1.ConditionTrue
-		})
-	}
-	logrus.Info("Waiting for the VM to stop")
+	logrus.Info("Waiting for App to settle")
 	return watchCondition(ctx, config, func(obj *unstructured.Unstructured) bool {
-		// Absent Running means the VM was never started, so there's
-		// nothing to wait for. Otherwise wait until the condition is
-		// refreshed with our generation and reports a non-True status.
-		status, gen, present := conditionInfo(obj, "Running")
-		if !present {
-			return true
-		}
-		return gen >= minGen && status != metav1.ConditionTrue
+		status, gen, present := conditionInfo(obj, appv1alpha1.AppConditionSettled)
+		return present && gen >= minGen && status == metav1.ConditionTrue
 	})
-}
-
-// isEngineControllerEnabled reports whether the engine controller
-// is listed in the discovery ConfigMap's EnabledControllers.
-func isEngineControllerEnabled(ctx context.Context, config *rest.Config) (bool, error) {
-	discovery, err := controllers.NewControllerManagerDiscovery(config)
-	if err != nil {
-		return false, fmt.Errorf("failed to create discovery client: %w", err)
-	}
-	enabled, err := discovery.GetEnabledControllers(ctx)
-	if err != nil {
-		return false, fmt.Errorf("failed to list enabled controllers: %w", err)
-	}
-	return slices.Contains(enabled, engineControllerName), nil
 }
 
 // watchCondition watches the App singleton until the predicate

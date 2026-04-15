@@ -83,6 +83,14 @@ func RunControllers(apiGroupName string) int {
 		return 0
 	}
 
+	// Expose the enabled set to reconcilers that need to know which
+	// siblings share this process (see pkg/controllers/base docs).
+	enabledNames := make([]string, 0, len(controllersToStart))
+	for _, controller := range controllersToStart {
+		enabledNames = append(enabledNames, controller.GetName())
+	}
+	base.SetEnabledControllers(enabledNames)
+
 	// Create a cancellable context for control plane monitoring
 	monitorCtx, cancelMonitor := context.WithCancel(ctx)
 	defer cancelMonitor()

@@ -503,10 +503,10 @@ EOF
 }
 
 @test "rdd set running=false returns promptly when already stopped" {
-    # rdd set running=false waits for the App's Running condition to
-    # go to False, not for ContainerEngineReady. When the VM is
-    # already stopped, the wait must complete immediately rather than
-    # hang on the already-False engine condition.
+    # rdd set waits for Settled=True with observedGeneration matching
+    # the just-patched spec. When the VM is already stopped, the App
+    # controller stamps Settled=True on the same reconcile pass that
+    # applied the no-op patch, so the wait returns immediately.
     rdd set --timeout=10s running=false
 }
 
@@ -533,13 +533,14 @@ EOF
 
 @test "containerd backend reports ContainerEngineReady=NotApplicable and skips mirroring" {
     # Stop first so there is no stale True/Connected from moby to
-    # satisfy the CLI wait below before the engine reconciler has run.
+    # satisfy the Settled wait below before the engine reconciler has
+    # processed the containerd switch.
     rdd set running=false
 
-    # Start with containerd. rdd set waits for ContainerEngineReady=True,
-    # which the engine reconciler satisfies immediately with reason
-    # NotApplicable because engine mirroring only supports the moby
-    # backend.
+    # Start with containerd. rdd set waits for Settled=True, which
+    # requires ContainerEngineReady=True. The engine reconciler
+    # satisfies that immediately with reason NotApplicable because
+    # engine mirroring only supports the moby backend.
     rdd set containerEngine.name=containerd running=true
 
     run -0 rdd ctl get app app \

@@ -150,6 +150,7 @@ func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
 		Client:           mgr.GetClient(),
 		Scheme:           mgr.GetScheme(),
 		LimaTemplateData: limaTemplateData(),
+		EngineEnabled:    base.IsControllerEnabled("engine"),
 	}).SetupWithManager(mgr); err != nil {
 		return err
 	}
