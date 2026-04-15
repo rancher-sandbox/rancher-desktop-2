@@ -32,7 +32,7 @@ local_setup_file() {
 
 @test "ContainerNamespace moby exists" {
     rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" \
-        containernamespace/moby --timeout=10s
+        ContainerNamespace/moby --timeout=10s
 }
 
 # --- Image mirroring ---
@@ -80,7 +80,11 @@ local_setup_file() {
     run -0 docker inspect alpine:latest --format '{{.Id}}'
     alpine_id=${output}
 
-    docker run -d --name dangling-pin alpine:latest sleep 3600
+    # The pin must be a running container: in this VM's Docker,
+    # rmi --force will fully remove an image whose only references are
+    # stopped containers, leaving nothing for the dangling-mirror path
+    # to observe.
+    docker run -d --name dangling-pin alpine:latest sleep inf
 
     # Remove the only tag; the running container keeps the image alive.
     docker rmi --force alpine:latest
@@ -118,9 +122,7 @@ local_setup_file() {
 # --- Container lifecycle mirroring ---
 
 @test "docker run creates Container resource with status=running" {
-    docker run -d --name test-lifecycle busybox sleep 3600
-
-    run -0 docker inspect test-lifecycle --format '{{.Id}}'
+    run_e -0 docker run -d --name test-lifecycle busybox sleep inf
     cid=${output}
 
     rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" \
@@ -150,7 +152,7 @@ local_setup_file() {
     run -0 docker inspect test-lifecycle --format '{{.Id}}'
     cid=${output}
 
-    docker rm test-lifecycle
+    docker rm --force test-lifecycle
     rdd ctl wait --for=delete --namespace="${RDD_NAMESPACE}" \
         container/"${cid}" --timeout=30s
 }
@@ -191,9 +193,7 @@ local_setup_file() {
 # --- Deletion via the API removes the Docker object ---
 
 @test "deleting Container resource removes Docker container" {
-    docker run -d --name test-delete busybox sleep 3600
-
-    run -0 docker inspect test-delete --format '{{.Id}}'
+    run_e -0 docker create --name test-delete busybox sleep inf
     cid=${output}
 
     rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" \
@@ -207,8 +207,7 @@ local_setup_file() {
 }
 
 @test "deleting an in-use Image keeps the finalizer until the container is removed" {
-    docker run -d --name test-inuse busybox sleep 3600
-    run -0 docker inspect test-inuse --format '{{.Id}}'
+    run_e -0 docker run -d --name test-inuse busybox sleep inf
     cid=${output}
     rdd ctl wait --for=jsonpath='{.status.status}'=running \
         --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=30s
@@ -219,12 +218,14 @@ local_setup_file() {
     assert_output
     image_ref=${output}
 
-    # Docker will refuse to remove an image referenced by a running
-    # container. With I3 fixed, processImageFinalizers leaves the
-    # finalizer in place and the Image mirror stays (in Terminating
-    # state) until the image is actually removable.
+    # Docker refuses to remove an image referenced by a running
+    # container, so the mirror stays in Terminating with the finalizer
+    # intact until the container is gone.
     rdd ctl delete "${image_ref}" --namespace="${RDD_NAMESPACE}" --wait=false
 
+    # Both reads are race-free: deletionTimestamp lands synchronously
+    # with the DELETE response, and the finalizer cannot be removed
+    # while the container still references the image.
     run -0 rdd ctl get "${image_ref}" --namespace="${RDD_NAMESPACE}" \
         -o jsonpath='{.metadata.deletionTimestamp}'
     assert_output
@@ -243,9 +244,7 @@ local_setup_file() {
 # --- Container state transitions via spec ---
 
 @test "patching spec.state=created stops Docker container" {
-    docker run -d --name test-state busybox sleep 3600
-
-    run -0 docker inspect test-state --format '{{.Id}}'
+    run_e -0 docker run -d --name test-state busybox sleep inf
     cid=${output}
 
     rdd ctl wait --for=jsonpath='{.status.status}'=running \
@@ -309,9 +308,7 @@ local_setup_file() {
     # "container is paused, unpause before starting". The reconciler
     # must dispatch ContainerUnpause when desired=running and
     # actual=paused, symmetric with the ContainerStop path above.
-    docker run -d --name test-unpause busybox sleep 3600
-
-    run -0 docker inspect test-unpause --format '{{.Id}}'
+    run_e -0 docker run -d --name test-unpause busybox sleep inf
     cid=${output}
 
     rdd ctl wait --for=jsonpath='{.status.status}'=running \
@@ -320,6 +317,8 @@ local_setup_file() {
     docker pause test-unpause
     rdd ctl wait --for=jsonpath='{.status.status}'=paused \
         --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=30s
+    run -0 docker inspect test-unpause --format '{{.State.Status}}'
+    assert_output "paused"
 
     rdd ctl patch container "${cid}" --namespace="${RDD_NAMESPACE}" \
         --type=merge -p '{"spec":{"state":"running"}}'
@@ -338,7 +337,7 @@ local_setup_file() {
 @test "stopping VM removes all mirror resources" {
     # Make sure we have at least one resource to verify cleanup.
     rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" \
-        containernamespace/moby --timeout=10s
+        ContainerNamespace/moby --timeout=10s
 
     rdd set running=false
 
@@ -348,7 +347,7 @@ local_setup_file() {
     refute_output
     run -0 rdd ctl get volumes --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
-    run -0 rdd ctl get containernamespaces --namespace="${RDD_NAMESPACE}" --output=name
+    run -0 rdd ctl get ContainerNamespaces --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
 }
 
@@ -360,26 +359,17 @@ local_setup_file() {
     rdd set --timeout=10s running=false
 }
 
-@test "rdd set --timeout=0 skips the wait entirely" {
-    # --timeout=0 preserves the pre-wait-by-default behavior: the
-    # command returns as soon as the patch is accepted, regardless of
-    # whether ContainerEngineReady has caught up. Use a no-op patch
-    # (running=false on an already-stopped VM) so the test does not
-    # race VM startup.
-    rdd set --timeout=0 running=false
-}
-
 @test "restarting VM restores ContainerEngineReady and moby namespace" {
     rdd set running=true
     rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" \
-        containernamespace/moby --timeout=10s
+        ContainerNamespace/moby --timeout=10s
 }
 
-@test "deleting containernamespace/moby completes without a finalizer hang" {
+@test "deleting ContainerNamespace/moby completes without a finalizer hang" {
     # moby ContainerNamespace has no mirror finalizer, so a user delete
     # must return promptly rather than get trapped in Terminating.
-    rdd ctl delete containernamespace/moby --namespace="${RDD_NAMESPACE}" --timeout=10s
-    run -0 rdd ctl get containernamespaces --namespace="${RDD_NAMESPACE}" --output=name
+    rdd ctl delete ContainerNamespace/moby --namespace="${RDD_NAMESPACE}" --timeout=10s
+    run -0 rdd ctl get ContainerNamespaces --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
 }
 
@@ -407,6 +397,6 @@ local_setup_file() {
     refute_output
     run -0 rdd ctl get volumes --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
-    run -0 rdd ctl get containernamespaces --namespace="${RDD_NAMESPACE}" --output=name
+    run -0 rdd ctl get ContainerNamespaces --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
 }

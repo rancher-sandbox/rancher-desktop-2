@@ -40,7 +40,7 @@ EOF
 }
 
 local_setup_file() {
-    setup_rdd_control_plane "*"
+    setup_rdd_control_plane
 }
 
 @test "create App resource" {
