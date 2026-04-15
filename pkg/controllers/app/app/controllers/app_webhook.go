@@ -16,7 +16,18 @@ import (
 
 // AppValidator validates App resources via admission webhook.
 type AppValidator struct {
-	K3sVersionsData string
+	supportedK8sVersions map[string]struct{}
+}
+
+// NewAppValidator parses k3sVersionsData once at construction time so that a
+// malformed JSON fixture causes controller startup to fail rather than the
+// first admission request.
+func NewAppValidator(k3sVersionsData string) (*AppValidator, error) {
+	supported, err := parseK3sVersions(k3sVersionsData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load supported Kubernetes versions: %w", err)
+	}
+	return &AppValidator{supportedK8sVersions: supported}, nil
 }
 
 // ValidateCreate validates a new App resource.
@@ -35,22 +46,13 @@ func (v *AppValidator) ValidateDelete(_ context.Context, _ *v1alpha1.App) (ctrlw
 }
 
 func (v *AppValidator) validate(app *v1alpha1.App) (ctrlwebhookadmission.Warnings, error) {
-	engine := app.Spec.ContainerEngine.Name
-	if engine != "moby" && engine != "containerd" {
-		return nil, fmt.Errorf("spec.containerEngine.name %q is invalid; must be \"moby\" or \"containerd\"", engine)
-	}
-
 	k8s := app.Spec.Kubernetes
 	if k8s.Enabled && k8s.Version == "" {
 		return nil, errors.New("spec.kubernetes.version must not be empty when spec.kubernetes.enabled is true")
 	}
 
 	if k8s.Version != "" {
-		supported, err := parseK3sVersions(v.K3sVersionsData)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load supported Kubernetes versions: %w", err)
-		}
-		if _, ok := supported[k8s.Version]; !ok {
+		if _, ok := v.supportedK8sVersions[k8s.Version]; !ok {
 			return nil, fmt.Errorf("spec.kubernetes.version %q is not supported; see the bundled k3s-versions.json for valid versions", k8s.Version)
 		}
 	}

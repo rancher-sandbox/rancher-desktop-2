@@ -27,9 +27,7 @@ func parseK3sVersions(data string) (map[string]struct{}, error) {
 	for _, v := range parsed.Versions {
 		// Strip leading "v" and "+k3s*" suffix: "v1.32.0+k3s1" → "1.32.0"
 		bare := strings.TrimPrefix(v, "v")
-		if idx := strings.Index(bare, "+"); idx >= 0 {
-			bare = bare[:idx]
-		}
+		bare, _, _ = strings.Cut(bare, "+")
 		set[bare] = struct{}{}
 	}
 	return set, nil

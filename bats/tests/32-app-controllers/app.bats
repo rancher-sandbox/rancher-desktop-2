@@ -463,3 +463,18 @@ spec:
     version: "${K3S_VERSION}"
 EOF
 }
+
+@test "webhook rejects invalid update via patch dry-run" {
+    # The App may not exist here and might be deleted after kubernetes tests, so we create one.
+    create_app false
+
+    run -0 rdd ctl get app app -o jsonpath='{.spec.containerEngine.name}'
+    assert_output "moby"
+
+    run -1 rdd ctl patch app app --dry-run=server \
+        --type=merge -p '{"spec":{"kubernetes":{"enabled":true,"version":"0.0.0"}}}'
+    assert_output --partial "not supported"
+
+    run -0 rdd ctl get app app -o jsonpath='{.spec.containerEngine.name}'
+    assert_output "moby"
+}

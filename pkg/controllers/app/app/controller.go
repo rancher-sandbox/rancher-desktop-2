@@ -112,6 +112,10 @@ func (c *controller) GetWebhookManagers() []base.WebhookManager {
 
 // setupWebhook sets up the App validating webhook.
 func (c *controller) setupWebhook(mgr ctrl.Manager) error {
+	validator, err := controllers.NewAppValidator(k3sVersionsData)
+	if err != nil {
+		return err
+	}
 	validatingConfig := base.WebhookConfig[*v1alpha1.App]{
 		Name:        appValidatorConfigName,
 		WebhookName: appValidatorWebhookName,
@@ -120,7 +124,7 @@ func (c *controller) setupWebhook(mgr ctrl.Manager) error {
 			admissionregistrationv1.Create,
 			admissionregistrationv1.Update,
 		},
-		Validator: &controllers.AppValidator{K3sVersionsData: k3sVersionsData},
+		Validator: validator,
 	}
 
 	managers, err := base.SetupWebhookForResource(mgr, &v1alpha1.App{}, validatingConfig)
