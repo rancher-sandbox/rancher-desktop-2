@@ -118,7 +118,7 @@ func (w *dockerWatcher) applyVolume(ctx context.Context, vol mobyvolume.Volume) 
 		statusApply.WithCreatedAt(metav1.NewTime(t))
 	}
 
-	err = w.k8s.SubResource("status").Apply(ctx,
+	err = w.k8s.Status().Apply(ctx,
 		containersv1alpha1apply.Volume(mirrorName, w.apiNamespace).
 			WithStatus(statusApply),
 		client.ForceOwnership, client.FieldOwner(controllerName))

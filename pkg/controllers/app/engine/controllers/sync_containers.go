@@ -8,8 +8,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
@@ -188,26 +188,22 @@ func (w *dockerWatcher) applyContainer(ctx context.Context, inspect mobycontaine
 	// spurious resourceVersion churn on every sync.
 	var applyPorts []*containersv1alpha1apply.ContainerPortApplyConfiguration
 	if inspect.NetworkSettings != nil {
-		portNames := make([]mobynetwork.Port, 0, len(inspect.NetworkSettings.Ports))
-		for p := range inspect.NetworkSettings.Ports {
-			portNames = append(portNames, p)
-		}
-		sort.Slice(portNames, func(i, j int) bool {
-			return portNames[i].String() < portNames[j].String()
-		})
+		portNames := slices.SortedFunc(maps.Keys(inspect.NetworkSettings.Ports),
+			func(p1, p2 mobynetwork.Port) int {
+				return strings.Compare(p1.String(), p2.String())
+			})
 		for _, portName := range portNames {
-			ports := inspect.NetworkSettings.Ports[portName]
 			// Sort bindings by (HostIP, HostPort) for the same reason
 			// portNames is sorted: ContainerPort.Bindings is atomic
 			// under SSA, and Docker returns dual-stack bindings in
 			// either order.
-			sortedPorts := slices.Clone(ports)
-			sort.Slice(sortedPorts, func(i, j int) bool {
-				if sortedPorts[i].HostIP.String() != sortedPorts[j].HostIP.String() {
-					return sortedPorts[i].HostIP.String() < sortedPorts[j].HostIP.String()
-				}
-				return sortedPorts[i].HostPort < sortedPorts[j].HostPort
-			})
+			sortedPorts := slices.SortedFunc(slices.Values(inspect.NetworkSettings.Ports[portName]),
+				func(pb1, pb2 mobynetwork.PortBinding) int {
+					if pb1.HostIP.String() != pb2.HostIP.String() {
+						return strings.Compare(pb1.HostIP.String(), pb2.HostIP.String())
+					}
+					return strings.Compare(pb1.HostPort, pb2.HostPort)
+				})
 			var bindings []*containersv1alpha1apply.ContainerPortBindingApplyConfiguration
 			for _, port := range sortedPorts {
 				bindings = append(bindings, containersv1alpha1apply.ContainerPortBinding().
@@ -224,7 +220,7 @@ func (w *dockerWatcher) applyContainer(ctx context.Context, inspect mobycontaine
 	statusConfig := containersv1alpha1apply.Container(inspect.ID, w.apiNamespace).
 		WithStatus(statusApply)
 
-	err = w.k8s.SubResource("status").Apply(ctx, statusConfig,
+	err = w.k8s.Status().Apply(ctx, statusConfig,
 		client.ForceOwnership, client.FieldOwner(controllerName))
 	if err != nil {
 		return fmt.Errorf("failed to apply container status %s: %w", inspect.ID, err)

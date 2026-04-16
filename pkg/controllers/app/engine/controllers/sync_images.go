@@ -186,7 +186,7 @@ func (w *dockerWatcher) applyImage(
 		return fmt.Errorf("failed to apply image %s: %w", *image.GetName(), err)
 	}
 
-	err = w.k8s.SubResource("status").Apply(ctx,
+	err = w.k8s.Status().Apply(ctx,
 		containersv1alpha1apply.Image(*image.GetName(), *image.GetNamespace()).
 			WithStatus(status),
 		client.ForceOwnership, client.FieldOwner(controllerName))
