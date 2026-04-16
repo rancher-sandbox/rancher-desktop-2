@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"sync"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,6 +30,7 @@ import (
 
 	appv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
 	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 )
 
 const (
@@ -89,6 +91,20 @@ type EngineReconciler struct {
 	// no longer runs, and stopWatcher is unreachable from that path.
 	watcherCtx    context.Context
 	watcherCancel context.CancelFunc
+
+	// contextMu protects contextProbeCancel and contextProbeGen.
+	contextMu sync.Mutex
+	// contextProbeCancel cancels the in-flight Docker context probe goroutine.
+	// It is nil when no probe is running.
+	contextProbeCancel context.CancelFunc
+	// contextProbeGen is incremented each time a new probe is launched; the
+	// goroutine captures its generation at launch and uses it to detect
+	// whether it has been superseded.
+	contextProbeGen int
+	// contextProbeWg is used by removeDockerContext to wait for the probe
+	// goroutine to finish before deleting the context directory, ensuring
+	// the goroutine cannot write currentContext after the directory is gone.
+	contextProbeWg sync.WaitGroup
 }
 
 // Reconcile handles App condition changes, Docker watcher lifecycle,
@@ -139,6 +155,11 @@ func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 			log.Info("Stopping Docker watcher",
 				"running", running, "engine", app.Spec.ContainerEngine.Name)
 			r.stopWatcher()
+		} else {
+			// The watcher was never started or died on its own (e.g. the VM
+			// socket closed). stopWatcher was not called, so clean up the
+			// Docker context directly.
+			r.removeDockerContext()
 		}
 		terminalReason := "Stopped"
 		terminalStatus := metav1.ConditionFalse
@@ -232,6 +253,7 @@ func (r *EngineReconciler) startWatcherAndSync(_ context.Context) error {
 		return err
 	}
 	r.watcher = w
+	r.manageDockerContext(instance.DockerSocket())
 	return nil
 }
 
@@ -244,6 +266,104 @@ func (r *EngineReconciler) stopWatcher() {
 
 	if w != nil {
 		w.stop()
+	}
+	r.removeDockerContext()
+}
+
+// manageDockerContext creates the instance Docker context and, in a goroutine,
+// probes the user's current context; if it is absent or unhealthy, switches
+// the default to the new context. At most one probe runs at a time.
+func (r *EngineReconciler) manageDockerContext(socketPath string) {
+	// Docker context management uses unix:// sockets; Windows requires
+	// npipe:// which is not yet implemented.
+	if runtime.GOOS == "windows" {
+		return
+	}
+	contextName := instance.Name()
+	log := logf.FromContext(r.watcherCtx).WithName("docker-context")
+
+	if err := createReplaceDockerContext(contextName, socketPath); err != nil {
+		log.Error(err, "Failed to create Docker context", "context", contextName)
+		return
+	}
+
+	r.contextMu.Lock()
+	// Cancel any in-flight probe from a previous transition.
+	if r.contextProbeCancel != nil {
+		r.contextProbeCancel()
+	}
+	probeCtx, cancel := context.WithCancel(r.watcherCtx)
+	r.contextProbeCancel = cancel
+	r.contextProbeGen++
+	myGen := r.contextProbeGen
+	r.contextMu.Unlock()
+
+	r.contextProbeWg.Add(1)
+	go func() {
+		defer r.contextProbeWg.Done()
+		defer func() {
+			r.contextMu.Lock()
+			// Clear the cancel func only if we are still the current probe.
+			if r.contextProbeGen == myGen {
+				r.contextProbeCancel = nil
+			}
+			r.contextMu.Unlock()
+			cancel()
+		}()
+
+		current, err := getCurrentDockerContext()
+		if err != nil {
+			log.Error(err, "Failed to read current Docker context")
+		}
+
+		// Probe the current context's host — not our own — to decide
+		// whether to promote ours. "default" and empty both mean no
+		// working context is set; treat them identically.
+		var healthy bool
+		if current != "" && current != "default" {
+			currentHost, err := getDockerContextHost(current)
+			if err != nil {
+				log.Error(err, "Failed to resolve current Docker context host", "context", current)
+			} else if currentHost != "" {
+				healthy = probeDockerContext(probeCtx, currentHost)
+			}
+		}
+		// Guard against writing currentContext after removeDockerContext has
+		// already cancelled probeCtx and deleted the context directory.
+		if !healthy && probeCtx.Err() == nil {
+			if err := setCurrentDockerContext(contextName); err != nil {
+				log.Error(err, "Failed to set current Docker context", "context", contextName)
+			}
+		}
+	}()
+}
+
+// removeDockerContext cancels any in-flight probe, waits for it to finish,
+// then resets the current context if it points at our instance and deletes
+// the instance's Docker context directory.
+func (r *EngineReconciler) removeDockerContext() {
+	if runtime.GOOS == "windows" {
+		return
+	}
+	r.contextMu.Lock()
+	if r.contextProbeCancel != nil {
+		r.contextProbeCancel()
+		r.contextProbeCancel = nil
+	}
+	r.contextMu.Unlock()
+
+	// Wait for the probe goroutine to finish before deleting the context
+	// directory. The goroutine's probeCtx was just cancelled, so Ping will
+	// return within dockerContextProbeTimeout (3s) at most.
+	r.contextProbeWg.Wait()
+
+	contextName := instance.Name()
+	log := logf.FromContext(r.watcherCtx).WithName("docker-context")
+	if err := clearCurrentDockerContext(contextName); err != nil {
+		log.Error(err, "Failed to clear current Docker context", "context", contextName)
+	}
+	if err := deleteDockerContext(contextName); err != nil {
+		log.Error(err, "Failed to delete Docker context", "context", contextName)
 	}
 }
 
