@@ -295,13 +295,17 @@ func (w *dockerWatcher) handleVolumeEvent(ctx context.Context, msg events.Messag
 
 // removeMirrorResource strips the finalizer from a mirror resource and
 // deletes it, used when Docker has already deleted the underlying
-// object. The Update is wrapped in retry.RetryOnConflict to survive a
-// stale cache; NotFound is treated as success. obj is a template —
-// each retry iteration starts from a fresh DeepCopyObject.
+// object. Update retries on conflict to survive a stale cache;
+// NotFound counts as success. obj is a template: one DeepCopyObject
+// carries name and apiNamespace through both the retry's Get target
+// (each Get overwrites its contents) and the final Delete (which keys
+// off name+namespace).
 func (w *dockerWatcher) removeMirrorResource(ctx context.Context, obj client.Object, name string) error {
-	key := client.ObjectKey{Name: name, Namespace: w.apiNamespace}
+	latest := obj.DeepCopyObject().(client.Object)
+	latest.SetName(name)
+	latest.SetNamespace(w.apiNamespace)
+	key := client.ObjectKeyFromObject(latest)
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		latest := obj.DeepCopyObject().(client.Object)
 		if err := w.k8s.Get(ctx, key, latest); err != nil {
 			if apierrors.IsNotFound(err) {
 				return nil
@@ -316,10 +320,7 @@ func (w *dockerWatcher) removeMirrorResource(ctx context.Context, obj client.Obj
 	if retryErr != nil {
 		return fmt.Errorf("failed to remove finalizer from %s: %w", name, retryErr)
 	}
-	deleteTarget := obj.DeepCopyObject().(client.Object)
-	deleteTarget.SetName(name)
-	deleteTarget.SetNamespace(w.apiNamespace)
-	return client.IgnoreNotFound(w.k8s.Delete(ctx, deleteTarget))
+	return client.IgnoreNotFound(w.k8s.Delete(ctx, latest))
 }
 
 // reconcileContainerState dispatches the Docker action that bridges

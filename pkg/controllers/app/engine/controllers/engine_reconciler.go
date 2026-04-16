@@ -60,6 +60,11 @@ const (
 
 // EngineReconciler watches the App resource for the Running condition and
 // manages a Docker watcher goroutine that mirrors engine state into K8s.
+//
+// The App is a cluster-scoped singleton, so controller-runtime runs at
+// most one Reconcile at a time. Only Reconcile and the manager's
+// shutdown-hook goroutine (see SetupWithManager) contend for the
+// fields below.
 type EngineReconciler struct {
 	client.Client
 
@@ -70,7 +75,9 @@ type EngineReconciler struct {
 	// populates it before any mirror operation.
 	apiNamespace string
 
-	// watcherMu protects watcher state.
+	// watcherMu guards r.watcher against the shutdown-hook goroutine's
+	// stopWatcher call. Reconcile runs serially (see struct doc), so
+	// the lock has no other role.
 	watcherMu sync.Mutex
 	watcher   *dockerWatcher
 
@@ -101,7 +108,14 @@ func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 
 	// Detach a dead watcher under watcherMu, then stop it outside the
 	// lock: w.stop() blocks on <-w.done and cli.Close() and would stall
-	// concurrent reconciles under MaxConcurrentReconciles > 1.
+	// the shutdown hook if it fired while the lock was held.
+	//
+	// Treat a dead watcher as a transient disconnect and fall through.
+	// If wantWatcher is still true below, a fresh watcher's fullSync
+	// reconciles drift in place — existing mirror resources keep their
+	// identity, so downstream clients see no churn. An actual stop or
+	// backend change is handled by the !wantWatcher branch, which
+	// sweeps the mirrors.
 	var diedWatcher *dockerWatcher
 	r.watcherMu.Lock()
 	watcherRunning := r.watcher != nil
@@ -113,17 +127,8 @@ func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 	r.watcherMu.Unlock()
 	watcherDied := diedWatcher != nil
 	if watcherDied {
-		diedWatcher.stop()
-	}
-
-	// Treat a dead watcher as a transient disconnect and fall through.
-	// If wantWatcher is still true below, a fresh watcher's fullSync
-	// reconciles drift in place — existing mirror resources keep their
-	// identity, so downstream clients see no churn. An actual stop or
-	// backend change is handled by the !wantWatcher branch, which
-	// sweeps the mirrors.
-	if watcherDied {
 		log.Info("Docker watcher died, will attempt to reconnect")
+		diedWatcher.stop()
 	}
 
 	// The watcher runs only when the App is Running on the moby
@@ -166,7 +171,7 @@ func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 
 	if !watcherRunning {
 		log.Info("App is running, starting Docker watcher")
-		if err := r.startWatcher(ctx); err != nil {
+		if err := r.startWatcherAndSync(ctx); err != nil {
 			log.Error(err, "Failed to start Docker watcher")
 			if condErr := r.setEngineCondition(ctx, &app, metav1.ConditionFalse, "ConnectFailed", err.Error()); condErr != nil {
 				log.Error(condErr, "Failed to update ContainerEngineReady to ConnectFailed")
@@ -206,12 +211,14 @@ func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 	return ctrl.Result{}, errors.Join(specsErr, finErr)
 }
 
-// startWatcher creates and starts a Docker watcher goroutine. The
-// watcher inherits watcherCtx, which cancels only on manager
-// shutdown; startWatcher deliberately drops Reconcile's ctx so a
-// future ReconciliationTimeout or per-request deadline cannot kill
-// the watcher the moment Reconcile returns.
-func (r *EngineReconciler) startWatcher(_ context.Context) error {
+// startWatcherAndSync creates a Docker watcher and blocks until its
+// initial fullSync has completed; only then does it publish the
+// watcher on r.watcher. The watcher inherits watcherCtx, which
+// cancels only on manager shutdown, so startWatcherAndSync
+// deliberately drops Reconcile's ctx: a future ReconciliationTimeout
+// or per-request deadline must not kill the watcher the moment
+// Reconcile returns.
+func (r *EngineReconciler) startWatcherAndSync(_ context.Context) error {
 	r.watcherMu.Lock()
 	defer r.watcherMu.Unlock()
 
