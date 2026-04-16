@@ -109,8 +109,8 @@ editor_cmd() {
 }
 
 @test "verify initial Running condition is False/Stopped" {
-    rdd ctl await "limavm/${VM_NAME}" --namespace "${NAMESPACE}" \
-        --for=condition=Running=False --reason=Stopped --timeout=120s
+    rdd ctl wait-condition "limavm/${VM_NAME}" Running=False --namespace "${NAMESPACE}" \
+        --reason=Stopped --timeout=120s
 }
 
 @test "start the VM by setting running=true" {
@@ -123,8 +123,8 @@ editor_cmd() {
 }
 
 @test "wait for Running condition to become True/Started" {
-    rdd ctl await "limavm/${VM_NAME}" --namespace "${NAMESPACE}" \
-        --for=condition=Running --reason=Started --timeout=300s
+    rdd ctl wait-condition "limavm/${VM_NAME}" Running --namespace "${NAMESPACE}" \
+        --reason=Started --timeout=300s
 }
 
 @test "verify hostagent PID file exists" {
@@ -182,8 +182,8 @@ EOF
 }
 
 @test "wait for Running condition to become False/Stopped" {
-    rdd ctl await "limavm/${VM_NAME}" --namespace "${NAMESPACE}" \
-        --for=condition=Running=False --reason=Stopped --timeout=300s
+    rdd ctl wait-condition "limavm/${VM_NAME}" Running=False --namespace "${NAMESPACE}" \
+        --reason=Stopped --timeout=300s
 }
 
 @test "verify hostagent PID file is removed" {
@@ -345,8 +345,8 @@ EOF
 
     # shutdownAllHostagents runs during graceful shutdown, so the hostagent
     # is already dead by the time the service exits.
-    rdd ctl await "limavm/${VM_NAME}" --namespace "${NAMESPACE}" \
-        --for=condition=Running --reason=Started --since=startup --timeout=300s
+    rdd ctl wait-condition "limavm/${VM_NAME}" Running --namespace "${NAMESPACE}" \
+        --reason=Started --since=startup --timeout=300s
 }
 
 # Restart tests
@@ -401,8 +401,8 @@ assert_restart_annotation_absent() {
     refute_output # restartNeeded has omitempty; false means absent
 
     # VM should stay stopped because spec.running=false
-    rdd ctl await "limavm/${VM_NAME}" --namespace "${NAMESPACE}" \
-        --for=condition=Running=False --reason=Stopped --timeout=30s
+    rdd ctl wait-condition "limavm/${VM_NAME}" Running=False --namespace "${NAMESPACE}" \
+        --reason=Stopped --timeout=30s
 }
 
 @test "restart command on stopped VM starts it" {
@@ -511,8 +511,8 @@ env:
     rdd ctl wait --for=jsonpath='{.status.observedTemplateResourceVersion}'="${PATCHED_TEMPLATE_RV_2}" \
         "limavm/${VM_NAME}" --namespace "${NAMESPACE}" --timeout=30s
     assert_instance_template_contains "${VM_NAME}" "updated-while-stopped"
-    rdd ctl await "limavm/${VM_NAME}" --namespace "${NAMESPACE}" \
-        --for=condition=Running=False --reason=Stopped --timeout=30s
+    rdd ctl wait-condition "limavm/${VM_NAME}" Running=False --namespace "${NAMESPACE}" \
+        --reason=Stopped --timeout=30s
 }
 
 @test "cleanup LimaVM running test" {

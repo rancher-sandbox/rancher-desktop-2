@@ -34,8 +34,8 @@ func ctlAction(cmd *cobra.Command, args []string) error {
 	if err := ensureServiceRunning(cmd.Context()); err != nil {
 		return err
 	}
-	if len(args) > 0 && args[0] == "await" {
-		return ctlAwaitAction(cmd, args[1:])
+	if len(args) > 0 && args[0] == "wait-condition" {
+		return ctlWaitConditionAction(cmd, args[1:])
 	}
 	if err := os.Setenv("KUBECONFIG", instance.Config()); err != nil {
 		return fmt.Errorf("failed to set KUBECONFIG: %w", err)

@@ -32,11 +32,10 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
 )
 
-// ctlAwaitAction waits for a resource condition to reach a specific state,
+// ctlWaitConditionAction waits for a resource condition to reach a specific state,
 // optionally requiring the transition to have occurred after a given timestamp.
-func ctlAwaitAction(cmd *cobra.Command, rawArgs []string) error {
-	flags := pflag.NewFlagSet("await", pflag.ContinueOnError)
-	forFlag := flags.String("for", "", "Condition to wait for: condition=TYPE[=STATUS] (STATUS defaults to True)")
+func ctlWaitConditionAction(cmd *cobra.Command, rawArgs []string) error {
+	flags := pflag.NewFlagSet("wait-condition", pflag.ContinueOnError)
 	reason := flags.String("reason", "", "Required condition reason")
 	since := flags.String("since", "", "Require lastTransitionTime after this value (ISO 8601 timestamp or \"startup\")")
 	timeout := flags.Duration("timeout", 30*time.Second, "How long to wait")
@@ -46,18 +45,15 @@ func ctlAwaitAction(cmd *cobra.Command, rawArgs []string) error {
 		return err
 	}
 	positional := flags.Args()
-	if len(positional) != 1 {
-		return fmt.Errorf("expected TYPE/NAME argument, got %d arguments", len(positional))
-	}
-	if *forFlag == "" {
-		return errors.New("--for is required (e.g. --for=condition=Running)")
+	if len(positional) != 2 {
+		return fmt.Errorf("expected TYPE/NAME and CONDITION[=STATUS] arguments, got %d arguments", len(positional))
 	}
 
-	condType, condStatus, err := parseConditionFlag(*forFlag)
+	resourceType, resourceName, err := parseResourceArg(positional[0])
 	if err != nil {
 		return err
 	}
-	resourceType, resourceName, err := parseResourceArg(positional[0])
+	condType, condStatus, err := parseConditionArg(positional[1])
 	if err != nil {
 		return err
 	}
@@ -138,18 +134,15 @@ func ctlAwaitAction(cmd *cobra.Command, rawArgs []string) error {
 	return err
 }
 
-// parseConditionFlag parses "condition=TYPE[=STATUS]" from the --for flag.
-func parseConditionFlag(flag string) (condType, condStatus string, err error) {
-	value, found := strings.CutPrefix(flag, "condition=")
-	if !found {
-		return "", "", fmt.Errorf("--for must start with \"condition=\", got %q", flag)
-	}
-	condType, condStatus, _ = strings.Cut(value, "=")
+// parseConditionArg parses "TYPE[=STATUS]" into condition type and status.
+// STATUS defaults to "True" when omitted.
+func parseConditionArg(arg string) (condType, condStatus string, err error) {
+	condType, condStatus, _ = strings.Cut(arg, "=")
 	if condStatus == "" {
 		condStatus = "True"
 	}
 	if condType == "" {
-		return "", "", fmt.Errorf("condition type must not be empty in --for=%q", flag)
+		return "", "", fmt.Errorf("condition type must not be empty in %q", arg)
 	}
 	return condType, condStatus, nil
 }

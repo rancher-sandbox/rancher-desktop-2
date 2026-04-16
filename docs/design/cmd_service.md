@@ -188,17 +188,18 @@ Example to list all `vms` in all namespaces:
 rdd ctl get vm -A
 ```
 
-### `rdd ctl await`
+### `rdd ctl wait-condition`
 
 Waits for a resource condition to reach a specific state. Unlike `kubectl wait`, this command can filter by `lastTransitionTime` and condition `reason`.
 
 ```shell
-rdd ctl await TYPE[.GROUP]/NAME --for=condition=TYPE[=STATUS] [flags]
+rdd ctl wait-condition TYPE[.GROUP]/NAME CONDITION[=STATUS] [flags]
 ```
+
+The `CONDITION[=STATUS]` positional argument names the condition type to match; `STATUS` defaults to `True`.
 
 Flags:
 
-- `--for=condition=TYPE[=STATUS]` (required): condition to match; STATUS defaults to `True`
 - `--reason=REASON`: require the condition's `.reason` field to match
 - `--since=TIMESTAMP|startup`: require `lastTransitionTime` after this value; `startup` reads the controller manager's start time from the discovery ConfigMap
 - `--timeout=DURATION`: how long to wait (default `30s`)
@@ -208,13 +209,13 @@ Examples:
 
 ```shell
 # Wait for Running=True with reason Started, transitioned since controller startup
-rdd ctl await limavm/default --for=condition=Running --reason=Started --since=startup --timeout=60s
+rdd ctl wait-condition limavm/default Running --reason=Started --since=startup --timeout=60s
 
 # Wait for a condition after a specific timestamp
-rdd ctl await limavm/default --for=condition=Running --since=2024-01-15T10:30:00Z
+rdd ctl wait-condition limavm/default Running --since=2024-01-15T10:30:00Z
 
 # Wait for Running=False
-rdd ctl await limavm/default --for=condition=Running=False --timeout=60s
+rdd ctl wait-condition limavm/default Running=False --timeout=60s
 ```
 
 ### `rdd ctl logs`
