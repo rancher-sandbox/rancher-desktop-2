@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260415-184215-pr-316</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block.
+ * The filename is a GitHub permalink to the displayed line range.
+ * Text color is light gray (#adbac7) for the bar, green (#7ee787)
+ * for the hyperlink — matching GitHub's dark-mode file header. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Deep Review: 20260415-184215-pr-316</h1>
+
+    <table class="meta-table">
+      <tr><td>Date</td><td>2026-04-15 18:42</td></tr>
+      <tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+      <tr><td>Round</td><td>1</td></tr>
+      <tr><td>Author</td><td><a href="https://github.com/jandubois">@jandubois</a></td></tr>
+      <tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/316" class="gh-ref" data-title="engine: replace Container.spec.state with action annotations" data-state="open" data-type="pr">#316</a> — engine: replace Container.spec.state with action annotations</td></tr>
+      <tr><td>Branch</td><td><code>container-action-annotations</code></td></tr>
+      <tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/d4dd09d"><code>d4dd09d</code></a> engine: replace Container.spec.state with action annotations</td></tr>
+      <tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.6, <span class="pill pill-codex">Codex</span> GPT 5.4, <span class="pill pill-gemini">Gemini</span> 3.1 Pro</td></tr>
+      <tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; invalid-annotation wedge (I2) has a clear reproduction path and needs a guard</td></tr>
+      <tr><td>Wall-clock time</td><td><code>12 min 32 s</code></td></tr>
+    </table>
+
+    <hr>
+
+    <hr>
+    <h2 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>This PR replaces the level-triggered <code>Container.spec.state</code> field with a one-shot <code>containers.rancherdesktop.io/action</code> annotation, eliminating reconciler thrashing against Docker&#39;s restart policy and out-of-band <code>docker start/stop</code>. The annotation model is well-designed: dispatch-before-patch gives crash recovery, the compare-and-swap annotation removal preserves concurrent writes, and collapsing the two-field-owner SSA dance after emptying <code>ContainerSpec</code> materially simplifies <code>sync_containers.go</code>.</p>
+    <p>Two important issues remain. First, the annotation cleanup patch lacks optimistic concurrency, creating a narrow TOCTOU window where a concurrent action can be silently dropped (I1). Second, the webhook does not validate annotation values, so an invalid action string wedges the reconciler in an infinite retry loop because the CRD enum rejects the status write while the annotation stays in place (I2).</p>
+    <p><strong>Structure:</strong> 15 changed files, +543 −288 lines. API types, generated apply configurations, CRD, webhook, engine controller, mock controller, BATS integration tests, design documentation.</p>
+    </div>
+    <hr>
+    <h2 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-critical">
+    <p>None.</p>
+    </div>
+    <hr>
+    <h2 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I1">
+        <span class="finding-num">I1.</span> Annotation removal patch lacks optimistic concurrency <span class="pill pill-gemini">Gemini</span><a href="#I1" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d4dd09dff07fffcb411e35e7982bfb7766c6a744/pkg/controllers/app/engine/controllers/docker_watcher.go#L448-L473">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
+      <pre data-start="448" data-line="453-468"><code class="language-go">// removeActionAnnotation clears the AnnotationAction annotation only if its
+// value still matches the action we just processed. A concurrent writer may
+// have replaced the annotation with a fresh action between dispatch and
+// cleanup; in that case the new value must survive so the next reconcile
+// picks it up.
+func (w *dockerWatcher) removeActionAnnotation(ctx context.Context, id, observed string) error {
+	key := client.ObjectKey{Name: id, Namespace: w.apiNamespace}
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		var latest containersv1alpha1.Container
+		if err := w.k8s.Get(ctx, key, &amp;latest); err != nil {
+			return err
+		}
+		current, present := latest.Annotations[containersv1alpha1.AnnotationAction]
+		if !present || current != observed {
+			return nil
+		}
+		patch := client.MergeFrom(latest.DeepCopy())
+		delete(latest.Annotations, containersv1alpha1.AnnotationAction)
+		return w.k8s.Patch(ctx, &amp;latest, patch)
+	})
+}
+
+// deleteContainer removes a container from Docker. NotFound is treated
+// as success; other errors propagate so the caller keeps the finalizer
+// and retries.
+//</code></pre>
+    <p><code>removeActionAnnotation</code> reads the latest object, checks that the annotation still matches the processed value (lines 460–462), then sends a merge patch to remove it. <code>client.MergeFrom</code> does not include <code>resourceVersion</code> in the patch, so the API server applies it unconditionally. If a concurrent writer replaces the annotation with a new action between the <code>Get</code> and the <code>Patch</code>, the merge patch removes the new value and the action is silently lost.</p>
+    <p>The compare-and-swap check on lines 460–462 is correct in intent but does not close the TOCTOU window — it guards against changes visible in the cache at <code>Get</code> time, not changes committed to etcd after the <code>Get</code>.</p>
+    <p>The same pattern appears in <code>patchContainerLastAction</code> (line 442), though the consequence there is a lost status update rather than a lost action.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d4dd09dff07fffcb411e35e7982bfb7766c6a744/pkg/controllers/app/engine/controllers/docker_watcher.go#L437-L447">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
+      <pre data-start="437" data-line="442"><code class="language-go">	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		var latest containersv1alpha1.Container
+		if err := w.k8s.Get(ctx, key, &amp;latest); err != nil {
+			return err
+		}
+		patch := client.MergeFrom(latest.DeepCopy())
+		latest.Status.LastAction = lastAction
+		return w.k8s.Status().Patch(ctx, &amp;latest, patch)
+	})
+}
+</code></pre>
+    <p>Fix: use <code>client.MergeFromWithOptions(latest.DeepCopy(), client.MergeFromWithOptimisticLock{})</code> to include <code>resourceVersion</code> in the patch. The existing <code>RetryOnConflict</code> loop already handles the resulting 409 correctly.</p>
+    </div>
+    <div class="card card-important">
+      <div class="finding-title" id="I2">
+        <span class="finding-num">I2.</span> Invalid action annotation wedges reconciliation <span class="pill pill-codex">Codex</span><a href="#I2" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d4dd09dff07fffcb411e35e7982bfb7766c6a744/pkg/controllers/app/engine/controllers/docker_watcher.go#L338-L372">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
+      <pre data-start="338" data-line="343-367"><code class="language-go">	if !ok {
+		return nil
+	}
+
+	log := logf.FromContext(ctx).WithName(&quot;docker-watcher&quot;)
+	action := containersv1alpha1.ContainerAction(raw)
+	requestedAt := metav1.Now()
+
+	dockerErr := w.dispatchContainerAction(ctx, log, c.Name, action)
+
+	lastAction := &amp;containersv1alpha1.ContainerLastAction{
+		Action:      action,
+		RequestedAt: requestedAt,
+		CompletedAt: metav1.Now(),
+	}
+	if dockerErr == nil {
+		lastAction.State = containersv1alpha1.ContainerActionSucceeded
+	} else {
+		lastAction.State = containersv1alpha1.ContainerActionFailed
+		lastAction.Error = dockerErr.Error()
+		log.Info(&quot;Container action failed&quot;, &quot;id&quot;, c.Name, &quot;action&quot;, action, &quot;error&quot;, dockerErr)
+	}
+
+	if err := w.patchContainerLastAction(ctx, c.Name, lastAction); err != nil {
+		return fmt.Errorf(&quot;failed to patch lastAction for %s: %w&quot;, c.Name, err)
+	}
+	if err := w.removeActionAnnotation(ctx, c.Name, raw); err != nil {
+		return fmt.Errorf(&quot;failed to remove action annotation for %s: %w&quot;, c.Name, err)
+	}
+	return nil
+}
+
+// dispatchContainerAction executes the Docker call for a single action. It
+// validates the action name and returns an error for unknown values so the
+// caller records the failure in status.lastAction.</code></pre>
+    <p>The update webhook validates only spec immutability; annotations are free-form. A misspelled annotation value (e.g. <code>action=staart</code>) passes the webhook, reaches <code>dispatchContainerAction</code> (which returns <code>&quot;unknown container action&quot;</code>), and then <code>patchContainerLastAction</code> tries to write the invalid value into <code>status.lastAction.action</code>. The CRD enum (<code>start|stop|pause|unpause|restart</code>) rejects the status write, so <code>patchContainerLastAction</code> fails and <code>removeActionAnnotation</code> never runs. The bad annotation persists and every subsequent reconcile retries the same impossible action.</p>
+    <p>Fix: validate the annotation value in the update webhook, and add a defensive guard in <code>processContainerAction</code> that removes the annotation and logs a warning for unrecognized values instead of attempting a status write that cannot succeed.</p>
+    </div>
+    <hr>
+    <h2 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S1">
+        <span class="finding-num">S1.</span> <code>InProgress</code> action state is defined but never written <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span><a href="#S1" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d4dd09dff07fffcb411e35e7982bfb7766c6a744/pkg/apis/containers/v1alpha1/container_types.go#L52-L63">pkg/apis/containers/v1alpha1/container_types.go</a></div>
+      <pre data-start="52" data-line="57-58"><code class="language-go">// ContainerActionState describes the outcome of an action that was requested
+// via the AnnotationAction annotation.
+type ContainerActionState string
+
+// Possible values for ContainerActionState.
+const (
+	ContainerActionInProgress ContainerActionState = &quot;InProgress&quot;
+	ContainerActionSucceeded  ContainerActionState = &quot;Succeeded&quot;
+	ContainerActionFailed     ContainerActionState = &quot;Failed&quot;
+)
+
+// ContainerLastAction records the most recent action requested via the</code></pre>
+    <p>The reconciler blocks on the Docker call and writes only <code>Succeeded</code> or <code>Failed</code>. No code path ever writes <code>InProgress</code>. The enum value and its CRD entry are dead code.</p>
+    <p>Fix: remove <code>ContainerActionInProgress</code> from the type, the CRD, and the generated deep-copy until the controller needs it. Writing <code>InProgress</code> before dispatch would require an extra API call per action and break the crash-recovery property (annotation-present = in-progress).</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S2">
+        <span class="finding-num">S2.</span> <code>unpause</code> on a stopped container silently records <code>Succeeded</code> <span class="pill pill-gemini">Gemini</span><a href="#S2" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d4dd09dff07fffcb411e35e7982bfb7766c6a744/pkg/controllers/app/engine/controllers/docker_watcher.go#L397-L414">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
+      <pre data-start="397" data-line="402-409"><code class="language-go">		if paused {
+			return nil
+		}
+		log.Info(&quot;Pausing container&quot;, &quot;id&quot;, id)
+		_, err = w.cli.ContainerPause(ctx, id, dockerclient.ContainerPauseOptions{})
+		return err
+	case containersv1alpha1.ContainerActionUnpause:
+		paused, err := w.isContainerPaused(ctx, id)
+		if err != nil {
+			return err
+		}
+		if !paused {
+			return nil
+		}
+		log.Info(&quot;Unpausing container&quot;, &quot;id&quot;, id)
+		_, err = w.cli.ContainerUnpause(ctx, id, dockerclient.ContainerUnpauseOptions{})
+		return err
+	case containersv1alpha1.ContainerActionRestart:</code></pre>
+    <p>When a user requests <code>unpause</code> on a stopped container, <code>isContainerPaused</code> returns <code>false</code>, <code>dispatchContainerAction</code> returns <code>nil</code>, and <code>processContainerAction</code> records <code>Succeeded</code>. By contrast, <code>pause</code> on a stopped container reaches Docker and correctly records <code>Failed</code>. The asymmetry could confuse GUI developers.</p>
+    <p>Fix: check <code>inspect.Container.State.Running</code> before the <code>!paused</code> short-circuit and return an error when the container is not running.</p>
+    </div>
+    <hr>
+    <h2 id="design-observations" class="section-design">Design Observations <a href="#design-observations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-design">
+    <h3 id="concerns">Concerns <a href="#concerns" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><strong>O(N) reconcile cost per child event (in-scope)</strong>: <code>reconcileContainerActions</code> and <code>processFinalizers</code> both list all resources on every reconcile. The code comment at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d4dd09dff07fffcb411e35e7982bfb7766c6a744/pkg/controllers/app/engine/controllers/engine_reconciler.go#L186-L190"><code>engine_reconciler.go:186-190</code></a> acknowledges this and identifies per-resource reconcilers with watch predicates as the long-term fix. This PR does not worsen the cost, but the action-annotation watch predicate (only reconcile containers with the annotation set) is a natural next step. <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span></li>
+    </ul>
+    <h3 id="strengths">Strengths <a href="#strengths" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><strong>Crash-recovery ordering (in-scope)</strong>: dispatching the Docker call before patching status or removing the annotation ensures that a crash mid-flight leaves the annotation in place for replay. Start, stop, pause, and unpause are idempotent against a container already in the target state, so replay is safe. <span class="pill pill-gemini">Gemini</span></li>
+      <li><strong>SSA simplification (in-scope)</strong>: collapsing the two-field-manager apply in <code>sync_containers.go</code> after emptying <code>ContainerSpec</code> removes a subtle source of pruning bugs and cuts 30 lines of code. <span class="pill pill-codex">Codex</span></li>
+      <li><strong>Atomic annotation replacement (in-scope)</strong>: the single-annotation model means a new value atomically replaces any pending action — no queue, no accumulating history, and a GUI user who changes their mind before the reconciler runs sees only the final action. <span class="pill pill-codex">Codex</span></li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>The BATS tests cover the five actions (start, stop, pause, unpause, restart), the failure path (pause on a stopped container), and verify <code>lastAction</code> outcomes. Coverage gaps:</p>
+    <ol>
+      <li>No test covers an invalid annotation value (I2). An invalid-action test would confirm the webhook rejects it and the reconciler does not wedge.</li>
+      <li>No test covers <code>unpause</code> on a stopped container (S2), which would expose the false-success asymmetry.</li>
+      <li>The duplicate-informer-delivery scenario described in <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/d4dd09dff07fffcb411e35e7982bfb7766c6a744/pkg/controllers/app/engine/controllers/docker_watcher.go#L374-L381"><code>docker_watcher.go:374-381</code></a> is comment-verified only; deterministic BATS coverage would require timing control that is impractical.</li>
+    </ol>
+    </div>
+    <hr>
+    <h2 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p><code>docs/design/api_containers.md</code> clearly explains the rationale for the annotation model, the crash-recovery trade-off for <code>restart</code>, and the <code>lastAction</code> contract. The documentation mentions only <code>Succeeded</code> and <code>Failed</code> as terminal states, consistent with the implementation — but the CRD schema still exposes <code>InProgress</code> (S1).</p>
+    </div>
+    <hr>
+    <h2 id="acknowledged-limitations">Acknowledged Limitations <a href="#acknowledged-limitations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li><strong>Double-restart on crash recovery</strong>: the PR description documents that <code>restart</code> may run twice on crash recovery. This is an accepted idempotency gap.</li>
+      <li><strong>No CLI support for actions</strong>: the PR comment confirms actions exist solely for the GUI; CLI users should use <code>docker start/stop/etc.</code> directly.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <h3 id="claude"><span class="pill pill-claude">Claude</span> <a href="#claude" class="pilcrow">&#182;</a></h3>
+    <p>Claude failed to produce any output. The review file was never created and stderr was empty. Root cause unknown — possibly a sandbox or context issue during the agent launch. This is the first Claude failure in this review series and not a recurring pattern.</p>
+    <h3 id="codex"><span class="pill pill-codex">Codex</span> <a href="#codex" class="pilcrow">&#182;</a></h3>
+    <p>Codex found the most impactful issue in the review: the invalid-annotation wedge (I2), which no other agent raised. Its analysis traced the full path from webhook gap through CRD enum rejection to infinite retry, with a concrete fix. It correctly identified <code>InProgress</code> as dead code (S1). It did not flag the optimistic-concurrency gap in <code>removeActionAnnotation</code> (I1).</p>
+    <h3 id="gemini"><span class="pill pill-gemini">Gemini</span> <a href="#gemini" class="pilcrow">&#182;</a></h3>
+    <p>Gemini identified the annotation-removal race condition (I1, filed as critical) and the <code>unpause</code>-on-stopped asymmetry (S2, filed as important). Both are real issues. Gemini&#39;s C1 severity was too high — the TOCTOU window is narrow and the intended caller (GUI) serializes actions naturally — so it was downgraded to important. Gemini&#39;s I1 was downgraded to suggestion for the same practical-impact reason. Gemini also caught S1 (<code>InProgress</code> dead code), matching Codex.</p>
+    <h3 id="summary">Summary <a href="#summary" class="pilcrow">&#182;</a></h3>
+    <table class="retro-table">
+      <thead><tr><th></th><th><span class="pill pill-claude">Claude</span> Opus 4.6</th><th><span class="pill pill-codex">Codex</span> GPT 5.4</th><th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th></tr></thead>
+      <tbody>
+        <tr><td>Duration</td><td>9m 13s</td><td>5m 51s</td><td>3m 24s</td></tr>
+        <tr><td>Findings</td><td>none</td><td>1I 1S</td><td>1I 1S</td></tr>
+        <tr><td>Tool calls</td><td>39 (Grep 18, Read 16, Bash 5)</td><td>41 (shell 40, stdin 1)</td><td>3 (read<em>file 2, run</em>shell_command 1)</td></tr>
+        <tr><td>Design observations</td><td>0</td><td>2</td><td>3</td></tr>
+        <tr><td>False positives</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>Unique insights</td><td>0</td><td>1</td><td>1</td></tr>
+        <tr><td>Files reviewed</td><td>0</td><td>15</td><td>15</td></tr>
+        <tr><td>Coverage misses</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td><strong>Totals</strong></td><td><strong>none</strong></td><td><strong>1I 1S</strong></td><td><strong>1I 1S</strong></td></tr>
+        <tr><td>Downgraded</td><td>0</td><td>0</td><td>2 (I→S)</td></tr>
+        <tr><td>Dropped</td><td>0</td><td>0</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Reconciliation:</strong> Gemini C1 (annotation removal race): critical → important I1, because the TOCTOU window is narrow and the GUI serializes actions naturally. Gemini I1 (unpause on stopped): important → suggestion S2, because the scenario is unusual and does not cause data loss or crashes.</p>
+    </div>
+    <hr>
+    <h2 id="review-process-notes">Review Process Notes <a href="#review-process-notes" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>No suggestions.</p>
+    </div>
+  </main>
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+  <script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+
+  </script>
+</body>
+</html>
