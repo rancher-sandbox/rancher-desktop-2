@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260416-144802-pr-320</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block.
+ * The filename is a GitHub permalink to the displayed line range.
+ * Text color is light gray (#adbac7) for the bar, green (#7ee787)
+ * for the hyperlink — matching GitHub's dark-mode file header. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Deep Review: 20260416-144802-pr-320</h1>
+
+    <table class="meta-table">
+      <tr><td>Date</td><td>2026-04-16 15:14</td></tr>
+      <tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+      <tr><td>Round</td><td>1</td></tr>
+      <tr><td>Author</td><td><a href="https://github.com/Nino-K">@Nino-K</a></td></tr>
+      <tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/320" class="gh-ref" data-title="  Manage Docker CLI context on ContainerEngineReady transitions" data-state="open" data-type="pr">#320</a> — Manage Docker CLI context on ContainerEngineReady transitions</td></tr>
+      <tr><td>Branch</td><td><code>docker-context</code></td></tr>
+      <tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/001fd95"><code>001fd95</code></a> Manage Docker CLI context on ContainerEngineReady transitions<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/ef5114d"><code>ef5114d</code></a> Add bats to support the docker context</td></tr>
+      <tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.7, <span class="pill pill-codex">Codex</span> GPT 5.4, <span class="pill pill-gemini">Gemini</span> 3.1 Pro</td></tr>
+      <tr><td>Verdict</td><td><span class="verdict">Rework</span> &mdash; three serious correctness bugs in the probe and config-write paths must be fixed before merge.</td></tr>
+      <tr><td>Wall-clock time</td><td><code>30 min 15 s</code></td></tr>
+    </table>
+
+    <hr>
+
+    <hr>
+    <h2 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>PR 320 wires Docker CLI context creation/teardown into the engine reconciler: on <code>ContainerEngineReady=True</code> it writes a <code>rancher-desktop-&lt;suffix&gt;</code> context pointing at <code>instance.DockerSocket()</code>, and a background probe promotes that context to <code>currentContext</code> if the user&#39;s existing context is missing or unreachable. On the way back to False, the probe is cancelled and the context is removed.</p>
+    <p>The design (probe in a goroutine derived from <code>watcherCtx</code>, generation counter to deduplicate concurrent probes) is sensible, but three correctness bugs make this PR unsafe to ship as-is, and all three were identified independently by all reviewers:</p>
+    <ol>
+      <li><strong>Probe-vs-cleanup race resurrects a deleted context.</strong> The goroutine does not check <code>probeCtx.Err()</code> before writing <code>currentContext</code>, so a cancelled probe interprets cancellation as &quot;current context is unhealthy&quot; and writes our context name to <code>~/.docker/config.json</code> after <code>removeDockerContext</code> has already cleared it and deleted the meta dir. The user&#39;s <code>docker</code> CLI then fails with &quot;Current context … is not found&quot; until they manually run <code>docker context use default</code>.</li>
+      <li><em></em>Hardcoded <code>unix://</code> breaks every non-Unix Docker context.<em></em> The probe strips <code>unix://</code> from the user&#39;s existing context Host and unconditionally re-prepends it before dialing, so <code>tcp://</code>, <code>ssh://</code>, and <code>npipe://</code> contexts probe as <code>unix://tcp://…</code>, get marked unhealthy, and silently get overridden — Windows users and remote-Docker users lose their working context.</li>
+      <li><em></em>Non-atomic, repeated writes to <code>~/.docker/config.json</code> risk data loss.<em></em> <code>os.WriteFile</code> truncates before writing, and <code>removeDockerContext</code> runs on every reconcile in the stopped state, so the user&#39;s auths/credsStore can be lost to a partial write or a race with a concurrent <code>docker login</code>.</li>
+    </ol>
+    <p>Two further important issues complete the must-fix list: the new code logs errors via <code>logf.Log.Info(..., &quot;error&quot;, err)</code> instead of the scoped <code>log.Error(...)</code> pattern used everywhere else in the reconciler, and the hardcoded <code>unix://</code> scheme in <code>createReplaceDockerContext</code> makes the context Docker CLI on Windows cannot open. Reviewer @mook-as raised the same Windows concern in inline review comments that remain unresolved.</p>
+    <p>The BATS tests mutate the developer&#39;s actual <code>~/.docker/config.json</code> — they should run against an isolated <code>HOME</code> (or <code>DOCKER_CONFIG</code>) so a mid-test failure does not corrupt local Docker state. None of the reviewer&#39;s prior-round comments have been addressed.</p>
+    <p>Structure: the change is small (4 files, ~559 LoC) but split into one &quot;code&quot; commit and one &quot;tests&quot; commit; squash before merge.</p>
+    </div>
+    <hr>
+    <h2 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-critical">
+    <p>None.</p>
+    </div>
+    <hr>
+    <h2 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I1">
+        <span class="finding-num">I1.</span> Probe goroutine ignores cancellation and resurrects the deleted context <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span><a href="#I1" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/engine_reconciler.go#L285-L328">pkg/controllers/app/engine/controllers/engine_reconciler.go</a></div>
+      <pre data-start="285" data-line="290-323"><code class="language-go">	if err := r.deleteAllOfType(ctx, &amp;containersv1alpha1.ContainerList{}); err != nil {
+		errs = append(errs, fmt.Errorf(&quot;failed to delete Containers: %w&quot;, err))
+	}
+	if err := r.deleteAllOfType(ctx, &amp;containersv1alpha1.VolumeList{}); err != nil {
+		errs = append(errs, fmt.Errorf(&quot;failed to delete Volumes: %w&quot;, err))
+	}
+	if err := r.deleteAllOfType(ctx, &amp;containersv1alpha1.ImageList{}); err != nil {
+		errs = append(errs, fmt.Errorf(&quot;failed to delete Images: %w&quot;, err))
+	}
+	if err := r.deleteAllOfType(ctx, &amp;containersv1alpha1.ContainerNamespaceList{}); err != nil {
+		errs = append(errs, fmt.Errorf(&quot;failed to delete ContainerNamespaces: %w&quot;, err))
+	}
+	return errors.Join(errs...)
+}
+
+// deleteAllOfType lists and removes every resource of the given kind
+// in r.apiNamespace. Engine is authoritative for Container, Image, and
+// Volume in the App&#39;s namespace: this loop deletes every object, not
+// just engine-owned mirrors. Coexistence with another writer to these
+// kinds requires an engine-owned label and matching filters here and
+// in the sync_*.go full-sync prune paths. Finalizer removal retries
+// on conflict; per-item errors are collected so one stuck object does
+// not block the rest.
+func (r *EngineReconciler) deleteAllOfType(ctx context.Context, list client.ObjectList) error {
+	if err := r.List(ctx, list, client.InNamespace(r.apiNamespace)); err != nil {
+		return err
+	}
+
+	items, err := meta.ExtractList(list)
+	if err != nil {
+		return err
+	}
+
+	var errs []error
+	for _, item := range items {
+		obj := item.(client.Object)
+		key := client.ObjectKeyFromObject(obj)
+		// meta.ExtractList leaves each item&#39;s TypeMeta empty (GVK is
+		// only on the list), so format the Go type with %T instead of
+		// obj.GetObjectKind().
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			latest := obj.DeepCopyObject().(client.Object)
+			if err := r.Get(ctx, key, latest); err != nil {
+				if apierrors.IsNotFound(err) {</code></pre>
+    <p>When the engine stops, <code>removeDockerContext</code> (line 328) cancels <code>probeCtx</code>, clears <code>currentContext</code> if it points at us, and deletes the context dir — without waiting for the probe goroutine to finish. The probe interprets the cancellation in <code>probeDockerContext</code>&#39;s <code>Ping</code> as &quot;context is unhealthy&quot; and proceeds to write <code>setCurrentDockerContext(contextName)</code>. That write can land <em>after</em> <code>removeDockerContext</code> has already deleted the meta dir, leaving <code>currentContext</code> pointing at a non-existent context. Every subsequent <code>docker ps</code>/<code>docker build</code>/<code>docker context inspect</code> then fails with <code>&quot;Current context … is not found&quot;</code> until the user manually runs <code>docker context use default</code>.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/engine_reconciler.go#L323-L333">pkg/controllers/app/engine/controllers/engine_reconciler.go</a></div>
+      <pre data-start="323" data-line="328"><code class="language-go">		// only on the list), so format the Go type with %T instead of
+		// obj.GetObjectKind().
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			latest := obj.DeepCopyObject().(client.Object)
+			if err := r.Get(ctx, key, latest); err != nil {
+				if apierrors.IsNotFound(err) {
+					return nil
+				}
+				return err
+			}
+			if !controllerutil.RemoveFinalizer(latest, mirrorFinalizer) {</code></pre>
+    <p>The generation counter (<code>myGen</code>) only protects the cancel-slot bookkeeping; the disk write on line 319 is not gated on <code>probeCtx.Err()</code>, generation match, or any wait on the cleanup path.</p>
+    <p>Fix: gate the promotion on <code>probeCtx.Err()</code>. A fully race-free fix also adds a <code>sync.WaitGroup</code> so <code>removeDockerContext</code> blocks until the probe returns:</p>
+      <pre><code class="language-diff"> go func() {
++    r.contextProbeWg.Add(1)
++    defer r.contextProbeWg.Done()
+     defer func() {
+         ...
+     }()
+     ...
+     if !healthy {
++        if probeCtx.Err() != nil {
++            return
++        }
+         if err := setCurrentDockerContext(contextName); err != nil {
+             ...
+         }
+     }
+ }()
+
+ func (r *EngineReconciler) removeDockerContext() {
+     r.contextMu.Lock()
+     ...
+     r.contextMu.Unlock()
++    r.contextProbeWg.Wait()
+     ...
+ }</code></pre>
+    <p>The wait is bounded by <code>dockerContextProbeTimeout</code> (3s) because <code>probeCtx</code> gets cancelled before the wait. The <code>Err()</code> check alone closes most of the window; the WaitGroup closes the remainder where the goroutine has read <code>!healthy</code> and is about to call <code>setCurrentDockerContext</code> when cancellation fires.</p>
+    </div>
+    <div class="card card-important">
+      <div class="finding-title" id="I2">
+        <span class="finding-num">I2.</span> Hardcoded <code>unix://</code> scheme breaks tcp / ssh / npipe Docker contexts <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span><a href="#I2" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/docker_context.go#L85-L116">pkg/controllers/app/engine/controllers/docker_context.go</a></div>
+      <pre data-start="85" data-line="90-111"><code class="language-go">		return nil
+	}
+	return err
+}
+
+// getDockerContextSocket returns the Unix socket path that the named context
+// points at. Returns an empty string if the context does not exist or has no
+// docker endpoint.
+func getDockerContextSocket(name string) (string, error) {
+	path, err := contextMetaPath(name)
+	if err != nil {
+		return &quot;&quot;, err
+	}
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return &quot;&quot;, nil
+	}
+	if err != nil {
+		return &quot;&quot;, err
+	}
+	var meta dockerContextMeta
+	if err := json.Unmarshal(data, &amp;meta); err != nil {
+		return &quot;&quot;, err
+	}
+	host := meta.Endpoints[&quot;docker&quot;].Host
+	return strings.TrimPrefix(host, &quot;unix://&quot;), nil
+}
+
+// getCurrentDockerContext reads the currentContext field from ~/.docker/config.json.
+// Returns an empty string if the file does not exist or no context is set.
+func getCurrentDockerContext() (string, error) {
+	dir, err := dockerConfigDir()</code></pre>
+    <p>If the user&#39;s current context has <code>Host: &quot;tcp://foo:2375&quot;</code> (or <code>ssh://</code>, <code>npipe://</code>), <code>getDockerContextSocket</code> returns the string unchanged because the <code>&quot;unix://&quot;</code> prefix doesn&#39;t match. <code>probeDockerContext</code> then constructs <code>&quot;unix://tcp://foo:2375&quot;</code>, the moby client parses it as <code>proto=unix, addr=&quot;tcp://foo:2375&quot;</code>, attempts to dial a Unix socket at the literal path, and fails. The probe reports <code>healthy=false</code>, and the goroutine silently overrides the user&#39;s working remote/Windows-pipe context with ours.</p>
+    <p>This violates the PR&#39;s documented contract (&quot;if the current context is healthy, leave it alone&quot;) for every non-Unix endpoint and is the same class of bug Windows users will hit in I4.</p>
+    <p>Fix: stop stripping the scheme — pass the full Host URL through to the client. Rename for clarity:</p>
+      <pre><code class="language-diff">-func getDockerContextSocket(name string) (string, error) {
++// getDockerContextHost returns the Docker Host URL (e.g. &quot;unix:///path&quot;,
++// &quot;tcp://host:port&quot;) that the named context points at.
++func getDockerContextHost(name string) (string, error) {
+     ...
+-    host := meta.Endpoints[&quot;docker&quot;].Host
+-    return strings.TrimPrefix(host, &quot;unix://&quot;), nil
++    return meta.Endpoints[&quot;docker&quot;].Host, nil
+ }
+
+-func probeDockerContext(ctx context.Context, socketPath string) bool {
++func probeDockerContext(ctx context.Context, host string) bool {
+     ...
+-    cli, err := dockerclient.New(dockerclient.WithHost(&quot;unix://&quot; + socketPath))
++    cli, err := dockerclient.New(dockerclient.WithHost(host))
+     ...
+ }</code></pre>
+    </div>
+    <div class="card card-important">
+      <div class="finding-title" id="I3">
+        <span class="finding-num">I3.</span> Non-atomic write of <code>~/.docker/config.json</code> can lose user data <span class="pill pill-gemini">Gemini</span><a href="#I3" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/docker_context.go#L167-L203">pkg/controllers/app/engine/controllers/docker_context.go</a></div>
+      <pre data-start="167" data-line="172-203"><code class="language-go">}
+
+// updateDockerConfig reads the Docker config file at path, applies mutate,
+// and writes the result back. All other keys in the file are preserved.
+// If the file does not exist and mutate leaves cfg empty, no file is written.
+func updateDockerConfig(path string, mutate func(map[string]any)) error {
+	cfg := map[string]any{}
+	data, err := os.ReadFile(path)
+	notExist := errors.Is(err, os.ErrNotExist)
+	switch {
+	case err == nil:
+		if jsonErr := json.Unmarshal(data, &amp;cfg); jsonErr != nil {
+			return jsonErr
+		}
+	case notExist:
+	// we should create the file below if needed
+	default:
+		return err
+	}
+
+	before := len(cfg)
+	mutate(cfg)
+
+	// file didn&#39;t exist and there is nothing left nothing to write.
+	if notExist &amp;&amp; len(cfg) == 0 &amp;&amp; before == 0 {
+		return nil
+	}
+
+	out, err := json.MarshalIndent(cfg, &quot;&quot;, &quot;\t&quot;)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return err
+	}
+	return os.WriteFile(path, append(out, &#39;\n&#39;), 0o600)
+}</code></pre>
+    <p><code>updateDockerConfig</code> uses <code>os.WriteFile</code>, which opens with <code>O_TRUNC</code> and writes in place. Two failure modes:</p>
+    <ol>
+      <li><em>Crash after truncate, before write completes:</em> The user&#39;s <code>~/.docker/config.json</code> is left empty or partial, losing every key it held (<code>auths</code>, <code>credsStore</code>, <code>currentContext</code>, plugin settings, etc.).</li>
+      <li><em>Race with concurrent docker CLI:</em> A <code>docker login</code> or <code>docker context use</code> running concurrently performs its own read-modify-write. Whichever write lands second silently clobbers the other&#39;s changes — the user loses an auth entry or a context switch with no error.</li>
+    </ol>
+    <p>Severity is amplified by the design: <code>removeDockerContext</code> is called on every reconcile when the engine is stopped (see S1), so the file is read, re-marshalled, and rewritten on a steady cadence in the background even when nothing has changed.</p>
+    <p>Fix: write to a sibling temp file and <code>rename(2)</code> — atomic on POSIX, and fixable on Windows by removing the destination first. Also short-circuit when <code>mutate</code> produces no change so steady state pays no I/O cost:</p>
+      <pre><code class="language-diff">-func updateDockerConfig(path string, mutate func(map[string]any)) error {
++func updateDockerConfig(path string, mutate func(map[string]any) bool) error {
+     cfg := map[string]any{}
+     ...
+-    before := len(cfg)
+-    mutate(cfg)
+-
+-    if notExist &amp;&amp; len(cfg) == 0 &amp;&amp; before == 0 {
++    if changed := mutate(cfg); !changed {
+         return nil
+     }
+
+     out, err := json.MarshalIndent(cfg, &quot;&quot;, &quot;\t&quot;)
+     ...
+-    return os.WriteFile(path, append(out, &#39;\n&#39;), 0o600)
++    tmp, err := os.CreateTemp(filepath.Dir(path), &quot;.config.json.*&quot;)
++    if err != nil {
++        return err
++    }
++    if _, err := tmp.Write(append(out, &#39;\n&#39;)); err != nil {
++        tmp.Close()
++        os.Remove(tmp.Name())
++        return err
++    }
++    if err := tmp.Chmod(0o600); err != nil {
++        tmp.Close()
++        os.Remove(tmp.Name())
++        return err
++    }
++    if err := tmp.Close(); err != nil {
++        os.Remove(tmp.Name())
++        return err
++    }
++    return os.Rename(tmp.Name(), path)
+ }</code></pre>
+    <p>The <code>mutate</code> callback returns <code>bool</code> so the caller can signal whether it actually changed anything — <code>setCurrentDockerContext</code> returns true only when the field changes, <code>clearCurrentDockerContext</code> only when the matching key existed. This collapses I3 with S1 (no rewrite-on-every-reconcile).</p>
+    </div>
+    <div class="card card-important">
+      <div class="finding-title" id="I4">
+        <span class="finding-num">I4.</span> Windows: hardcoded <code>unix://</code> scheme produces a context Docker CLI on Windows cannot open <span class="pill pill-claude">Claude</span><a href="#I4" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/docker_context.go#L59-L74">pkg/controllers/app/engine/controllers/docker_context.go</a></div>
+      <pre data-start="59" data-line="64-69"><code class="language-go">		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return err
+	}
+	meta := dockerContextMeta{
+		Name:     name,
+		Metadata: map[string]any{},
+		Endpoints: map[string]dockerEndpointMeta{
+			&quot;docker&quot;: {Host: &quot;unix://&quot; + socketPath},
+		},
+	}
+	data, err := json.MarshalIndent(meta, &quot;&quot;, &quot;\t&quot;)
+	if err != nil {
+		return err
+	}</code></pre>
+    <p><code>instance.DockerSocket()</code> returns a Windows path like <code>%USERPROFILE%\.rd&lt;suffix&gt;\docker.sock</code>; the resulting <code>meta.json</code> contains <code>Host: &quot;unix://C:\\Users\\…\\docker.sock&quot;</code>, which Docker CLI on Windows cannot use (it expects <code>npipe://./pipe/...</code>). The BATS file skips Windows at line 15, but <code>manageDockerContext</code> runs unconditionally in production, so the controller will write a broken context for every Windows user. Reviewer @mook-as raised the same concern at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/320#discussion_r3096484641">discussion_r3096484641</a>, which is unresolved.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/docker_context.go#L10-L20">pkg/controllers/app/engine/controllers/docker_context.go</a></div>
+      <pre data-start="10" data-line="15"><code class="language-go">	&quot;encoding/hex&quot;
+	&quot;encoding/json&quot;
+	&quot;errors&quot;
+	&quot;os&quot;
+	&quot;path/filepath&quot;
+	&quot;strings&quot;
+	&quot;time&quot;
+
+	dockerclient &quot;github.com/moby/moby/client&quot;
+)
+</code></pre>
+    <p>Fix (smallest): gate <code>manageDockerContext</code> and <code>removeDockerContext</code> on <code>runtime.GOOS != &quot;windows&quot;</code> until the named-pipe path is wired up. Long-term: switch to <code>github.com/docker/cli/cli/context/store</code>, which constructs the platform-appropriate Host (see Design Concerns).</p>
+      <pre><code class="language-diff"> func (r *EngineReconciler) manageDockerContext(socketPath string) {
++    if runtime.GOOS == &quot;windows&quot; {
++        return
++    }
+     contextName := instance.Name()
+     ...
+ }</code></pre>
+    <p>Apply the same guard to <code>removeDockerContext</code>.</p>
+    </div>
+    <div class="card card-important">
+      <div class="finding-title" id="I5">
+        <span class="finding-num">I5.</span> New error sites use <code>logf.Log.Info(..., &quot;error&quot;, err)</code> instead of the scoped <code>log.Error(...)</code> pattern <span class="pill pill-claude">Claude</span><a href="#I5" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/engine_reconciler.go#L270-L280">pkg/controllers/app/engine/controllers/engine_reconciler.go</a></div>
+      <pre data-start="270" data-line="275"><code class="language-go">		if !changed {
+			return nil
+		}
+		return r.Status().Update(ctx, latest)
+	})
+}
+
+// cleanupMirrorResources removes every mirror resource the engine
+// controller owns. Errors from all four kinds are joined so one stuck
+// type does not block the rest.
+func (r *EngineReconciler) cleanupMirrorResources(ctx context.Context) error {</code></pre>
+    <p>Every other error site in this package uses <code>log := logf.FromContext(ctx); log.Error(err, msg, kv...)</code>. The new code deviates on two axes:</p>
+    <ol>
+      <li><code>.Info</code> logs at info severity with an <code>&quot;error&quot;</code> field, so operators filtering on error level miss these and structured-log parsers do not promote <code>err</code> into a dedicated field.</li>
+      <li><code>logf.Log</code> is the unscoped global logger. <code>SetupWithManager</code> primes <code>r.watcherCtx</code> with <code>logf.IntoContext(..., mgr.GetLogger().WithName(&quot;engine-watcher&quot;))</code>, but the new code ignores it — these lines have no controller name and no goroutine identity.</li>
+    </ol>
+    <p>Fix: capture a scoped logger at goroutine launch and use <code>.Error</code>:</p>
+      <pre><code class="language-diff"> func (r *EngineReconciler) manageDockerContext(socketPath string) {
+     contextName := instance.Name()
++    log := logf.FromContext(r.watcherCtx).WithName(&quot;docker-context&quot;)
+
+     if err := createReplaceDockerContext(contextName, socketPath); err != nil {
+-        logf.Log.Info(&quot;Failed to create Docker context&quot;, &quot;context&quot;, contextName, &quot;error&quot;, err)
++        log.Error(err, &quot;Failed to create Docker context&quot;, &quot;context&quot;, contextName)
+         return
+     }
+     ...
+ }</code></pre>
+    <p>Apply the same pattern to <code>removeDockerContext</code>.</p>
+    </div>
+    <hr>
+    <h2 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S1">
+        <span class="finding-num">S1.</span> <code>removeDockerContext</code> re-runs config.json I/O on every stopped-state reconcile <span class="pill pill-claude">Claude</span><a href="#S1" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/engine_reconciler.go#L143-L163">pkg/controllers/app/engine/controllers/engine_reconciler.go</a></div>
+      <pre data-start="143" data-line="148-158"><code class="language-go">			// expect Container/Image/Volume mirrors must gate on
+			// Reason, not Status alone. The condition will be renamed
+			// when containerd mirroring lands.
+			terminalReason = &quot;NotApplicable&quot;
+			terminalStatus = metav1.ConditionTrue
+			terminalMessage = &quot;Engine mirroring is only supported with the moby backend&quot;
+		}
+		current := meta.FindStatusCondition(app.Status.Conditions, appv1alpha1.AppConditionContainerEngineReady)
+		alreadyClean := !watcherDied &amp;&amp; current != nil &amp;&amp; current.Reason == terminalReason &amp;&amp; current.Status == terminalStatus
+		if !alreadyClean {
+			if err := r.cleanupMirrorResources(ctx); err != nil {
+				log.Error(err, &quot;Failed to clean up mirror resources&quot;)
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, r.setEngineCondition(ctx, &amp;app, terminalStatus, terminalReason, terminalMessage)
+	}
+
+	if !watcherRunning {
+		log.Info(&quot;App is running, starting Docker watcher&quot;)
+		if err := r.startWatcherAndSync(ctx); err != nil {</code></pre>
+    <p>The <code>else</code> branch fires every reconcile while the engine is stopped, so <code>removeDockerContext → clearCurrentDockerContext → updateDockerConfig</code> reads, re-marshals, and rewrites <code>~/.docker/config.json</code> continuously even in steady state. With the current non-atomic write (I3), this turns a single stale-config-cleanup into ongoing risk. Stable state should be no-I/O.</p>
+    <p>Fix: move <code>removeDockerContext()</code> inside the <code>!alreadyClean</code> block, or fold it into the same condition that gates <code>cleanupMirrorResources</code>. With I3&#39;s &quot;no rewrite when nothing changed&quot; path, the cost goes away automatically.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S2">
+        <span class="finding-num">S2.</span> <code>&quot;default&quot;</code> context is unconditionally overridden without a probe <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span><a href="#S2" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/engine_reconciler.go#L303-L322">pkg/controllers/app/engine/controllers/engine_reconciler.go</a></div>
+      <pre data-start="303" data-line="308-317"><code class="language-go">// just engine-owned mirrors. Coexistence with another writer to these
+// kinds requires an engine-owned label and matching filters here and
+// in the sync_*.go full-sync prune paths. Finalizer removal retries
+// on conflict; per-item errors are collected so one stuck object does
+// not block the rest.
+func (r *EngineReconciler) deleteAllOfType(ctx context.Context, list client.ObjectList) error {
+	if err := r.List(ctx, list, client.InNamespace(r.apiNamespace)); err != nil {
+		return err
+	}
+
+	items, err := meta.ExtractList(list)
+	if err != nil {
+		return err
+	}
+
+	var errs []error
+	for _, item := range items {
+		obj := item.(client.Object)
+		key := client.ObjectKeyFromObject(obj)
+		// meta.ExtractList leaves each item&#39;s TypeMeta empty (GVK is</code></pre>
+    <p>The comment claims <code>&quot;default&quot;</code> and <code>&quot;&quot;</code> both mean &quot;no working context&quot;, but <code>default</code> is a real Docker context — on Linux with Docker Engine installed it points to <code>/var/run/docker.sock</code>, which may be running. The code treats it as broken and silently promotes ours. The PR&#39;s stated contract (&quot;if the current context is healthy, leave it alone&quot;) would be violated on every Linux box with both Docker Engine and Rancher Desktop installed.</p>
+    <p>Fix: probe <code>default</code> explicitly via <code>dockerclient.DefaultDockerHost</code> (or <code>client.FromEnv</code>) instead of skipping it. The change is small once I2&#39;s &quot;pass the full Host through&quot; refactor is in place.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S3">
+        <span class="finding-num">S3.</span> <code>DOCKER_CONFIG</code> environment variable is ignored <span class="pill pill-claude">Claude</span><a href="#S3" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/docker_context.go#L32-L48">pkg/controllers/app/engine/controllers/docker_context.go</a></div>
+      <pre data-start="32" data-line="37-43"><code class="language-go">type dockerEndpointMeta struct {
+	Host          string `json:&quot;Host&quot;`
+	SkipTLSVerify bool   `json:&quot;SkipTLSVerify&quot;`
+}
+
+func dockerConfigDir() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return &quot;&quot;, err
+	}
+	return filepath.Join(home, &quot;.docker&quot;), nil
+}
+
+// contextMetaPath returns the path to the meta.json file for the named context.
+// Docker creates the directory name using sha256(contextName).
+func contextMetaPath(name string) (string, error) {
+	dir, err := dockerConfigDir()</code></pre>
+    <p>Docker CLI honours <code>$DOCKER_CONFIG</code> to relocate the config dir. Users who set it (common in dev containers, CI runners, or Nix profiles) will have the context written under <code>~/.docker</code> while their CLI reads from <code>$DOCKER_CONFIG</code>, so the new context never appears.</p>
+      <pre><code class="language-diff"> func dockerConfigDir() (string, error) {
++    if dir := os.Getenv(&quot;DOCKER_CONFIG&quot;); dir != &quot;&quot; {
++        return dir, nil
++    }
+     home, err := os.UserHomeDir()
+     if err != nil {
+         return &quot;&quot;, err
+     }
+     return filepath.Join(home, &quot;.docker&quot;), nil
+ }</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S4">
+        <span class="finding-num">S4.</span> Empty <code>docker</code> endpoint is treated as &quot;no current context&quot; <span class="pill pill-claude">Claude</span><a href="#S4" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/docker_context.go#L88-L116">pkg/controllers/app/engine/controllers/docker_context.go</a></div>
+      <pre data-start="88" data-line="93-111"><code class="language-go">}
+
+// getDockerContextSocket returns the Unix socket path that the named context
+// points at. Returns an empty string if the context does not exist or has no
+// docker endpoint.
+func getDockerContextSocket(name string) (string, error) {
+	path, err := contextMetaPath(name)
+	if err != nil {
+		return &quot;&quot;, err
+	}
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return &quot;&quot;, nil
+	}
+	if err != nil {
+		return &quot;&quot;, err
+	}
+	var meta dockerContextMeta
+	if err := json.Unmarshal(data, &amp;meta); err != nil {
+		return &quot;&quot;, err
+	}
+	host := meta.Endpoints[&quot;docker&quot;].Host
+	return strings.TrimPrefix(host, &quot;unix://&quot;), nil
+}
+
+// getCurrentDockerContext reads the currentContext field from ~/.docker/config.json.
+// Returns an empty string if the file does not exist or no context is set.
+func getCurrentDockerContext() (string, error) {
+	dir, err := dockerConfigDir()</code></pre>
+    <p>If <code>meta.json</code> exists but has no <code>docker</code> endpoint (a kubernetes-only context, which Docker CLI does write), the map lookup returns a zero <code>dockerEndpointMeta{}</code> with <code>Host=&quot;&quot;</code>. The caller then takes the <code>currentSocket != &quot;&quot;</code> false branch, treats <code>healthy=false</code>, and overrides a context the user is actively using — just one without a docker endpoint.</p>
+    <p>Fix shares the I2 refactor: return the raw <code>Host</code> and let the caller distinguish <code>&quot;&quot; → not probeable, leave alone</code> from <code>currentSocket missing → promote ours</code>.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S5">
+        <span class="finding-num">S5.</span> BATS tests modify the developer&#39;s real <code>~/.docker/config.json</code> without HOME isolation <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span><a href="#S5" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/bats/tests/32-app-controllers/engine-docker.bats#L420-L495">bats/tests/32-app-controllers/engine-docker.bats</a></div>
+      <pre data-start="420" data-line="425-494"><code class="language-bash">    docker rm --force test-restart
+}
+
+# --- Cleanup on shutdown ---
+
+@test &quot;stopping VM removes all mirror resources&quot; {
+    # Make sure we have at least one resource to verify cleanup.
+    rdd ctl wait --for=create --namespace=&quot;${RDD_NAMESPACE}&quot; \
+        ContainerNamespace/moby --timeout=10s
+
+    rdd set running=false
+
+    run -0 rdd ctl get containers --namespace=&quot;${RDD_NAMESPACE}&quot; --output=name
+    refute_output
+    run -0 rdd ctl get images --namespace=&quot;${RDD_NAMESPACE}&quot; --output=name
+    refute_output
+    run -0 rdd ctl get volumes --namespace=&quot;${RDD_NAMESPACE}&quot; --output=name
+    refute_output
+    run -0 rdd ctl get ContainerNamespaces --namespace=&quot;${RDD_NAMESPACE}&quot; --output=name
+    refute_output
+}
+
+@test &quot;rdd set running=false returns promptly when already stopped&quot; {
+    # rdd set running=false waits for the App&#39;s Running condition to
+    # go to False, not for ContainerEngineReady. When the VM is
+    # already stopped, the wait must complete immediately rather than
+    # hang on the already-False engine condition.
+    rdd set --timeout=10s running=false
+}
+
+@test &quot;VM start recreates ContainerNamespace/moby after cleanup&quot; {
+    # The &quot;stopping VM removes all mirror resources&quot; test above swept
+    # ContainerNamespace/moby along with the rest of the mirrors, so
+    # restarting the VM must recreate it. This bridges the teardown
+    # above to the ContainerNamespace delete test below, which needs
+    # the namespace to exist before it can delete it.
+    rdd set running=true
+    rdd ctl wait --for=create --namespace=&quot;${RDD_NAMESPACE}&quot; \
+        ContainerNamespace/moby --timeout=10s
+}
+
+@test &quot;deleting ContainerNamespace/moby completes without a finalizer hang&quot; {
+    # moby ContainerNamespace has no mirror finalizer, so a user delete
+    # must return promptly rather than get trapped in Terminating.
+    rdd ctl delete ContainerNamespace/moby --namespace=&quot;${RDD_NAMESPACE}&quot; --timeout=10s
+    run -0 rdd ctl get ContainerNamespaces --namespace=&quot;${RDD_NAMESPACE}&quot; --output=name
+    refute_output
+}
+
+# --- containerd backend ---
+
+@test &quot;containerd backend reports ContainerEngineReady=NotApplicable and skips mirroring&quot; {
+    # Stop first so there is no stale True/Connected from moby to
+    # satisfy the CLI wait below before the engine reconciler has run.
+    rdd set running=false
+
+    # Start with containerd. rdd set waits for ContainerEngineReady=True,
+    # which the engine reconciler satisfies immediately with reason
+    # NotApplicable because engine mirroring only supports the moby
+    # backend.
+    rdd set containerEngine.name=containerd running=true
+
+    run -0 rdd ctl get app app \
+        -o jsonpath=&#39;{.status.conditions[?(@.type==&quot;ContainerEngineReady&quot;)].reason}&#39;
+    assert_output &quot;NotApplicable&quot;
+
+    # No mirror resources should exist in containerd mode.
+    run -0 rdd ctl get containers --namespace=&quot;${RDD_NAMESPACE}&quot; --output=name
+    refute_output
+    run -0 rdd ctl get images --namespace=&quot;${RDD_NAMESPACE}&quot; --output=name
+    refute_output
+    run -0 rdd ctl get volumes --namespace=&quot;${RDD_NAMESPACE}&quot; --output=name
+    refute_output
+    run -0 rdd ctl get ContainerNamespaces --namespace=&quot;${RDD_NAMESPACE}&quot; --output=name
+    refute_output
+}</code></pre>
+    <p>The tests operate on the developer&#39;s actual <code>$HOME/.docker/config.json</code> (no helper overrides <code>HOME</code>). The &quot;restore in teardown&quot; inline block at lines 471–475 runs only when execution reaches it — any <code>assert_output</code> failure above it leaves <code>currentContext</code> cleared. There is no file-level <code>teardown</code>.</p>
+    <p>Fix options, in order of preference:</p>
+    <ol>
+      <li>Override <code>HOME</code> (or <code>DOCKER_CONFIG</code>, after S3 lands) in <code>local_setup_file</code> to a per-test temp dir; the engine controller picks it up when started by the test harness.</li>
+      <li>Move the save/restore into a BATS <code>teardown</code> so it runs unconditionally.</li>
+    </ol>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S6">
+        <span class="finding-num">S6.</span> <code>$(rdd ...)</code> and <code>$(jq ...)</code> command substitution in BATS <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span><a href="#S6" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/bats/tests/32-app-controllers/engine-docker.bats#L437-L447">bats/tests/32-app-controllers/engine-docker.bats</a></div>
+      <pre data-start="437" data-line="442"><code class="language-bash">    refute_output
+    run -0 rdd ctl get ContainerNamespaces --namespace=&quot;${RDD_NAMESPACE}&quot; --output=name
+    refute_output
+}
+
+@test &quot;rdd set running=false returns promptly when already stopped&quot; {
+    # rdd set running=false waits for the App&#39;s Running condition to
+    # go to False, not for ContainerEngineReady. When the VM is
+    # already stopped, the wait must complete immediately rather than
+    # hang on the already-False engine condition.
+    rdd set --timeout=10s running=false</code></pre>
+    <p>Repo convention forbids <code>$(cmd)</code> substitution when the result feeds an assertion — failures inside <code>$(...)</code> produce opaque BATS errors with no output. Use <code>run -0 &lt;cmd&gt;; var=$output</code>. Reviewer @mook-as flagged the same line at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/320#discussion_r3096228639">discussion_r3096228639</a>.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S7">
+        <span class="finding-num">S7.</span> Typo &quot;currentContextshouldhavebeenremoved&quot; in failure message <span class="pill pill-claude">Claude</span><a href="#S7" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/docker_context_test.go#L97-L107">pkg/controllers/app/engine/controllers/docker_context_test.go</a></div>
+      <pre data-start="97" data-line="102"><code class="language-go">		data, err := os.ReadFile(p.configFile)
+		assert.NilError(t, err)
+		var cfg map[string]any
+		assert.NilError(t, json.Unmarshal(data, &amp;cfg))
+		_, hasCtx := cfg[&quot;currentContext&quot;]
+		assert.Assert(t, !hasCtx, &quot;currentContextshouldhavebeenremoved&quot;)
+		_, hasAuths := cfg[&quot;auths&quot;]
+		assert.Assert(t, hasAuths, &quot;auths key must be preserved&quot;)
+	})
+}
+</code></pre>
+      <pre><code class="language-diff">-assert.Assert(t, !hasCtx, &quot;currentContextshouldhavebeenremoved&quot;)
++assert.Assert(t, !hasCtx, &quot;currentContext should have been removed&quot;)</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S8">
+        <span class="finding-num">S8.</span> No integration test exercises the healthy-context-skip path <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span><a href="#S8" class="pilcrow">&#182;</a>
+      </div>
+    <p>The probe&#39;s central responsibility — &quot;if the user&#39;s context is healthy, leave it alone&quot; — has no integration test. Existing tests cover only &quot;unset → promote ours&quot; and &quot;stop → remove&quot;. A test that stages a healthy alternative context (e.g. a second context name pointing at the same socket, set as current) and asserts <code>currentContext</code> is <em>unchanged</em> after the engine starts would catch I2 regressions and document the policy.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S9">
+        <span class="finding-num">S9.</span> <code>newDockerTestDir</code> returns <code>contextsDir</code> that no test reads <span class="pill pill-claude">Claude</span><a href="#S9" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/docker_context_test.go#L12-L37">pkg/controllers/app/engine/controllers/docker_context_test.go</a></div>
+      <pre data-start="12" data-line="17-32"><code class="language-go">
+	&quot;gotest.tools/v3/assert&quot;
+)
+
+// dockerTestPaths holds the config and contexts directory for a test.
+type dockerTestPaths struct {
+	configFile  string
+	contextsDir string
+}
+
+// newDockerTestDir creates a temp ~/.docker layout and returns its paths.
+func newDockerTestDir(t *testing.T) dockerTestPaths {
+	t.Helper()
+	root := t.TempDir()
+	dockerDir := filepath.Join(root, &quot;.docker&quot;)
+	assert.NilError(t, os.MkdirAll(dockerDir, 0o700))
+	return dockerTestPaths{
+		configFile:  filepath.Join(dockerDir, &quot;config.json&quot;),
+		contextsDir: filepath.Join(dockerDir, &quot;contexts&quot;),
+	}
+}
+
+func Test_updateDockerConfig_set(t *testing.T) {
+	t.Parallel()
+
+	t.Run(&quot;creates file when absent&quot;, func(t *testing.T) {</code></pre>
+    <p><code>contextsDir</code> is assigned but never referenced by any test in the file. Drop the field, or convert it to a helper returning the meta-path that removes the <code>t.Setenv(&quot;HOME&quot;, …)</code> gymnastics in the create/delete tests.</p>
+    </div>
+    <hr>
+    <h2 id="design-observations" class="section-design">Design Observations <a href="#design-observations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-design">
+    <p><strong>Concerns</strong></p>
+    <ul>
+      <li><em>Hand-rolled Docker context store duplicates docker/cli and is the source of every correctness bug here</em> <code>(in-scope)</code> <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span> — The PR re-implements context directory hashing, JSON metadata serialization, default-context resolution, and atomic config-file mutation. Each of I2, I3, I4, S2, S3 flows directly from one of those re-implementations. <code>github.com/docker/cli/cli/context/store</code> (suggested by reviewer @mook-as at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/320#discussion_r3096468463">discussion_r3096468463</a>) provides a tested implementation that constructs the platform-appropriate Host, atomically writes the metadata, and resolves <code>default</code> via <code>client.FromEnv</code>. The trade is one new dependency (already transitively present via moby/moby). Worth re-visiting before adding more code on top of the hand-written path.</li>
+      <li><em>Design docs still attribute Docker context creation to the App controller</em> <code>(in-scope)</code> <span class="pill pill-claude">Claude</span> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/docs/design/api_app.md#L39"><code>docs/design/api_app.md:39</code></a> and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/docs/design/bootstrap.md#L58"><code>docs/design/bootstrap.md:58</code></a> say the App controller creates the Docker context during start. This PR places the responsibility in the engine reconciler instead, which is the right home (engine owns <code>ContainerEngineReady</code>), but the design docs now lie. Update the docs to match, or move the code to the App controller.</li>
+    </ul>
+    <p><strong>Strengths</strong></p>
+    <ul>
+      <li><em>Generation counter for probe deduplication</em> <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> — <code>contextProbeGen + myGen</code> is the right shape for deduplicating concurrent probes; a superseded goroutine cannot accidentally clear a newer probe&#39;s cancel slot. The pattern just needs to be extended to gate the disk write as well (I1).</li>
+      <li>*Probe lifetime tied to <code>watcherCtx</code>, not Reconcile&#39;s <code>ctx</code>* <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> — Correct: the probe outlives a single Reconcile call (a per-reconcile deadline must not kill it) but dies on manager shutdown.</li>
+      <li>*<code>!watcherRunning</code> else-branch handles the dead-watcher case* <span class="pill pill-claude">Claude</span> — A watcher that died between reconciles would otherwise leave the Docker context behind forever; the explicit <code>removeDockerContext</code> call closes that hole. (S1 is about how <em>often</em> it then runs, not whether it should run at all.)</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>The new unit tests cover the file I/O helpers in isolation (<code>updateDockerConfig</code>, <code>createReplaceDockerContext</code>, <code>getCurrentDockerContext</code>) and the BATS additions exercise the create-on-start and remove-on-stop end-to-end paths. The gaps are concentrated in the probe goroutine and the config-file integration:</p>
+    <ol>
+      <li><strong>Probe-vs-cleanup race (I1)</strong> — no test triggers a stop while a probe is in flight; a test that stages a slow probe (e.g. via a context pointing at a socket that hangs) and then sets <code>running=false</code> would reproduce the resurrection bug.</li>
+      <li><strong>Non-Unix current context (I2)</strong> — no test stages <code>Host: &quot;tcp://…&quot;</code> or <code>npipe://…</code> in <code>currentContext</code>. The probe behavior with those schemes is unverified.</li>
+      <li><strong>Healthy-context-skip (S8)</strong> — the central policy is untested.</li>
+      <li><em></em><code>default</code> context interaction (S2)<em></em> — no test of a healthy <code>/var/run/docker.sock</code> (the realistic Linux scenario) being preserved.</li>
+      <li><strong>Crash-during-write (I3)</strong> — no test for the partial-write recovery, though once <code>os.Rename</code>-based atomicity is in place this becomes structurally impossible.</li>
+      <li><strong>Repeated engine restarts</strong> — <code>manageDockerContext</code> runs once per start in tests, never twice; the cancel-on-supersede path is unexercised.</li>
+      <li><strong>Windows (I4)</strong> — entirely skipped via <code>skip_on_windows</code>; production code runs unconditionally there.</li>
+    </ol>
+    </div>
+    <hr>
+    <h2 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/docs/design/bootstrap.md#L58"><code>docs/design/bootstrap.md:58</code></a> and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/docs/design/api_app.md#L39"><code>docs/design/api_app.md:39</code></a> still attribute Docker context creation to the App controller / <code>rdd start</code> flow. This PR moves the work to the engine reconciler. Either the docs must be updated, or the code belongs elsewhere (see Design Concerns).</li>
+      <li><code>getDockerContextSocket</code>&#39;s docstring at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/docker_context.go#L90-L92"><code>docker_context.go:90-92</code></a> describes the return as a &quot;Unix socket path&quot;; once I2 is fixed and the function returns a generic Host URL, the docstring needs to follow.</li>
+      <li><code>manageDockerContext</code>&#39;s docstring at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/engine_reconciler.go#L268-L270"><code>engine_reconciler.go:268-270</code></a> says &quot;At most one probe runs at a time.&quot; Mechanically true via the generation cancel, but it does not warn about the I1 race with <code>removeDockerContext</code>. Update once I1 is fixed (or note the limitation if the fix is deferred).</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>Two commits: <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/001fd95"><code>001fd95</code></a> (code) + <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/ef5114d"><code>ef5114d</code></a> (tests). The tests verify the code in the preceding commit; squashing into one commit is conventional for this repo and keeps <code>git bisect</code> honest. Not blocking.</p>
+    </div>
+    <hr>
+    <h2 id="unresolved-feedback">Unresolved Feedback <a href="#unresolved-feedback" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>Eight inline review comments from @mook-as remain unresolved on the current diff:</p>
+    <ul>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/320#discussion_r3096224461">discussion_r3096224461</a> (<code>bats:436</code>) — use <code>assert_file_exists</code> instead of <code>run -0 test -f</code>. Style.</li>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/320#discussion_r3096228639">discussion_r3096228639</a> (<code>bats:442</code>) — use <code>run -0 rdd …; var=$output</code> instead of <code>$(rdd …)</code>. Covered by S6.</li>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/320#discussion_r3096335657">discussion_r3096335657</a> (<code>bats:457</code>) — consider <code>yq --inplace</code>. Optional; obviated by S5 if HOME isolation lands.</li>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/320#discussion_r3096360169">discussion_r3096360169</a> (<code>bats:465</code>) — &quot;ContainerEngineReady shouldn&#39;t be set until the context is set up correctly.&quot; Architectural: should <code>ContainerEngineReady=Connected</code> wait for <code>manageDockerContext</code> to complete, including the probe? Today it does not. Worth answering in the PR.</li>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/320#discussion_r3096439251">discussion_r3096439251</a> (<code>bats:489</code>) — precompute <code>context_dir</code>, drop <code>bash -c</code>, use <code>assert_dir_not_exists</code>. Covered by S5/S6.</li>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/320#discussion_r3096468463">discussion_r3096468463</a> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/docker_context.go#L26"><code>docker_context.go:26</code></a>) — adopt <code>github.com/docker/cli/cli/context/store</code>. See Design Concerns; would resolve I2/I3/I4/S2/S3.</li>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/320#discussion_r3096484641">discussion_r3096484641</a> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/docker_context.go#L90"><code>docker_context.go:90</code></a>) — Windows: named pipes vs <code>unix://</code>. Covered by I4.</li>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/320#discussion_r3096522025">discussion_r3096522025</a> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ef5114d1a7038c74c6b60ea8404a2d67c7f24343/pkg/controllers/app/engine/controllers/engine_reconciler.go#L271"><code>engine_reconciler.go:271</code></a>) — reviewer self-correction; effectively resolved.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p><strong>[Claude]</strong> Produced the most thorough, finely-segmented review: separated the <code>unix://</code> scheme bug from the Windows-specific Host construction (I2 vs I4), the &quot;default&quot; override (S2), the <code>DOCKER_CONFIG</code> env-var miss (S3), the empty-endpoint case (S4), the per-reconcile rewrite (S1), and the unscoped <code>logf.Log</code> logging (I5) — none of which Codex or Gemini surfaced individually. The cancel-race fix it proposed was the most defensive (gen-check + ctx-check + WaitGroup); the others stopped at the <code>ctx.Err()</code> check alone, which closes most but not all of the window. Verdict line was the only one to call out Windows production behavior as a blocker.</p>
+    <p><strong>[Codex]</strong> Concise and correct. Caught the cancel-race and the <code>unix://</code> bug independently, and explicitly bundled the &quot;default&quot; override into the same finding rather than separating it — a defensible call. Did not surface the non-atomic write, the Windows compile-but-broken issue, or the logging-style deviation. The fix proposals were the smallest possible diffs; useful when the priority is &quot;minimum surface to land the fix.&quot;</p>
+    <p><strong>[Gemini]</strong> Caught the same two consensus bugs as the others <em>and</em> uniquely flagged the non-atomic <code>os.WriteFile</code> data-loss path (I3) — the only finding no other agent raised. Severity calibration was hot: marked all three findings as Critical, where the consolidator downgraded to Important (recoverable in all three cases without data permanently lost on the median user system). The atomic-write framing was the most actionable, with a concrete <code>tmp+rename</code> patch.</p>
+    <table class="retro-table">
+      <thead><tr><th></th><th><span class="pill pill-claude">Claude</span> Opus 4.7</th><th><span class="pill pill-codex">Codex</span> GPT 5.4</th><th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th></tr></thead>
+      <tbody>
+        <tr><td>Duration</td><td>18m 27s</td><td>3m 34s</td><td>3m 02s</td></tr>
+        <tr><td>Findings</td><td>5I 9S</td><td>2I 1S</td><td>3I</td></tr>
+        <tr><td>Tool calls</td><td>47 (Grep 19, Bash 14, Read 9)</td><td>21 (shell 20, stdin 1)</td><td>7 (grep<em>search 3, run</em>shell<em>command 3, read</em>file 1)</td></tr>
+        <tr><td>Design observations</td><td>5</td><td>3</td><td>1</td></tr>
+        <tr><td>False positives</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>Unique insights</td><td>5</td><td>0</td><td>1</td></tr>
+        <tr><td>Files reviewed</td><td>4</td><td>4</td><td>4</td></tr>
+        <tr><td>Coverage misses</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td><strong>Totals</strong></td><td><strong>5I 9S</strong></td><td><strong>2I 1S</strong></td><td><strong>3I</strong></td></tr>
+        <tr><td>Downgraded</td><td>0</td><td>0</td><td>3 (I→S)</td></tr>
+        <tr><td>Dropped</td><td>0</td><td>0</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <h3 id="reconciliation">Reconciliation <a href="#reconciliation" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li>Gemini C1 cancel-race → Important (I1). Recoverable by <code>docker context use default</code>; no persistent data loss. Same severity as Claude I1 / Codex I2.</li>
+      <li>Gemini C2 hardcoded <code>unix://</code> → Important (I2). Same severity as Claude I2 / Codex I1; &quot;silent override of working remote context&quot; is a major usability bug but not data loss.</li>
+      <li>Gemini C3 non-atomic write → Important (I3). Crash-window for partial write is real but narrow on the median user system; concurrent docker-CLI writer is plausible but not common. Atomic fix is trivial.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="review-process-notes">Review Process Notes <a href="#review-process-notes" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p><strong>Skill improvements</strong></p>
+    <ul>
+      <li><em>When PR code re-implements a well-known external library&#39;s on-disk format (e.g. Docker context store, kubeconfig, OCI image layout), call it out as a structural risk in Design Observations even if no individual bug is yet visible.</em> Hand-rolled re-implementations of stable third-party file formats tend to inherit a long tail of edge cases (platform-specific schemes, atomic-write semantics, default-value resolution, environment-variable overrides). Several findings against a small new package are a strong signal that the underlying design is reaching for an external contract; suggest the existing library as the alternative even when the immediate bugs are individually small.</li>
+    </ul>
+    <p><strong>Repo context updates</strong></p>
+    <ul>
+      <li>*<code>pkg/controllers/app/engine/controllers/</code> uses scoped <code>log := logf.FromContext(ctx)</code> with <code>log.Error(err, msg, kv...)</code> for error sites and <code>log.Info(msg, kv...)</code> for normal events. Code that runs from goroutines launched by <code>Reconcile</code>/<code>SetupWithManager</code> should capture a derived logger (<code>logf.FromContext(parentCtx).WithName(&quot;…&quot;)</code>) at goroutine launch rather than fall back to the global <code>logf.Log</code>, which is unscoped and emits at info-level only.* Flag any new <code>logf.Log.Info(..., &quot;error&quot;, err)</code> pattern in this directory.</li>
+    </ul>
+    </div>
+  </main>
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+  <script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+
+  </script>
+</body>
+</html>
