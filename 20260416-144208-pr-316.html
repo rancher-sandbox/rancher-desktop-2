@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260416-144208-pr-316</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block.
+ * The filename is a GitHub permalink to the displayed line range.
+ * Text color is light gray (#adbac7) for the bar, green (#7ee787)
+ * for the hyperlink — matching GitHub's dark-mode file header. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Deep Review: 20260416-144208-pr-316</h1>
+
+    <table class="meta-table">
+      <tr><td>Date</td><td>2026-04-16 14:42</td></tr>
+      <tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+      <tr><td>Round</td><td>3</td></tr>
+      <tr><td>Author</td><td><a href="https://github.com/jandubois">@jandubois</a></td></tr>
+      <tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/316" class="gh-ref" data-title="engine: replace Container.spec.state with action annotations" data-state="open" data-type="pr">#316</a> — engine: replace Container.spec.state with action annotations</td></tr>
+      <tr><td>Branch</td><td><code>container-action-annotations</code></td></tr>
+      <tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/397d40a"><code>397d40a</code></a> engine: replace Container.spec.state with action annotations</td></tr>
+      <tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.7, <span class="pill pill-codex">Codex</span> GPT 5.4, <span class="pill pill-gemini">Gemini</span> 3.1 Pro</td></tr>
+      <tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; one webhook gap leaves a stated safeguard unenforced on the update path; stale comments need cleanup.</td></tr>
+      <tr><td>Wall-clock time</td><td><code>27 min 8 s</code></td></tr>
+    </table>
+
+    <hr>
+
+    <hr>
+    <h2 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>The core design lands cleanly. Replacing the level-triggered <code>Container.spec.state</code> field with a one-shot <code>containers.rancherdesktop.io/action</code> annotation plus a <code>status.lastAction</code> outcome correctly recognizes that Docker (restart policy, out-of-band <code>docker start/stop</code>) is a concurrent writer that a level-triggered mirror cannot co-own. The implementation handles crash-replay (dispatch before status patch, annotation persists until cleanup), informer-cache staleness (pre-checks on pause/unpause), concurrent annotation overwrites (observed-vs-current comparison in <code>removeActionAnnotation</code>), and webhook bypass at dispatch time (<code>IsValid</code> guard in <code>processContainerAction</code>). The SSA/finalizer simplification enabled by the now-empty <code>ContainerSpec</code> is a genuine cleanup.</p>
+    <p>One real correctness gap: the webhook&#39;s stated safeguard that &quot;a hand-written Container cannot drive a Docker action&quot; is only enforced on <code>Create</code>. A caller can create a placeholder <code>Container</code> without the annotation and then <code>PATCH</code> the annotation in, and <code>ValidateUpdate</code> will accept it. The remaining findings are documentation: two stale code comments still reference the removed <code>spec.state</code> / <code>reconcileContainerSpecs</code> identifiers, and a third comment (&quot;prevents all modification&quot;) no longer describes what the webhook does.</p>
+    <p>Structure: 0 critical · 1 important · 6 suggestions.</p>
+    </div>
+    <hr>
+    <h2 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-critical">
+    <p>None.</p>
+    </div>
+    <hr>
+    <h2 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I1">
+        <span class="finding-num">I1.</span> Webhook safeguard enforced only on create, not on update <span class="pill pill-codex">Codex</span><a href="#I1" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/containers/container/container_webhooks.go#L22-L53">pkg/controllers/containers/container/container_webhooks.go</a></div>
+      <pre data-start="22" data-line="27-52"><code class="language-go">
+// ValidateCreate implements [ctrlwebhookadmission.Validator].
+// The engine watcher creates Container mirrors and never sets the action
+// annotation; reject any create that carries one so a hand-written
+// Container cannot drive a Docker action against its metadata.name.
+func (c *immutableValidator) ValidateCreate(_ context.Context, newContainer *v1alpha1.Container) (warnings ctrlwebhookadmission.Warnings, err error) {
+	if _, ok := newContainer.Annotations[v1alpha1.AnnotationAction]; ok {
+		return nil, fmt.Errorf(&quot;%s annotation is not allowed on create&quot;, v1alpha1.AnnotationAction)
+	}
+	return nil, nil
+}
+
+// ValidateDelete implements [ctrlwebhookadmission.Validator].
+func (c *immutableValidator) ValidateDelete(context.Context, *v1alpha1.Container) (warnings ctrlwebhookadmission.Warnings, err error) {
+	return nil, errors.New(&quot;webhook does not implement delete&quot;)
+}
+
+// ValidateUpdate implements [ctrlwebhookadmission.Validator].
+// The whole Container spec is immutable on update: actions are requested via
+// the AnnotationAction annotation on metadata, not via a level-triggered
+// desired-state field.
+func (c *immutableValidator) ValidateUpdate(_ context.Context, oldContainer, newContainer *v1alpha1.Container) (warnings ctrlwebhookadmission.Warnings, err error) {
+	if !equality.Semantic.DeepEqual(oldContainer.Spec, newContainer.Spec) {
+		return nil, fmt.Errorf(&quot;spec is immutable: old: %v, new: %v&quot;, oldContainer.Spec, newContainer.Spec)
+	}
+	if raw, ok := newContainer.Annotations[v1alpha1.AnnotationAction]; ok {
+		if !v1alpha1.ContainerAction(raw).IsValid() {
+			return nil, fmt.Errorf(&quot;invalid %s annotation %q&quot;, v1alpha1.AnnotationAction, raw)
+		}
+	}
+	return nil, nil
+}</code></pre>
+    <p>The comment on <code>ValidateCreate</code> (lines 24–26) states the intent explicitly: &quot;The engine watcher creates Container mirrors and never sets the action annotation; reject any create that carries one so a hand-written Container cannot drive a Docker action against its metadata.name.&quot; <code>ValidateUpdate</code> does not enforce that invariant — it only rejects invalid action values. A two-step bypass defeats the guard:</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/containers/container/container_webhooks.go#L19-L31">pkg/controllers/containers/container/container_webhooks.go</a></div>
+      <pre data-start="19" data-line="24-26"><code class="language-go">type immutableValidator struct {
+	Client client.Client
+}
+
+// ValidateCreate implements [ctrlwebhookadmission.Validator].
+// The engine watcher creates Container mirrors and never sets the action
+// annotation; reject any create that carries one so a hand-written
+// Container cannot drive a Docker action against its metadata.name.
+func (c *immutableValidator) ValidateCreate(_ context.Context, newContainer *v1alpha1.Container) (warnings ctrlwebhookadmission.Warnings, err error) {
+	if _, ok := newContainer.Annotations[v1alpha1.AnnotationAction]; ok {
+		return nil, fmt.Errorf(&quot;%s annotation is not allowed on create&quot;, v1alpha1.AnnotationAction)
+	}
+	return nil, nil</code></pre>
+    <ol>
+      <li>Create a <code>Container</code> with <code>metadata.name=&lt;some docker container id&gt;</code> and no annotation. <code>ValidateCreate</code> accepts it (spec is empty, no annotation).</li>
+      <li><code>PATCH</code> the same object to add <code>metadata.annotations[containers.rancherdesktop.io/action]=stop</code>. <code>ValidateUpdate</code> accepts it.</li>
+    </ol>
+    <p>The reconciler path does not distinguish mirrors from hand-written objects. <code>reconcileContainerActions</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/engine_reconciler.go#L366-L385"><code>engine_reconciler.go:366-385</code></a> lists every <code>Container</code> in the namespace, and <code>processContainerAction</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/docker_watcher.go#L356-L403"><code>docker_watcher.go:356-403</code></a> dispatches the Docker call against <code>c.Name</code>. If the chosen name matches a real Docker container ID, the action runs.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/engine_reconciler.go#L361-L390">pkg/controllers/app/engine/controllers/engine_reconciler.go</a></div>
+      <pre data-start="361" data-line="366-385"><code class="language-go">	r.watcherMu.Unlock()
+	if w == nil {
+		return nil
+	}
+
+	var containers containersv1alpha1.ContainerList
+	if err := r.List(ctx, &amp;containers, client.InNamespace(r.apiNamespace)); err != nil {
+		return err
+	}
+
+	var errs []error
+	for i := range containers.Items {
+		c := &amp;containers.Items[i]
+		if c.DeletionTimestamp != nil {
+			continue
+		}
+		if _, ok := c.Annotations[containersv1alpha1.AnnotationAction]; !ok {
+			continue
+		}
+		if err := w.processContainerAction(ctx, c); err != nil {
+			errs = append(errs, fmt.Errorf(&quot;container %s: %w&quot;, c.Name, err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// processFinalizers handles resources with a deletion timestamp by deleting
+// the corresponding Docker object and removing the finalizer.
+func (r *EngineReconciler) processFinalizers(ctx context.Context) error {
+	r.watcherMu.Lock()</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/docker_watcher.go#L351-L408">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
+      <pre data-start="351" data-line="356-403"><code class="language-go">// replays the action. Start, stop, pause, and unpause are idempotent
+// against a container already in the target state, so replay is safe.
+// Restart has no target state to match: a replay sends SIGTERM and waits
+// the grace period a second time, which the controller cannot distinguish
+// from a deliberate re-request.
+func (w *dockerWatcher) processContainerAction(ctx context.Context, c *containersv1alpha1.Container) error {
+	raw, ok := c.Annotations[containersv1alpha1.AnnotationAction]
+	if !ok {
+		return nil
+	}
+
+	log := logf.FromContext(ctx).WithName(&quot;docker-watcher&quot;)
+	action := containersv1alpha1.ContainerAction(raw)
+	observedAt := metav1.Now()
+
+	// The webhook rejects invalid action values, but one written while the
+	// webhook is offline can still reach storage. Drop such values here;
+	// otherwise the CRD enum rejects the status.lastAction write, the
+	// annotation stays in place, and every reconcile retries forever.
+	if !action.IsValid() {
+		log.Info(&quot;Dropping invalid container action annotation&quot;, &quot;id&quot;, c.Name, &quot;action&quot;, raw)
+		return w.removeActionAnnotation(ctx, c, raw)
+	}
+
+	dockerErr := w.dispatchContainerAction(ctx, log, c.Name, action)
+
+	lastAction := &amp;containersv1alpha1.ContainerLastAction{
+		Action:      action,
+		ObservedAt:  observedAt,
+		CompletedAt: metav1.Now(),
+	}
+	if dockerErr == nil {
+		lastAction.State = containersv1alpha1.ContainerActionSucceeded
+	} else {
+		lastAction.State = containersv1alpha1.ContainerActionFailed
+		lastAction.Error = dockerErr.Error()
+		log.Info(&quot;Container action failed&quot;, &quot;id&quot;, c.Name, &quot;action&quot;, action, &quot;error&quot;, dockerErr)
+	}
+
+	latest, err := w.patchContainerLastAction(ctx, c.Name, lastAction)
+	if err != nil {
+		return fmt.Errorf(&quot;failed to patch lastAction for %s: %w&quot;, c.Name, err)
+	}
+	if latest == nil {
+		// Mirror was deleted between dispatch and the status patch; nothing
+		// left to clean up.
+		return nil
+	}
+	if err := w.removeActionAnnotation(ctx, latest, raw); err != nil {
+		return fmt.Errorf(&quot;failed to remove action annotation for %s: %w&quot;, c.Name, err)
+	}
+	return nil
+}
+
+// dispatchContainerAction executes the Docker call for a single action. The
+// caller pre-validates the action name; the default branch triggers only
+// when a new ContainerAction value is added to the type but not to the switch.
+//</code></pre>
+    <p>The impact in practice is bounded — on a single-user desktop tool the same principal already has Docker socket access — but the webhook&#39;s stated safeguard does not hold. Either the safeguard should hold end-to-end, or the create-time rejection should be dropped so the inconsistency does not mislead future readers.</p>
+    <p>Fix: apply the same provenance check on update, or drop the <code>Create</code> rejection. The cleanest enforcement is to require an engine-owned marker (the <code>engine.rancherdesktop.io/mirror</code> finalizer is already added on every <code>applyContainer</code>, though a caller can set it themselves) or to inspect <code>managedFields</code> to confirm the object was originally created by <code>engine-controller</code> before accepting an action annotation.</p>
+    </div>
+    <hr>
+    <h2 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S1">
+        <span class="finding-num">S1.</span> Stale comment references the removed <code>reconcileContainerSpecs</code> / <code>spec.state</code> <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span><a href="#S1" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/engine_reconciler.go#L178-L191">pkg/controllers/app/engine/controllers/engine_reconciler.go</a></div>
+      <pre data-start="178" data-line="183-186"><code class="language-go">	// no-ops when nothing changed, so stable reconciles pay nothing.
+	if err := r.setEngineCondition(ctx, &amp;app, metav1.ConditionTrue, &quot;Connected&quot;, &quot;Container engine synced&quot;); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// Two passes run per Reconcile: reconcileContainerSpecs drives
+	// Docker start/stop from Container.spec.state, and
+	// processFinalizers forwards K8s-side deletes to Docker for any
+	// mirror still carrying the mirror finalizer.
+	//
+	// Both passes issue List calls per reconcile, and every
+	// Container/Image/Volume watch event triggers a reconcile — so
+	// cost is O(N) per child event. The long-term fix is to split
+	// these into per-resource reconcilers with watch predicates</code></pre>
+    <p>The function was renamed to <code>reconcileContainerActions</code> in this PR (called at line 199) and <code>Container.spec.state</code> no longer exists. The rest of the block (lines 188-197) was updated to reference the new &quot;action annotation present&quot; watch predicate, but lines 183-184 were missed. A reader following this comment is pointed at code that was deleted in the same commit. Both Claude and Codex flagged this; Codex also included <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/containers/container/container_controller.go#L81"><code>container_controller.go:81</code></a> (see S3) under the same theme.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/containers/container/container_controller.go#L76-L86">pkg/controllers/containers/container/container_controller.go</a></div>
+      <pre data-start="76" data-line="81"><code class="language-go">		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorder(ControllerName + &quot;-controller&quot;),
+	}).SetupWithManager(mgr)
+}
+
+// set up the container controller with a webhook which prevents all modification.
+func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
+	mgr.GetLogger().Info(&quot;Setting up container webhook&quot;)
+	mutatingConfig := base.WebhookConfig[*v1alpha1.Container]{
+		Name:        &quot;container-mutating&quot;,
+		WebhookName: &quot;container-mutating.containers.rancherdesktop.io&quot;,</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/engine_reconciler.go#L183-L204">pkg/controllers/app/engine/controllers/engine_reconciler.go</a></div>
+      <pre data-start="183" data-line="188-199"><code class="language-go">	// Two passes run per Reconcile: reconcileContainerSpecs drives
+	// Docker start/stop from Container.spec.state, and
+	// processFinalizers forwards K8s-side deletes to Docker for any
+	// mirror still carrying the mirror finalizer.
+	//
+	// Both passes issue List calls per reconcile, and every
+	// Container/Image/Volume watch event triggers a reconcile — so
+	// cost is O(N) per child event. The long-term fix is to split
+	// these into per-resource reconcilers with watch predicates
+	// (deletionTimestamp set, action annotation present).
+	//
+	// Run both passes unconditionally and join their errors. Early
+	// return on actionsErr would stall every mirror&#39;s finalizer behind
+	// a single stuck container action: the next reconcile would hit
+	// the same broken container first and skip finalizers again.
+	var actionsErr, finErr error
+	if err := r.reconcileContainerActions(ctx); err != nil {
+		actionsErr = fmt.Errorf(&quot;failed to reconcile container actions: %w&quot;, err)
+	}
+	if err := r.processFinalizers(ctx); err != nil {
+		finErr = fmt.Errorf(&quot;failed to process finalizers: %w&quot;, err)
+	}</code></pre>
+    <p>Fix:</p>
+      <pre><code class="language-diff">-	// Two passes run per Reconcile: reconcileContainerSpecs drives
+-	// Docker start/stop from Container.spec.state, and
++	// Two passes run per Reconcile: reconcileContainerActions drives
++	// Docker actions from the action annotation, and
+ 	// processFinalizers forwards K8s-side deletes to Docker for any
+ 	// mirror still carrying the mirror finalizer.</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S2">
+        <span class="finding-num">S2.</span> <code>ContainerSpec</code> Godoc first line contradicts the rest of the comment <span class="pill pill-claude">Claude</span><a href="#S2" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/apis/containers/v1alpha1/container_types.go#L119-L134">pkg/apis/containers/v1alpha1/container_types.go</a></div>
+      <pre data-start="119" data-line="124-129"><code class="language-go">	//
+	// +required
+	Bindings []ContainerPortBinding `json:&quot;bindings&quot;`
+}
+
+// ContainerSpec defines the configuration the container was created with.
+// Container spec is empty today: actions are requested via the AnnotationAction
+// annotation, not a level-triggered desired-state field. Docker&#39;s restart
+// policy and out-of-band `docker start/stop` are competing writers, so a
+// level-triggered desired state would fight them.
+type ContainerSpec struct{}
+
+// ContainerStatus defines the observed state of the container.
+type ContainerStatus struct {
+	// Name of the container; this is distinct from the container ID.
+	//</code></pre>
+    <p>Line 124 predates the PR but is now directly contradicted by lines 125-128 (added by the PR): the struct is not &quot;the configuration the container was created with,&quot; it is intentionally empty. A reader hitting the first line is told to expect created-time configuration. The PR extended the doc but did not rewrite the opener.</p>
+    <p>Fix: delete or rewrite the first line so the opener matches the rest.</p>
+      <pre><code class="language-diff">-// ContainerSpec defines the configuration the container was created with.
+-// Container spec is empty today: actions are requested via the AnnotationAction
++// ContainerSpec is currently empty. Actions are requested via the AnnotationAction
+ // annotation, not a level-triggered desired-state field. Docker&#39;s restart
+ // policy and out-of-band `docker start/stop` are competing writers, so a
+ // level-triggered desired state would fight them.
+ type ContainerSpec struct{}</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S3">
+        <span class="finding-num">S3.</span> &quot;Prevents all modification&quot; comment no longer matches the webhook&#39;s behavior <span class="pill pill-codex">Codex</span><a href="#S3" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/containers/container/container_controller.go#L76-L86">pkg/controllers/containers/container/container_controller.go</a></div>
+      <pre data-start="76" data-line="81"><code class="language-go">		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorder(ControllerName + &quot;-controller&quot;),
+	}).SetupWithManager(mgr)
+}
+
+// set up the container controller with a webhook which prevents all modification.
+func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
+	mgr.GetLogger().Info(&quot;Setting up container webhook&quot;)
+	mutatingConfig := base.WebhookConfig[*v1alpha1.Container]{
+		Name:        &quot;container-mutating&quot;,
+		WebhookName: &quot;container-mutating.containers.rancherdesktop.io&quot;,</code></pre>
+    <p>After this PR, <code>ValidateCreate</code> allows creates without the action annotation, and <code>ValidateUpdate</code> allows updates that add or change a valid action annotation. The webhook no longer &quot;prevents all modification&quot; — it enforces a spec-immutability rule and a valid-action rule. Rewrite the comment to describe what the webhook actually does.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S4">
+        <span class="finding-num">S4.</span> Invalid-action fallback is silent to the caller <span class="pill pill-claude">Claude</span><a href="#S4" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/docker_watcher.go#L365-L378">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
+      <pre data-start="365" data-line="370-373"><code class="language-go">
+	// The webhook rejects invalid action values, but one written while the
+	// webhook is offline can still reach storage. Drop such values here;
+	// otherwise the CRD enum rejects the status.lastAction write, the
+	// annotation stays in place, and every reconcile retries forever.
+	if !action.IsValid() {
+		log.Info(&quot;Dropping invalid container action annotation&quot;, &quot;id&quot;, c.Name, &quot;action&quot;, raw)
+		return w.removeActionAnnotation(ctx, c, raw)
+	}
+
+	dockerErr := w.dispatchContainerAction(ctx, log, c.Name, action)
+
+	lastAction := &amp;containersv1alpha1.ContainerLastAction{
+		Action:      action,</code></pre>
+    <p>The webhook normally rejects invalid values at admission, so this branch only fires when the webhook is bypassed (<code>failurePolicy: Ignore</code>, or the startup window before registration). When it does fire, the caller gets no feedback: <code>lastAction</code> is untouched and the annotation disappears. An <code>Info</code> log is invisible to a GUI client. Two options: raise the log to <code>Error</code> with a clear message, or emit a Kubernetes Event on the Container so a UI can surface it. Low priority — the webhook catches the normal case — but worth doing because the dropped-annotation branch is specifically the &quot;webhook was bypassed&quot; path, which is exactly when observability matters.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S5">
+        <span class="finding-num">S5.</span> <code>ObservedAt</code> semantics are ambiguous in the doc comment and could be clearer <span class="pill pill-claude">Claude</span><a href="#S5" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/apis/containers/v1alpha1/container_types.go#L83-L97">pkg/apis/containers/v1alpha1/container_types.go</a></div>
+      <pre data-start="83" data-line="88-92"><code class="language-go">	State ContainerActionState `json:&quot;state&quot;`
+	// Error is the error message if the action failed.
+	//
+	// +optional
+	Error string `json:&quot;error,omitempty&quot;`
+	// ObservedAt is when the reconciler observed the action annotation.
+	// Backlog may delay this relative to the user&#39;s write time.
+	//
+	// +optional
+	ObservedAt metav1.Time `json:&quot;observedAt,omitempty,omitzero&quot;`
+	// CompletedAt is when the action completed, regardless of outcome.
+	//
+	// +optional
+	CompletedAt metav1.Time `json:&quot;completedAt,omitempty,omitzero&quot;`
+}</code></pre>
+    <p>In <code>processContainerAction</code>, <code>observedAt := metav1.Now()</code> is captured after the annotation has already been seen via <code>List</code>, just before the <code>IsValid</code> check and dispatch. <code>CompletedAt</code> is captured after <code>dispatchContainerAction</code> returns. If a caller computes <code>CompletedAt - ObservedAt</code> to measure user-visible latency, it will get the dispatch duration (which includes a multi-second grace period on restart or stop), not the observe-to-process backlog. Either rename the field to <code>StartedAt</code>/<code>ProcessingStartedAt</code>, or clarify the Godoc to &quot;when the reconciler began processing the annotation.&quot; Keep the design doc text (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/docs/design/api_containers.md#L160-L161"><code>docs/design/api_containers.md:160-161</code></a>) in sync.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/docs/design/api_containers.md#L155-L166">docs/design/api_containers.md</a></div>
+      <pre data-start="155" data-line="160-161"><code class="language-plaintext">  # direct `docker stop`) in between. The `error` field is set only
+  # when `state` is `Failed`.
+  lastAction:
+    action: pause
+    state: Succeeded
+    observedAt: &quot;2026-04-15T10:30:00Z&quot;
+    completedAt: &quot;2026-04-15T10:30:00Z&quot;
+```
+
+### Container state
+
+`status.status` always reflects the actual Docker state. The engine</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S6">
+        <span class="finding-num">S6.</span> <code>removeActionAnnotation</code> comment asserts an invariant the invalid-action branch does not satisfy <span class="pill pill-claude">Claude</span><a href="#S6" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/docker_watcher.go#L497-L514">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
+      <pre data-start="497" data-line="502-509"><code class="language-go">		return nil
+	})
+	return result, err
+}
+
+// removeActionAnnotation clears the AnnotationAction annotation only if
+// its value still matches the action just processed. A concurrent writer
+// may replace the annotation with a different action between dispatch
+// and cleanup; that new value must survive so the next reconcile picks
+// it up. The caller passes a fresh Container from patchContainerLastAction
+// so the first Patch attempt bypasses the informer cache, which has not
+// yet seen the preceding status write. On conflict, the retry re-reads;
+// by then the cache has usually caught up.
+func (w *dockerWatcher) removeActionAnnotation(ctx context.Context, latest *containersv1alpha1.Container, observed string) error {
+	firstAttempt := true
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if !firstAttempt {
+			if err := w.k8s.Get(ctx, client.ObjectKeyFromObject(latest), latest); err != nil {</code></pre>
+    <p>The <code>!action.IsValid()</code> branch in <code>processContainerAction</code> passes <code>c</code> directly from the cache-backed <code>List</code> in <code>reconcileContainerActions</code>, not a fresh Container from <code>patchContainerLastAction</code>. Functionally the <code>RetryOnConflict</code> loop still works (its second attempt re-reads on conflict), but the comment&#39;s claim that &quot;the caller passes a fresh Container&quot; is not universally true. Either do a direct (non-cache) <code>Get</code> in the invalid-action branch before calling <code>removeActionAnnotation</code>, or soften the comment to &quot;callers may pass either a fresh Container or a cached one; the retry loop tolerates cache lag.&quot;</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S7">
+        <span class="finding-num">S7.</span> No unit test for the <code>dispatchContainerAction</code> default branch <span class="pill pill-claude">Claude</span><a href="#S7" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/docker_watcher.go#L451-L462">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
+      <pre data-start="451" data-line="456-457"><code class="language-go">		return err
+	case containersv1alpha1.ContainerActionRestart:
+		log.Info(&quot;Restarting container&quot;, &quot;id&quot;, id)
+		_, err := w.cli.ContainerRestart(ctx, id, dockerclient.ContainerRestartOptions{})
+		return err
+	}
+	return fmt.Errorf(&quot;unknown container action %q&quot;, action)
+}
+
+// containerRunState reports whether Docker currently shows the container as
+// running and as paused. Pause uses paused to skip a no-op dispatch; unpause
+// also checks running so that unpause on a stopped container reports a</code></pre>
+    <p><code>IsValid</code> and the webhook both gate input, so this path is unreachable under normal operation. The comment at lines 406-408 correctly notes that the default branch only triggers when a new <code>ContainerAction</code> constant is added without a matching <code>switch</code> case. A tiny unit test that constructs a value not in the switch and asserts the error message would catch future drift between the enum, <code>IsValid</code>, and this switch. Low priority.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/docker_watcher.go#L401-L413">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
+      <pre data-start="401" data-line="406-408"><code class="language-go">	}
+	return nil
+}
+
+// dispatchContainerAction executes the Docker call for a single action. The
+// caller pre-validates the action name; the default branch triggers only
+// when a new ContainerAction value is added to the type but not to the switch.
+//
+// Pause and unpause pre-check the current Docker state and return nil when
+// the container is already in the target state. Two reconcile ticks can read
+// the same action annotation through the informer cache before the cache
+// sees the removal that follows the first dispatch — the pre-check keeps
+// the second dispatch from flipping lastAction to Failed. Start, stop, and</code></pre>
+    </div>
+    <hr>
+    <h2 id="design-observations" class="section-design">Design Observations <a href="#design-observations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-design">
+    <h3 id="strengths">Strengths <a href="#strengths" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><code>(in-scope)</code> <strong>Edge-triggered action model resolves the ownership conflict.</strong> The core insight — that Docker&#39;s restart policy and out-of-band CLI writes make level-triggered <code>spec.state</code> unworkable — is articulated in the commit message and design doc, and the code faithfully implements it. The crash-replay story (dispatch before status patch, annotation persists on crash, idempotent replay for start/stop/pause/unpause) is coherent; the one exception (restart&#39;s double-dispatch) is called out explicitly rather than hidden. <span class="pill pill-claude">Claude</span> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span></li>
+      <li><code>(in-scope)</code> <strong>Pre-check for pause/unpause isolates the informer-cache race.</strong> The asymmetric handling (pause skips on <code>paused</code>; unpause skips on <code>!paused</code> but fails explicitly on <code>!running</code>) is unusual, and the justification at <code>docker_watcher.go:409-416, 461-463</code> is accurate. The BATS cases (&quot;pause action on a stopped container records failure&quot; and the symmetric unpause case) pin the asymmetry so regressions will surface. <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span></li>
+      <li><code>(in-scope)</code> <strong>Empty-spec simplification of the SSA dance is genuine cleanup.</strong> Removing <code>finalizerFieldOwner</code> and collapsing <code>applyContainer</code> into a single <code>ForceOwnership</code> branch eliminates a subtle invariant (the old split existed specifically to avoid pruning <code>spec</code>). Now that <code>spec</code> is empty, the simpler model is demonstrably correct. <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span></li>
+      <li><code>(in-scope)</code> <em></em>Value-match check in <code>removeActionAnnotation</code> preserves superseding actions.<em></em> Comparing <code>observed</code> against the current annotation value before deletion means a concurrent writer can replace the action mid-flight and the new value survives — no queue, no lost writes. <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span></li>
+      <li><code>(in-scope)</code> <strong>Webhook covers both admission paths.</strong> Registering for <code>Create</code> plus <code>Update</code> closes two realistic bypass routes, and both paths have explicit BATS coverage. (See I1 for a residual gap on the update path.) <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span></li>
+    </ul>
+    <h3 id="concerns">Concerns <a href="#concerns" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><code>(in-scope)</code> <strong>Webhook authorization is split between admission and reconciliation, and only the admission half is updated.</strong> Provenance checks for mirror-only behaviors are safer when the reconciler also enforces them, because that removes any dependence on request shape (<code>create</code> vs <code>update</code>) and keeps the invariant attached to the side effect itself. <span class="pill pill-codex">Codex</span></li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>BATS coverage is solid for the happy paths: start, stop, pause/unpause toggle, pause-on-stopped and unpause-on-stopped failures, restart (with pre/post <code>StartedAt</code> comparison), webhook rejection of an invalid action on update, and webhook rejection of the annotation on create. Gaps, in rough order of risk:</p>
+    <ol>
+      <li><strong>No test for the create-then-update bypass path</strong> (see I1). Adding a test that creates a <code>Container</code> without the annotation and then patches in a valid action, asserting the update is rejected, would pin the invariant the webhook claims to enforce. <span class="pill pill-codex">Codex</span></li>
+      <li><strong>No test for the webhook-bypass drop-path</strong> — the <code>!action.IsValid()</code> branch in <code>processContainerAction</code> has no integration test because the webhook catches invalid values first. A unit test constructing a <code>Container</code> with a bogus annotation and calling <code>processContainerAction</code> directly would provide cheap coverage. <span class="pill pill-claude">Claude</span></li>
+      <li><em></em>No test that <code>lastAction</code> persists across a direct <code>docker stop</code>.<em></em> The design doc (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/docs/design/api_containers.md#L153-L156"><code>docs/design/api_containers.md:153-156</code></a>) asserts &quot;Persists ... regardless of any observable state changes (e.g. a direct <code>docker stop</code>) in between.&quot; Simple to add: request <code>start</code>, verify <code>lastAction=start/Succeeded</code>, <code>docker stop</code>, verify <code>lastAction</code> unchanged. <span class="pill pill-claude">Claude</span></li>
+      <li><strong>No test for concurrent annotation overwrite during dispatch.</strong> The <code>current != observed</code> guard in <code>removeActionAnnotation</code> is covered only by code comment. Hard to race deterministically in BATS; possible as a unit test with a mock client returning different values on subsequent <code>Get</code>s. <span class="pill pill-claude">Claude</span></li>
+      <li><em></em><code>lastAction</code> timestamp fields and overwrite behavior across consecutive actions are not asserted.<em></em> The BATS suite checks <code>action</code> and <code>state</code> but never reads <code>observedAt</code>/<code>completedAt</code>. <span class="pill pill-codex">Codex</span></li>
+      <li><strong>Restart double-dispatch race has no coverage.</strong> Acknowledged as a known trade-off; likely not worth testing. <span class="pill pill-claude">Claude</span></li>
+    </ol>
+    </div>
+    <hr>
+    <h2 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>The design doc (<code>docs/design/api_containers.md</code>) is comprehensive and matches the implementation: the action table, crash-replay semantics, failure example, and <code>lastAction</code> schema are all accurate. The CRD matches the Go types.</p>
+    <p>Stale code-level comments (captured as S1–S3) are the only documentation issues: <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/engine_reconciler.go#L183-L186"><code>engine_reconciler.go:183-186</code></a> still names <code>reconcileContainerSpecs</code>, <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/apis/containers/v1alpha1/container_types.go#L124"><code>container_types.go:124</code></a> still opens with &quot;defines the configuration the container was created with,&quot; and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/containers/container/container_controller.go#L81"><code>container_controller.go:81</code></a> still says the webhook &quot;prevents all modification.&quot; Codex grouped these into one finding; Claude split the first two across I-level items; the consolidation treats all three at Suggestion severity.</p>
+    <p>The PR description&#39;s <code>state=InProgress|Succeeded|Failed</code> and <code>requestedAt</code> nomenclature does not match the landed code (<code>Succeeded|Failed</code> and <code>observedAt</code>), but only the PR description (not the commit message, design doc, or CRD) is outdated. Worth noting but not actionable in-repo.</p>
+    </div>
+    <hr>
+    <h2 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>Single commit. The commit message describes the change and motivation accurately, with sections on &quot;API and SSA fallout&quot; and &quot;Docs&quot; that match what the diff does. Clean history.</p>
+    </div>
+    <hr>
+    <h2 id="acknowledged-limitations">Acknowledged Limitations <a href="#acknowledged-limitations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li><strong>Restart double-dispatch on crash or cache-lag replay</strong> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/docker_watcher.go#L352-L355"><code>docker_watcher.go:352-355</code></a>. Documented in both the code and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/docs/design/api_containers.md#L247-L251"><code>docs/design/api_containers.md:247-251</code></a>; the PR makes an explicit trade (accept the edge case rather than add restart-specific deduplication state).</li>
+      <li><strong>O(N) per child event in reconcile loops</strong> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/engine_reconciler.go#L186-L192"><code>engine_reconciler.go:186-192</code></a>. Pre-existing; the PR adopts the existing pattern for action reconciliation and updates the example in the comment to match the new annotation-driven work.</li>
+      <li><strong>No CLI surface for setting actions</strong> — PR comment from @jandubois: &quot;The feature exists solely for the benefit of the GUI.&quot; Consistent with the landed code; tests drive actions through <code>rdd ctl annotate</code>.</li>
+      <li><strong>Dropped image/volume events on transient handler errors</strong> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/docker_watcher.go#L198-L205"><code>docker_watcher.go:198-205</code></a>. Pre-existing; TODO note calls for a periodic full-sync tick. Not materially worsened by this PR.</li>
+      <li><strong>Windows/WSL2 not covered by these BATS tests</strong> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/bats/tests/32-app-controllers/engine-docker.bats#L14-L15"><code>engine-docker.bats:14-15</code></a> skips on Windows because the Docker socket access pattern is not yet wired. Pre-existing scope limitation.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="unresolved-feedback">Unresolved Feedback <a href="#unresolved-feedback" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li>@jandubois commented: &quot;I don&#39;t think we need any CLI support for setting container actions. The feature exists solely for the benefit of the GUI.&quot; No code change requested; tests already drive actions through <code>rdd ctl annotate</code>. Resolved by author intent.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <h3 id="claude"><span class="pill pill-claude">Claude</span> <a href="#claude" class="pilcrow">&#182;</a></h3>
+    <p>Claude produced the most specific catalogue — six findings with precise line anchors and fix diffs — and was the only agent to notice the <code>ObservedAt</code>-vs-dispatch-duration semantics gap (S5) and the <code>removeActionAnnotation</code> comment-vs-branch invariant mismatch (S6). Its severity calibration ran hot: the two stale-comment findings were flagged Important, but neither affects correctness, and Codex&#39;s independent Suggestion rating held up better on review. Documentation misdirection in this project would normally rank Important only when it materially misleads design decisions, which stale identifier names in a comment block do not.</p>
+    <h3 id="codex"><span class="pill pill-codex">Codex</span> <a href="#codex" class="pilcrow">&#182;</a></h3>
+    <p>Codex landed the only finding on the webhook bypass path, and its fix sketch (require an engine-owned marker before accepting an action annotation on update) is the right shape. It also grouped the three stale-comment locations under one finding at Suggestion severity — a tighter framing than Claude&#39;s split. It produced no critical-severity false positives and no unique insight beyond the two findings, so it was narrower than Claude in breadth but deeper on the one item it flagged.</p>
+    <h3 id="gemini"><span class="pill pill-gemini">Gemini</span> <a href="#gemini" class="pilcrow">&#182;</a></h3>
+    <p>Gemini returned zero findings. Its Coverage Summary was complete (all 16 changed files accounted for with per-file disposition) and its stderr held only the YOLO-mode banner, so the &quot;None.&quot; result reflects its actual assessment, not a truncated run. It did not pick up the webhook-update gap (Codex&#39;s I1) despite having <code>container_webhooks.go</code> in scope, and its design observations read more as a summary of the PR description than as independent analysis. Gemini&#39;s known skip of <code>git blame</code> is not the explanation here — I1 is visible from the diff alone, so the miss is analytical.</p>
+    <h3 id="summary">Summary <a href="#summary" class="pilcrow">&#182;</a></h3>
+    <table class="retro-table">
+      <thead><tr><th></th><th><span class="pill pill-claude">Claude</span> Opus 4.7</th><th><span class="pill pill-codex">Codex</span> GPT 5.4</th><th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th></tr></thead>
+      <tbody>
+        <tr><td>Duration</td><td>21m 19s</td><td>6m 23s</td><td>5m 24s</td></tr>
+        <tr><td>Findings</td><td>6S</td><td>1I 1S</td><td>none</td></tr>
+        <tr><td>Tool calls</td><td>41 (Read 20, Bash 12, Grep 9)</td><td>43 (shell 42, stdin 1)</td><td>16 (run<em>shell</em>command 9, read<em>file 4, grep</em>search 3)</td></tr>
+        <tr><td>Design observations</td><td>4</td><td>3</td><td>4</td></tr>
+        <tr><td>False positives</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>Unique insights</td><td>2</td><td>1</td><td>0</td></tr>
+        <tr><td>Files reviewed</td><td>16</td><td>16</td><td>16</td></tr>
+        <tr><td>Coverage misses</td><td>0</td><td>0</td><td>1</td></tr>
+        <tr><td><strong>Totals</strong></td><td><strong>6S</strong></td><td><strong>1I 1S</strong></td><td><strong>none</strong></td></tr>
+        <tr><td>Downgraded</td><td>2 (I→S)</td><td>0</td><td>0</td></tr>
+        <tr><td>Dropped</td><td>0</td><td>0</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Reconciliation.</strong> Claude P1 &quot;Stale comment references the removed function and field&quot; (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/controllers/app/engine/controllers/engine_reconciler.go#L183-L184"><code>engine_reconciler.go:183-184</code></a>): Important → Suggestion S1. Claude P1 &quot;ContainerSpec doc comment is internally contradictory&quot; (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/397d40a0f7d851024dd0f251586c5a085bbd8674/pkg/apis/containers/v1alpha1/container_types.go#L124-L128"><code>container_types.go:124-128</code></a>): Important → Suggestion S2. Both were stale-identifier comments with no correctness impact; Codex independently rated the same class of findings at Suggestion, and that calibration held up.</p>
+    <p>Codex provided the most valuable output: one real finding nobody else caught. Claude provided the most volume of genuinely actionable items, though two were miscalibrated to Important. Gemini&#39;s &quot;no findings&quot; result, on a PR where Codex found a webhook bypass visible in the diff, is a weak signal for this review.</p>
+    </div>
+    <hr>
+    <h2 id="review-process-notes">Review Process Notes <a href="#review-process-notes" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p><strong>Skill improvements</strong></p>
+    <ul>
+      <li><strong>Severity calibration rule for stale-identifier comments.</strong> When a comment references a function, field, or type that was renamed or removed in the same change under review, flag it as a Suggestion unless the reference propagates into user-facing documentation, API surface, or error messages. A stale internal-comment identifier misleads future readers but does not change behavior; upgrading it to Important inflates the severity scale. Add this calibration rule to the &quot;Documentation&quot; review dimension so future reviews rank such findings consistently.</li>
+    </ul>
+    <p><strong>Repo context updates</strong></p>
+    <ul>
+      <li><em></em>[repo] Rule: admission webhooks that claim a safeguard must enforce it on both <code>Create</code> and <code>Update</code>.<em></em> When a webhook comment or method doc asserts that &quot;hand-written objects cannot drive a side effect,&quot; verify the invariant holds across the object&#39;s lifecycle: <code>ValidateCreate</code> rejecting the bad shape is insufficient if <code>ValidateUpdate</code> permits the same shape via a two-step create-then-patch. Flag any webhook whose stated intent is enforced only on one admission path. Add this check to <code>deep-review-context.md</code> so future reviewers apply it automatically when reading CRD webhooks in this repo.</li>
+    </ul>
+    </div>
+  </main>
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+  <script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+
+  </script>
+</body>
+</html>
