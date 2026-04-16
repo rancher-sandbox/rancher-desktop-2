@@ -203,6 +203,7 @@ func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 		WebhookName: &quot;container-mutating.containers.rancherdesktop.io&quot;,
 		WebhookPort: c.webhookPort,
 		Operations: []admissionregistrationv1.OperationType{
+			admissionregistrationv1.Create,
 			admissionregistrationv1.Update,
 		},
 		Validator: &amp;immutableValidator{},
@@ -210,8 +211,7 @@ func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 
 	managers, err := base.SetupWebhookForResource(mgr, &amp;v1alpha1.Container{}, mutatingConfig)
 	if err != nil {
-		return err
-	}</code></pre>
+		return err</code></pre>
       <pre><code class="language-go">// container_webhooks.go
 func (c *immutableValidator) ValidateCreate(context.Context, *v1alpha1.Container) (warnings ctrlwebhookadmission.Warnings, err error) {
     return nil, errors.New(&quot;webhook does not implement create&quot;)
@@ -224,7 +224,8 @@ if raw, ok := newContainer.Annotations[v1alpha1.AnnotationAction]; ok {
 }</code></pre>
     <p>The webhook registers only for <code>Update</code>, so <code>ValidateUpdate</code> is the only enforcer of the action enum. A client that POSTs a hand-written <code>Container</code> with <code>metadata.annotations[&quot;containers.rancherdesktop.io/action&quot;]=bogus</code> passes admission because <code>ValidateCreate</code> is never invoked. <code>.spec</code> is now optional (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/pkg/apis/containers/v1alpha1/container_types.go#L233-L238"><code>container_types.go:233-238</code></a>), and the CRD no longer requires <code>spec</code> at the top level (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/pkg/controllers/app/app/crd.yaml#L270-L275"><code>crd.yaml:270-275</code></a>, <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/pkg/controllers/app/app/crd.yaml#L493-L500"><code>crd.yaml:493-500</code></a>), so the barrier to a hand-written <code>Container</code> is lower than before the PR. The reconciler&#39;s <code>!action.IsValid()</code> fallback at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/pkg/controllers/app/engine/controllers/docker_watcher.go#L350"><code>docker_watcher.go:350</code></a> catches invalid values, but a valid action on a hand-written mirror would be dispatched against whatever container ID was put in <code>metadata.name</code>, bypassing the documented <code>ContainerCreateRequest</code> flow. The new BATS coverage at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/bats/tests/32-app-controllers/engine-docker.bats#L366-L387"><code>engine-docker.bats:366-387</code></a> only exercises the Update-reject path.</p>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/pkg/apis/containers/v1alpha1/container_types.go#L228-L243">pkg/apis/containers/v1alpha1/container_types.go</a></div>
-      <pre data-start="228" data-line="233-238"><code class="language-go">	// Metadata is a standard object metadata
+      <pre data-start="228" data-line="233-238"><code class="language-go">
+	// Metadata is a standard object metadata
 	//
 	// +optional
 	metav1.ObjectMeta `json:&quot;metadata,omitempty,omitzero&quot;`
@@ -238,25 +239,21 @@ if raw, ok := newContainer.Annotations[v1alpha1.AnnotationAction]; ok {
 
 	// Status defines the observed state of Container
 	//
-	// +optional
-	Status ContainerStatus `json:&quot;status,omitempty,omitzero&quot;`</code></pre>
+	// +optional</code></pre>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/pkg/controllers/app/engine/controllers/docker_watcher.go#L345-L355">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
-      <pre data-start="345" data-line="350"><code class="language-go">
-	// The webhook rejects invalid action values, but one written while the
-	// webhook is offline can still reach storage. Drop such values here;
-	// otherwise the CRD enum rejects the status.lastAction write, the
-	// annotation stays in place, and every reconcile retries forever.
-	if !action.IsValid() {
-		log.Info(&quot;Dropping invalid container action annotation&quot;, &quot;id&quot;, c.Name, &quot;action&quot;, raw)
-		return w.removeActionAnnotation(ctx, c.Name, raw)
-	}
-
-	dockerErr := w.dispatchContainerAction(ctx, log, c.Name, action)</code></pre>
+      <pre data-start="345" data-line="350"><code class="language-go">// processContainerAction handles a container carrying the AnnotationAction
+// annotation. It dispatches the Docker call, records the outcome in
+// status.lastAction, and then removes the annotation.
+//
+// The Docker call runs before the status and metadata patches so that a
+// crash mid-flight leaves the annotation in place and the next reconcile
+// replays the action. Start, stop, pause, and unpause are idempotent
+// against a container already in the target state, so replay is safe.
+// Restart has no target state to match: a replay sends SIGTERM and waits
+// the grace period a second time, which the controller cannot distinguish
+// from a deliberate re-request.</code></pre>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/bats/tests/32-app-controllers/engine-docker.bats#L361-L392">bats/tests/32-app-controllers/engine-docker.bats</a></div>
-      <pre data-start="361" data-line="366-387"><code class="language-plaintext">    assert_output --partial &quot;not running&quot;
-
-    docker rm --force test-unpause-fail
-}
+      <pre data-start="361" data-line="366-387"><code class="language-plaintext">}
 
 @test &quot;invalid action annotation is rejected by the webhook&quot; {
     # An unknown action value must fail admission so the reconciler never
@@ -281,10 +278,13 @@ if raw, ok := newContainer.Annotations[v1alpha1.AnnotationAction]; ok {
     docker rm --force test-invalid-action
 }
 
-@test &quot;restart action restarts a running container&quot; {
-    run_e -0 docker run -d --name test-restart busybox sleep inf
-    cid=${output}
-</code></pre>
+@test &quot;action annotation on create is rejected by the webhook&quot; {
+    # The engine watcher creates Container mirrors and never sets the
+    # action annotation. Reject any hand-written create that carries one,
+    # so it cannot drive a Docker action against its metadata.name.
+    run -1 rdd ctl apply -f - &lt;&lt;EOF
+apiVersion: containers.rancherdesktop.io/v1alpha1
+kind: Container</code></pre>
     <p>Fix: register the validator for <code>Create</code> as well and implement <code>ValidateCreate</code> symmetrically with <code>ValidateUpdate</code>. If direct Container creates should be rejected outright, keep the current <code>errors.New(&quot;webhook does not implement create&quot;)</code> body and gate the engine reconciler&#39;s own apply path (it uses <code>client.ForceOwnership</code> with <code>engine-controller</code> as field owner, which bypasses admission for controller-initiated applies only if configured that way). Add a BATS test that <code>rdd ctl apply -f</code> of a hand-written Container with a bogus action annotation fails admission on create.</p>
     </div>
     <div class="card card-important">
@@ -292,41 +292,41 @@ if raw, ok := newContainer.Annotations[v1alpha1.AnnotationAction]; ok {
         <span class="finding-num">I2.</span> <code>patchContainerLastAction</code> and <code>removeActionAnnotation</code> surface <code>NotFound</code> as an error <span class="pill pill-claude">Claude</span><a href="#I2" class="pilcrow">&#182;</a>
       </div>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/pkg/controllers/app/engine/controllers/docker_watcher.go#L444-L465">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
-      <pre data-start="444" data-line="449-460"><code class="language-go">}
-
-// patchContainerLastAction writes status.lastAction with retry-on-conflict.
-// The main engine sync writes to the status subresource on every reconcile
-// pass, so the lastAction write races against it.
-func (w *dockerWatcher) patchContainerLastAction(ctx context.Context, id string, lastAction *containersv1alpha1.ContainerLastAction) error {
-	key := client.ObjectKey{Name: id, Namespace: w.apiNamespace}
-	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		var latest containersv1alpha1.Container
-		if err := w.k8s.Get(ctx, key, &amp;latest); err != nil {
-			return err
+      <pre data-start="444" data-line="449-460"><code class="language-go">			return fmt.Errorf(&quot;container %s is not running&quot;, id)
 		}
-		patch := client.MergeFromWithOptions(latest.DeepCopy(), client.MergeFromWithOptimisticLock{})
-		latest.Status.LastAction = lastAction
-		return w.k8s.Status().Patch(ctx, &amp;latest, patch)
-	})
+		if !paused {
+			return nil
+		}
+		log.Info(&quot;Unpausing container&quot;, &quot;id&quot;, id)
+		_, err = w.cli.ContainerUnpause(ctx, id, dockerclient.ContainerUnpauseOptions{})
+		return err
+	case containersv1alpha1.ContainerActionRestart:
+		log.Info(&quot;Restarting container&quot;, &quot;id&quot;, id)
+		_, err := w.cli.ContainerRestart(ctx, id, dockerclient.ContainerRestartOptions{})
+		return err
+	}
+	return fmt.Errorf(&quot;unknown container action %q&quot;, action)
 }
 
-// removeActionAnnotation clears the AnnotationAction annotation only if its
-// value still matches the action we just processed. A concurrent writer may
-// have replaced the annotation with a fresh action between dispatch and
-// cleanup; in that case the new value must survive so the next reconcile</code></pre>
+// containerRunState reports whether Docker currently shows the container as
+// running and as paused. Pause uses paused to skip a no-op dispatch; unpause
+// also checks running so that unpause on a stopped container reports a
+// failure instead of a silent success.
+func (w *dockerWatcher) containerRunState(ctx context.Context, id string) (running, paused bool, err error) {
+	inspect, err := w.cli.ContainerInspect(ctx, id, dockerclient.ContainerInspectOptions{})</code></pre>
     <p>If the Container mirror is deleted (by <code>cleanupMirrorResources</code>, a concurrent <code>docker rm</code> destroy event, or a user delete) between <code>dispatchContainerAction</code> and these helpers, the <code>Get</code> returns <code>NotFound</code>. <code>retry.RetryOnConflict</code> does not retry on <code>NotFound</code>, so the error propagates up through <code>processContainerAction</code> (line 371) into the joined error at <code>reconcileContainerActions:374</code>. The controller then requeues and logs &quot;failed to patch lastAction: NotFound&quot; for a container that no longer exists. The same log message fires for genuine conflict-exhaustion failures, so the noise misdirects a debugger.</p>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/pkg/controllers/app/engine/controllers/docker_watcher.go#L366-L376">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
-      <pre data-start="366" data-line="371"><code class="language-go">		lastAction.Error = dockerErr.Error()
-		log.Info(&quot;Container action failed&quot;, &quot;id&quot;, c.Name, &quot;action&quot;, action, &quot;error&quot;, dockerErr)
+      <pre data-start="366" data-line="371"><code class="language-go">	// The webhook rejects invalid action values, but one written while the
+	// webhook is offline can still reach storage. Drop such values here;
+	// otherwise the CRD enum rejects the status.lastAction write, the
+	// annotation stays in place, and every reconcile retries forever.
+	if !action.IsValid() {
+		log.Info(&quot;Dropping invalid container action annotation&quot;, &quot;id&quot;, c.Name, &quot;action&quot;, raw)
+		return w.removeActionAnnotation(ctx, c, raw)
 	}
 
-	if err := w.patchContainerLastAction(ctx, c.Name, lastAction); err != nil {
-		return fmt.Errorf(&quot;failed to patch lastAction for %s: %w&quot;, c.Name, err)
-	}
-	if err := w.removeActionAnnotation(ctx, c.Name, raw); err != nil {
-		return fmt.Errorf(&quot;failed to remove action annotation for %s: %w&quot;, c.Name, err)
-	}
-	return nil</code></pre>
+	dockerErr := w.dispatchContainerAction(ctx, log, c.Name, action)
+</code></pre>
     <p>Fix: treat <code>NotFound</code> as success on both the <code>Get</code> and the <code>Patch</code>, in both <code>patchContainerLastAction</code> and <code>removeActionAnnotation</code>.</p>
       <pre><code class="language-diff"> func (w *dockerWatcher) patchContainerLastAction(ctx context.Context, id string, lastAction *containersv1alpha1.ContainerLastAction) error {
      key := client.ObjectKey{Name: id, Namespace: w.apiNamespace}
@@ -348,22 +348,22 @@ func (w *dockerWatcher) patchContainerLastAction(ctx context.Context, id string,
         <span class="finding-num">I3.</span> Status-patch-then-annotation-patch races the informer cache <span class="pill pill-gemini">Gemini</span><a href="#I3" class="pilcrow">&#182;</a>
       </div>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/pkg/controllers/app/engine/controllers/docker_watcher.go#L365-L380">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
-      <pre data-start="365" data-line="370-375"><code class="language-go">		lastAction.State = containersv1alpha1.ContainerActionFailed
-		lastAction.Error = dockerErr.Error()
-		log.Info(&quot;Container action failed&quot;, &quot;id&quot;, c.Name, &quot;action&quot;, action, &quot;error&quot;, dockerErr)
+      <pre data-start="365" data-line="370-375"><code class="language-go">
+	// The webhook rejects invalid action values, but one written while the
+	// webhook is offline can still reach storage. Drop such values here;
+	// otherwise the CRD enum rejects the status.lastAction write, the
+	// annotation stays in place, and every reconcile retries forever.
+	if !action.IsValid() {
+		log.Info(&quot;Dropping invalid container action annotation&quot;, &quot;id&quot;, c.Name, &quot;action&quot;, raw)
+		return w.removeActionAnnotation(ctx, c, raw)
 	}
 
-	if err := w.patchContainerLastAction(ctx, c.Name, lastAction); err != nil {
-		return fmt.Errorf(&quot;failed to patch lastAction for %s: %w&quot;, c.Name, err)
-	}
-	if err := w.removeActionAnnotation(ctx, c.Name, raw); err != nil {
-		return fmt.Errorf(&quot;failed to remove action annotation for %s: %w&quot;, c.Name, err)
-	}
-	return nil
-}
+	dockerErr := w.dispatchContainerAction(ctx, log, c.Name, action)
 
-// dispatchContainerAction executes the Docker call for a single action. The
-// caller pre-validates the action name; the default branch triggers only</code></pre>
+	lastAction := &amp;containersv1alpha1.ContainerLastAction{
+		Action:      action,
+		ObservedAt:  observedAt,
+		CompletedAt: metav1.Now(),</code></pre>
     <p><code>patchContainerLastAction</code> writes the status subresource, which bumps the object&#39;s <code>resourceVersion</code>. <code>removeActionAnnotation</code> then re-Gets via the cached client and patches with <code>client.MergeFromWithOptimisticLock{}</code>, which attaches the Got <code>resourceVersion</code> to the payload. Between the two writes, the informer has not yet received the watch event for the status bump, so the Get returns the stale pre-status version; the subsequent patch then 409s. <code>retry.RetryOnConflict</code> re-runs the closure but re-reads the same cache, so successive attempts keep seeing stale data until the informer catches up. If the cache does not sync within <code>retry.DefaultRetry</code>&#39;s ~310ms budget, <code>removeActionAnnotation</code> returns the error, <code>processContainerAction</code> propagates it, and the next reconcile replays the whole Docker action because the annotation is still present. For <code>start</code>/<code>stop</code>/<code>pause</code>/<code>unpause</code> the replay is a no-op (Docker returns 304 or the pre-check skips); for <code>restart</code> the replay is a real double-restart.</p>
     <p>Fix: thread the fresh <code>Container</code> object through from <code>patchContainerLastAction</code> into <code>removeActionAnnotation</code>. The status <code>Patch</code> updates the passed-in object in place with the new <code>resourceVersion</code>, so <code>removeActionAnnotation</code> can skip its initial Get on the happy path and patch against the known-fresh version.</p>
       <pre><code class="language-diff">-func (w *dockerWatcher) patchContainerLastAction(ctx context.Context, id string, lastAction *containersv1alpha1.ContainerLastAction) error {
@@ -392,38 +392,40 @@ func (w *dockerWatcher) patchContainerLastAction(ctx context.Context, id string,
         <span class="finding-num">S1.</span> Same-value action rewrites are indistinguishable from cleanup <span class="pill pill-codex">Codex</span> <span class="pill pill-claude">Claude</span><a href="#S1" class="pilcrow">&#182;</a>
       </div>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/pkg/controllers/app/engine/controllers/docker_watcher.go#L457-L485">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
-      <pre data-start="457" data-line="462-480"><code class="language-go">		latest.Status.LastAction = lastAction
-		return w.k8s.Status().Patch(ctx, &amp;latest, patch)
-	})
+      <pre data-start="457" data-line="462-480"><code class="language-go">	return fmt.Errorf(&quot;unknown container action %q&quot;, action)
 }
 
-// removeActionAnnotation clears the AnnotationAction annotation only if its
-// value still matches the action we just processed. A concurrent writer may
-// have replaced the annotation with a fresh action between dispatch and
-// cleanup; in that case the new value must survive so the next reconcile
-// picks it up.
-func (w *dockerWatcher) removeActionAnnotation(ctx context.Context, id, observed string) error {
+// containerRunState reports whether Docker currently shows the container as
+// running and as paused. Pause uses paused to skip a no-op dispatch; unpause
+// also checks running so that unpause on a stopped container reports a
+// failure instead of a silent success.
+func (w *dockerWatcher) containerRunState(ctx context.Context, id string) (running, paused bool, err error) {
+	inspect, err := w.cli.ContainerInspect(ctx, id, dockerclient.ContainerInspectOptions{})
+	if err != nil {
+		return false, false, err
+	}
+	return inspect.Container.State.Running, inspect.Container.State.Paused, nil
+}
+
+// patchContainerLastAction writes status.lastAction with retry-on-conflict
+// and returns the updated Container. The main engine sync writes the
+// status subresource on every reconcile, so this write races against it.
+// If the mirror is deleted concurrently, any step may return NotFound;
+// the caller treats a nil Container as &quot;nothing left to do&quot;.
+func (w *dockerWatcher) patchContainerLastAction(ctx context.Context, id string, lastAction *containersv1alpha1.ContainerLastAction) (*containersv1alpha1.Container, error) {
 	key := client.ObjectKey{Name: id, Namespace: w.apiNamespace}
-	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	var result *containersv1alpha1.Container
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		var latest containersv1alpha1.Container
 		if err := w.k8s.Get(ctx, key, &amp;latest); err != nil {
-			return err
-		}
-		current, present := latest.Annotations[containersv1alpha1.AnnotationAction]
-		if !present || current != observed {
-			return nil
-		}
-		patch := client.MergeFromWithOptions(latest.DeepCopy(), client.MergeFromWithOptimisticLock{})
-		delete(latest.Annotations, containersv1alpha1.AnnotationAction)
-		return w.k8s.Patch(ctx, &amp;latest, patch)
-	})
-}
-
-// deleteContainer removes a container from Docker. NotFound is treated
-// as success; other errors propagate so the caller keeps the finalizer</code></pre>
+			if apierrors.IsNotFound(err) {
+				return nil
+			}</code></pre>
     <p><code>removeActionAnnotation</code> distinguishes concurrent writes by comparing the annotation value to the value it dispatched. A user who writes <code>restart</code> twice in quick succession (e.g., a deliberate re-trigger after the first completes) has the second write silently consumed because <code>current == observed</code>. For idempotent actions (<code>start</code>/<code>stop</code>/<code>pause</code>/<code>unpause</code>) the observable state is unchanged and this is fine. For <code>restart</code>, re-hitting the &quot;Restart&quot; button does not produce a second restart. The design is intentionally &quot;latest wins, no queue&quot; (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/docs/design/api_containers.md#L237-L240"><code>api_containers.md:237-240</code></a>), so this is a documentation opportunity rather than a code bug.</p>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/docs/design/api_containers.md#L232-L245">docs/design/api_containers.md</a></div>
-      <pre data-start="232" data-line="237-240"><code class="language-plaintext">| `stop`    | `ContainerStop`     |
+      <pre data-start="232" data-line="237-240"><code class="language-plaintext">| --------- | ------------------- |
+| `start`   | `ContainerStart`    |
+| `stop`    | `ContainerStop`     |
 | `pause`   | `ContainerPause`    |
 | `unpause` | `ContainerUnpause`  |
 | `restart` | `ContainerRestart`  |
@@ -434,9 +436,7 @@ value replaces the old, so a user who requests `pause` and then
 queue, no accumulating history.
 
 The engine calls Docker before patching `status.lastAction` and
-removing the annotation, so a crash mid-flight leaves the annotation
-in place and the next reconcile replays the action. Start, stop,
-pause, and unpause are idempotent against a container already in the</code></pre>
+removing the annotation, so a crash mid-flight leaves the annotation</code></pre>
     <p>Fix: add a sentence to <code>api_containers.md</code> under &quot;Change container state&quot; noting that a repeated same-value action is collapsed — the GUI needs to rewrite to a different intermediate value (or let the first complete) to force a second dispatch. Alternatively, encode a request nonce in the annotation payload (e.g., <code>restart/abc123</code>) and compare by id instead of by action name.</p>
     </div>
     <div class="card card-suggestion">
@@ -449,15 +449,15 @@ pause, and unpause are idempotent against a container already in the</code></pre
 	//
 	// +optional
 	Error string `json:&quot;error,omitempty&quot;`
-	// RequestedAt is when the action was observed by the reconciler.
+	// ObservedAt is when the reconciler observed the action annotation.
+	// Backlog may delay this relative to the user&#39;s write time.
 	//
 	// +optional
-	RequestedAt metav1.Time `json:&quot;requestedAt,omitempty,omitzero&quot;`
+	ObservedAt metav1.Time `json:&quot;observedAt,omitempty,omitzero&quot;`
 	// CompletedAt is when the action completed, regardless of outcome.
 	//
 	// +optional
-	CompletedAt metav1.Time `json:&quot;completedAt,omitempty,omitzero&quot;`
-}</code></pre>
+	CompletedAt metav1.Time `json:&quot;completedAt,omitempty,omitzero&quot;`</code></pre>
       <pre><code class="language-go">requestedAt := metav1.Now()</code></pre>
     <p>The JSON key reads as &quot;when the UI requested the action&quot;; the value is actually &quot;when the reconciler first observed the annotation&quot;. Under load the two can differ by seconds. Since the CRD has not shipped, renaming is cheap.</p>
     <p>Fix: rename to <code>observedAt</code> (field, JSON tag, apply configuration, CRD enum, doc examples), or keep the name and sharpen the docstring: &quot;the time the reconciler first observed the action annotation; backlog may delay it relative to the user&#39;s write time.&quot;</p>
@@ -467,24 +467,24 @@ pause, and unpause are idempotent against a container already in the</code></pre
         <span class="finding-num">S3.</span> The <code>!action.IsValid()</code> reconciler fallback has no test <span class="pill pill-claude">Claude</span><a href="#S3" class="pilcrow">&#182;</a>
       </div>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/pkg/controllers/app/engine/controllers/docker_watcher.go#L341-L358">pkg/controllers/app/engine/controllers/docker_watcher.go</a></div>
-      <pre data-start="341" data-line="346-353"><code class="language-go">
-	log := logf.FromContext(ctx).WithName(&quot;docker-watcher&quot;)
-	action := containersv1alpha1.ContainerAction(raw)
-	requestedAt := metav1.Now()
+      <pre data-start="341" data-line="346-353"><code class="language-go">	}
+	return client.IgnoreNotFound(w.k8s.Delete(ctx, latest))
+}
 
-	// The webhook rejects invalid action values, but one written while the
-	// webhook is offline can still reach storage. Drop such values here;
-	// otherwise the CRD enum rejects the status.lastAction write, the
-	// annotation stays in place, and every reconcile retries forever.
-	if !action.IsValid() {
-		log.Info(&quot;Dropping invalid container action annotation&quot;, &quot;id&quot;, c.Name, &quot;action&quot;, raw)
-		return w.removeActionAnnotation(ctx, c.Name, raw)
-	}
-
-	dockerErr := w.dispatchContainerAction(ctx, log, c.Name, action)
-
-	lastAction := &amp;containersv1alpha1.ContainerLastAction{
-		Action:      action,</code></pre>
+// processContainerAction handles a container carrying the AnnotationAction
+// annotation. It dispatches the Docker call, records the outcome in
+// status.lastAction, and then removes the annotation.
+//
+// The Docker call runs before the status and metadata patches so that a
+// crash mid-flight leaves the annotation in place and the next reconcile
+// replays the action. Start, stop, pause, and unpause are idempotent
+// against a container already in the target state, so replay is safe.
+// Restart has no target state to match: a replay sends SIGTERM and waits
+// the grace period a second time, which the controller cannot distinguish
+// from a deliberate re-request.
+func (w *dockerWatcher) processContainerAction(ctx context.Context, c *containersv1alpha1.Container) error {
+	raw, ok := c.Annotations[containersv1alpha1.AnnotationAction]
+	if !ok {</code></pre>
     <p>The comment describes a real failure mode that BATS cannot easily exercise (webhook offline). A unit test against a fake client that constructs a Container with <code>annotations[AnnotationAction]=&quot;bogus&quot;</code>, calls <code>processContainerAction</code>, and asserts the annotation was removed and <code>lastAction</code> was not written would close the gap without an integration tail. If I1 is applied, the exposure shrinks but doesn&#39;t disappear — the comment specifically targets the webhook-offline case.</p>
     </div>
     <div class="card card-suggestion">
@@ -492,7 +492,9 @@ pause, and unpause are idempotent against a container already in the</code></pre
         <span class="finding-num">S4.</span> Restart replay after crash is more disruptive than &quot;harmless&quot; <span class="pill pill-claude">Claude</span><a href="#S4" class="pilcrow">&#182;</a>
       </div>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/6251b9070e9b6e738aff04ed0bb8c94eaad55d3d/docs/design/api_containers.md#L237-L253">docs/design/api_containers.md</a></div>
-      <pre data-start="237" data-line="242-248"><code class="language-plaintext">A single annotation holds at most one pending action. Writing a new
+      <pre data-start="237" data-line="242-248"><code class="language-plaintext">| `restart` | `ContainerRestart`  |
+
+A single annotation holds at most one pending action. Writing a new
 value replaces the old, so a user who requests `pause` and then
 `unpause` before the reconciler has run will see only the unpause. No
 queue, no accumulating history.
@@ -501,14 +503,12 @@ The engine calls Docker before patching `status.lastAction` and
 removing the annotation, so a crash mid-flight leaves the annotation
 in place and the next reconcile replays the action. Start, stop,
 pause, and unpause are idempotent against a container already in the
-target state, so replay is safe. Restart has no target state to match,
-so a replay after a crash runs a second restart; the double restart
-is harmless.
+target state, so replay is safe. Restart has no target state to match:
+a replay sends SIGTERM and waits the grace period a second time, which
+the controller cannot distinguish from a deliberate re-request.
 
 If the Docker call fails (for example, `pause` on a container that is
-not running), the reconciler still removes the annotation and records
-the failure in `status.lastAction`:
-</code></pre>
+not running), the reconciler still removes the annotation and records</code></pre>
       <pre><code class="language-plaintext"># api_containers.md:246-248
 # Restart has no target state to match,
 # so a replay after a crash runs a second restart; the double restart
@@ -526,7 +526,7 @@ the failure in `status.lastAction`:
 // performs the action, records the outcome in status.lastAction, and removes
 // the annotation. Setting a new value replaces any pending action — there is
 // no queue.
-var AnnotationAction = SchemeGroupVersion.Group + &quot;/action&quot;
+const AnnotationAction = &quot;containers.rancherdesktop.io/action&quot;
 
 // +kubebuilder:validation:Enum=start;stop;pause;unpause;restart
 
@@ -550,16 +550,16 @@ var AnnotationAction = SchemeGroupVersion.Group + &quot;/action&quot;
 assert_last_action() {
     local cid=$1 action=$2 state=$3
     run -0 rdd ctl get container &quot;${cid}&quot; --namespace=&quot;${RDD_NAMESPACE}&quot; \
-        -o jsonpath=&#39;{.status.lastAction.action}&#39;
-    assert_output &quot;${action}&quot;
-    run -0 rdd ctl get container &quot;${cid}&quot; --namespace=&quot;${RDD_NAMESPACE}&quot; \
-        -o jsonpath=&#39;{.status.lastAction.state}&#39;
-    assert_output &quot;${state}&quot;
+        -o jsonpath=&#39;{.status.lastAction.action}={.status.lastAction.state}&#39;
+    assert_output &quot;${action}=${state}&quot;
 }
 
 @test &quot;stop action stops a running container&quot; {
     run_e -0 docker run -d --name test-state busybox sleep inf
     cid=${output}
+
+    rdd ctl wait --for=jsonpath=&#39;{.status.status}&#39;=running \
+        --namespace=&quot;${RDD_NAMESPACE}&quot; container/&quot;${cid}&quot; --timeout=30s
 </code></pre>
     <p>Two roundtrips and two snapshots of the object. In practice the tests don&#39;t race their own assertions, but combining both reads into one jsonpath halves the API traffic and asserts both fields against the same object version:</p>
       <pre><code class="language-diff"> assert_last_action() {
@@ -620,7 +620,7 @@ assert_last_action() {
     <h2 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&#182;</a></h2>
 
     <div class="card card-neutral">
-    <p>One commit, <code>6251b90 engine: replace Container.spec.state with action annotations</code>. The message accurately describes the change, motivates it, and covers the edge cases (crash recovery, duplicate-dispatch pre-check, webhook-offline drop). Scope is a single conceptual unit — API type change, reconciler change, webhook change, CRD regeneration, design doc, tests. Stacked on <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/309" class="gh-ref" data-title="engine: mirror Docker container engine state into Kubernetes" data-state="open" data-type="pr">#309</a> and a prerequisite for <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/315" class="gh-ref" data-title="app: aggregate Ready and Settled conditions, wait for Settled in `rdd set`" data-state="open" data-type="pr">#315</a> per the PR description.</p>
+    <p>One commit, <code>6251b90 engine: replace Container.spec.state with action annotations</code>. The message accurately describes the change, motivates it, and covers the edge cases (crash recovery, duplicate-dispatch pre-check, webhook-offline drop). Scope is a single conceptual unit — API type change, reconciler change, webhook change, CRD regeneration, design doc, tests. Stacked on <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/309" class="gh-ref" data-title="engine: mirror Docker container engine state into Kubernetes" data-state="merged" data-type="pr">#309</a> and a prerequisite for <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/315" class="gh-ref" data-title="app: aggregate Ready and Settled conditions, wait for Settled in `rdd set`" data-state="open" data-type="pr">#315</a> per the PR description.</p>
     </div>
     <hr>
     <h2 id="acknowledged-limitations">Acknowledged Limitations <a href="#acknowledged-limitations" class="pilcrow">&#182;</a></h2>
@@ -667,6 +667,39 @@ assert_last_action() {
 
     <div class="card card-neutral">
     <p>None for this review. The existing prompts did their job; the findings that emerged were all naturally derived from the stated dimensions (admission symmetry, subresource-patch races, error propagation, naming). No skill-level generalisation suggests itself without stretching into specifics of this PR, and <code>deep-review-context.md</code> was not contradicted by anything under review.</p>
+    </div>
+    <hr>
+    <h2 id="resolution">Resolution <a href="#resolution" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <table>
+      <thead><tr><th></th><th></th></tr></thead>
+      <tbody>
+        <tr><td><strong>Addressed</strong></td><td>2026-04-16</td></tr>
+        <tr><td><strong>Commit</strong></td><td><code>397d40a engine: replace Container.spec.state with action annotations</code> (fixup-squashed into the original)</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>#</th><th>Finding</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Important #1: Action-annotation validation absent on Create</td><td>Fixed</td></tr>
+        <tr><td>2</td><td>Important #2: patchContainerLastAction/removeActionAnnotation surface NotFound as error</td><td>Fixed</td></tr>
+        <tr><td>3</td><td>Important #3: Status-patch-then-annotation-patch races the informer cache</td><td>Fixed</td></tr>
+        <tr><td>4</td><td>Suggestion #1: Same-value action rewrites indistinguishable from cleanup</td><td>Skipped</td></tr>
+        <tr><td>5</td><td>Suggestion #2: LastAction.RequestedAt name doesn&#39;t match what it records</td><td>Fixed (renamed to observedAt)</td></tr>
+        <tr><td>6</td><td>Suggestion #3: !action.IsValid() reconciler fallback has no test</td><td>Skipped</td></tr>
+        <tr><td>7</td><td>Suggestion #4: Restart replay after crash more disruptive than &quot;harmless&quot;</td><td>Fixed (reworded doc and comment)</td></tr>
+        <tr><td>8</td><td>Suggestion #5: AnnotationAction is a package-level var</td><td>Fixed (const with literal group)</td></tr>
+        <tr><td>9</td><td>Suggestion #6: Two rdd ctl get calls per assert<em>last</em>action</td><td>Fixed (single jsonpath)</td></tr>
+        <tr><td>10</td><td>Testing Gap #1: No test for !action.IsValid() fallback</td><td>Skipped</td></tr>
+        <tr><td>11</td><td>Testing Gap #2: Webhook rejection on Create untested</td><td>Test written</td></tr>
+        <tr><td>12</td><td>Testing Gap #3: Concurrent rewrite during dispatch untested</td><td>Skipped</td></tr>
+        <tr><td>13</td><td>Testing Gap #4: Action while mirror is mid-deletion untested</td><td>Skipped</td></tr>
+        <tr><td>14</td><td>Testing Gap #5: Status-patch-then-annotation-patch race untested</td><td>Skipped</td></tr>
+        <tr><td>15</td><td>Documentation Gap #1: error field set only when state: Failed</td><td>Documentation updated</td></tr>
+        <tr><td>16</td><td>Documentation Gap #2: lastAction persistence semantics undocumented</td><td>Documentation updated</td></tr>
+      </tbody>
+    </table>
     </div>
   </main>
   <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
