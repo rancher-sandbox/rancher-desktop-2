@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2019 FOSS contributors of https://github.com/nxadm/tail
 //go:build !windows
 
-package nxadmtail
+package tail
 
 import (
 	"os"

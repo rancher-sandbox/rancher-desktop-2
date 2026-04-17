@@ -14,7 +14,7 @@ import (
 
 	"gopkg.in/tomb.v1"
 
-	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/nxadmtail/util"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail/util"
 )
 
 // PollingFileWatcher polls the file for changes.

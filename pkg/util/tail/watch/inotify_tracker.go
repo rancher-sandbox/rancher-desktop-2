@@ -16,7 +16,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 
-	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/nxadmtail/util"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail/util"
 )
 
 // InotifyTracker multiplexes a single fsnotify.Watcher across many

@@ -364,7 +364,7 @@ func newServiceLogCommand() *cobra.Command {
 			logPath := filepath.Join(instance.LogDir(), name)
 			follow, _ := cmd.Flags().GetBool("follow")
 
-			return tail.File(cmd.Context(), cmd.OutOrStdout(), logPath, follow)
+			return tail.Stream(cmd.Context(), cmd.OutOrStdout(), logPath, follow)
 		},
 	}
 	command.Flags().BoolP("stdout", "o", false, "Print stdout instead of stderr")

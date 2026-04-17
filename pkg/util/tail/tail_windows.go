@@ -4,12 +4,12 @@
 // SPDX-FileCopyrightText: 2019 FOSS contributors of https://github.com/nxadm/tail
 //go:build windows
 
-package nxadmtail
+package tail
 
 import (
 	"os"
 
-	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/nxadmtail/winfile"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail/winfile"
 )
 
 // openFile proxies an os.Open call for a file so it can be correctly tailed
