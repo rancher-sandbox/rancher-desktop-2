@@ -441,7 +441,7 @@ func (w *dockerWatcher) dispatchContainerAction(ctx context.Context, log logr.Lo
 			return err
 		}
 		if !running {
-			return fmt.Errorf("container %s is not running", id)
+			return fmt.Errorf("cannot unpause container %s: not running", id)
 		}
 		if !paused {
 			return nil

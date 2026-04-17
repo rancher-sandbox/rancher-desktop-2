@@ -226,15 +226,7 @@ Set the `containers.rancherdesktop.io/action` annotation on the
 the annotation, dispatches the matching Docker call, records the
 outcome in `status.lastAction`, and removes the annotation.
 
-Valid values:
-
-| action    | Docker call         |
-| --------- | ------------------- |
-| `start`   | `ContainerStart`    |
-| `stop`    | `ContainerStop`     |
-| `pause`   | `ContainerPause`    |
-| `unpause` | `ContainerUnpause`  |
-| `restart` | `ContainerRestart`  |
+Valid values: `start`, `stop`, `pause`, `unpause`, `restart`.
 
 A single annotation holds at most one pending action. Writing a new
 value replaces the old, so a user who requests `pause` and then
