@@ -222,8 +222,27 @@ func (t *InotifyTracker) sendEvent(event fsnotify.Event) {
 	}
 }
 
-// run starts the goroutine in which the shared struct reads events from its
-// Watcher's Event channel and sends the events to the appropriate Tail.
+// run starts three goroutines that multiplex a single fsnotify.Watcher
+// across all tails in the process.
+//
+// Upstream nxadm/tail ran a single goroutine that did all three jobs
+// from one select: service synchronous Add/Remove RPCs, drain
+// watcher.Events, drain watcher.Errors. That deadlocks on Windows when
+// the fsnotify reader thread needs to report an internal error while
+// this goroutine is blocked inside a synchronous fsnotify.Add/Remove:
+//
+//   - fsnotify.readEvents calls sendError, which blocks on an unbuffered
+//     Errors channel.
+//   - Our RPC caller is blocked on <-in.reply from readEvents.
+//   - Nobody is draining Errors, so readEvents never gets to process
+//     the input; the RPC never returns; further Add/Remove calls pile
+//     up on the unbuffered shared.watch channel.
+//
+// Splitting responsibilities avoids the cycle: the events drainer and
+// the errors drainer run in their own goroutines that never issue
+// fsnotify RPCs, so readEvents is always able to deliver whatever it
+// produces. The RPC goroutine is still allowed to block on fsnotify —
+// its blocking no longer starves the drainers.
 func (t *InotifyTracker) run() {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -231,29 +250,39 @@ func (t *InotifyTracker) run() {
 	}
 	t.watcher = watcher
 
+	// Drain Events forever. Routes each event to the per-file channel
+	// registered via addWatch.
+	go func() {
+		for event := range t.watcher.Events {
+			t.sendEvent(event)
+		}
+	}()
+
+	// Drain Errors forever. Historically this ran in the same select
+	// as Add/Remove; splitting it out is the key to the deadlock fix
+	// described above, since fsnotify's Errors channel is unbuffered
+	// and readEvents blocks trying to send.
+	go func() {
+		for err := range t.watcher.Errors {
+			if err == nil {
+				continue
+			}
+			sysErr, ok := err.(*os.SyscallError)
+			if !ok || sysErr.Err != syscall.EINTR {
+				logger.Printf("Error in Watcher Error channel: %s", err)
+			}
+		}
+	}()
+
+	// Handle Add/Remove RPCs. Synchronous calls into fsnotify may
+	// block until readEvents replies; that's fine here because the
+	// drainers above keep readEvents unblocked.
 	for {
 		select {
 		case winfo := <-t.watch:
 			t.error <- t.addWatch(winfo)
-
 		case winfo := <-t.remove:
 			t.error <- t.removeWatch(winfo)
-
-		case event, open := <-t.watcher.Events:
-			if !open {
-				return
-			}
-			t.sendEvent(event)
-
-		case err, open := <-t.watcher.Errors:
-			if !open {
-				return
-			} else if err != nil {
-				sysErr, ok := err.(*os.SyscallError)
-				if !ok || sysErr.Err != syscall.EINTR {
-					logger.Printf("Error in Watcher Error channel: %s", err)
-				}
-			}
 		}
 	}
 }
