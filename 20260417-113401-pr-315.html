@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260417-113401-pr-315</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block.
+ * The filename is a GitHub permalink to the displayed line range.
+ * Text color is light gray (#adbac7) for the bar, green (#7ee787)
+ * for the hyperlink — matching GitHub's dark-mode file header. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Deep Review: 20260417-113401-pr-315</h1>
+
+    <table class="meta-table">
+      <tr><td>Date</td><td>2026-04-17 11:34</td></tr>
+      <tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+      <tr><td>Round</td><td>2 (of target)</td></tr>
+      <tr><td>Author</td><td><a href="https://github.com/jandubois">@jandubois</a></td></tr>
+      <tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/315" class="gh-ref" data-title="app: aggregate Ready and Settled conditions, wait for Settled in `rdd set`" data-state="open" data-type="pr">#315</a> — app: aggregate Ready and Settled conditions, wait for Settled in <code>rdd set</code></td></tr>
+      <tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/27d7dd3"><code>27d7dd3</code></a> app: add Settled condition, wait for it in <code>rdd set</code></td></tr>
+      <tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.7 (effort: xhigh), <span class="pill pill-codex">Codex</span> GPT 5.4 (effort: high), <span class="pill pill-gemini">Gemini</span> 3.1 Pro (effort: default)</td></tr>
+      <tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; replace the now-stale &quot;Ready/Settled&quot; mentions with &quot;Settled&quot; only (PR title, body, and code comment), and decide whether to address or accept the documented template-CM race that can let <code>rdd set containerEngine.name=…</code> return before the VM has restarted.</td></tr>
+      <tr><td>Wall-clock time</td><td><code>13 min 50 s</code></td></tr>
+    </table>
+
+    <hr>
+
+    <hr>
+    <h2 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>This PR introduces an <code>AppConditionSettled</code> aggregate that the App reconciler computes from the mirrored LimaVM <code>Running</code> condition and the engine-written <code>ContainerEngineReady</code>, then switches <code>rdd set</code> to a single wait predicate against <code>Settled=True &amp;&amp; observedGeneration &gt;= post-write</code>. The implementation collapses the old per-property branching cleanly, the unit-test matrix covers the state machine well, and the <code>EngineEnabled</code> flag correctly gates the engine dependency in builds where it is not registered.</p>
+    <p>Three issues stand out. (1) The PR title and body promise both <code>Ready</code> and <code>Settled</code>, and a new in-code comment also says &quot;aggregate Ready/Settled&quot; — but only <code>Settled</code> was implemented; this needs reconciling before merge. (2) A template-CM update race acknowledged by the author is more impactful than the comment suggests: when <code>rdd set containerEngine.name=…</code> triggers a backend swap, the App reconciler can mirror LimaVM&#39;s stale <code>Running=Started</code> into Settled at the new generation before LimaVM observes the ConfigMap change, so the CLI returns before the VM has restarted — directly defeating the PR&#39;s stated motivation. (3) <code>EngineEnabled</code> is captured from a process-local registry at startup, which works for today&#39;s binary topologies but silently breaks the moment engine ships in a separate manager.</p>
+    <p>Structure: 0 critical, 3 important, 3 suggestions, plus design observations on the convergence model.</p>
+    </div>
+    <hr>
+    <h2 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-critical">
+    <p>None.</p>
+    </div>
+    <hr>
+    <h2 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I1">
+        <span class="finding-num">I1.</span> Template-CM update race lets <code>rdd set containerEngine.name=…</code> return before the VM restarts <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span> <span class="pill pill-claude">Claude</span><a href="#I1" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controllers/app_controller.go#L277-L307">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+      <pre data-start="277" data-line="282-302"><code class="language-go">		} else {
+			desired, err := applySpecToTemplate(r.LimaTemplateData, app.Spec)
+			if err != nil {
+				return ctrl.Result{}, fmt.Errorf(&quot;failed to apply spec to template: %w&quot;, err)
+			}
+			if templateCM.Data[limav1alpha1.TemplateConfigMapKey] != desired {
+				patch := client.MergeFrom(templateCM.DeepCopy())
+				if templateCM.Data == nil {
+					templateCM.Data = make(map[string]string)
+				}
+				templateCM.Data[limav1alpha1.TemplateConfigMapKey] = desired
+				if err := r.Patch(ctx, templateCM, patch); err != nil {
+					return ctrl.Result{}, fmt.Errorf(&quot;failed to update template ConfigMap: %w&quot;, err)
+				}
+				log.Info(&quot;Updated template ConfigMap&quot;,
+					&quot;containerEngine&quot;, app.Spec.ContainerEngine.Name,
+					&quot;kubernetesEnabled&quot;, app.Spec.Kubernetes.Enabled,
+					&quot;kubernetesVersion&quot;, app.Spec.Kubernetes.Version)
+				// ConfigMaps are not watched, so requeue to let the
+				// reconciler evaluate remaining spec fields (e.g. running).
+				// A racing `rdd set` may see Settled=True at the new
+				// generation before LimaVM observes the ConfigMap change.
+				// LimaVM then sets restartNeeded on its next reconcile,
+				// flipping Settled back to False.
+				return ctrl.Result{Requeue: true}, nil
+			}
+		}
+	}
+
+	if !limaVM.Spec.Running &amp;&amp; app.Spec.Running {
+		limaVM.Spec.Running = true</code></pre>
+    <p>The PR&#39;s stated motivation is <code>rdd set containerEngine.name=containerd</code> waiting for the VM restart. After the App reconciler patches the template ConfigMap and requeues, the next pass copies LimaVM&#39;s still-<code>Running=Started</code> condition into the App and re-stamps it with the new <code>App.Generation</code> at line 334. <code>computeSettledCondition</code> then sees a current-generation <code>Running=Started</code> and, on engine-disabled paths (Windows, <code>--controllers=-engine</code>) immediately returns <code>Settled=True</code>. On engine-enabled paths the engine condition&#39;s <code>ObservedGeneration</code> is also stale, which holds Settled at <code>False</code> via the <code>EngineStale</code> branch — but that masking depends on the engine controller running in the same process, not on a real Lima convergence signal.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controllers/app_controller.go#L329-L339">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+      <pre data-start="329" data-line="334"><code class="language-go">			changed = apimeta.SetStatusCondition(&amp;latest.Status.Conditions, metav1.Condition{
+				Type:               cond.Type,
+				Status:             cond.Status,
+				Reason:             cond.Reason,
+				Message:            msg,
+				ObservedGeneration: latest.Generation,
+				LastTransitionTime: cond.LastTransitionTime,
+			}) || changed
+		}
+		settled := computeSettledCondition(latest, r.EngineEnabled)
+		changed = apimeta.SetStatusCondition(&amp;latest.Status.Conditions, settled) || changed</code></pre>
+    <p>The new comment at lines 297-300 acknowledges the race as a brief blip, but <code>rdd set</code>&#39;s <code>waitForDesiredState</code> returns the moment it sees <code>Settled=True</code> at the new generation. There is no minimum dwell, no integration test exercising the running-VM backend swap (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/bats/tests/32-app-controllers/engine-docker.bats#L534-L559"><code>engine-docker.bats:534-559</code></a> starts from a stopped VM), and no Lima-side condition the App can synchronise on. The result is exactly the early-return behaviour the PR removes for <code>running=true/false</code> but reintroduces for backend / kubernetes spec changes on a running VM.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/bats/tests/32-app-controllers/engine-docker.bats#L529-L559">bats/tests/32-app-controllers/engine-docker.bats</a></div>
+      <pre data-start="529" data-line="534-559"><code class="language-plaintext">    refute_output
+}
+
+# --- containerd backend ---
+
+@test &quot;containerd backend reports ContainerEngineReady=NotApplicable and skips mirroring&quot; {
+    # Stop first so there is no stale True/Connected from moby to
+    # satisfy the Settled wait below before the engine reconciler has
+    # processed the containerd switch.
+    rdd set running=false
+
+    # Start with containerd. rdd set waits for Settled=True, which
+    # requires ContainerEngineReady=True. The engine reconciler
+    # satisfies that immediately with reason NotApplicable because
+    # engine mirroring only supports the moby backend.
+    rdd set containerEngine.name=containerd running=true
+
+    run -0 rdd ctl get app app \
+        -o jsonpath=&#39;{.status.conditions[?(@.type==&quot;ContainerEngineReady&quot;)].reason}&#39;
+    assert_output &quot;NotApplicable&quot;
+
+    # No mirror resources should exist in containerd mode.
+    run -0 rdd ctl get containers --namespace=&quot;${RDD_NAMESPACE}&quot; --output=name
+    refute_output
+    run -0 rdd ctl get images --namespace=&quot;${RDD_NAMESPACE}&quot; --output=name
+    refute_output
+    run -0 rdd ctl get volumes --namespace=&quot;${RDD_NAMESPACE}&quot; --output=name
+    refute_output
+    run -0 rdd ctl get ContainerNamespaces --namespace=&quot;${RDD_NAMESPACE}&quot; --output=name
+    refute_output
+}</code></pre>
+    <p>Fix: gate <code>Settled</code> on a Lima-owned convergence signal rather than the restamped <code>Running</code> mirror. Either (a) add <code>LimaVMStatus.ObservedTemplateResourceVersion</code> and require <code>limaVM.Status.ObservedTemplateResourceVersion == templateCM.ResourceVersion</code> before computing <code>Settled=True</code>, or (b) have LimaVM publish a dedicated &quot;reconciled with current template&quot; condition that the App controller aggregates. As an interim, set Settled to <code>False</code> with reason <code>RestartPending</code> on the same reconcile that patches the template CM, and persist a marker so the next pass does not flip it back to True until LimaVM has reacted.</p>
+    </div>
+    <div class="card card-important">
+      <div class="finding-title" id="I2">
+        <span class="finding-num">I2.</span> <code>EngineEnabled</code> captured from process-local registry at startup ignores cluster-wide topology <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span><a href="#I2" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controller.go#L144-L159">pkg/controllers/app/app/controller.go</a></div>
+      <pre data-start="144" data-line="149-154"><code class="language-go">	}
+	if err := limav1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
+		return err
+	}
+
+	if err := (&amp;controllers.AppReconciler{
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		LimaTemplateData: limaTemplateData(),
+		EngineEnabled:    base.IsControllerEnabled(&quot;engine&quot;),
+	}).SetupWithManager(mgr); err != nil {
+		return err
+	}
+
+	return c.setupWebhook(mgr)
+}</code></pre>
+    <p><code>base.IsControllerEnabled</code> is documented as &quot;started in this OS process&quot; (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controller.go#L122-L157"><code>controller.go:122-157</code></a>), populated only from each manager&#39;s local set in <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/cmd/rdd/service.go#L761-L772"><code>service.go:761-772</code></a> and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/external/main.go#L86-L92"><code>external/main.go:86-92</code></a>. The repo ships separate <code>cmd/app-controller</code> and <code>cmd/containers-controller</code> standalone binaries; <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/docs/design/discovery.md#L56-L64"><code>docs/design/discovery.md:56-64</code></a> allows external controllers to attach later. Whenever the engine controller runs in a different manager from the App controller — including the future where engine ships in <code>cmd/containers-controller</code> — <code>EngineEnabled</code> stays <code>false</code>, <code>computeSettledCondition</code> skips the <code>ContainerEngineReady</code> gate at lines 393-405, and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/cmd/rdd/set.go#L477-L486"><code>cmd/rdd/set.go:477-486</code></a> returns before the engine has connected. This regresses the prior CLI-side behaviour, which queried the discovery ConfigMap to decide whether to wait on the engine condition.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controller.go#L117-L159">pkg/controllers/app/app/controller.go</a></div>
+      <pre data-start="117" data-line="122-157"><code class="language-go">		return err
+	}
+	validatingConfig := base.WebhookConfig[*v1alpha1.App]{
+		Name:        appValidatorConfigName,
+		WebhookName: appValidatorWebhookName,
+		WebhookPort: c.webhookPort,
+		Operations: []admissionregistrationv1.OperationType{
+			admissionregistrationv1.Create,
+			admissionregistrationv1.Update,
+		},
+		Validator: validator,
+	}
+
+	managers, err := base.SetupWebhookForResource(mgr, &amp;v1alpha1.App{}, validatingConfig)
+	if err != nil {
+		return err
+	}
+	c.webhookManagers = append(c.webhookManagers, managers...)
+	return nil
+}
+
+// RegisterWithManager implements the complete controller registration for both embedded and external modes.
+// It registers the CRD types with the scheme and sets up the controller with the manager.
+// It also registers Lima types, which allows App controller to create and watch LimaVM resources.
+func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
+	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
+		return err
+	}
+	if err := limav1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
+		return err
+	}
+
+	if err := (&amp;controllers.AppReconciler{
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		LimaTemplateData: limaTemplateData(),
+		EngineEnabled:    base.IsControllerEnabled(&quot;engine&quot;),
+	}).SetupWithManager(mgr); err != nil {
+		return err
+	}
+
+	return c.setupWebhook(mgr)
+}</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/external/main.go#L81-L97">pkg/external/main.go</a></div>
+      <pre data-start="81" data-line="86-92"><code class="language-go">	if len(controllersToStart) == 0 {
+		setupLog.Info(&quot;All controllers are already running in RDD controller manager, exiting&quot;)
+		return 0
+	}
+
+	// Expose the enabled set to reconcilers that need to know which
+	// siblings share this process (see pkg/controllers/base docs).
+	enabledNames := make([]string, 0, len(controllersToStart))
+	for _, controller := range controllersToStart {
+		enabledNames = append(enabledNames, controller.GetName())
+	}
+	base.SetEnabledControllers(enabledNames)
+
+	// Create a cancellable context for control plane monitoring
+	monitorCtx, cancelMonitor := context.WithCancel(ctx)
+	defer cancelMonitor()
+</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/docs/design/discovery.md#L51-L66">docs/design/discovery.md</a></div>
+      <pre data-start="51" data-line="56-64"><code class="language-plaintext">
+Ordering both steps before the annotation keeps the &quot;ready = clients may proceed&quot; contract consistent: any client that waits for the annotation sees both CRDs and the enabled-controller list, not just one of the two.
+
+The ConfigMap is recreated on every control plane startup, so a stale `ready` from a previous crash is always cleared before CRD installation begins.
+
+The annotation only covers controllers known at control plane startup. External controllers (for example, the mock controller, or a controller manager started later via `rdd svc create --controllers=...`) can attach at any time, so a client waiting for the ready annotation must not assume that every controller it cares about is already registered. Discover external controllers by reading the ConfigMap directly.
+
+## Consumers
+
+**Service readiness** -- The control plane queries the ConfigMap to discover which controllers are running across all managers. It uses this to decide when external controllers have finished registering.
+
+**Passthrough proxy** -- The control plane exposes a `/passthrough/&lt;controller&gt;/&lt;endpoint&gt;/...` HTTP route that looks up the target manager via the ConfigMap and reverse-proxies the request.
+
+**External controller startup** -- An external controller checks the ConfigMap to see whether its controllers are already running (to avoid conflicts) and monitors it to detect when the control plane has stopped.
+
+**Health gating** -- `IsControllerRunning` performs an HTTP health check against the registered `healthEndpoint` before reporting a controller as running.</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/cmd/rdd/set.go#L472-L491">cmd/rdd/set.go</a></div>
+      <pre data-start="472" data-line="477-486"><code class="language-go">// current generation.
+//
+// Filtering on ObservedGeneration &gt;= minGen blocks a stale
+// Settled=True from a prior reconcile from satisfying the wait
+// before the App controller observes our write.
+func waitForDesiredState(ctx context.Context, config *rest.Config, timeout time.Duration, minGen int64) error {
+	// timeout == 0 means &quot;no deadline&quot;, matching kubectl wait.
+	ctx, cancel := watchtools.ContextWithOptionalTimeout(ctx, timeout)
+	defer cancel()
+
+	logrus.Info(&quot;Waiting for App to settle&quot;)
+	return watchCondition(ctx, config, func(obj *unstructured.Unstructured) bool {
+		status, gen, present := conditionInfo(obj, appv1alpha1.AppConditionSettled)
+		return present &amp;&amp; gen &gt;= minGen &amp;&amp; status == metav1.ConditionTrue
+	})
+}
+
+// watchCondition watches the App singleton until the predicate
+// returns true or the context expires. watchtools.UntilWithSync
+// re-lists transparently on benign watch-channel closures (API</code></pre>
+    <p>The split-manager scenario is not exploitable today because engine is not blank-imported by any standalone binary (only <code>pkg/service/cmd/service.go</code>&#39;s embedded path imports it). That makes this latent rather than active — but the architectural assumption &quot;engine is enabled iff it&#39;s in this process&quot; is built into the wait contract just as engine is being prepared for external execution.</p>
+    <p>Fix: derive engine availability from the shared discovery ConfigMap (<code>controllers.NewControllerManagerDiscovery(mgr.GetConfig())</code>) and check it during reconciliation, so late-attaching managers can take effect without a controller restart. Cache the result with a short TTL if the lookup cost is a concern.</p>
+    </div>
+    <div class="card card-important">
+      <div class="finding-title" id="I3">
+        <span class="finding-num">I3.</span> PR title, body, and a new in-code comment claim a <code>Ready</code> condition that does not exist <span class="pill pill-claude">Claude</span><a href="#I3" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controllers/app_controller.go#L309-L319">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+      <pre data-start="309" data-line="314"><code class="language-go">			return ctrl.Result{}, fmt.Errorf(&quot;failed to propagate running state to LimaVM: %w&quot;, err)
+		}
+		return ctrl.Result{}, nil
+	}
+
+	// Mirror LimaVM status conditions and aggregate Ready/Settled. The
+	// engine reconciler writes ContainerEngineReady on the same object,
+	// so app&#39;s resourceVersion from the initial Get can be stale.
+	// retry.RetryOnConflict + re-Get matches
+	// EngineReconciler.setEngineCondition; without it, concurrent
+	// writers 409-loop through controller-runtime requeues.</code></pre>
+    <p>The PR title is &quot;app: aggregate Ready and Settled conditions, wait for Settled in <code>rdd set</code>&quot; and the body has a two-paragraph &quot;Ready&quot; section explaining the contract. But <code>app_types.go</code> defines only <code>AppConditionSettled</code> (line 38); there is no <code>AppConditionReady</code>, nothing in <code>computeSettledCondition</code> produces a Ready entry, and the unit tests only assert the Settled path. The stale comment on <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controllers/app_controller.go#L314"><code>app_controller.go:314</code></a> was introduced by this commit and will mislead readers into looking for a Ready aggregator.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controllers/app_controller.go#L309-L319">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+      <pre data-start="309" data-line="314"><code class="language-go">			return ctrl.Result{}, fmt.Errorf(&quot;failed to propagate running state to LimaVM: %w&quot;, err)
+		}
+		return ctrl.Result{}, nil
+	}
+
+	// Mirror LimaVM status conditions and aggregate Ready/Settled. The
+	// engine reconciler writes ContainerEngineReady on the same object,
+	// so app&#39;s resourceVersion from the initial Get can be stale.
+	// retry.RetryOnConflict + re-Get matches
+	// EngineReconciler.setEngineCondition; without it, concurrent
+	// writers 409-loop through controller-runtime requeues.</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controllers/app_controller.go#L33-L43">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+      <pre data-start="33" data-line="38"><code class="language-go">
+const (
+	appName                        = &quot;app&quot;
+	limaVMName, inputConfigMapName = &quot;rd&quot;, &quot;rd&quot;
+
+	// requeueAfterDeletion is how long to wait between checks while the LimaVM
+	// controller is running its teardown (stopping the VM, removing disk files).
+	requeueAfterDeletion = 2 * time.Second
+)
+
+// AppReconciler reconciles the singleton App resource and manages its LimaVM lifecycle.</code></pre>
+    <p>This matters for the review itself: a reviewer cannot tell from the PR whether <code>Ready</code> was an intentional scope reduction or an implementation oversight — Gemini&#39;s executive summary in this round explicitly described the PR as &quot;introduces the <code>Ready</code> and <code>Settled</code> conditions&quot;, taking the PR description at face value.</p>
+    <p>Fix: decide whether <code>Ready</code> is in scope. If not, drop &quot;Ready&quot; from the PR title and body, and correct the comment:</p>
+      <pre><code class="language-diff">-	// Mirror LimaVM status conditions and aggregate Ready/Settled. The
+-	// engine reconciler writes ContainerEngineReady on the same object,
++	// Mirror LimaVM status conditions and compute Settled. The
++	// engine reconciler writes ContainerEngineReady on the same object,</code></pre>
+    <p>If <code>Ready</code> is still intended, add the constant in <code>app_types.go</code>, compute it alongside Settled, and extend the test matrix.</p>
+    </div>
+    <hr>
+    <h2 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S1">
+        <span class="finding-num">S1.</span> Hardcoded <code>&quot;engine&quot;</code> controller name creates silent coupling <span class="pill pill-claude">Claude</span><a href="#S1" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controller.go#L148-L158">pkg/controllers/app/app/controller.go</a></div>
+      <pre data-start="148" data-line="153"><code class="language-go">
+	if err := (&amp;controllers.AppReconciler{
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		LimaTemplateData: limaTemplateData(),
+		EngineEnabled:    base.IsControllerEnabled(&quot;engine&quot;),
+	}).SetupWithManager(mgr); err != nil {
+		return err
+	}
+
+	return c.setupWebhook(mgr)</code></pre>
+    <p>The App controller queries the engine controller by literal name. Engine&#39;s own name constant — <code>controllerName</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/engine/controller.go#L33"><code>pkg/controllers/app/engine/controller.go:33</code></a> — is unexported, so a rename on the engine side would silently turn <code>EngineEnabled</code> into a permanent <code>false</code>, regressing <code>Settled</code> to the pre-engine path with no build or test failure. The literal is repeated in the doc comment at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controllers/app_controller.go#L53"><code>app_controller.go:53</code></a> and in <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/cmd/rdd/service.go#L771"><code>service.go:771</code></a>.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/engine/controller.go#L28-L38">pkg/controllers/app/engine/controller.go</a></div>
+      <pre data-start="28" data-line="33"><code class="language-go">	}
+	base.RegisterController(newController())
+}
+
+const (
+	controllerName = &quot;engine&quot;
+	// apiGroup is &quot;containers&quot; because the reconciler watches
+	// Container, Image, and Volume from that group and needs
+	// their CRDs at startup. Grouping engine with its dependencies
+	// keeps --controllers selections from splitting the two apart.
+	apiGroup = &quot;containers&quot;</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controllers/app_controller.go#L48-L58">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+      <pre data-start="48" data-line="53"><code class="language-go">
+	// EngineEnabled indicates whether the engine controller runs in
+	// this process. When true, Settled waits for ContainerEngineReady
+	// before reporting True for a running app. When false, nothing
+	// writes ContainerEngineReady — for example on Windows, where
+	// engine init() skips registration, or when --controllers
+	// excludes engine at startup — so Settled ignores it.
+	EngineEnabled bool
+}
+
+func applySpecToTemplate(baseTemplate string, spec v1alpha1.AppSpec) (string, error) {</code></pre>
+    <p>Fix: define <code>EngineControllerName = &quot;engine&quot;</code> in <code>pkg/apis/app/v1alpha1/app_types.go</code> (alongside <code>AppConditionContainerEngineReady</code>) and reference it from both sides. Importing <code>pkg/controllers/app/engine</code> directly from <code>pkg/controllers/app/app</code> is undesirable because it would trigger engine&#39;s <code>init()</code> registration in the app-controller binary, which targets a different API group.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S2">
+        <span class="finding-num">S2.</span> Settled <code>Reason</code> table entry says &quot;<em>(varies)</em>&quot; but the values are well-defined <span class="pill pill-claude">Claude</span><a href="#S2" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/docs/design/api_app.md#L110-L120">docs/design/api_app.md</a></div>
+      <pre data-start="110" data-line="115"><code class="language-markdown">  | `ContainerEngineReady` | `True`    | `Connected`      | Engine controller has connected to Docker and completed full sync |
+  | `ContainerEngineReady` | `True`    | `NotApplicable`  | Mirroring is not implemented for the current backend (e.g. `containerd`); forced `True` so `rdd set` can finish waiting |
+  | `ContainerEngineReady` | `False`   | `ConnectFailed`  | Engine controller failed to connect to Docker                     |
+  | `ContainerEngineReady` | `False`   | `Stopped`        | The VM is stopped; the engine watcher is not running              |
+  | `Settled`              | `True`    | `Settled`        | Reconcile chain has caught up with the current spec               |
+  | `Settled`              | `False`   | *(varies)*       | Reconciliation in progress; reason mirrors the blocking condition |
+
+  `Running=True` means the Lima guest has finished booting and SSH is reachable. It says nothing about the container engine socket; consumers that depend on the engine (container/image/volume mirrors, `docker` against the forwarded socket) must also check `ContainerEngineReady`, which flips to `True` only after the engine controller has connected to the socket and completed its initial full sync.
+
+  `Created` and `Running` are mirrored from LimaVM, so their `lastTransitionTime` reflects the LimaVM transition rather than the copy — the timestamp is meaningful for staleness checks. `ContainerEngineReady.observedGeneration` is stamped with the App&#39;s generation when the engine controller writes the condition. `Settled` is computed by the App controller from the mirrored `Running` and the engine-written `ContainerEngineReady`, and carries the App&#39;s current `observedGeneration`. `rdd set` waits for `Settled=True` with `observedGeneration &gt;= post-patch generation` so stale snapshots cannot prematurely satisfy the wait.
+</code></pre>
+    <p><code>computeSettledCondition</code> emits an enumerable set of fixed reasons: <code>WaitingForLimaVM</code>, <code>WaitingForEngine</code>, <code>EngineStale</code>, plus the forwarded LimaVM <code>Running</code> reason or the engine <code>ContainerEngineReady</code> reason. Documenting them lets consumers (GUI, tests, other controllers) branch on specific values without reading the source.</p>
+    <p>Fix: expand the row into explicit rows for <code>WaitingForLimaVM</code>, <code>WaitingForEngine</code>, <code>EngineStale</code>, and a catch-all &quot;forwarded from Running/ContainerEngineReady&quot; row.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S3">
+        <span class="finding-num">S3.</span> <code>runningLimaVMMessage</code> uses string-suffix matching for failure detection <span class="pill pill-claude">Claude</span><a href="#S3" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controllers/app_controller.go#L425-L440">pkg/controllers/app/app/controllers/app_controller.go</a></div>
+      <pre data-start="425" data-line="430-435"><code class="language-go">
+// runningLimaVMMessage builds the Settled message when LimaVM&#39;s
+// Running reason does not match the desired state. Failure reasons
+// (ending in &quot;Failed&quot;) propagate LimaVM&#39;s diagnostic message; other
+// reasons get a concise &quot;has not yet reached &lt;desired&gt;&quot; text.
+func runningLimaVMMessage(runningCond *metav1.Condition, desired string) string {
+	if strings.HasSuffix(runningCond.Reason, &quot;Failed&quot;) &amp;&amp; runningCond.Message != &quot;&quot; {
+		return runningCond.Message
+	}
+	return &quot;LimaVM has not yet reached &quot; + desired
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *AppReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&amp;v1alpha1.App{}).</code></pre>
+    <p>The heuristic couples Settled&#39;s behaviour to a LimaVM naming convention. A new failure reason that doesn&#39;t end in <code>Failed</code> would silently lose its diagnostic message; a non-failure reason ending in <code>Failed</code> (none today, but nothing prevents one) would leak a confusing operational message into Settled.</p>
+    <p>Fix: switch on the known failure reasons, or check <code>runningCond.Status == metav1.ConditionFalse &amp;&amp; runningCond.Message != &quot;&quot;</code>. The LimaVM reason constants would need to be exported or mirrored; a unit test pinning the App-side strings to the LimaVM values keeps drift visible.</p>
+    </div>
+    <hr>
+    <h2 id="design-observations" class="section-design">Design Observations <a href="#design-observations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-design">
+    <h3 id="concerns">Concerns <a href="#concerns" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><strong>Settled infers downstream convergence from mirrored status instead of controller-owned signals</strong> <em>(in-scope)</em> <span class="pill pill-codex">Codex</span> <span class="pill pill-claude">Claude</span>. The current design lets the App controller guess whether Lima and engine have caught up by mirroring their status into the App and combining that with a process-topology hint. A stronger structure would have Lima and engine each publish an explicit &quot;observed App generation X and finished applying it&quot; condition that App aggregates. This removes both the split-manager dependency in I2 and the stale-restamp race in I1, and gives <code>rdd set</code> a true end-to-end synchronisation contract instead of a heuristic.</li>
+      <li><em></em><code>Settled</code> absence hangs <code>rdd set</code> for the full timeout when the App reconciler is not running<em></em> <em>(future)</em> <span class="pill pill-claude">Claude</span>. If the App controller is excluded by <code>--controllers=-app</code> or fails to start, no one writes Settled and <code>rdd set</code> blocks until the 5-minute default timeout expires. <code>set.bats</code> papers over this by passing <code>--wait=false</code>, but a real deployment that disabled the app controller would hang. The CLI could check for the App controller&#39;s presence via the discovery ConfigMap (the same data path the pre-PR <code>isEngineControllerEnabled</code> used) and degrade gracefully.</li>
+    </ul>
+    <h3 id="strengths">Strengths <a href="#strengths" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><em></em><code>ObservedGeneration</code> as part of the wait contract<em></em> <span class="pill pill-codex">Codex</span>. Once the writers stamp the right generation at the right time, this cleanly prevents stale success from a previous spec from satisfying the wait. The primitive is right; the open issues are about which writer stamps it and when.</li>
+      <li><strong>Conflict-retry on shared status object</strong> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span>. The multi-writer App status updates at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controllers/app_controller.go#L320-L344"><code>app_controller.go:320-344</code></a> continue to use <code>retry.RetryOnConflict</code> plus re-<code>Get</code>, consistent with <code>EngineReconciler.setEngineCondition</code>. This avoids reintroducing the 409 loop that the prior architecture had between concurrent writers.</li>
+      <li><strong>Stopped-VM short-circuit handles engine teardown contract correctly</strong> <span class="pill pill-claude">Claude</span>. Short-circuiting <code>!desiredRunning</code> when <code>runningCond.Reason == &quot;Stopped&quot;</code> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controllers/app_controller.go#L397-L405"><code>app_controller.go:397-405</code></a>) handles the &quot;engine stops writing ContainerEngineReady after watcher teardown&quot; contract that would otherwise deadlock a stopped app.</li>
+      <li><strong>Pure-function condition computation with broad unit coverage</strong> <span class="pill pill-claude">Claude</span>. <code>computeSettledCondition</code> is a pure function over the App&#39;s status plus one bool; <code>app_controller_test.go</code> covers each branch with 11 cases. This is the right shape for the logic and the right way to test it.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>Unit coverage of <code>computeSettledCondition</code> is thorough. Integration gaps, ranked by risk:</p>
+    <ol>
+      <li><em></em>No integration test for <code>rdd set containerEngine.name=…</code> while the VM is running.<em></em> The new Settled semantics explicitly target this case, but <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/bats/tests/32-app-controllers/engine-docker.bats#L534-L559"><code>engine-docker.bats:534-559</code></a> starts from a stopped VM, sidestepping the I1 race. An end-to-end test that sets the backend on a running VM and asserts that <code>rdd set</code> returns only after the restart has actually completed would both validate the PR and surface the race.</li>
+      <li><em></em>No integration test exercises <code>EngineEnabled=false</code> against a real control plane.<em></em> The Windows / <code>--controllers=-engine</code> branch is unit-tested, but no integration test runs against a service started with <code>--controllers=-engine</code> to exercise the full <code>base.IsControllerEnabled(&quot;engine&quot;)</code> discovery path.</li>
+      <li><strong>No test verifying Settled re-fires on engine-only condition changes.</strong> The App reconciler must re-stamp Settled when engine writes <code>ContainerEngineReady</code>. <code>ctrl.NewControllerManagedBy(mgr).For(&amp;v1alpha1.App{})</code> lacks an explicit predicate, so it relies on controller-runtime&#39;s default of firing on any event. A test that writes <code>ContainerEngineReady</code> at a new generation and asserts <code>Settled.ObservedGeneration</code> catches up would guard against a <code>GenerationChangedPredicate</code> creeping in and silently breaking this PR&#39;s contract.</li>
+      <li><strong>No coverage for split-manager / late external-registration topologies</strong> <span class="pill pill-codex">Codex</span>. Even though no standalone binary ships engine today, <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/docs/design/discovery.md#L56-L64"><code>docs/design/discovery.md:56-64</code></a> documents support for external controllers attaching after startup. Without a test, the I2 latent regression cannot fail closed.</li>
+    </ol>
+    <p><code>go test ./pkg/controllers/app/app/controllers</code> passes locally <span class="pill pill-codex">Codex</span>.</p>
+    </div>
+    <hr>
+    <h2 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/docs/design/api_app.md#L97-L119"><code>docs/design/api_app.md:97-119</code></a> and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/docs/design/cmd_app.md#L13-L17"><code>docs/design/cmd_app.md:13-17</code></a> now promise stronger semantics than the code provides: every property change waits until the full reconcile chain has caught up, but I1 and I2 show that is not yet true on the template-update path or in split-manager deployments. The doc should either narrow the contract or note the known race until I1 lands.</li>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/docs/design/api_app.md#L97"><code>docs/design/api_app.md:97</code></a> does not mention that <code>Settled</code> is the single signal <code>rdd set</code> waits on; a reader has to cross-reference <code>cmd_app.md</code> to infer this.</li>
+      <li><code>docs/design/cmd_app.md</code> loses the previous documentation about what &quot;stops waiting&quot; meant for each property class. A sentence clarifying that the wait now covers backend swaps (the previously-open TODO) would make the contract change explicit.</li>
+      <li>See S2 for the Settled-reason table gap.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>Clean. Single commit, message accurately describes the change, stacks correctly on <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/316" class="gh-ref" data-title="engine: replace Container.spec.state with action annotations" data-state="merged" data-type="pr">#316</a> and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/309" class="gh-ref" data-title="engine: mirror Docker container engine state into Kubernetes" data-state="merged" data-type="pr">#309</a> as advertised. The PR title and body need updating per I3 to match what was implemented.</p>
+    </div>
+    <hr>
+    <h2 id="acknowledged-limitations">Acknowledged Limitations <a href="#acknowledged-limitations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li><em></em><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/controllers/app/app/controllers/app_controller.go#L297-L300"><code>app_controller.go:297-300</code></a><em></em> — comment on the template-CM update path acknowledges the race in I1. The author has flagged it; the PR does not attempt to close the window. Reviewers note the comment understates user impact: the CLI can return <em>during</em> the stale window, not merely transit through Settled=True briefly.</li>
+      <li><em></em><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/bats/tests/32-app-controllers/set.bats#L10-L15"><code>set.bats:10-15</code></a><em></em> — <code>--wait=false</code> on every <code>rdd set</code> because the suite runs with only the app controller registered, so Settled is never written. Acknowledged and consistent with routing meaningful wait coverage through <code>engine-docker.bats</code>.</li>
+      <li><strong>PR body</strong> — author notes Windows / <code>EngineEnabled=false</code> is unit-tested but not exercised end-to-end on Windows; trusting CI. The <code>engineEnabled=false</code> branch in the unit test matrix is the path Windows takes.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="unresolved-feedback">Unresolved Feedback <a href="#unresolved-feedback" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>PR description has no review comments listed; no inline reviewer feedback to reconcile.</p>
+    </div>
+    <hr>
+    <h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <h3 id="claude"><span class="pill pill-claude">Claude</span> <a href="#claude" class="pilcrow">&#182;</a></h3>
+    <p>Best executive-summary calibration of the three: caught that the PR title/body promise <code>Ready</code> while only <code>Settled</code> was implemented (I3), which Gemini swallowed and Codex only mentioned in passing. Strongest on local code quality (S1 hardcoded &quot;engine&quot; string, S2 docs table, S3 string-suffix matching) — these are the kind of fix-now-cheaply suggestions that compound over a codebase. Treated the template-CM race as a future design observation rather than promoting it; with hindsight, &quot;Important regression&quot; is the right calibration since the PR&#39;s stated purpose is the backend-swap wait. One miss: did not raise the process-local <code>EngineEnabled</code> concern that both Codex and Gemini caught.</p>
+    <h3 id="codex"><span class="pill pill-codex">Codex</span> <a href="#codex" class="pilcrow">&#182;</a></h3>
+    <p>Tied with Gemini on identifying the two structural issues (template-CM race, process-local <code>EngineEnabled</code>), and gave the cleanest write-up of both — including the right callouts to <code>cmd/containers-controller/main.go</code> and <code>docs/design/discovery.md</code>. Correctly classified the template race as Important regression rather than Critical, which matched the merged severity. Mentioned the missing <code>Ready</code> once in the Documentation Assessment but did not promote it to a finding. Ran <code>go test</code> for live verification, which strengthened the testing-assessment section.</p>
+    <h3 id="gemini"><span class="pill pill-gemini">Gemini</span> <a href="#gemini" class="pilcrow">&#182;</a></h3>
+    <p>Found the same two structural issues as Codex (race condition, process-local EngineEnabled), with independent diagnoses. Promoted the template-CM race to Critical, which is defensible given the PR&#39;s stated goal but harsher than the author&#39;s acknowledged-limitation framing warrants. Two miscalibrations: (a) its I2 (engine missing from <code>cmd/app-controller/main.go</code>) is misdirected — engine&#39;s API group is <code>containers</code>, not <code>app</code>, so adding it to <code>cmd/app-controller</code> would panic at startup via the API-group check in <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/27d7dd39b13bbbeaa047de09bdd29e9b95eadbbf/pkg/external/main.go#L65-L68"><code>external/main.go:65-68</code></a>; the underlying observation about engine missing from <code>cmd/containers-controller</code> is true but pre-existing. (b) Took the PR description at face value and described the PR as &quot;introduces the Ready and Settled conditions&quot; in its executive summary, missing the Ready-vs-Settled discrepancy that Claude caught. As expected per the repo memory, did not run <code>git blame</code>.</p>
+    <h3 id="summary">Summary <a href="#summary" class="pilcrow">&#182;</a></h3>
+    <table class="retro-table">
+      <thead><tr><th></th><th><span class="pill pill-claude">Claude</span> Opus 4.7</th><th><span class="pill pill-codex">Codex</span> GPT 5.4</th><th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th></tr></thead>
+      <tbody>
+        <tr><td>Duration</td><td>9m 15s</td><td>6m 37s</td><td>5m 22s</td></tr>
+        <tr><td>Findings</td><td>1I 3S</td><td>2I</td><td>2I</td></tr>
+        <tr><td>Tool calls</td><td>46 (Read 23, Grep 15, Bash 8)</td><td>64 (shell 61, plan 2, stdin 1)</td><td>22 (grep<em>search 12, read</em>file 7, run<em>shell</em>command 3)</td></tr>
+        <tr><td>Design observations</td><td>5</td><td>3</td><td>2</td></tr>
+        <tr><td>False positives</td><td>0</td><td>0</td><td>1</td></tr>
+        <tr><td>Unique insights</td><td>5</td><td>1</td><td>0</td></tr>
+        <tr><td>Files reviewed</td><td>12</td><td>12</td><td>12</td></tr>
+        <tr><td>Coverage misses</td><td>1</td><td>1</td><td>1</td></tr>
+        <tr><td><strong>Totals</strong></td><td><strong>1I 3S</strong></td><td><strong>2I</strong></td><td><strong>2I</strong></td></tr>
+        <tr><td>Downgraded</td><td>0</td><td>0</td><td>1 (I→S)</td></tr>
+        <tr><td>Dropped</td><td>0</td><td>0</td><td>1</td></tr>
+      </tbody>
+    </table>
+    <p>Claude and Codex both delivered actionable reports; Codex&#39;s findings were the most precisely scoped and Claude&#39;s local-code suggestions added the most readability/maintainability value. Gemini&#39;s two structural findings overlap fully with Codex&#39;s, and its misdirected I2 plus its missed I3 reduce its marginal contribution on this PR. For a single-agent review of this kind of change (controller boundaries + condition contract), Codex would have been sufficient; Claude added meaningful local-quality suggestions that Codex missed.</p>
+    </div>
+    <hr>
+    <h2 id="review-process-notes">Review Process Notes <a href="#review-process-notes" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <h3 id="repo-context-updates">Repo context updates <a href="#repo-context-updates" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><strong>REMOVE</strong> the rule &quot;When reviewing a new controller under <code>pkg/controllers/</code>, verify its <code>GetAPIGroup()</code> matches the grouping convention of sibling controllers and that the <code>--controllers</code> help text in <code>pkg/service/controllers/options.go</code> lists the group&quot; — currently in <code>deep-review-context.md</code>. The point is correct in principle but agents have started over-applying it: in this round, Gemini used it to recommend adding the engine controller to <code>cmd/app-controller/main.go</code>, which would actually panic at startup because engine&#39;s API group is <code>containers</code>. Replace with a tighter rule: &quot;When checking that every blank-imported controller appears in the matching standalone binary, verify the controller&#39;s <code>GetAPIGroup()</code> matches the binary&#39;s group argument first — <code>external.RunControllers</code> panics on a group mismatch.&quot; This keeps the import-coverage check while preventing the wrong-binary fix recommendation.</li>
+      <li><strong>ADD</strong> a rule about cross-controller convergence signals: &quot;When a controller publishes an aggregate condition that depends on another controller having reacted to a recent change (<code>Settled</code>, <code>Ready</code>, <code>Reconciled</code>), verify the aggregate is gated on a signal the dependent controller writes — not on data the aggregating controller computes from its own observation. A reconciler-restamped mirror of someone else&#39;s status is not a convergence signal: between (a) the change being requested and (b) the dependent controller observing it, the aggregator can produce a fresh <code>True</code> from stale data.&quot; This codifies the I1 pattern; agents should look for it whenever a PR adds a new aggregate condition.</li>
+      <li><strong>ADD</strong> a rule about process-local registry queries in cross-controller logic: &quot;Flag <code>base.IsControllerEnabled(...)</code> (or any <code>init()</code>-time registry query) used to gate a cluster-wide contract. The result is process-local — it answers &#39;is this controller in my OS process,&#39; not &#39;is this controller running anywhere in the cluster.&#39; Cluster-wide questions belong on the discovery ConfigMap. Process-local checks are appropriate only for in-process plumbing (e.g., wiring a watch or skipping a setup step).&quot; Two of three agents flagged this in the current PR; making the heuristic explicit in the repo context will make future flags consistent.</li>
+    </ul>
+    <h3 id="skill-improvements">Skill improvements <a href="#skill-improvements" class="pilcrow">&#182;</a></h3>
+    <p>None this round.</p>
+    </div>
+  </main>
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+  <script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+
+  </script>
+</body>
+</html>
