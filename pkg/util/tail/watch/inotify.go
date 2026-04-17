@@ -15,7 +15,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"gopkg.in/tomb.v1"
 
-	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/nxadmtail/util"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail/util"
 )
 
 // InotifyFileWatcher uses inotify (via fsnotify) to monitor file changes.

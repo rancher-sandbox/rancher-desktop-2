@@ -17,7 +17,7 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func TestFile(t *testing.T) {
+func TestStream(t *testing.T) {
 	const expected = "This is the last line of text"
 
 	testCases := []struct {
@@ -115,7 +115,7 @@ func TestFile(t *testing.T) {
 			assert.NilError(t, tc.prepare(f))
 			wg, tailCtx := errgroup.WithContext(tailCtx)
 			wg.Go(func() error {
-				return File(tailCtx, w, n, tc.follow)
+				return Stream(tailCtx, w, n, tc.follow)
 			})
 			waitForStuck()
 			assert.NilError(t, tc.finish(f))
