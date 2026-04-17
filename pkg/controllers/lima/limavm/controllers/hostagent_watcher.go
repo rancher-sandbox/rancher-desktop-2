@@ -11,13 +11,13 @@ import (
 	"sync"
 	"time"
 
-	hostagentevents "github.com/lima-vm/lima/v2/pkg/hostagent/events"
 	"github.com/lima-vm/lima/v2/pkg/limatype/filenames"
 
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
+	hostagentevents "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/hostagent/events"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/process"
 )
 
@@ -127,7 +127,7 @@ func (r *LimaVMReconciler) runWatcher(ctx context.Context, name, namespace, inst
 		return false
 	}
 
-	if err := hostagentevents.Watch(waitCtx, haStdoutPath, haStderrPath, begin, false, onEvent); err != nil {
+	if err := hostagentevents.Watch(waitCtx, haStdoutPath, haStderrPath, begin, onEvent); err != nil {
 		// Context cancellation is expected (process exit or controller shutdown).
 		if waitCtx.Err() == nil {
 			logger.Error(err, "Event watcher failed")
