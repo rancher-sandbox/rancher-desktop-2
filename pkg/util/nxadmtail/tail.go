@@ -9,15 +9,11 @@
 // BSD `tail` program. The library supports truncation/move detection as it is
 // designed to work with log rotation tools.
 //
-// This is a vendored copy of github.com/nxadm/tail. The upstream library has
-// race conditions in StopAtEOF handling that remain unmerged. Pulumi vendored
-// the library (pulumi/pulumi#18044) and applied the following upstream fixes:
-//
-//   - nxadm/tail#70: fix a race when StopAtEOF is called
-//   - nxadm/tail#71: StopAtEOF: keep sending lines until EOF
-//
-// We copied the patched code from pulumi to avoid depending on the full
-// pulumi SDK for this single package.
+// This started as a vendored copy of github.com/nxadm/tail with the patches
+// from Pulumi (pulumi/pulumi#18044, fixing nxadm/tail#70 and #71 in upstream
+// StopAtEOF handling). The full source tree, including the watch/ and util/
+// subpackages previously pulled from github.com/nxadm/tail, now lives here so
+// we can apply further fixes without bumping an unmaintained upstream.
 package nxadmtail
 
 import (
@@ -31,9 +27,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nxadm/tail/util"
-	"github.com/nxadm/tail/watch"
 	"gopkg.in/tomb.v1"
+
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/nxadmtail/util"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/nxadmtail/watch"
 )
 
 // ErrStop is returned when the tail of a file has been marked to be stopped.

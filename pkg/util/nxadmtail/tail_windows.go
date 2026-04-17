@@ -9,7 +9,7 @@ package nxadmtail
 import (
 	"os"
 
-	"github.com/nxadm/tail/winfile"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/nxadmtail/winfile"
 )
 
 // openFile proxies an os.Open call for a file so it can be correctly tailed
