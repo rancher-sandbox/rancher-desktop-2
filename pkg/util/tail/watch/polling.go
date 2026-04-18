@@ -8,13 +8,12 @@
 package watch
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 	"time"
 
 	"gopkg.in/tomb.v1"
-
-	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail/util"
 )
 
 // PollingFileWatcher polls the file for changes.
@@ -91,7 +90,7 @@ func (fw *PollingFileWatcher) ChangeEvents(t *tomb.Tomb, pos int64) (*FileChange
 				}
 
 				// XXX: report this error back to the user
-				util.Fatal("Failed to stat file %v: %v", fw.Filename, err)
+				panic(fmt.Sprintf("Failed to stat file %v: %v", fw.Filename, err))
 			}
 
 			// File got moved/renamed?
