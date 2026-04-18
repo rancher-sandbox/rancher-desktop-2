@@ -8,6 +8,7 @@
 package watch
 
 import (
+	"errors"
 	"log"
 	"os"
 	"path/filepath"
@@ -15,8 +16,6 @@ import (
 	"syscall"
 
 	"github.com/fsnotify/fsnotify"
-
-	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail/util"
 )
 
 // InotifyTracker multiplexes a single fsnotify.Watcher across many
@@ -45,10 +44,10 @@ func (w *watchInfo) isCreate() bool {
 }
 
 var (
-	// globally shared InotifyTracker; ensures only one fsnotify.Watcher is used
+	// globally shared InotifyTracker; ensures only one fsnotify.Watcher is used.
 	shared *InotifyTracker
 
-	// these are used to ensure the shared InotifyTracker is run exactly once
+	// these are used to ensure the shared InotifyTracker is run exactly once.
 	once  = sync.Once{}
 	goRun = func() {
 		shared = &InotifyTracker{
@@ -66,17 +65,17 @@ var (
 	logger = log.New(os.Stderr, "", log.LstdFlags)
 )
 
-// Watch signals the run goroutine to begin watching the input filename.
-func Watch(fname string) error {
+// track signals the run goroutine to begin watching the input filename.
+func track(fname string) error {
 	return watch(&watchInfo{
 		fname: fname,
 	})
 }
 
-// WatchCreate signals the run goroutine to begin watching for the
+// trackCreate signals the run goroutine to begin watching for the
 // creation of a file with the input name. Callers must pair this with
-// RemoveWatchCreate (not RemoveWatch) to deregister.
-func WatchCreate(fname string) error {
+// untrackCreate (not untrack) to deregister.
+func trackCreate(fname string) error {
 	return watch(&watchInfo{
 		op:    fsnotify.Create,
 		fname: fname,
@@ -92,17 +91,17 @@ func watch(winfo *watchInfo) error {
 	return <-shared.error
 }
 
-// RemoveWatch signals the run goroutine to remove the watch for the
-// input filename previously registered with Watch.
-func RemoveWatch(fname string) error {
+// untrack signals the run goroutine to remove the watch for the
+// input filename previously registered with track.
+func untrack(fname string) error {
 	return remove(&watchInfo{
 		fname: fname,
 	})
 }
 
-// RemoveWatchCreate signals the run goroutine to remove the creation
-// watch for the input filename previously registered with WatchCreate.
-func RemoveWatchCreate(fname string) error {
+// untrackCreate signals the run goroutine to remove the creation
+// watch for the input filename previously registered with trackCreate.
+func untrackCreate(fname string) error {
 	return remove(&watchInfo{
 		op:    fsnotify.Create,
 		fname: fname,
@@ -126,9 +125,9 @@ func remove(winfo *watchInfo) error {
 	return <-shared.error
 }
 
-// Events returns the channel of fsnotify events for the input filename.
-// The channel is closed when RemoveWatch is called.
-func Events(fname string) <-chan fsnotify.Event {
+// eventsFor returns the channel of fsnotify events for the input filename.
+// The channel is closed when untrack is called.
+func eventsFor(fname string) <-chan fsnotify.Event {
 	shared.mux.Lock()
 	defer shared.mux.Unlock()
 
@@ -137,7 +136,7 @@ func Events(fname string) <-chan fsnotify.Event {
 
 // Cleanup removes the watch for the input filename if necessary.
 func Cleanup(fname string) error {
-	return RemoveWatch(fname)
+	return untrack(fname)
 }
 
 // watchFlags calls fsnotify.WatchFlags for the input filename and flags, creating
@@ -170,7 +169,7 @@ func (t *InotifyTracker) addWatch(winfo *watchInfo) error {
 	return err
 }
 
-// removeWatch calls fsnotify.RemoveWatch for the input filename and closes the
+// removeWatch calls fsnotify.Remove for the input filename and closes the
 // corresponding events channel.
 func (t *InotifyTracker) removeWatch(winfo *watchInfo) error {
 	t.mux.Lock()
@@ -246,7 +245,7 @@ func (t *InotifyTracker) sendEvent(event fsnotify.Event) {
 func (t *InotifyTracker) run() {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		util.Fatal("failed to create Watcher")
+		panic("failed to create fsnotify.Watcher: " + err.Error())
 	}
 	t.watcher = watcher
 
@@ -267,8 +266,8 @@ func (t *InotifyTracker) run() {
 			if err == nil {
 				continue
 			}
-			sysErr, ok := err.(*os.SyscallError)
-			if !ok || sysErr.Err != syscall.EINTR {
+			var sysErr *os.SyscallError
+			if !errors.As(err, &sysErr) || !errors.Is(sysErr.Err, syscall.EINTR) {
 				logger.Printf("Error in Watcher Error channel: %s", err)
 			}
 		}

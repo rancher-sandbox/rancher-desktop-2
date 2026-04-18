@@ -20,8 +20,12 @@ import (
 // Open creates a file handle with FILE_SHARE_READ|WRITE|DELETE so a
 // reader does not block concurrent writes or renames on the file.
 // See https://github.com/jnwhiteh/golang/blob/master/src/pkg/syscall/syscall_windows.go#L218
-func Open(path string, mode int, perm uint32) (fd syscall.Handle, err error) {
-	if len(path) == 0 {
+//
+// The perm argument is accepted for signature parity with OpenFile but
+// is not used: Windows CreateFile derives permissions from the access
+// mask and security attributes, not a POSIX mode.
+func Open(path string, mode int, _ uint32) (fd syscall.Handle, err error) {
+	if path == "" {
 		return syscall.InvalidHandle, syscall.ERROR_FILE_NOT_FOUND
 	}
 	pathp, err := syscall.UTF16PtrFromString(path)

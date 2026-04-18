@@ -30,7 +30,6 @@ import (
 
 	"gopkg.in/tomb.v1"
 
-	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail/util"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail/watch"
 )
 
@@ -117,7 +116,7 @@ var (
 // method on the returned *Tail.
 func Open(filename string, config Config) (*Tail, error) {
 	if config.ReOpen && !config.Follow {
-		util.Fatal("cannot set ReOpen without Follow.")
+		panic("cannot set ReOpen without Follow")
 	}
 
 	t := &Tail{
@@ -455,7 +454,7 @@ func (tail *Tail) sendLine(line string) bool {
 
 	// Split longer lines
 	if tail.MaxLineSize > 0 && len(line) > tail.MaxLineSize {
-		lines = util.PartitionString(line, tail.MaxLineSize)
+		lines = partitionString(line, tail.MaxLineSize)
 	}
 
 	earlyExitChan := tail.Dying()
@@ -486,4 +485,26 @@ func (tail *Tail) sendLine(line string) bool {
 // If you plan to re-read a file, don't call Cleanup in between.
 func (tail *Tail) Cleanup() {
 	_ = watch.Cleanup(tail.Filename)
+}
+
+// partitionString splits s into chunks of chunkSize bytes; the last chunk may
+// be shorter. Panics if chunkSize <= 0.
+func partitionString(s string, chunkSize int) []string {
+	if chunkSize <= 0 {
+		panic("invalid chunkSize")
+	}
+	length := len(s)
+	chunks := 1 + length/chunkSize
+	parts := make([]string, 0, chunks)
+	for start := 0; start < length; start += chunkSize {
+		end := start + chunkSize
+		if end > length {
+			end = length
+		}
+		parts = append(parts, s[start:end])
+	}
+	if len(parts) == 0 {
+		parts = append(parts, "")
+	}
+	return parts
 }

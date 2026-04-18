@@ -7,6 +7,7 @@ package tail_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -96,7 +97,9 @@ func runRotationCycle(t *testing.T, cycle int, selfExe, stdoutPath, stderrPath s
 
 	// Spawn the writer subprocess. cmd.Start returns as soon as the
 	// process is alive; the child will exit when we close stdin.
-	cmd := exec.Command(selfExe, "-test.run=^$") // no-op test selector; TestMain branches on env
+	// Use a Background context: the child self-terminates via stdin close,
+	// and the per-cycle cleanup below reaps it regardless of ctx state.
+	cmd := exec.CommandContext(context.Background(), selfExe, "-test.run=^$") // no-op test selector; TestMain branches on env
 	cmd.Env = append(os.Environ(), writerEnvVar+"=1")
 	cmd.Stdout = stdoutW
 	cmd.Stderr = stderrW
@@ -132,11 +135,12 @@ func runRotationCycle(t *testing.T, cycle int, selfExe, stdoutPath, stderrPath s
 	select {
 	case err := <-tailDone:
 		assert.NilError(t, err, "cycle %d: tail returned error", cycle)
-		if received.Load() == 0 {
-			t.Fatalf("cycle %d: received 0 events (writer wrote to %s but tail saw nothing)", cycle, stdoutPath)
-		}
+		assert.Assert(t, received.Load() > 0,
+			"cycle %d: received 0 events (writer wrote to %s but tail saw nothing)",
+			cycle, stdoutPath)
 	case <-time.After(stopBudget):
-		t.Fatalf("cycle %d: tail did not return within %s; received=%d\n\n%s",
+		assert.Assert(t, false,
+			"cycle %d: tail did not return within %s; received=%d\n\n%s",
 			cycle, stopBudget, received.Load(), goroutineDump())
 	}
 }
@@ -187,15 +191,15 @@ func runFakeHostagentSubprocess() {
 
 	tick := time.NewTicker(25 * time.Millisecond)
 	defer tick.Stop()
-	max := time.NewTimer(30 * time.Second)
-	defer max.Stop()
+	deadline := time.NewTimer(30 * time.Second)
+	defer deadline.Stop()
 
 	for {
 		select {
 		case <-done:
 			_ = enc.Encode(fakeEvent{Time: time.Now(), Status: fakeStatus{Exiting: true}})
 			return
-		case <-max.C:
+		case <-deadline.C:
 			return
 		case <-tick.C:
 			// Burst a handful of events per tick so fsnotify's 4KB buffer
@@ -248,7 +252,7 @@ loop:
 	case <-done:
 		return nil
 	case <-time.After(5 * time.Second):
-		return fmt.Errorf("tail.Stop did not return within 5s")
+		return errors.New("tail.Stop did not return within 5s")
 	}
 }
 
