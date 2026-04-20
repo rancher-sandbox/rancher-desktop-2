@@ -471,11 +471,19 @@ func (scm *SharedControllerManager) runPassthroughServer(ctx context.Context) er
 		if httpController, ok := registration.(base.PassthroughController); ok {
 			hasPassthroughServers = true
 			for _, endpoint := range httpController.GetPassthroughEndpoints() {
-				handler := httpController.GetPassthroughHandler(endpoint)
 				prefix := fmt.Sprintf("/%s/%s", registration.GetName(), endpoint)
 				log.V(2).Info("Registering passthrough endpoint",
 					"controller", registration.GetName(), "endpoint", prefix)
-				mux.Handle(prefix+"/", http.StripPrefix(prefix, handler))
+				mux.Handle(prefix+"/", http.StripPrefix(
+					prefix,
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						handler := httpController.GetPassthroughHandler(endpoint)
+						if handler == nil {
+							http.Error(w, "handler not ready", http.StatusServiceUnavailable)
+							return
+						}
+						handler.ServeHTTP(w, r)
+					})))
 			}
 		}
 	}

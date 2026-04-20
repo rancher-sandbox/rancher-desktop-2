@@ -260,12 +260,22 @@ reach for `docker start`, `docker stop`, etc. instead: the engine
 mirrors Docker state back into `status.status` either way.
 
 #### Fetch container logs
-An endpoint at `/passthrough/containers/logs` will speak WebSocket; messages are
-one way, text only, with each line being one message.
+An endpoint at `/passthrough/.../logs/${container}` will speak WebSocket;
+messages are one way, as stream of bytes; messages should not be buffered.
+Message text must be UTF-8 encoded.  The last portion of the path must be the
+full container ID.
+
+The following query parameters are accepted:
+
+Parameter | Description | Default
+--- | --- | ---
+`tail` | Only print the given number of lines (before following). | All
+`follow` | Follow the log stream. | `true`
 
 #### Exec (shell) in container
-An endpoint at `/passthrough/containers/exec` will speak WebSocket; messages are
-bidirectional, tentatively text only.
+An endpoint at `/passthrough/.../exec` will speak WebSocket; messages are
+bidirectional, unbuffered binary as in the logs endpoint.  Any text must be
+UTF-8 encoded.
 
 #### Delete container
 Delete the `Container` object; a finalizer will be used to delete the container,

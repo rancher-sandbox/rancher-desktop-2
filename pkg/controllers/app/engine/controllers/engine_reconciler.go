@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"runtime"
 	"sync"
 
@@ -53,6 +54,31 @@ const (
 	engineMoby = "moby"
 )
 
+// engineLogOptionsData holds the options for fetching container logs.
+type engineLogOptionsData struct {
+	tail   string
+	follow bool
+}
+
+// engineLogOptions is a functional option for fetching container logs.
+type engineLogOptions func(*engineLogOptionsData)
+
+// engineLogWithTail returns an engineLogOptions that determines how many lines
+// of logs to fetch.
+func engineLogWithTail(tail string) engineLogOptions {
+	return func(opts *engineLogOptionsData) {
+		opts.tail = tail
+	}
+}
+
+// engineLogWithFollow returns an engineLogOptions that determines whether to
+// continue streaming logs after the initial dump.
+func engineLogWithFollow(follow bool) engineLogOptions {
+	return func(opts *engineLogOptionsData) {
+		opts.follow = follow
+	}
+}
+
 // engine is the reconciler-facing contract every container-engine
 // implementation must satisfy. dockerWatcher is the only current
 // implementation; a forthcoming containerd implementation will provide a
@@ -67,6 +93,10 @@ type engine interface {
 	// [containersv1alpha1.AnnotationAction] annotation on a Container and
 	// records the outcome in status.lastAction.
 	processContainerAction(ctx context.Context, c *containersv1alpha1.Container) error
+	// hasTTY reports whether the container has a TTY allocated.
+	hasTTY(ctx context.Context, c *containersv1alpha1.Container) (bool, error)
+	// getLogs returns a reader for the container's logs.
+	getLogs(ctx context.Context, c *containersv1alpha1.Container, opts ...engineLogOptions) (io.ReadCloser, error)
 	// deleteContainer removes a container from the engine.
 	deleteContainer(ctx context.Context, c *containersv1alpha1.Container) error
 	// deleteImage removes an image from the engine.
@@ -93,9 +123,8 @@ type EngineReconciler struct {
 	// populates it before any mirror operation.
 	apiNamespace string
 
-	// watcherMu guards r.watcher against the shutdown-hook goroutine's
-	// stopWatcher call. Reconcile runs serially (see struct doc), so
-	// the lock has no other role.
+	// watcherMu guards r.watcher; note that this may be held for a long time
+	// during initialization.
 	watcherMu sync.Mutex
 	watcher   engine
 

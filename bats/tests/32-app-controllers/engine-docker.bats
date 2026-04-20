@@ -28,6 +28,18 @@ local_setup_file() {
     export RDD_NAMESPACE
 }
 
+# Make a WebSocket request, with the endpoint given as the first argument in the
+# same form as `kubectl get --raw`; the output is captured in `${output}`.
+do_websocket() { # endpoint
+    local endpoint=$1
+    run_e -0 rdd ctl config view --minify --flatten --output=jsonpath='{.clusters[].cluster.server}'
+    local server_url=${output}
+    run_e -0 rdd ctl config view --minify --flatten --output=jsonpath='{.users[].user.token}'
+    local token=${output}
+    run -0 curl --header "Authorization: Bearer ${token}" --insecure --max-time 30 \
+        "${server_url/http/ws}${endpoint}"
+}
+
 # --- Startup ---
 
 @test "ContainerNamespace moby exists" {
@@ -156,6 +168,128 @@ local_setup_file() {
     docker rm --force test-lifecycle
     rdd ctl wait --for=delete --namespace="${RDD_NAMESPACE}" \
         container/"${cid}" --timeout=30s
+}
+
+# --- Container logs ---
+
+@test "docker logs for container with tty" {
+    if ! curl_has_websocket_support; then
+        skip "curl does not support WebSocket"
+    fi
+
+    command='
+        echo "hello"
+        sleep 1
+        echo "world"
+    '
+    run_e -0 docker run --detach --tty --name test-logs-tty busybox /bin/sh -c "${command}"
+    container=${output}
+
+    do_websocket "/passthrough/engine/logs/${container}"
+    # `--tty` means the output is cooked, so LF has been converted to CRLF.
+    assert_line hello$'\r'
+    assert_line world$'\r'
+}
+
+@test "cleanup from logs with tty test" {
+    if curl_has_websocket_support; then
+        docker rm --force test-logs-tty || true
+    fi
+}
+
+@test "docker logs for container without tty" {
+    if ! curl_has_websocket_support; then
+        skip "curl does not support WebSocket"
+    fi
+
+    command='
+        echo "hello"
+        sleep 1
+        echo "world"
+    '
+    run_e -0 docker run --detach --tty=false --name test-logs-no-tty busybox /bin/sh -c "${command}"
+    container=${output}
+
+    do_websocket "/passthrough/engine/logs/${container}"
+    # Without `--tty`, the output does not have CR inserted.
+    assert_line hello
+    assert_line world
+}
+
+@test "cleanup from logs without tty test" {
+    if curl_has_websocket_support; then
+        docker rm --force test-logs-no-tty || true
+    fi
+}
+
+@test "docker log lines can be limited" {
+    if ! curl_has_websocket_support; then
+        skip "curl does not support WebSocket"
+    fi
+
+    local command='true'
+    for ((i = 0; i < 10; i++)); do
+        command="${command}; echo line number ${i}"
+    done
+
+    # Run the container to finish before trying to look at the logs, to ensure
+    # we don't get more logs lines than expected.
+    run -0 docker run --tty=false --name test-logs-limit busybox /bin/sh -c "${command}"
+    # We need the full container ID; `docker ps` truncates it.
+    run_e -0 docker inspect test-logs-limit --format '{{.Id}}'
+    assert_output
+    container=${output}
+
+    do_websocket "/passthrough/engine/logs/${container}?tail=5"
+    # We should only get the last five lines
+    refute_line "line number 0"
+    refute_line "line number 1"
+    refute_line "line number 2"
+    refute_line "line number 3"
+    refute_line "line number 4"
+    assert_line "line number 5"
+    assert_line "line number 6"
+    assert_line "line number 7"
+    assert_line "line number 8"
+    assert_line "line number 9"
+}
+
+@test "cleanup from log lines limit test" {
+    if curl_has_websocket_support; then
+        docker rm --force test-logs-limit || true
+    fi
+}
+
+@test "docker log lines can disable following" {
+    if ! curl_has_websocket_support; then
+        skip "curl does not support WebSocket"
+    fi
+
+    command='
+        echo "hello"
+        sleep inf
+        echo "world"
+    '
+    run_e -0 docker run --detach --tty=false --name test-logs-no-follow busybox /bin/sh -c "${command}"
+    container=${output}
+
+    # Wait until `sleep` runs
+    try --max 30 --delay 1 -- docker top test-logs-no-follow -C sleep -o pid
+
+    # At this point, we should have one line of output.
+    do_websocket "/passthrough/engine/logs/${container}?follow=false"
+    assert_line hello
+    refute_line world
+
+    # The container should still be running.
+    run_e -0 docker ps --quiet --filter=name=test-logs-no-follow
+    assert_output
+}
+
+@test "cleanup from log lines no follow test" {
+    if curl_has_websocket_support; then
+        docker rm --force test-logs-no-follow || true
+    fi
 }
 
 # --- Volume mirroring ---

@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"runtime/debug"
 	"strconv"
 	"time"
@@ -457,6 +458,32 @@ func (w *dockerWatcher) dispatchContainerAction(ctx context.Context, log logr.Lo
 		return err
 	}
 	return fmt.Errorf("unknown container action %q", action)
+}
+
+func (w *dockerWatcher) hasTTY(ctx context.Context, c *containersv1alpha1.Container) (bool, error) {
+	inspect, err := w.cli.ContainerInspect(ctx, c.Name, dockerclient.ContainerInspectOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	return inspect.Container.Config != nil && inspect.Container.Config.Tty, nil
+}
+
+func (w *dockerWatcher) getLogs(ctx context.Context, c *containersv1alpha1.Container, opts ...engineLogOptions) (reader io.ReadCloser, err error) {
+	options := &engineLogOptionsData{
+		tail:   "", // Defaults to all logs.
+		follow: true,
+	}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	return w.cli.ContainerLogs(ctx, c.Name, dockerclient.ContainerLogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Follow:     options.follow,
+		Tail:       options.tail,
+	})
 }
 
 // containerRunState reports whether Docker currently shows the container as

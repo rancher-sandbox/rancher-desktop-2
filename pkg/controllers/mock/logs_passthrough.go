@@ -64,7 +64,7 @@ func (c *controller) handleLogs(w http.ResponseWriter, r *http.Request) {
 
 	// Write a message per line to simulate the real logs better.
 	write := func(line string) error {
-		err := conn.WriteMessage(websocket.TextMessage, []byte(line))
+		err := conn.WriteMessage(websocket.BinaryMessage, []byte(line))
 		if err != nil {
 			log.V(5).Info("Failed to write WebSocket message", "error", err)
 		}

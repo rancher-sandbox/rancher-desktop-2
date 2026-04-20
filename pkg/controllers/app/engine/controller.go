@@ -71,14 +71,12 @@ func (c *controller) GetCRDData() string {
 }
 
 func (c *controller) GetPassthroughEndpoints() []string {
-	return slices.Collect(maps.Keys(c.passthroughs))
+	return slices.Sorted(maps.Keys(c.passthroughs))
 }
 
 func (c *controller) GetPassthroughHandler(endpoint string) http.Handler {
 	if c.reconciler == nil {
-		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			http.Error(w, "Controller not ready", http.StatusServiceUnavailable)
-		})
+		return nil
 	}
 	return c.passthroughs[endpoint]
 }
