@@ -79,9 +79,8 @@ type PassthroughController interface {
 
 // Registry holds all registered controllers.
 type Registry struct {
-	mu                 sync.RWMutex
-	controllers        []Controller
-	enabledControllers map[string]struct{}
+	mu          sync.RWMutex
+	controllers []Controller
 }
 
 // Global registry instance.
@@ -117,46 +116,6 @@ func (r *Registry) GetAllControllers() []Controller {
 // GetAllControllers returns all registered controllers as a slice using the global registry.
 func GetAllControllers() []Controller {
 	return defaultRegistry.GetAllControllers()
-}
-
-// SetInProcessControllers records which controllers started in this
-// process after --controllers filtering. The controller-manager entry
-// point calls it once before any controller begins reconciling.
-// Reconcilers that need to know whether a sibling runs in the same
-// process should query IsControllerInProcess instead of GetAllControllers,
-// which reflects only the compile-time registry. Reconcilers that need
-// cluster-wide visibility (any controller manager, in any process)
-// should consult ControllerManagerDiscovery instead.
-func (r *Registry) SetInProcessControllers(names []string) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	r.enabledControllers = make(map[string]struct{}, len(names))
-	for _, name := range names {
-		r.enabledControllers[name] = struct{}{}
-	}
-}
-
-// SetInProcessControllers records the in-process controllers on the global registry.
-func SetInProcessControllers(names []string) {
-	defaultRegistry.SetInProcessControllers(names)
-}
-
-// IsControllerInProcess reports whether a controller with the given name
-// is running in this process. Returns false if SetInProcessControllers
-// has not been called, so external consumers in tests that skip
-// controller startup see a consistent "nothing in process" view.
-func (r *Registry) IsControllerInProcess(name string) bool {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	_, ok := r.enabledControllers[name]
-	return ok
-}
-
-// IsControllerInProcess reports whether a controller is running in this process.
-func IsControllerInProcess(name string) bool {
-	return defaultRegistry.IsControllerInProcess(name)
 }
 
 // GetKubeConfigFromRDD returns the Kubernetes configuration by running `rdd svc config`.

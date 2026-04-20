@@ -758,18 +758,11 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 	controllersSpec := completed.Controllers.Controllers
 
 	// Enable controllers: builtin controllers are always enabled, others based on --controllers flag
-	enabledNames := make([]string, 0, len(allControllers))
 	for _, controller := range allControllers {
 		if shouldEnableController(controller, controllersSpec) {
 			enabledControllers = append(enabledControllers, controller)
-			enabledNames = append(enabledNames, controller.GetName())
 		}
 	}
-	// Expose the in-process set to reconcilers that need to know which
-	// siblings share this process. Reconcilers that need cluster-wide
-	// visibility (any controller manager, in any process) should use
-	// ControllerManagerDiscovery instead.
-	base.SetInProcessControllers(enabledNames)
 
 	// Start shared controller manager if any controllers are enabled.
 	// The WaitGroup ensures the controller manager completes shutdown

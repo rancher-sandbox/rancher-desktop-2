@@ -98,6 +98,8 @@ status:
       Running=True/Started --> Running=False/StopFailed: Stop failed
     ```
 
+    The App reconciler forwards each `Running` reason ending in `Failed`, with its `message`, to the App's `Settled` condition (see [App API](api_app.md)). Name new failure reasons so App consumers can read them directly.
+
 Deleting a `LimaVM` object triggers the finalizer to force-stop the running instance, delete the Lima instance from disk, and remove the template ConfigMap. Users who want a graceful shutdown should stop the instance before deleting it.
 
 #### Future: Grace Period Support

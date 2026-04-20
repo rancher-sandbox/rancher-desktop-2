@@ -43,6 +43,24 @@ const (
 	AppConditionSettled = "Settled"
 )
 
+// Reasons for the Settled condition. Consumers branch on these
+// values; the App reconciler also forwards the Running condition's
+// reason when LimaVM has not yet reached the desired state (see
+// api_app.md).
+const (
+	// AppSettledReasonSettled means the App has reached the desired state.
+	AppSettledReasonSettled = "Settled"
+
+	// AppSettledReasonWaitingForLimaVM means LimaVM has not yet reported a Running condition.
+	AppSettledReasonWaitingForLimaVM = "WaitingForLimaVM"
+
+	// AppSettledReasonWaitingForEngine means the engine controller has not yet written ContainerEngineReady.
+	AppSettledReasonWaitingForEngine = "WaitingForEngine"
+
+	// AppSettledReasonEngineStale means the engine controller has not yet observed the current generation.
+	AppSettledReasonEngineStale = "EngineStale"
+)
+
 // ContainerEngineSpec defines the desired container engine configuration.
 type ContainerEngineSpec struct {
 	// name specifies the container engine to use.

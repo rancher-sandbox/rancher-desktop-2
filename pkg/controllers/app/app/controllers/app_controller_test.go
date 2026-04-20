@@ -29,13 +29,17 @@ func (f fakeDiscovery) GetEnabledControllers(_ context.Context) ([]string, error
 func Test_computeSettledCondition(t *testing.T) {
 	t.Parallel()
 
-	// makeApp builds an App carrying the given conditions. Generation
-	// defaults to 2 so stale ObservedGeneration values have room below.
+	// makeApp builds an App at the given generation, running spec, and
+	// conditions. Callers pass generation=2 so stale ObservedGeneration
+	// values have room below.
 	makeApp := func(generation int64, running bool, conds ...metav1.Condition) *v1alpha1.App {
-		app := &v1alpha1.App{Spec: v1alpha1.AppSpec{Running: running}}
-		app.Generation = generation
-		app.Status.Conditions = append(app.Status.Conditions, conds...)
-		return app
+		return &v1alpha1.App{
+			ObjectMeta: metav1.ObjectMeta{Generation: generation},
+			Spec:       v1alpha1.AppSpec{Running: running},
+			Status: v1alpha1.AppStatus{
+				Conditions: conds,
+			},
+		}
 	}
 
 	cond := func(t, reason, message string, status metav1.ConditionStatus, gen int64) metav1.Condition {
@@ -68,8 +72,8 @@ func Test_computeSettledCondition(t *testing.T) {
 			app:           makeApp(2, true),
 			engineEnabled: true,
 			wantStatus:    metav1.ConditionFalse,
-			wantReason:    "WaitingForLimaVM",
-			wantMessage:   "Waiting for LimaVM to report its state",
+			wantReason:    v1alpha1.AppSettledReasonWaitingForLimaVM,
+			wantMessage:   settledMessageWaitingForLimaVM,
 		},
 		{
 			name:          "in-progress Starting holds Settled false",
@@ -77,23 +81,28 @@ func Test_computeSettledCondition(t *testing.T) {
 			engineEnabled: true,
 			wantStatus:    metav1.ConditionFalse,
 			wantReason:    "Starting",
-			wantMessage:   "LimaVM has not yet reached Started",
+			wantMessage:   settledMessageLimaVMNotReached + "Started",
 		},
+		// The start/stop failure cases below use synthetic reason names
+		// ending in "Failed" to show that computeSettledCondition
+		// forwards LimaVM's message rather than reading it. The "Failed"
+		// suffix is load-bearing: runningLimaVMMessage only passes the
+		// message through when the reason matches HasSuffix("Failed").
 		{
 			name:          "StartFailed surfaces LimaVM message",
-			app:           makeApp(2, true, running("StartFailed", "template failed to parse", metav1.ConditionFalse, 2)),
+			app:           makeApp(2, true, running("ExplosionFailed", "the virtual machine did not explode", metav1.ConditionFalse, 2)),
 			engineEnabled: true,
 			wantStatus:    metav1.ConditionFalse,
-			wantReason:    "StartFailed",
-			wantMessage:   "template failed to parse",
+			wantReason:    "ExplosionFailed",
+			wantMessage:   "the virtual machine did not explode",
 		},
 		{
 			name:          "StartFailed with empty message falls back to generic text",
-			app:           makeApp(2, true, running("StartFailed", "", metav1.ConditionFalse, 2)),
+			app:           makeApp(2, true, running("ExplosionFailed", "", metav1.ConditionFalse, 2)),
 			engineEnabled: true,
 			wantStatus:    metav1.ConditionFalse,
-			wantReason:    "StartFailed",
-			wantMessage:   "LimaVM has not yet reached Started",
+			wantReason:    "ExplosionFailed",
+			wantMessage:   settledMessageLimaVMNotReached + "Started",
 		},
 		{
 			name: "engine disabled short-circuits when VM is Started",
@@ -102,8 +111,8 @@ func Test_computeSettledCondition(t *testing.T) {
 			),
 			engineEnabled: false,
 			wantStatus:    metav1.ConditionTrue,
-			wantReason:    "Settled",
-			wantMessage:   "App has reached the desired state",
+			wantReason:    v1alpha1.AppSettledReasonSettled,
+			wantMessage:   settledMessageSettled,
 		},
 		{
 			name: "engine enabled and ready at current generation settles",
@@ -113,8 +122,8 @@ func Test_computeSettledCondition(t *testing.T) {
 			),
 			engineEnabled: true,
 			wantStatus:    metav1.ConditionTrue,
-			wantReason:    "Settled",
-			wantMessage:   "App has reached the desired state",
+			wantReason:    v1alpha1.AppSettledReasonSettled,
+			wantMessage:   settledMessageSettled,
 		},
 		{
 			name: "engine enabled but condition missing holds Settled false",
@@ -123,8 +132,8 @@ func Test_computeSettledCondition(t *testing.T) {
 			),
 			engineEnabled: true,
 			wantStatus:    metav1.ConditionFalse,
-			wantReason:    "WaitingForEngine",
-			wantMessage:   "Waiting for container engine condition",
+			wantReason:    v1alpha1.AppSettledReasonWaitingForEngine,
+			wantMessage:   settledMessageWaitingForEngine,
 		},
 		{
 			name: "engine ready at older generation is stale",
@@ -134,19 +143,19 @@ func Test_computeSettledCondition(t *testing.T) {
 			),
 			engineEnabled: true,
 			wantStatus:    metav1.ConditionFalse,
-			wantReason:    "EngineStale",
-			wantMessage:   "Container engine needs to be synchronized",
+			wantReason:    v1alpha1.AppSettledReasonEngineStale,
+			wantMessage:   settledMessageEngineStale,
 		},
 		{
 			name: "engine not ready surfaces its reason and message",
 			app: makeApp(2, true,
 				running("Started", "VM is running", metav1.ConditionTrue, 2),
-				engine("Connecting", "waiting for Docker socket", metav1.ConditionFalse, 2),
+				engine("DilithiumOffline", "warp core is offline", metav1.ConditionFalse, 2),
 			),
 			engineEnabled: true,
 			wantStatus:    metav1.ConditionFalse,
-			wantReason:    "Connecting",
-			wantMessage:   "waiting for Docker socket",
+			wantReason:    "DilithiumOffline",
+			wantMessage:   "warp core is offline",
 		},
 		{
 			name: "desired stopped + Stopped settles regardless of engine",
@@ -155,8 +164,8 @@ func Test_computeSettledCondition(t *testing.T) {
 			),
 			engineEnabled: true,
 			wantStatus:    metav1.ConditionTrue,
-			wantReason:    "Settled",
-			wantMessage:   "App has reached the desired state",
+			wantReason:    v1alpha1.AppSettledReasonSettled,
+			wantMessage:   settledMessageSettled,
 		},
 		{
 			name: "desired stopped but Stopping holds Settled false",
@@ -166,17 +175,17 @@ func Test_computeSettledCondition(t *testing.T) {
 			engineEnabled: true,
 			wantStatus:    metav1.ConditionFalse,
 			wantReason:    "Stopping",
-			wantMessage:   "LimaVM has not yet reached Stopped",
+			wantMessage:   settledMessageLimaVMNotReached + "Stopped",
 		},
 		{
 			name: "StopFailed surfaces LimaVM message",
 			app: makeApp(2, false,
-				running("StopFailed", "qemu process refused SIGTERM", metav1.ConditionFalse, 2),
+				running("ImplosionFailed", "the virtual machine did not implode", metav1.ConditionFalse, 2),
 			),
 			engineEnabled: true,
 			wantStatus:    metav1.ConditionFalse,
-			wantReason:    "StopFailed",
-			wantMessage:   "qemu process refused SIGTERM",
+			wantReason:    "ImplosionFailed",
+			wantMessage:   "the virtual machine did not implode",
 		},
 	}
 

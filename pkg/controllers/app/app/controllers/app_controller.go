@@ -51,6 +51,16 @@ const (
 	requeueAfterDeletion = 2 * time.Second
 )
 
+// Messages for the Settled condition. Kept as constants so tests can
+// assert on them without duplicating string literals.
+const (
+	settledMessageSettled          = "App has reached the desired state"
+	settledMessageWaitingForLimaVM = "Waiting for LimaVM to report its state"
+	settledMessageWaitingForEngine = "Waiting for container engine condition"
+	settledMessageEngineStale      = "Container engine needs to be synchronized"
+	settledMessageLimaVMNotReached = "LimaVM has not yet reached "
+)
+
 // AppReconciler reconciles the singleton App resource and manages its LimaVM lifecycle.
 type AppReconciler struct {
 	client.Client
@@ -405,8 +415,8 @@ func computeSettledCondition(app *v1alpha1.App, engineEnabled bool) metav1.Condi
 	switch {
 	case runningCond == nil:
 		settled.Status = metav1.ConditionFalse
-		settled.Reason = "WaitingForLimaVM"
-		settled.Message = "Waiting for LimaVM to report its state"
+		settled.Reason = v1alpha1.AppSettledReasonWaitingForLimaVM
+		settled.Message = settledMessageWaitingForLimaVM
 	case desiredRunning && runningCond.Status != metav1.ConditionTrue:
 		settled.Status = metav1.ConditionFalse
 		settled.Reason = runningCond.Reason
@@ -419,8 +429,8 @@ func computeSettledCondition(app *v1alpha1.App, engineEnabled bool) metav1.Condi
 		settled.Message = runningLimaVMMessage(runningCond, "Stopped")
 	case !engineEnabled:
 		settled.Status = metav1.ConditionTrue
-		settled.Reason = "Settled"
-		settled.Message = "App has reached the desired state"
+		settled.Reason = v1alpha1.AppSettledReasonSettled
+		settled.Message = settledMessageSettled
 	case !desiredRunning:
 		// While desiredRunning is false, ContainerEngineReady may be
 		// absent or stale: the engine controller writes it once per
@@ -428,24 +438,24 @@ func computeSettledCondition(app *v1alpha1.App, engineEnabled bool) metav1.Condi
 		// down. A stopped VM is settled regardless of what
 		// ContainerEngineReady currently says.
 		settled.Status = metav1.ConditionTrue
-		settled.Reason = "Settled"
-		settled.Message = "App has reached the desired state"
+		settled.Reason = v1alpha1.AppSettledReasonSettled
+		settled.Message = settledMessageSettled
 	case engineCond == nil:
 		settled.Status = metav1.ConditionFalse
-		settled.Reason = "WaitingForEngine"
-		settled.Message = "Waiting for container engine condition"
+		settled.Reason = v1alpha1.AppSettledReasonWaitingForEngine
+		settled.Message = settledMessageWaitingForEngine
 	case engineCond.ObservedGeneration < app.Generation:
 		settled.Status = metav1.ConditionFalse
-		settled.Reason = "EngineStale"
-		settled.Message = "Container engine needs to be synchronized"
+		settled.Reason = v1alpha1.AppSettledReasonEngineStale
+		settled.Message = settledMessageEngineStale
 	case engineCond.Status != metav1.ConditionTrue:
 		settled.Status = metav1.ConditionFalse
 		settled.Reason = engineCond.Reason
 		settled.Message = engineCond.Message
 	default:
 		settled.Status = metav1.ConditionTrue
-		settled.Reason = "Settled"
-		settled.Message = "App has reached the desired state"
+		settled.Reason = v1alpha1.AppSettledReasonSettled
+		settled.Message = settledMessageSettled
 	}
 	return settled
 }
@@ -458,7 +468,7 @@ func runningLimaVMMessage(runningCond *metav1.Condition, desired string) string 
 	if strings.HasSuffix(runningCond.Reason, "Failed") && runningCond.Message != "" {
 		return runningCond.Message
 	}
-	return "LimaVM has not yet reached " + desired
+	return settledMessageLimaVMNotReached + desired
 }
 
 // SetupWithManager sets up the controller with the Manager.
