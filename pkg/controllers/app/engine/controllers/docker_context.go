@@ -8,6 +8,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/containerd/errdefs"
@@ -150,16 +151,92 @@ func clearCurrentDockerContext(name string) error {
 	return cf.Save()
 }
 
-// probeDockerContext tries to ping the Docker daemon at the given host URL.
-// It returns true if the daemon responds within dockerContextProbeTimeout.
-func probeDockerContext(ctx context.Context, host string) bool {
-	probeCtx, cancel := context.WithTimeout(ctx, dockerContextProbeTimeout)
-	defer cancel()
-	cli, err := dockerclient.New(dockerclient.WithHost(host))
+// pingDocker creates a Docker client with opts and pings it within ctx.
+func pingDocker(ctx context.Context, opts ...dockerclient.Opt) bool {
+	cli, err := dockerclient.New(opts...)
 	if err != nil {
 		return false
 	}
 	defer cli.Close()
-	_, err = cli.Ping(probeCtx, dockerclient.PingOptions{})
+	_, err = cli.Ping(ctx, dockerclient.PingOptions{})
 	return err == nil
+}
+
+// probeDockerContext pings the Docker endpoint at host within dockerContextProbeTimeout.
+// If host is empty, dockerclient.FromEnv is used so the implicit default socket
+// (DOCKER_HOST or the platform default, e.g. /var/run/docker.sock) is contacted —
+// matching what Docker CLI does for the "default" context.
+func probeDockerContext(ctx context.Context, host string) bool {
+	probeCtx, cancel := context.WithTimeout(ctx, dockerContextProbeTimeout)
+	defer cancel()
+	if host != "" {
+		return pingDocker(probeCtx, dockerclient.WithHost(host))
+	}
+	return pingDocker(probeCtx, dockerclient.FromEnv)
+}
+
+// probeNamedDockerContext probes the named Docker context by reconstructing its
+// full transport state from the context store:
+//   - unix://  – probed directly.
+//   - tcp://   – TLS certificates are loaded from the context store's TLS
+//     directory when present; plain TCP is used otherwise.
+//   - ssh://, npipe://, or any other scheme – health cannot be determined without
+//     additional implementation, so the function returns true (assume healthy) to
+//     avoid incorrectly overriding the user's working context.
+//   - context not found – returns false (treat as unhealthy).
+//   - metadata unreadable – returns true (assume healthy to avoid overriding).
+func probeNamedDockerContext(ctx context.Context, name string) bool {
+	s, err := newContextStore()
+	if err != nil {
+		return true
+	}
+	md, err := s.GetMetadata(name)
+	if err != nil {
+		return !errdefs.IsNotFound(err)
+	}
+	ep, err := docker.EndpointFromContext(md)
+	if err != nil {
+		return true
+	}
+	host := ep.Host
+	if host == "" {
+		return false
+	}
+	scheme, _, _ := strings.Cut(host, "://")
+	switch scheme {
+	case "unix":
+		return probeDockerContext(ctx, host)
+	case "tcp":
+		probeCtx, cancel := context.WithTimeout(ctx, dockerContextProbeTimeout)
+		defer cancel()
+		opts := []dockerclient.Opt{dockerclient.WithHost(host)}
+		// Load TLS certs from the context store's TLS directory.
+		// Note: ep.SkipTLSVerify=true without cert files is not handled here;
+		// probing such a context with plain TCP will fail if the server requires
+		// a TLS handshake, causing a false-negative treated as unhealthy.
+		// This edge case requires a custom http.Transport and we can do this later.
+		tlsDir := filepath.Join(s.GetStorageInfo(name).TLSPath, docker.DockerEndpoint)
+		caPath := filepath.Join(tlsDir, "ca.pem")
+		certPath := filepath.Join(tlsDir, "cert.pem")
+		keyPath := filepath.Join(tlsDir, "key.pem")
+		_, hasCA := os.Stat(caPath)
+		_, hasCert := os.Stat(certPath)
+		_, hasKey := os.Stat(keyPath)
+		useCA := ""
+		if hasCA == nil {
+			useCA = caPath
+		}
+		useCert, useKey := "", ""
+		if hasCert == nil && hasKey == nil {
+			useCert, useKey = certPath, keyPath
+		}
+		if useCA != "" || useCert != "" {
+			opts = append(opts, dockerclient.WithTLSClientConfig(useCA, useCert, useKey))
+		}
+		return pingDocker(probeCtx, opts...)
+	default:
+		// ssh://, npipe://, or unknown: we cannot reconstruct the full transport
+		// state, so assume healthy to avoid overriding the user's working context.
+		return true
+	}
 }

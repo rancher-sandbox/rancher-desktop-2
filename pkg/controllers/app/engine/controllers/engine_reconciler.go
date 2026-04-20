@@ -267,8 +267,11 @@ func (r *EngineReconciler) stopWatcher() {
 // probes the user's current context; if it is absent or unhealthy, switches
 // the default to the new context. At most one probe runs at a time.
 func (r *EngineReconciler) manageDockerContext(socketPath string) {
-	// Docker context management uses unix:// sockets; Windows requires
-	// npipe:// which is not yet implemented.
+	// TODO(windows): Docker context management uses unix:// sockets; Windows
+	// requires npipe:// in the context meta file, an npipe-aware probe client,
+	// and platform-specific path handling in getCurrentDockerContext and
+	// createReplaceDockerContext. Track in a follow-up issue before shipping
+	// Windows support.
 	if runtime.GOOS == "windows" {
 		return
 	}
@@ -306,20 +309,18 @@ func (r *EngineReconciler) manageDockerContext(socketPath string) {
 
 		current, err := getCurrentDockerContext()
 		if err != nil {
+			// An error here means the config file exists but could not be
+			// read or parsed. Do not proceed — writing currentContext now
+			// would overwrite a file we cannot safely round-trip.
 			log.Error(err, "Failed to read current Docker context")
+			return
 		}
 
-		// Probe the current context's host — not our own — to decide
-		// whether to promote ours. "default" and empty both mean no
-		// working context is set; treat them identically.
 		var healthy bool
 		if current != "" && current != "default" {
-			currentHost, err := getDockerContextHost(current)
-			if err != nil {
-				log.Error(err, "Failed to resolve current Docker context host", "context", current)
-			} else if currentHost != "" {
-				healthy = probeDockerContext(probeCtx, currentHost)
-			}
+			healthy = probeNamedDockerContext(probeCtx, current)
+		} else {
+			healthy = probeDockerContext(probeCtx, "")
 		}
 		// Guard against writing currentContext after removeDockerContext has
 		// already cancelled probeCtx and deleted the context directory.
@@ -335,6 +336,7 @@ func (r *EngineReconciler) manageDockerContext(socketPath string) {
 // then resets the current context if it points at our instance and deletes
 // the instance's Docker context directory.
 func (r *EngineReconciler) removeDockerContext() {
+	// TODO(windows): see manageDockerContext — same gap applies here.
 	if runtime.GOOS == "windows" {
 		return
 	}
@@ -345,9 +347,12 @@ func (r *EngineReconciler) removeDockerContext() {
 	}
 	r.contextMu.Unlock()
 
-	// Wait for the probe goroutine to finish before deleting the context
-	// directory. The goroutine's probeCtx was just cancelled, so Ping will
-	// return within dockerContextProbeTimeout (3s) at most.
+	// Wait for any in-flight probe goroutines to finish before deleting the
+	// context directory. Each probe's context was cancelled above (or by an
+	// earlier manageDockerContext call), so each Ping returns within
+	// dockerContextProbeTimeout (3s). Multiple goroutines can be outstanding
+	// if manageDockerContext was called while a prior probe was still running;
+	// Wait blocks until all of them have exited.
 	r.contextProbeWg.Wait()
 
 	contextName := instance.Name()
