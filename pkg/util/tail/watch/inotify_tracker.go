@@ -214,6 +214,11 @@ func (t *InotifyTracker) sendEvent(event fsnotify.Event) {
 	t.mux.Unlock()
 
 	if ch != nil && done != nil {
+		// remove() may close done and removeWatch() may close ch while we
+		// are between the map lookup and the select. Both cases are then
+		// select-ready; the send path panics on a closed ch. Dropping the
+		// event is correct because the watch is being removed.
+		defer func() { _ = recover() }()
 		select {
 		case ch <- event:
 		case <-done:

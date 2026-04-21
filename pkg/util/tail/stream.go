@@ -6,6 +6,7 @@ package tail
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 )
@@ -50,6 +51,16 @@ func Stream(ctx context.Context, writer io.Writer, filePath string, follow bool)
 			writeErr = err
 			t.Kill(err) // non-blocking; keep draining Lines so tailFileSync can finish
 		}
+	}
+	// Block until tailFileSync's full defer chain (including watchers.Wait)
+	// has run, so a caller that re-opens the same file does not race with
+	// an untrack still in flight on the shared InotifyTracker. Wait also
+	// surfaces any fatal error the tail hit (e.g. a mid-stream read error
+	// that would otherwise be silently dropped when Lines closed). The
+	// follow=false path kills the tomb with errStopAtEOF on purpose, so
+	// that sentinel is not a real failure.
+	if err := t.Wait(); err != nil && writeErr == nil && !errors.Is(err, errStopAtEOF) {
+		return err
 	}
 	return writeErr
 }

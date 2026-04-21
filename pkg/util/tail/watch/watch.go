@@ -5,8 +5,8 @@
 // SPDX-FileCopyrightText: 2015 HPE Software Inc.
 // SPDX-FileCopyrightText: 2013 ActiveState Software Inc.
 
-// Package watch provides the FileWatcher abstraction used by the
-// vendored nxadm/tail to observe changes to a file.
+// Package watch provides the FileWatcher abstraction used by
+// pkg/util/tail to observe changes to a file.
 package watch
 
 import (
@@ -21,10 +21,10 @@ type FileWatcher interface {
 	BlockUntilExists(*tomb.Tomb) error
 
 	// ChangeEvents reports on changes to a file, be it modification,
-	// deletion, renames or truncations. After a deletion or truncation
-	// event the implementation's goroutine returns and no further
-	// notifications arrive on the returned FileChanges; the channels
-	// themselves stay open.
+	// deletion, renames or truncations. After a deletion or rename event
+	// the implementation's goroutine returns and no further notifications
+	// arrive on the returned FileChanges; the channels themselves stay
+	// open. Modification and truncation events are delivered indefinitely.
 	// In order to properly report truncations, ChangeEvents requires
 	// the caller to pass their current offset in the file.
 	//

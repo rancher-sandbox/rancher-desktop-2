@@ -28,12 +28,6 @@ import (
 // ReadDirectoryChanges traffic volume needed to trigger fsnotify's
 // "buffer larger than it is" error path on Windows; an in-process
 // goroutine writer does not.
-// writerEnvVar makes the test binary run as a subprocess that writes
-// JSON event lines to its stdout until stdin is closed. We self-exec
-// (see TestMain) because an external writer process produces the
-// ReadDirectoryChanges traffic volume needed to trigger fsnotify's
-// "buffer larger than it is" error path on Windows; an in-process
-// goroutine writer does not.
 const writerEnvVar = "TAIL_TEST_WRITER"
 
 // stressEnvVar opts in to TestInotifyTrackerNoDeadlockOnRepeatedRotation.
@@ -123,7 +117,7 @@ func runRotationCycle(t *testing.T, cycle int, selfExe, stdoutPath, stderrPath s
 
 	// Tails both files. Counts received lines.
 	var received atomic.Int64
-	tailCtx, tailCancel := context.WithCancel(context.Background())
+	tailCtx, tailCancel := context.WithCancel(t.Context())
 	tailDone := make(chan error, 1)
 	go func() {
 		tailDone <- runDualTail(tailCtx, stdoutPath, stderrPath, &received)
@@ -185,9 +179,6 @@ type fakeEvent struct {
 func runFakeHostagentSubprocess() {
 	enc := json.NewEncoder(os.Stdout)
 	_ = enc.Encode(fakeEvent{Time: time.Now(), Status: fakeStatus{SSHLocalPort: 22}})
-	time.AfterFunc(200*time.Millisecond, func() {
-		_ = enc.Encode(fakeEvent{Time: time.Now(), Status: fakeStatus{SSHLocalPort: 22, Running: true}})
-	})
 
 	done := make(chan struct{})
 	go func() {
@@ -205,6 +196,8 @@ func runFakeHostagentSubprocess() {
 	defer tick.Stop()
 	deadline := time.NewTimer(30 * time.Second)
 	defer deadline.Stop()
+	start := time.Now()
+	runningSent := false
 
 	for {
 		select {
@@ -214,6 +207,10 @@ func runFakeHostagentSubprocess() {
 		case <-deadline.C:
 			return
 		case <-tick.C:
+			if !runningSent && time.Since(start) >= 200*time.Millisecond {
+				_ = enc.Encode(fakeEvent{Time: time.Now(), Status: fakeStatus{SSHLocalPort: 22, Running: true}})
+				runningSent = true
+			}
 			// Burst a handful of events per tick so fsnotify's 4KB buffer
 			// has a chance to overflow and trigger the internal sendError
 			// path that deadlocks the shared tracker.

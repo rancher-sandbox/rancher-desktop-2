@@ -105,7 +105,7 @@ func Watch(ctx context.Context, haStdoutPath, haStderrPath string, begin time.Ti
 			return nil
 		case line := <-haStdoutTail.Lines:
 			if line == nil {
-				return nil
+				return haStdoutTail.Err()
 			}
 			if line.Err != nil {
 				logger.Error(line.Err, "Hostagent stdout tail error")
@@ -128,7 +128,7 @@ func Watch(ctx context.Context, haStdoutPath, haStderrPath string, begin time.Ti
 			}
 		case line := <-haStderrTail.Lines:
 			if line == nil {
-				return nil
+				return haStderrTail.Err()
 			}
 			if line.Err != nil {
 				logger.Error(line.Err, "Hostagent stderr tail error")
