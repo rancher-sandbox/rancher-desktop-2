@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sync"
 	"time"
 
 	"gopkg.in/tomb.v1"
@@ -54,8 +55,10 @@ func (fw *PollingFileWatcher) BlockUntilExists(t *tomb.Tomb) error {
 
 // ChangeEvents returns a FileChanges whose channels fire whenever the
 // watched file is modified, truncated, or deleted. The caller passes
-// the current read offset so truncation can be detected.
-func (fw *PollingFileWatcher) ChangeEvents(t *tomb.Tomb, pos int64) (*FileChanges, error) {
+// the current read offset so truncation can be detected. wg is
+// incremented before the goroutine is spawned and Done when the
+// goroutine exits so callers can synchronise teardown.
+func (fw *PollingFileWatcher) ChangeEvents(t *tomb.Tomb, pos int64, wg *sync.WaitGroup) (*FileChanges, error) {
 	origFi, err := os.Stat(fw.Filename)
 	if err != nil {
 		return nil, err
@@ -69,7 +72,9 @@ func (fw *PollingFileWatcher) ChangeEvents(t *tomb.Tomb, pos int64) (*FileChange
 
 	fw.Size = pos
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		prevSize := fw.Size
 		for {
 			select {

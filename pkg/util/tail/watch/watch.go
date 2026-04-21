@@ -9,7 +9,11 @@
 // vendored nxadm/tail to observe changes to a file.
 package watch
 
-import "gopkg.in/tomb.v1"
+import (
+	"sync"
+
+	"gopkg.in/tomb.v1"
+)
 
 // FileWatcher monitors file-level events.
 type FileWatcher interface {
@@ -22,5 +26,10 @@ type FileWatcher interface {
 	// or truncation event.
 	// In order to properly report truncations, ChangeEvents requires
 	// the caller to pass their current offset in the file.
-	ChangeEvents(*tomb.Tomb, int64) (*FileChanges, error)
+	//
+	// wg tracks the background goroutine spawned by the implementation.
+	// The caller must wait on wg after the tomb goes Dying to ensure any
+	// per-watcher cleanup (e.g. untrack on the shared InotifyTracker)
+	// runs before the caller starts another watch on the same filename.
+	ChangeEvents(*tomb.Tomb, int64, *sync.WaitGroup) (*FileChanges, error)
 }
