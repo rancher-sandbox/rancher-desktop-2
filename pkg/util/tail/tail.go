@@ -97,6 +97,12 @@ type Tail struct {
 	watcher watch.FileWatcher
 	changes *watch.FileChanges
 
+	// watchers tracks background goroutines the FileWatcher spawns in
+	// ChangeEvents. tailFileSync waits on it before calling Done so
+	// per-watcher cleanup (InotifyTracker untrack) finishes before
+	// Wait returns and a caller starts another watch on the same file.
+	watchers sync.WaitGroup
+
 	tomb.Tomb // provides: Done, Kill, Dying
 
 	lk sync.Mutex
@@ -261,6 +267,7 @@ func (tail *Tail) readLine() (string, error) {
 
 func (tail *Tail) tailFileSync() {
 	defer tail.Done()
+	defer tail.watchers.Wait()
 	defer tail.close()
 
 	if !tail.MustExist {
@@ -384,7 +391,7 @@ func (tail *Tail) waitForChanges() error {
 		if err != nil {
 			return err
 		}
-		tail.changes, err = tail.watcher.ChangeEvents(&tail.Tomb, pos)
+		tail.changes, err = tail.watcher.ChangeEvents(&tail.Tomb, pos, &tail.watchers)
 		if err != nil {
 			return err
 		}

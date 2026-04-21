@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/fsnotify/fsnotify"
 	"gopkg.in/tomb.v1"
@@ -76,8 +77,10 @@ func (fw *InotifyFileWatcher) BlockUntilExists(t *tomb.Tomb) error {
 // ChangeEvents subscribes to file-level notifications via fsnotify.
 // It spawns a goroutine that translates raw fsnotify events into the
 // FileChanges notification channels and terminates when the tomb dies
-// or the file is deleted or renamed.
-func (fw *InotifyFileWatcher) ChangeEvents(t *tomb.Tomb, pos int64) (*FileChanges, error) {
+// or the file is deleted or renamed. wg is incremented before the
+// goroutine is spawned and Done when the goroutine finishes its untrack
+// so callers can synchronise teardown with the shared InotifyTracker.
+func (fw *InotifyFileWatcher) ChangeEvents(t *tomb.Tomb, pos int64, wg *sync.WaitGroup) (*FileChanges, error) {
 	err := track(fw.Filename)
 	if err != nil {
 		return nil, err
@@ -86,7 +89,9 @@ func (fw *InotifyFileWatcher) ChangeEvents(t *tomb.Tomb, pos int64) (*FileChange
 	changes := NewFileChanges()
 	fw.Size = pos
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		events := eventsFor(fw.Filename)
 
 		for {
