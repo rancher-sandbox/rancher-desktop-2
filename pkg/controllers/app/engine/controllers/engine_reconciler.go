@@ -53,26 +53,27 @@ const (
 	engineMoby = "moby"
 )
 
-// engineWatcher is the reconciler-facing contract every container-engine
-// watcher must satisfy. dockerWatcher is the only current implementation; a
-// forthcoming containerd watcher will provide a second. Methods on the
-// watcher that the reconciler does not call (event handlers, full-sync
-// internals) stay off the interface.
-type engineWatcher interface {
-	// alive reports whether the watcher goroutine is still running.
+// engine is the reconciler-facing contract every container-engine
+// implementation must satisfy. dockerWatcher is the only current
+// implementation; a forthcoming containerd implementation will provide a
+// second. Methods that the reconciler does not call (event handlers,
+// full-sync internals) stay off the interface.
+type engine interface {
+	// alive reports whether the engine is still running.
 	alive() bool
-	// stop cancels the watcher goroutine and waits for it to finish.
+	// stop terminates the engine and waits for it to finish.
 	stop()
-	// processContainerAction dispatches the action annotation on a single
-	// Container mirror and records the outcome in status.lastAction.
+	// processContainerAction performs the action requested by the
+	// [containersv1alpha1.AnnotationAction] annotation on a Container and
+	// records the outcome in status.lastAction.
 	processContainerAction(ctx context.Context, c *containersv1alpha1.Container) error
-	// deleteContainer removes a container from the engine by ID.
-	deleteContainer(ctx context.Context, id string) error
+	// deleteContainer removes a container from the engine.
+	deleteContainer(ctx context.Context, c *containersv1alpha1.Container) error
 	// deleteImage removes an image from the engine.
 	deleteImage(ctx context.Context, img *containersv1alpha1.Image) error
-	// deleteVolume removes a volume from the engine by name. Engines
-	// without a native volume concept return nil.
-	deleteVolume(ctx context.Context, name string) error
+	// deleteVolume removes a volume from the engine. Engines without a
+	// native volume concept return nil.
+	deleteVolume(ctx context.Context, v *containersv1alpha1.Volume) error
 }
 
 // EngineReconciler watches the App resource for the Running condition and
@@ -96,7 +97,7 @@ type EngineReconciler struct {
 	// stopWatcher call. Reconcile runs serially (see struct doc), so
 	// the lock has no other role.
 	watcherMu sync.Mutex
-	watcher   engineWatcher
+	watcher   engine
 
 	// watcherCtx is the parent context for every engine watcher the
 	// reconciler starts. A manager.RunnableFunc cancels it on
@@ -263,11 +264,11 @@ func (r *EngineReconciler) startWatcherAndSync(_ context.Context) error {
 		return nil
 	}
 
-	w, err := newDockerWatcher(r.watcherCtx, r.Client, r.apiNamespace, r.reconcileChan)
+	e, err := newDockerWatcher(r.watcherCtx, r.Client, r.apiNamespace, r.reconcileChan)
 	if err != nil {
 		return err
 	}
-	r.watcher = w
+	r.watcher = e
 	r.manageDockerContext(instance.DockerSocket())
 	return nil
 }
@@ -275,12 +276,12 @@ func (r *EngineReconciler) startWatcherAndSync(_ context.Context) error {
 // stopWatcher stops the Docker watcher goroutine and waits for it to finish.
 func (r *EngineReconciler) stopWatcher() {
 	r.watcherMu.Lock()
-	w := r.watcher
+	e := r.watcher
 	r.watcher = nil
 	r.watcherMu.Unlock()
 
-	if w != nil {
-		w.stop()
+	if e != nil {
+		e.stop()
 	}
 	r.removeDockerContext()
 }
@@ -499,9 +500,9 @@ func (r *EngineReconciler) deleteAllOfType(ctx context.Context, list client.Obje
 // Containers without the annotation are skipped.
 func (r *EngineReconciler) reconcileContainerActions(ctx context.Context) error {
 	r.watcherMu.Lock()
-	w := r.watcher
+	e := r.watcher
 	r.watcherMu.Unlock()
-	if w == nil {
+	if e == nil {
 		return nil
 	}
 
@@ -519,7 +520,7 @@ func (r *EngineReconciler) reconcileContainerActions(ctx context.Context) error 
 		if _, ok := c.Annotations[containersv1alpha1.AnnotationAction]; !ok {
 			continue
 		}
-		if err := w.processContainerAction(ctx, c); err != nil {
+		if err := e.processContainerAction(ctx, c); err != nil {
 			errs = append(errs, fmt.Errorf("container %s: %w", c.Name, err))
 		}
 	}
@@ -530,18 +531,18 @@ func (r *EngineReconciler) reconcileContainerActions(ctx context.Context) error 
 // the corresponding Docker object and removing the finalizer.
 func (r *EngineReconciler) processFinalizers(ctx context.Context) error {
 	r.watcherMu.Lock()
-	w := r.watcher
+	e := r.watcher
 	r.watcherMu.Unlock()
-	if w == nil {
+	if e == nil {
 		return nil
 	}
 
 	// Join errors across all three types so a stuck Container or
 	// Image finalizer does not starve pending Volume finalizers.
 	return errors.Join(
-		r.processContainerFinalizers(ctx, w),
-		r.processImageFinalizers(ctx, w),
-		r.processVolumeFinalizers(ctx, w),
+		r.processContainerFinalizers(ctx, e),
+		r.processImageFinalizers(ctx, e),
+		r.processVolumeFinalizers(ctx, e),
 	)
 }
 
@@ -549,7 +550,7 @@ func (r *EngineReconciler) processFinalizers(ctx context.Context) error {
 // every Container pending deletion. The mirror finalizer is only
 // stripped when the Docker delete succeeds, so a stuck container keeps
 // retrying on later reconciles.
-func (r *EngineReconciler) processContainerFinalizers(ctx context.Context, w engineWatcher) error {
+func (r *EngineReconciler) processContainerFinalizers(ctx context.Context, e engine) error {
 	var containers containersv1alpha1.ContainerList
 	if err := r.List(ctx, &containers, client.InNamespace(r.apiNamespace)); err != nil {
 		return err
@@ -560,7 +561,7 @@ func (r *EngineReconciler) processContainerFinalizers(ctx context.Context, w eng
 		if c.DeletionTimestamp == nil || !controllerutil.ContainsFinalizer(c, mirrorFinalizer) {
 			continue
 		}
-		if err := w.deleteContainer(ctx, c.Name); err != nil {
+		if err := e.deleteContainer(ctx, c); err != nil {
 			errs = append(errs, fmt.Errorf("failed to delete container %s from Docker: %w", c.Name, err))
 			continue
 		}
@@ -589,7 +590,7 @@ func (r *EngineReconciler) processContainerFinalizers(ctx context.Context, w eng
 	return errors.Join(errs...)
 }
 
-func (r *EngineReconciler) processImageFinalizers(ctx context.Context, w engineWatcher) error {
+func (r *EngineReconciler) processImageFinalizers(ctx context.Context, e engine) error {
 	var images containersv1alpha1.ImageList
 	if err := r.List(ctx, &images, client.InNamespace(r.apiNamespace)); err != nil {
 		return err
@@ -606,7 +607,7 @@ func (r *EngineReconciler) processImageFinalizers(ctx context.Context, w engineW
 		// Strip the finalizer and let the Delete proceed — symmetric
 		// with processVolumeFinalizers' empty-status.name guard.
 		if img.Status.ID != "" || img.Status.RepoTag != "" {
-			if err := w.deleteImage(ctx, img); err != nil {
+			if err := e.deleteImage(ctx, img); err != nil {
 				errs = append(errs, fmt.Errorf("failed to delete image %s from Docker: %w", img.Name, err))
 				continue
 			}
@@ -632,7 +633,7 @@ func (r *EngineReconciler) processImageFinalizers(ctx context.Context, w engineW
 	return errors.Join(errs...)
 }
 
-func (r *EngineReconciler) processVolumeFinalizers(ctx context.Context, w engineWatcher) error {
+func (r *EngineReconciler) processVolumeFinalizers(ctx context.Context, e engine) error {
 	var volumes containersv1alpha1.VolumeList
 	if err := r.List(ctx, &volumes, client.InNamespace(r.apiNamespace)); err != nil {
 		return err
@@ -648,7 +649,7 @@ func (r *EngineReconciler) processVolumeFinalizers(ctx context.Context, w engine
 		// the startup race before applyVolume ran). Strip the
 		// finalizer and let the Delete proceed.
 		if v.Status.Name != "" {
-			if err := w.deleteVolume(ctx, v.Status.Name); err != nil {
+			if err := e.deleteVolume(ctx, v); err != nil {
 				errs = append(errs, fmt.Errorf("failed to delete volume %s from Docker: %w", v.Name, err))
 				continue
 			}

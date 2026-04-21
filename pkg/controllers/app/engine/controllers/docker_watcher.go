@@ -29,7 +29,7 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 )
 
-var _ engineWatcher = (*dockerWatcher)(nil)
+var _ engine = (*dockerWatcher)(nil)
 
 // dockerWatcher manages a Docker client connection and event stream. It
 // performs a full sync on connect and then watches for incremental changes.
@@ -545,8 +545,8 @@ func (w *dockerWatcher) removeActionAnnotation(ctx context.Context, latest *cont
 // mirror means "remove this container", so Docker stops it first if
 // running. Images use Force: false so in-use images are kept and the
 // finalizer retries until the last consumer goes away.
-func (w *dockerWatcher) deleteContainer(ctx context.Context, id string) error {
-	_, err := w.cli.ContainerRemove(ctx, id, dockerclient.ContainerRemoveOptions{Force: true})
+func (w *dockerWatcher) deleteContainer(ctx context.Context, c *containersv1alpha1.Container) error {
+	_, err := w.cli.ContainerRemove(ctx, c.Name, dockerclient.ContainerRemoveOptions{Force: true})
 	if cerrdefs.IsNotFound(err) {
 		return nil
 	}
@@ -569,8 +569,8 @@ func (w *dockerWatcher) deleteImage(ctx context.Context, img *containersv1alpha1
 
 // deleteVolume removes a volume from Docker. See deleteContainer for the
 // error-handling contract.
-func (w *dockerWatcher) deleteVolume(ctx context.Context, name string) error {
-	_, err := w.cli.VolumeRemove(ctx, name, dockerclient.VolumeRemoveOptions{Force: true})
+func (w *dockerWatcher) deleteVolume(ctx context.Context, v *containersv1alpha1.Volume) error {
+	_, err := w.cli.VolumeRemove(ctx, v.Status.Name, dockerclient.VolumeRemoveOptions{Force: true})
 	if cerrdefs.IsNotFound(err) {
 		return nil
 	}
