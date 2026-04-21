@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260421-131403-pr-326</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block.
+ * The filename is a GitHub permalink to the displayed line range.
+ * Text color is light gray (#adbac7) for the bar, green (#7ee787)
+ * for the hyperlink — matching GitHub's dark-mode file header. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Deep Review: 20260421-131403-pr-326</h1>
+
+    <table class="meta-table">
+      <tr><td>Date</td><td>2026-04-21 13:14</td></tr>
+      <tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+      <tr><td>Round</td><td>1 (of target)</td></tr>
+      <tr><td>Author</td><td><a href="https://github.com/jandubois">@jandubois</a></td></tr>
+      <tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/326" class="gh-ref" data-title="Fix deadlock in vendored nxadm/tail (observed as Windows CI hostagent-watcher hang)" data-state="open" data-type="pr">#326</a> — Fix deadlock in vendored nxadm/tail (observed as Windows CI hostagent-watcher hang)</td></tr>
+      <tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/32015c9"><code>32015c9</code></a> tail/watch: synchronise watcher goroutine cleanup with Stop<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/a2d5c9f"><code>a2d5c9f</code></a> tail: resolve golangci-lint issues in the absorbed code<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/92881d9"><code>92881d9</code></a> rdd: switch hostagent watcher to local tail-based events package<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/e074dd9"><code>e074dd9</code></a> tail/watch: fix deadlock in the shared InotifyTracker<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/35d6f05"><code>35d6f05</code></a> tail: rename pkg/util/nxadmtail to pkg/util/tail, merge with CLI wrapper<br><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/a9bcf89"><code>a9bcf89</code></a> nxadmtail: absorb upstream watch/, util/, winfile/ subpackages</td></tr>
+      <tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.7 (effort: xhigh), <span class="pill pill-codex">Codex</span> GPT 5.4 (effort: high), <span class="pill pill-gemini">Gemini</span> 3.1 Pro (effort: default)</td></tr>
+      <tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; gate the 200-cycle stress test behind an env flag so <code>make test</code> does not inherit a 7+ minute run on every CI lane; the rest are low-severity polish.</td></tr>
+      <tr><td>Wall-clock time</td><td><code>19 min 7 s</code></td></tr>
+    </table>
+
+    <hr>
+
+    <hr>
+    <h2 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>The PR splits <code>InotifyTracker.run()</code> into three goroutines so the fsnotify <code>Events</code> and <code>Errors</code> drainers no longer share a <code>select</code> with synchronous <code>Add</code>/<code>Remove</code> RPCs, breaking the circular wait that hangs Windows CI after a <code>ReadDirectoryChanges</code> buffer overflow. A second, independent lifecycle race between <code>tail.Stop</code> and the <code>ChangeEvents</code> teardown goroutine is fixed by threading a per-<code>Tail</code> <code>sync.WaitGroup</code> through <code>FileWatcher.ChangeEvents</code> so <code>tailFileSync</code> waits for every <code>untrack</code> to land before <code>Done</code> fires. The new <code>TestInotifyTrackerNoDeadlockOnRepeatedRotation</code> reliably reproduces both races (subprocess writer, <code>GOMAXPROCS=1</code>, 200 rotate/tail/stop cycles). The rdd-side integration is a small <code>pkg/hostagent/events</code> package that mirrors the Lima JSON schema and routes through the fixed fork; after that swap, <code>nxadm/tail</code> is <code>// indirect</code>.</p>
+    <p>The fix is well-scoped, the commit history reads cleanly (each commit is one concept), and the root cause is correctly identified.</p>
+    <p>The one finding that should block merge-as-is: the stress test is <code>testing.Short()</code>-skippable but <code>make test</code> (the repo&#39;s normal unit-test entrypoint, also the command the <code>Unit tests</code> CI lane runs) does not pass <code>-short</code>, so the ~7-minute test now runs on every unit-test run on macos, ubuntu, and windows. Everything else is polish — stale <code>NOTICE</code> pointer, a stale doc comment, <code>events.Watch</code> using the global <code>logrus</code> instead of the controller <code>logr</code>, and a handful of carried-over upstream warts.</p>
+    </div>
+    <hr>
+    <h2 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-critical">
+    <p>None.</p>
+    </div>
+    <hr>
+    <h2 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I1">
+        <span class="finding-num">I1.</span> Stress test runs on the default unit-test lane on every CI run <span class="pill pill-codex">Codex</span><a href="#I1" class="pilcrow">&#182;</a>
+      </div>
+      <pre><code class="language-go">func TestInotifyTrackerNoDeadlockOnRepeatedRotation(t *testing.T) {
+    if testing.Short() {
+        t.Skip(&quot;stress test&quot;)
+    }
+    ...
+    const (
+        cycles          = 200
+        writerDuration  = 2 * time.Second
+        cycleStopBudget = 10 * time.Second
+    )</code></pre>
+    <p>The test opts out only under <code>testing.Short()</code>. But <code>Makefile:159</code> defines <code>test: ... go$(EXE) test ./...</code> with no <code>-short</code>, and the <code>Unit tests</code> job in <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9bcf890f8bdda37f63a86a74a741c78a53956ab/.github/workflows/lint.yaml#L85"><code>.github/workflows/lint.yaml:85</code></a> invokes exactly that target on the <code>macos-latest</code>, <code>ubuntu-latest</code>, and <code>windows-latest</code> matrix legs. The PR description calls the ~7-minute run out as a <em>separate</em> long-running check, but nothing in the repo honors that distinction — every future <code>make test</code> (local and CI) now inherits 200 rotate/tail/stop cycles plus a subprocess spawn per cycle.</p>
+    <p>Fix: gate the test behind an explicit env flag so only the dedicated CI step opts in, and add that step to the workflow:</p>
+      <pre><code class="language-diff">-    if testing.Short() {
+-        t.Skip(&quot;stress test&quot;)
+-    }
++    if testing.Short() || os.Getenv(&quot;RDD_TAIL_STRESS&quot;) != &quot;1&quot; {
++        t.Skip(&quot;set RDD_TAIL_STRESS=1 to run the stress test&quot;)
++    }</code></pre>
+    <p>Then add a dedicated step/job: <code>RDD_TAIL_STRESS=1 go test -run TestInotifyTrackerNoDeadlockOnRepeatedRotation -timeout 1800s ./pkg/util/tail</code>.</p>
+    <p>Claude and Gemini both treated &quot;<code>testing.Short()</code> skip&quot; as sufficient; Codex traced the CI command line and correctly identified that it is not.</p>
+    </div>
+    <hr>
+    <h2 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S1">
+        <span class="finding-num">S1.</span> <code>events.Watch</code> uses the global <code>logrus</code> instead of the controller <code>logr</code> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span><a href="#S1" class="pilcrow">&#182;</a>
+      </div>
+      <pre><code class="language-go">cfg := tail.Config{
+    Follow:    true,
+    ReOpen:    true,
+    MustExist: false,
+    Logger:    logrus.StandardLogger(),
+}
+...
+if line.Err != nil {
+    logrus.WithError(line.Err).Error(&quot;hostagent stdout tail error&quot;)
+    continue
+}</code></pre>
+    <p><code>runWatcher</code> builds a contextual logger at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9bcf890f8bdda37f63a86a74a741c78a53956ab/pkg/controllers/lima/limavm/controllers/hostagent_watcher.go#L72"><code>hostagent_watcher.go:72</code></a> (<code>log.FromContext(ctx).WithValues(&quot;instance&quot;, name, &quot;component&quot;, &quot;watcher&quot;)</code>), and the embedded service routes controller logs through klog. The local <code>events.Watch</code> drops that context and emits through global <code>logrus</code> instead, so diagnostic lines on the watcher hot path lose their <code>instance</code>/<code>component</code> fields. The PR claims to <em>own</em> this code now (that was the whole point of committing 4), so there is no portability constraint to preserve.</p>
+    <p>Fix: accept a <code>logr.Logger</code> and route <code>tail.Config.Logger</code> through a small adapter, or set <code>tail.Config.Logger = tail.DiscardingLogger</code> and log errors directly through the passed-in <code>logr.Logger</code>.</p>
+      <pre><code class="language-diff">-func Watch(ctx context.Context, haStdoutPath, haStderrPath string, begin time.Time, onEvent func(Event) bool) error {
++func Watch(ctx context.Context, logger logr.Logger, haStdoutPath, haStderrPath string, begin time.Time, onEvent func(Event) bool) error {</code></pre>
+    <p>Gemini graded this <code>important</code>, Codex <code>suggestion</code>. The old path (Lima&#39;s <code>events.Watch</code>) also routed through <code>logrus</code>, so the PR does not introduce a regression — but it passed up the opportunity to fix it while the code was in transit.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S2">
+        <span class="finding-num">S2.</span> <code>events.Watch</code> aborts permanently on a single unparseable stdout line <span class="pill pill-gemini">Gemini</span><a href="#S2" class="pilcrow">&#182;</a>
+      </div>
+      <pre><code class="language-go">if err := json.Unmarshal([]byte(line.Text), &amp;ev); err != nil {
+    return fmt.Errorf(&quot;failed to unmarshal %q as %T: %w&quot;, line.Text, ev, err)
+}</code></pre>
+    <p>If Lima&#39;s hostagent writes one non-JSON line to <code>ha.stdout.log</code> (a panic trace, a library preamble, a truncated write on a crash), <code>Watch</code> returns. <code>runWatcher</code> logs the error and exits; <code>state.done</code> closes. The reconciler does not restart the watcher, so the in-memory VM phase mirror stops updating until the next reconcile tears the whole instance down. The old Lima path had the same behavior, so this is not a regression introduced here, but moving the implementation in-tree makes it easy to fix now.</p>
+    <p>Fix: log and <code>continue</code> rather than returning.</p>
+      <pre><code class="language-diff">-if err := json.Unmarshal([]byte(line.Text), &amp;ev); err != nil {
+-    return fmt.Errorf(&quot;failed to unmarshal %q as %T: %w&quot;, line.Text, ev, err)
+-}
++if err := json.Unmarshal([]byte(line.Text), &amp;ev); err != nil {
++    logger.Error(err, &quot;Ignoring unparseable hostagent stdout line&quot;, &quot;line&quot;, line.Text)
++    continue
++}</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S3">
+        <span class="finding-num">S3.</span> <code>Stream</code> swallows writer errors and ignores context on <code>follow=false</code> <span class="pill pill-gemini">Gemini</span> <span class="pill pill-claude">Claude</span><a href="#S3" class="pilcrow">&#182;</a>
+      </div>
+      <pre><code class="language-go">if !follow {
+    go func() { _ = t.StopAtEOF() }()
+}
+go func() {
+    &lt;-ctx.Done()
+    _ = t.Stop()
+}()
+
+for line := range t.Lines {
+    fmt.Fprintln(writer, line.Text)
+}
+return nil</code></pre>
+    <p>The pre-PR <code>tail.File</code> had the identical body; commit 35d6f05 renamed it and moved it to <code>stream.go</code> without changes. Two issues carried over:</p>
+    <ol>
+      <li><code>fmt.Fprintln</code> errors are discarded. In a pipe-close case (<code>rdd svc log | head</code>), the loop keeps consuming and discarding lines until the CLI&#39;s context cancels.</li>
+      <li>When <code>follow=false</code> the tomb has already been killed with <code>errStopAtEOF</code>; a subsequent <code>Kill(nil)</code> from the ctx goroutine is a no-op in <code>tomb.v1</code>. For a one-shot <code>rdd svc log</code> this is harmless (the CLI exits shortly after), but the ctx goroutine also leaks past the <code>for ... range t.Lines</code> return because nothing signals it to exit until ctx cancels.</li>
+    </ol>
+    <p>Fix: check the write error, and give the ctx goroutine an exit signal tied to the main function returning:</p>
+      <pre><code class="language-diff">+    tailDone := make(chan struct{})
++    defer close(tailDone)
+     go func() {
+-        &lt;-ctx.Done()
+-        _ = t.Stop()
++        select {
++        case &lt;-ctx.Done():
++            _ = t.Stop()
++        case &lt;-tailDone:
++        }
+     }()
+
+-    for line := range t.Lines {
+-        fmt.Fprintln(writer, line.Text)
+-    }
+-    return nil
++    for line := range t.Lines {
++        if _, err := fmt.Fprintln(writer, line.Text); err != nil {
++            _ = t.Stop()
++            return err
++        }
++    }
++    return nil</code></pre>
+    <p>Gemini graded this <code>important (regression)</code>, Claude <code>suggestion (pre-existing)</code>; verified against the base-branch <code>tail.File</code> — the body is byte-for-byte identical except for the <code>nxadmtail</code> package qualifier, so this is pre-existing.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S4">
+        <span class="finding-num">S4.</span> <code>NOTICE</code> still points at <code>pkg/util/nxadmtail/</code> <span class="pill pill-codex">Codex</span> <span class="pill pill-claude">Claude</span><a href="#S4" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9bcf890f8bdda37f63a86a74a741c78a53956ab/NOTICE#L4-L10">NOTICE</a></div>
+      <pre data-start="4" data-line="9-10"><code class="language-plaintext">
+This project is licensed under the Apache License, Version 2.0.
+See LICENSE for the full text. Some included files use the MIT License,
+which is compatible with the Apache-2.0 License:
+
+- pkg/util/nxadmtail/: a vendored copy of github.com/nxadm/tail.
+  See pkg/util/nxadmtail/LICENSE for details.</code></pre>
+    <p>Commit 35d6f05 renamed the directory and moved <code>LICENSE</code> to <code>pkg/util/tail/LICENSE</code>, but <code>NOTICE</code> was not touched. The directory the file points at no longer exists. <code>pkg/util/tail/</code> also now contains three Apache-2.0 files (<code>stream.go</code>, <code>stream_test.go</code>, <code>tail_stress_test.go</code>) under what <code>NOTICE</code> describes as an MIT vendor boundary, so a blanket pointer at the directory is wrong even after the path fix.</p>
+    <p>Fix:</p>
+      <pre><code class="language-diff">-- pkg/util/nxadmtail/: a vendored copy of github.com/nxadm/tail.
+-  See pkg/util/nxadmtail/LICENSE for details.
++- pkg/util/tail/: the tail.go, tail_posix.go, tail_windows.go, watch/,
++  and winfile/ files are a vendored copy of github.com/nxadm/tail.
++  See pkg/util/tail/LICENSE for details.</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S5">
+        <span class="finding-num">S5.</span> <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9bcf890f8bdda37f63a86a74a741c78a53956ab/pkg/hostagent/command.go#L170"><code>command.go:170</code></a> comment still references the removed <code>events.Watcher()</code> <span class="pill pill-codex">Codex</span><a href="#S5" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9bcf890f8bdda37f63a86a74a741c78a53956ab/pkg/hostagent/command.go#L165-L175">pkg/hostagent/command.go</a></div>
+      <pre data-start="165" data-line="170"><code class="language-go">	return written, err
+}
+
+func initHostagentLogrus(stderr io.Writer) {
+	logrus.SetOutput(stderr)
+	// JSON logs are parsed in pkg/hostagent/events.Watcher()
+	logrus.SetFormatter(new(logrus.JSONFormatter))
+	// HostAgent logging is one level more verbose than the start command itself
+	if logrus.GetLevel() == logrus.DebugLevel {
+		logrus.SetLevel(logrus.TraceLevel)
+	} else {</code></pre>
+    <p>The exported symbol in the new <code>pkg/hostagent/events</code> package is <code>Watch</code>, not <code>Watcher</code>. The comment predates the local package but was not updated when commit 92881d9 introduced it with a different name.</p>
+    <p>Fix: <code>pkg/hostagent/events.Watch()</code>.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S6">
+        <span class="finding-num">S6.</span> <code>FileWatcher.ChangeEvents</code> interface doc promises channel closes that the implementations do not perform <span class="pill pill-codex">Codex</span><a href="#S6" class="pilcrow">&#182;</a>
+      </div>
+      <pre><code class="language-go">// ChangeEvents reports on changes to a file, be it modification,
+// deletion, renames or truncations. The returned FileChanges
+// channels will be closed, thus become unusable, after a deletion
+// or truncation event.</code></pre>
+    <p>Neither <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9bcf890f8bdda37f63a86a74a741c78a53956ab/pkg/util/nxadmtail/watch/inotify.go#L115-L141"><code>inotify.go:115-141</code></a> nor <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9bcf890f8bdda37f63a86a74a741c78a53956ab/pkg/util/nxadmtail/watch/polling.go#L91-L127"><code>polling.go:91-127</code></a> closes the <code>Modified</code>/<code>Truncated</code>/<code>Deleted</code> channels; they call <code>NotifyDeleted</code>/<code>NotifyTruncated</code> and return. The goroutine exits and no further notifications arrive, but the channels stay open. Before another consumer depends on the &quot;closed&quot; semantics, either fix the doc or fix the implementations.</p>
+    <p>Fix: update the comment to describe the actual behavior (&quot;no further notifications arrive after a deletion or truncation event; the goroutine returns&quot;).</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S7">
+        <span class="finding-num">S7.</span> Polling watcher sleeps 250 ms before noticing <code>tomb.Dying</code> <span class="pill pill-gemini">Gemini</span><a href="#S7" class="pilcrow">&#182;</a>
+      </div>
+      <pre><code class="language-go">for {
+    select {
+    case &lt;-t.Dying():
+        return
+    default:
+    }
+
+    time.Sleep(POLL_DURATION)</code></pre>
+    <p><code>time.Sleep</code> cannot be cancelled. <code>tail.Stop</code> now correctly synchronises on <code>watchers.Wait()</code>, so this sleep directly adds up to <code>POLL_DURATION</code> (250 ms today) to every service shutdown or log rotation when the polling backend is in use. Pre-existing upstream behavior, but worth a one-line fix while the code is being touched:</p>
+      <pre><code class="language-diff">-    time.Sleep(POLL_DURATION)
++    select {
++    case &lt;-t.Dying():
++        return
++    case &lt;-time.After(POLL_DURATION):
++    }</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S8">
+        <span class="finding-num">S8.</span> <code>POLL_DURATION</code> ALL_CAPS / mutable-var rationale no longer applies <span class="pill pill-claude">Claude</span><a href="#S8" class="pilcrow">&#182;</a>
+      </div>
+      <pre><code class="language-go">//nolint:revive,staticcheck // Keep the upstream name for API compatibility.
+var POLL_DURATION time.Duration</code></pre>
+    <p>The nolint comment appeals to an external API that no longer exists: this is a private in-tree fork. Commit a2d5c9f already renamed other upstream identifiers (<code>Watch</code>→<code>track</code>, <code>Events</code>→<code>eventsFor</code>); this one was missed.</p>
+    <p>Fix: <code>const pollDuration = 250 * time.Millisecond</code>, drop the <code>init()</code>, update the two call sites.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S9">
+        <span class="finding-num">S9.</span> Asymmetric &quot;Do NOT call Cleanup&quot; comment between the stdout and stderr defers <span class="pill pill-claude">Claude</span><a href="#S9" class="pilcrow">&#182;</a>
+      </div>
+      <pre><code class="language-go">defer func() {
+    _ = haStdoutTail.Stop()
+    // Do NOT call Cleanup; it unregisters the tracker entry in a way
+    // that prevents the process from ever tailing the file again.
+}()
+...
+defer func() {
+    _ = haStderrTail.Stop()
+}()</code></pre>
+    <p>Both defers are structurally identical. The stdout one carries the upstream warning; the stderr one does not. A later editor patching the &quot;missing <code>Cleanup()</code>&quot; on the stderr half would silently reintroduce the bug the comment warns about. Upstream Lima has the note on both blocks.</p>
+    <p>Fix: mirror the comment, or hoist both into a local helper so there is one place to read the rule.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S10">
+        <span class="finding-num">S10.</span> Stress-test subprocess should use <code>t.Context()</code> instead of <code>context.Background()</code> <span class="pill pill-claude">Claude</span><a href="#S10" class="pilcrow">&#182;</a>
+      </div>
+      <pre><code class="language-go">cmd := exec.CommandContext(context.Background(), selfExe, &quot;-test.run=^$&quot;)</code></pre>
+    <p>The comment correctly notes that stdin closure reaps the child. But if the test panics between <code>cmd.Start()</code> (line 108) and <code>cmd.Wait()</code> (line 124), the subprocess outlives the test. <code>t.Context()</code> lets <code>testing</code>&#39;s cleanup kill the subprocess automatically on a failed/panicked run, which also covers the case where a future refactor reorders cycle teardown.</p>
+    <p>Fix:</p>
+      <pre><code class="language-diff">-    cmd := exec.CommandContext(context.Background(), selfExe, &quot;-test.run=^$&quot;)
++    cmd := exec.CommandContext(t.Context(), selfExe, &quot;-test.run=^$&quot;)</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S11">
+        <span class="finding-num">S11.</span> <code>events.Watch</code> has no direct unit coverage <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span><a href="#S11" class="pilcrow">&#182;</a>
+      </div>
+    <p>The new local <code>events.Watch</code> is the integration boundary between <code>runWatcher</code> and the fixed tail library, but it has no tests of its own — no coverage for <code>begin</code>-time filtering, the &quot;stop when <code>onEvent</code> returns true&quot; contract, malformed JSON handling (S2), or stdout/stderr teardown ordering. <code>TestInotifyTrackerNoDeadlockOnRepeatedRotation</code> exercises the underlying tail, not this adapter. Any future change to the parsing loop would go in blind.</p>
+    <p>Fix: add a small test that feeds a temp file through <code>Watch</code> and verifies each of the above contracts.</p>
+    </div>
+    <hr>
+    <h2 id="design-observations" class="section-design">Design Observations <a href="#design-observations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-design">
+    <h3 id="concerns">Concerns <a href="#concerns" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><code>(future)</code> <strong>Per-file event channels are unbuffered; a slow consumer stalls the process-wide events drainer</strong> — <span class="pill pill-gemini">Gemini</span>. <code>InotifyTracker.sendEvent</code> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9bcf890f8bdda37f63a86a74a741c78a53956ab/pkg/util/nxadmtail/watch/inotify_tracker.go#L208-L222"><code>inotify_tracker.go:208-222</code></a>) sends to the per-file channel with a <code>&lt;-done</code> escape, but if the tail is alive and its <code>ChangeEvents</code> goroutine is slow (e.g. blocked in the <code>os.Stat</code> call on a <code>Write</code> event), the main <code>watcher.Events</code> drainer blocks on that send and delivery stalls for every other tail in the process. Not introduced by this PR; worth considering if the number of concurrent tails grows.</li>
+    </ul>
+    <h3 id="strengths">Strengths <a href="#strengths" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><code>(in-scope)</code> <em></em>Three-goroutine split preserves the single-<code>fsnotify.Watcher</code> design<em></em> — <code>pkg/util/tail/watch/inotify_tracker.go:245-287</code> <span class="pill pill-codex">Codex</span> <span class="pill pill-claude">Claude</span>. The fix addresses the deadlock without giving back the <code>fs.inotify.max_user_instances</code> budget win of the shared tracker.</li>
+      <li><code>(in-scope)</code> <em></em><code>sync.WaitGroup</code> handoff is a precise fix for the lifecycle race<em></em> — <code>pkg/util/tail/tail.go:100-104,268-271</code>, <code>pkg/util/tail/watch/inotify.go:83-94</code>, <code>pkg/util/tail/watch/polling.go:60-77</code> <span class="pill pill-codex">Codex</span> <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span>. Defer order (close → watchers.Wait → Done) means <code>tail.Stop</code> returns only after every <code>untrack</code> has landed, closing the stale-tracker window.</li>
+      <li><code>(in-scope)</code> <strong>Clean commit structure with surgical bisect points</strong> — <span class="pill pill-claude">Claude</span>. Commit 1 is a pure code-move, 2 is a pure rename, 3 is the deadlock fix with a reproducer, 4 is the consumer swap, 5 is lint-only cleanup, 6 is the second-race fix that the first fix&#39;s stress test uncovered. No fixup commits.</li>
+      <li><code>(in-scope)</code> <strong>In-code documentation of the root cause</strong> — <code>pkg/util/tail/watch/inotify_tracker.go:224-244</code> <span class="pill pill-claude">Claude</span>. The <code>run()</code> doc describes the blocked-channel chain and why the split breaks it; someone revisiting this in two years does not need to spelunk through git history.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p><code>TestInotifyTrackerNoDeadlockOnRepeatedRotation</code> reproduces the precise CI failure pattern: 200 rotate/tail/stop cycles with an external subprocess writer generating enough <code>ReadDirectoryChanges</code> traffic to trigger fsnotify&#39;s &quot;buffer larger than it is&quot; sendError path on Windows. The same test under Linux <code>GOMAXPROCS=1</code> catches the commit-6 lifecycle race (<code>received 0 events</code> after ~130 cycles). It is <code>testing.Short()</code>-skippable, but see I1 for the gating problem. The pre-existing <code>TestStream</code> covers both follow and non-follow modes.</p>
+    <p>Gaps, in rough order of risk:</p>
+    <ol>
+      <li><em></em>No direct tests for <code>pkg/hostagent/events.Watch</code><em></em> (S11) — the new adapter between <code>runWatcher</code> and the fixed tail has zero coverage of its own.</li>
+      <li><em></em>No coverage for concurrent <code>Tail</code>s on the same filename<em></em> — <code>InotifyTracker</code> reuses <code>chans[fname]</code> across tails, and a stop-then-reopen race would still exist if a second consumer appeared. Not currently exercised by rdd; worth a note.</li>
+      <li><em></em><code>fsnotify.NewWatcher()</code> error path panics from a detached goroutine<em></em> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9bcf890f8bdda37f63a86a74a741c78a53956ab/pkg/util/nxadmtail/watch/inotify_tracker.go#L246-L249"><code>inotify_tracker.go:246-249</code></a>. Behaviorally equivalent to upstream&#39;s <code>util.Fatal</code>, no test, but hard to inject.</li>
+      <li><em></em>No controller-level test exercising <code>runWatcher</code> + <code>events.Watch</code> across rotated <code>ha.stdout.log</code>/<code>ha.stderr.log</code><em></em> — the stress test proves the tail layer, not the adapter the reconciler calls.</li>
+    </ol>
+    </div>
+    <hr>
+    <h2 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li>Package docs on <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9bcf890f8bdda37f63a86a74a741c78a53956ab/pkg/util/tail/tail.go#L8-L17"><code>pkg/util/tail/tail.go:8-17</code></a>, <code>pkg/hostagent/events/events.go:6-10</code>, <code>pkg/util/tail/watch/watch.go:8-9</code> are accurate.</li>
+      <li><code>NOTICE</code> points at a removed directory (S4).</li>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9bcf890f8bdda37f63a86a74a741c78a53956ab/pkg/hostagent/command.go#L170"><code>pkg/hostagent/command.go:170</code></a> names a symbol that no longer exists (S5).</li>
+      <li><code>FileWatcher.ChangeEvents</code> interface doc promises channel closes that the implementations do not perform (S6).</li>
+      <li><code>POLL_DURATION</code>&#39;s nolint comment cites API compatibility that no longer applies (S8).</li>
+      <li><code>events.Watch</code> has no docstring about its failure semantics — a one-line note that an unparseable line terminates the watch would document S2&#39;s current behavior until it is changed.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>Clean. Each commit is one concept; commit 6 explicitly credits the stress test from commit 3 for exposing the race it fixes; commit 5 isolates lint-only cleanup from the structural changes it polishes. Bisect would land surgically on each. No fixup commits.</p>
+    </div>
+    <hr>
+    <h2 id="acknowledged-limitations">Acknowledged Limitations <a href="#acknowledged-limitations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li><em></em>Comment: <code>pkg/hostagent/events/events.go:82-84</code><em></em> — &quot;Do NOT call <code>Cleanup</code>; it unregisters the tracker entry in a way that prevents the process from ever tailing the file again.&quot; Correctly describes a pre-existing bug in the vendored <code>InotifyTracker</code> where <code>removeWatch</code> decrements <code>watchNums</code> unconditionally, so a stray <code>Cleanup()</code> after <code>ChangeEvents</code> has already untracked leaves the counter at −1 and every subsequent <code>addWatch</code> increments to 0 without calling <code>watcher.Add</code>. Not fixed here; S9 asks only for symmetry between the stdout and stderr defers.</li>
+      <li><em></em>Comment: <code>pkg/util/tail/watch/inotify.go:121</code><em></em> — <code>// With an open fd, unlink(fd) - inotify returns IN_ATTRIB (==fsnotify.Chmod)</code>. Documents an intentional fsnotify quirk handler. Not actionable.</li>
+      <li><em></em>Comment: <code>pkg/util/tail/watch/inotify.go:131-132</code><em></em> and <em></em><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9bcf890f8bdda37f63a86a74a741c78a53956ab/pkg/util/nxadmtail/watch/polling.go#L97-L98"><code>polling.go:97-98</code></a><em></em> — <code>// XXX: report this error back to the user</code> on the <code>panic</code> path after a non-<code>IsNotExist</code> stat error. Pre-existing in upstream; unchanged here.</li>
+      <li><em></em>Comment: <code>pkg/util/tail/watch/polling.go:70-71</code><em></em> — <code>// XXX: use tomb.Tomb to cleanly manage these goroutines. replace the fatal (below) with tomb&#39;s Kill.</code> Carried from upstream; the commit-6 WaitGroup fix addresses a different concern.</li>
+      <li><em></em>Comment: <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9bcf890f8bdda37f63a86a74a741c78a53956ab/pkg/controllers/lima/limavm/controllers/hostagent_watcher.go#L101-L104"><code>pkg/controllers/lima/limavm/controllers/hostagent_watcher.go:101-104</code></a><em></em> — <code>ev.Status.Degraded is intentionally not handled here</code>. Consistent with the upstream event-set subsetting this PR already does in <code>pkg/hostagent/events</code>.</li>
+      <li><strong>PR description — &quot;Out of scope: Upstreaming the fix&quot;</strong> — author explicitly defers upstreaming with rationale (nxadm/tail unmaintained since 2019; fsnotify&#39;s unbuffered <code>Errors</code> channel is the underlying hazard). Accepted.</li>
+      <li><em></em>PR description — &quot;Out of scope: Converting Lima&#39;s <code>hostagent/events.Watch</code>&quot;<em></em> — the rdd strategy here is to bypass Lima&#39;s events watcher rather than fix it upstream. Accepted.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <h3 id="claude"><span class="pill pill-claude">Claude</span> <a href="#claude" class="pilcrow">&#182;</a></h3>
+    <p>Claude produced the most file-level polish (the <code>NOTICE</code> pointer, the <code>POLL_DURATION</code> nolint stale rationale, the asymmetric stop comment, the <code>t.Context()</code> suggestion) and wrote the strongest framing of the fix&#39;s <em>shape</em> — the commit-structure callout and the <code>run()</code> root-cause annotation both came from its read. It missed I1 outright, though: it listed the <code>testing.Short()</code> skip as a <em>strength</em> without tracing what <code>make test</code> actually runs, and so inverted the finding. Its severity bar was conservative — no important findings, which lines up with Codex but trails Gemini&#39;s two elevated calls.</p>
+    <h3 id="codex"><span class="pill pill-codex">Codex</span> <a href="#codex" class="pilcrow">&#182;</a></h3>
+    <p>Codex owned I1, the only merge-blocker in the review, and followed the chain from <code>tail_stress_test.go</code> through <code>Makefile:159</code> to the <code>.github/workflows/lint.yaml</code> unit-test job — exactly the kind of cross-file verification the other two agents skipped. It also caught the dead <code>events.Watcher()</code> comment in <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/a9bcf890f8bdda37f63a86a74a741c78a53956ab/pkg/hostagent/command.go#L170"><code>command.go:170</code></a> and the <code>FileWatcher.ChangeEvents</code> interface-doc drift, both real. Its S2 <code>NOTICE</code> suggestion overlapped with Claude&#39;s S1 but with the narrower fix; Claude&#39;s wording made it into the consolidated report because it also addressed the Apache-2.0 file mix. Its one build-time friction note (<code>go build ./...</code> failed on the missing guestagent binary) is noise from a clean worktree without build artifacts, not a PR concern.</p>
+    <h3 id="gemini"><span class="pill pill-gemini">Gemini</span> <a href="#gemini" class="pilcrow">&#182;</a></h3>
+    <p>Gemini raised two findings the other agents missed — the malformed-JSON abort (S2) and the unresponsive <code>time.Sleep</code> in the polling watcher (S7), both valid. Its severity calibration ran hot: I1 (Stream write errors) and I2 (logrus) were both tagged <code>important (regression)</code>, but verification against the base branch shows they are pre-existing. I downgraded both to suggestions. Its design-concern callout on the process-wide events drainer is a genuinely useful note for future work even if not in scope. <code>git blame</code> usage: Gemini did not verify its &quot;regression&quot; tags against the base branch, which is a recurring pattern consistent with its daily quota limits documented in the retro guide.</p>
+    <h3 id="summary">Summary <a href="#summary" class="pilcrow">&#182;</a></h3>
+    <table class="retro-table">
+      <thead><tr><th></th><th><span class="pill pill-claude">Claude</span> Opus 4.7</th><th><span class="pill pill-codex">Codex</span> GPT 5.4</th><th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th></tr></thead>
+      <tbody>
+        <tr><td>Duration</td><td>13m 13s</td><td>8m 10s</td><td>6m 03s</td></tr>
+        <tr><td>Findings</td><td>5S</td><td>1I 2S</td><td>1I 3S</td></tr>
+        <tr><td>Tool calls</td><td>44 (Read 21, Bash 18, Grep 5)</td><td>61 (shell 59, stdin 2)</td><td>14 (read<em>file 6, grep</em>search 4, run<em>shell</em>command 4)</td></tr>
+        <tr><td>Design observations</td><td>5</td><td>3</td><td>2</td></tr>
+        <tr><td>False positives</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>Unique insights</td><td>4</td><td>3</td><td>2</td></tr>
+        <tr><td>Files reviewed</td><td>20</td><td>20</td><td>20</td></tr>
+        <tr><td>Coverage misses</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td><strong>Totals</strong></td><td><strong>5S</strong></td><td><strong>1I 2S</strong></td><td><strong>1I 3S</strong></td></tr>
+        <tr><td>Downgraded</td><td>0</td><td>0</td><td>2 (I→S)</td></tr>
+        <tr><td>Dropped</td><td>0</td><td>0</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Overall</strong>: Codex delivered the single most valuable finding (I1), which changed the verdict. Gemini uncovered the most unique scenarios (two suggestions no other agent flagged). Claude produced the most polish and had the cleanest file-by-file coverage. Each of the three would have left one or more findings on the table alone; together they covered the PR well.</p>
+    </div>
+    <hr>
+    <h2 id="review-process-notes">Review Process Notes <a href="#review-process-notes" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <h3 id="skill-improvements">Skill improvements <a href="#skill-improvements" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><strong>Verify &quot;regression&quot; tags against the base branch before accepting them.</strong> When a finding describes a behavior as &quot;regression&quot;, cross-check that the offending code did not exist (or behaved differently) before the PR. Renames, moves, and refactors often carry pre-existing bugs without introducing them. Why: severity inflation from mislabeling pre-existing issues as regressions shifts the review&#39;s focus away from what the PR actually changed.</li>
+      <li><strong>Trace how each test actually runs in CI, not just whether it has an opt-out.</strong> A finding that &quot;the test is <code>testing.Short()</code>-skippable&quot; is not the same as &quot;the test does not run by default&quot; — check the <code>Makefile</code> target the CI workflow invokes and the flags passed. Why: a test gated on an opt-out that CI does not set adds its full runtime to every CI run across the OS matrix, which is a real merge-blocking issue that reads as &quot;test is well-guarded&quot; on a surface review.</li>
+    </ul>
+    <h3 id="repo-context-updates">Repo context updates <a href="#repo-context-updates" class="pilcrow">&#182;</a></h3>
+    <p>None. The existing <code>deep-review-context.md</code> entries on embedded-apiserver lifecycle, cross-controller tracing, and repository layout were accurate for this review — no changes under review contradicted them, and no new repo conventions surfaced that would improve future reviews.</p>
+    </div>
+  </main>
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+  <script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+
+  </script>
+</body>
+</html>
