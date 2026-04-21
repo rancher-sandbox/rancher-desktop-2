@@ -200,6 +200,58 @@ dump_memory_pressure() {
     esac
 }
 
+# On Windows, Lima runs each VM as a WSL2 distro named `lima-<vmname>`.
+# When a bats target hangs waiting on the guest (e.g. `docker info`
+# blocked on an unresponsive dockerd socket), the host-side logs show
+# only that ssh is stuck; the actual cause lives in the VM's journal.
+# wsl.exe talks to the WSL service directly and does not depend on the
+# rdd daemon, so this dump still works after rdd is wedged or killed.
+# Every invocation is behind `timeout` so a hung guest cannot block the
+# bundle capture itself.
+dump_windows_vm_logs() {
+    case "$(uname -s)" in
+        MINGW*|MSYS*|CYGWIN*) ;;
+        *) return ;;
+    esac
+    command -v wsl.exe >/dev/null 2>&1 || return
+
+    # `--quiet --list --running` prints one distro name per line, but WSL
+    # emits UTF-16LE (with a BOM) on some Windows builds. Strip NULs and
+    # extract `lima-<name>` substrings directly so the leftover BOM bytes
+    # cannot interfere with a line-anchored match.
+    local distros
+    distros=$(timeout --kill-after=1 10 wsl.exe --list --running --quiet 2>/dev/null \
+        | tr -d '\0\r' | grep -Eo 'lima-[A-Za-z0-9_-]+' | sort -u || true)
+    if [ -z "$distros" ]; then
+        return
+    fi
+
+    local distro
+    for distro in $distros; do
+        echo
+        echo "=== VM: ${distro} ==="
+
+        echo
+        echo "--- ${distro}: systemctl status rancher-desktop.target ---"
+        timeout --kill-after=1 10 \
+            wsl.exe -d "$distro" -- systemctl status rancher-desktop.target --no-pager 2>&1 || true
+
+        echo
+        echo "--- ${distro}: ps auxf ---"
+        timeout --kill-after=1 10 \
+            wsl.exe -d "$distro" -- ps auxf 2>&1 || true
+
+        # Dump the full journal for this boot. Lima VMs live only as
+        # long as the bats target, so the journal is bounded by the
+        # run's wall time; no caps to match the macOS/Linux serial.log
+        # behavior, where the full console log is preserved.
+        echo
+        echo "--- ${distro}: journalctl -b ---"
+        timeout --kill-after=1 30 \
+            wsl.exe -d "$distro" -- journalctl -b --no-pager 2>&1 || true
+    done
+}
+
 # Snapshot the current state of the rdd API server and (if wired up) the
 # forwarded Docker daemon. Wraps every probe in `timeout` so a hung or
 # dead daemon cannot block the capture — the common case for the
@@ -284,6 +336,9 @@ capture_state() {
 
         echo
         dump_api_state
+
+        echo
+        dump_windows_vm_logs
 
         echo
         echo "=== End of support bundle (${context}) ==="
