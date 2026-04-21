@@ -29,6 +29,8 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 )
 
+var _ engineWatcher = (*dockerWatcher)(nil)
+
 // dockerWatcher manages a Docker client connection and event stream. It
 // performs a full sync on connect and then watches for incremental changes.
 type dockerWatcher struct {

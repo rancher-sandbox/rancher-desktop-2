@@ -53,8 +53,30 @@ const (
 	engineMoby = "moby"
 )
 
+// engineWatcher is the reconciler-facing contract every container-engine
+// watcher must satisfy. dockerWatcher is the only current implementation; a
+// forthcoming containerd watcher will provide a second. Methods on the
+// watcher that the reconciler does not call (event handlers, full-sync
+// internals) stay off the interface.
+type engineWatcher interface {
+	// alive reports whether the watcher goroutine is still running.
+	alive() bool
+	// stop cancels the watcher goroutine and waits for it to finish.
+	stop()
+	// processContainerAction dispatches the action annotation on a single
+	// Container mirror and records the outcome in status.lastAction.
+	processContainerAction(ctx context.Context, c *containersv1alpha1.Container) error
+	// deleteContainer removes a container from the engine by ID.
+	deleteContainer(ctx context.Context, id string) error
+	// deleteImage removes an image from the engine.
+	deleteImage(ctx context.Context, img *containersv1alpha1.Image) error
+	// deleteVolume removes a volume from the engine by name. Engines
+	// without a native volume concept return nil.
+	deleteVolume(ctx context.Context, name string) error
+}
+
 // EngineReconciler watches the App resource for the Running condition and
-// manages a Docker watcher goroutine that mirrors engine state into K8s.
+// manages an engine watcher goroutine that mirrors engine state into K8s.
 //
 // The App is a cluster-scoped singleton, so controller-runtime runs at
 // most one Reconcile at a time. Only Reconcile and the manager's
@@ -63,7 +85,7 @@ const (
 type EngineReconciler struct {
 	client.Client
 
-	// reconcileChan receives events from the Docker watcher goroutine.
+	// reconcileChan receives events from the engine watcher goroutine.
 	reconcileChan chan event.GenericEvent
 
 	// apiNamespace mirrors App.spec.namespace (immutable). Reconcile
@@ -74,13 +96,13 @@ type EngineReconciler struct {
 	// stopWatcher call. Reconcile runs serially (see struct doc), so
 	// the lock has no other role.
 	watcherMu sync.Mutex
-	watcher   *dockerWatcher
+	watcher   engineWatcher
 
-	// watcherCtx is the parent context for every Docker watcher the
+	// watcherCtx is the parent context for every engine watcher the
 	// reconciler starts. A manager.RunnableFunc cancels it on
 	// shutdown, so the watcher outlives individual Reconcile calls
 	// but not the manager. Deriving from Reconcile's ctx would leak
-	// the Docker client: once the manager context cancels, Reconcile
+	// the engine client: once the manager context cancels, Reconcile
 	// no longer runs, and stopWatcher is unreachable from that path.
 	watcherCtx    context.Context
 	watcherCancel context.CancelFunc
@@ -527,7 +549,7 @@ func (r *EngineReconciler) processFinalizers(ctx context.Context) error {
 // every Container pending deletion. The mirror finalizer is only
 // stripped when the Docker delete succeeds, so a stuck container keeps
 // retrying on later reconciles.
-func (r *EngineReconciler) processContainerFinalizers(ctx context.Context, w *dockerWatcher) error {
+func (r *EngineReconciler) processContainerFinalizers(ctx context.Context, w engineWatcher) error {
 	var containers containersv1alpha1.ContainerList
 	if err := r.List(ctx, &containers, client.InNamespace(r.apiNamespace)); err != nil {
 		return err
@@ -567,7 +589,7 @@ func (r *EngineReconciler) processContainerFinalizers(ctx context.Context, w *do
 	return errors.Join(errs...)
 }
 
-func (r *EngineReconciler) processImageFinalizers(ctx context.Context, w *dockerWatcher) error {
+func (r *EngineReconciler) processImageFinalizers(ctx context.Context, w engineWatcher) error {
 	var images containersv1alpha1.ImageList
 	if err := r.List(ctx, &images, client.InNamespace(r.apiNamespace)); err != nil {
 		return err
@@ -610,7 +632,7 @@ func (r *EngineReconciler) processImageFinalizers(ctx context.Context, w *docker
 	return errors.Join(errs...)
 }
 
-func (r *EngineReconciler) processVolumeFinalizers(ctx context.Context, w *dockerWatcher) error {
+func (r *EngineReconciler) processVolumeFinalizers(ctx context.Context, w engineWatcher) error {
 	var volumes containersv1alpha1.VolumeList
 	if err := r.List(ctx, &volumes, client.InNamespace(r.apiNamespace)); err != nil {
 		return err
