@@ -63,7 +63,7 @@ let searchAddon: SearchAddon | undefined;
 let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 let terminalAborter: AbortController | undefined;
-let buffer = '';
+let buffer: ArrayBuffer[] = [];
 /**
  * waitingForInitialLogs is used to delay showing the terminal until after the
  * initial logs have streamed in.  This prevents the user seeing a quick stream
@@ -169,13 +169,15 @@ watch(terminalContainer, async(terminalContainer, _oldValue, onCleanup) => {
   t.open(terminalContainer);
 
   await nextTick();
-  if (buffer) {
+  if (buffer.length > 0) {
     // If we have data streamed in before the terminal showed up, write it now.
     // This shouldn't be necessary as we show the terminal as soon as the socket
     // opens, but it's still possible to end up with a race if the first message
     // comes in before the terminal container watch fires.
-    t.write(buffer);
-    buffer = '';
+    for (const chunk of buffer) {
+      t.write(new Uint8Array(chunk));
+    }
+    buffer = [];
   }
   terminal = t;
 
@@ -186,6 +188,10 @@ watch(terminalContainer, async(terminalContainer, _oldValue, onCleanup) => {
   });
   fitAddon.fit();
 });
+
+function isArrayBufferMessage(message: MessageEvent): message is MessageEvent<ArrayBuffer> {
+  return message.data instanceof ArrayBuffer;
+}
 
 // Start streaming logs from the container.  We want to set `immediate` so that
 // if `logURL` is already available by the time we set up the watcher, we don't
@@ -203,7 +209,7 @@ watch([logURL, reconnectTrigger], async([logURL], [,], cleanUp) => {
     clearTimeout(reconnectResetTimer);
   });
   streamAborter.signal.addEventListener('abort', () => {
-    buffer = '';
+    buffer = [];
     terminal?.reset();
   });
 
@@ -216,14 +222,15 @@ watch([logURL, reconnectTrigger], async([logURL], [,], cleanUp) => {
   }
 
   try {
-    buffer = '';
+    buffer = [];
 
     // Authentication for the log stream is handled in the main process via the
     // webRequest.onBeforeSendHeaders listener; see `@pkg/window/index.ts`.
     const socket = new WebSocket(logURL);
+    socket.binaryType = 'arraybuffer';
     streamAborter.signal.addEventListener('abort', () => socket.close());
     socket.addEventListener('message', (event) => {
-      if (typeof event.data !== 'string') {
+      if (!isArrayBufferMessage(event)) {
         return;
       }
       if (streamAborter.signal.aborted) {
@@ -235,11 +242,11 @@ watch([logURL, reconnectTrigger], async([logURL], [,], cleanUp) => {
       }
       const t = terminal;
       if (!t) {
-        buffer += event.data;
+        buffer.push(event.data);
         return;
       }
       errorMessage.value = undefined;
-      t.write(event.data);
+      t.write(new Uint8Array(event.data));
       if (waitingForInitialLogs.value) {
         // If we're still waiting for the initial logs, delay the reveal
         // until after all of the initial logs have streamed in.
