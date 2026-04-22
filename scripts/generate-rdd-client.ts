@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 // This script generates the RDD client for use with the frontend.
-// Docker is required.
+// RDD will be automatically started.
 
 import childProcess from 'node:child_process';
 import crypto from 'node:crypto';
@@ -59,9 +59,9 @@ async function run() {
     throw new Error('Failed to find free port');
   }
 
-  await execFile(rddPath, ['service', 'start']);
   await fs.promises.rm(outDir, { recursive: true, force: true });
   await fs.promises.mkdir(outDir, { recursive: true });
+  await execFile(rddPath, ['service', 'start']);
 
   try {
     const proxy = childProcess.spawn(rddPath, ['ctl', 'proxy', `--port=${ port }`]);
@@ -93,85 +93,89 @@ async function run() {
     } finally {
       proxy.kill();
     }
+
+    await execFile(rddPath, ['set', 'running=true']);
+
+    // Determine the hash of this file, used as the tag for the images.
+    const tagHash = crypto.createHash('sha256');
+
+    await stream.promises.pipeline(fs.createReadStream(scriptPath), tagHash);
+    const tag = tagHash.digest('hex');
+    const pythonImageBase = `python:3-slim`;
+    const pythonImageName = `rdd-client-gen-python:${ tag }`;
+
+    // Build the docker image if needed.
+    async function hasImage(imageName: string): Promise<boolean> {
+      const { stdout } = await execFile('docker', ['images', '--quiet', imageName]);
+
+      return !!stdout.trim();
+    }
+
+    if (!await hasImage(pythonImageName)) {
+      console.log(`Building python image ${ pythonImageName }...`);
+      const genRepo = 'https://raw.githubusercontent.com/kubernetes-client/gen';
+      const dockerFile = new stream.Readable();
+
+      for (const line of [
+        `FROM ${ pythonImageBase }`,
+        `RUN pip3 install urllib3`,
+        `ADD ${ genRepo }/${ KUBERNETES_GEN_COMMIT }/openapi/preprocess_spec.py /`,
+        `ADD ${ genRepo }/${ KUBERNETES_GEN_COMMIT }/openapi/custom_objects_spec.json /`,
+        `RUN chmod a+r /preprocess_spec.py /custom_objects_spec.json`,
+        'ENV OPENAPI_SKIP_FETCH_SPEC=true',
+        `ENTRYPOINT ["python3", "/preprocess_spec.py", "typescript", "${ KUBERNETES_BRANCH }", "/out/swagger.json", "kubernetes", "kubernetes"]`,
+      ]) {
+        dockerFile.push(line + '\n');
+      }
+      dockerFile.push(null);
+
+      await spawnFile('docker', [
+        'build',
+        '-',
+        '-t', pythonImageName,
+      ], { stdio: [dockerFile, 'inherit', 'inherit'] });
+    }
+
+    // Generate the models
+    console.log('Generating models...');
+    await spawnFile('docker', [
+      'run',
+      '--rm',
+      `--user=${ process.getuid?.() ?? 0 }`,
+      `--volume=${ outDir }:/out:rw`,
+      pythonImageName,
+    ], { stdio: 'inherit' });
+    await spawnFile('docker', [
+      'run',
+      '--rm',
+      `--user=${ process.getuid?.() ?? 0 }`,
+      `--volume=${ outDir }:/output_dir`,
+      `--volume=${ templateDir }:/templates:ro`,
+      'openapitools/openapi-generator-cli:v7.19.0',
+      'generate',
+      '--input-spec', '/output_dir/swagger.json',
+      '--skip-validate-spec',
+      '--generator-name', 'typescript',
+      '--import-mappings', 'IntOrString=../../types,V1MicroTime=../../types',
+      '--output', '/output_dir',
+      '--additional-properties', 'framework=fetch-api',
+      '--additional-properties', 'npmName=@rancher/rdd-client',
+      '--additional-properties', 'packageAsSourceOnlyLibrary=true',
+      '--additional-properties', 'platform=browser',
+      '--additional-properties', 'sortParamsByRequiredFlag=true',
+      '--additional-properties', 'supportsES6=true',
+      '--additional-properties', 'useObjectParameters=true',
+      '--additional-properties', `importFileExtension=`,
+      '--additional-properties', `modelPropertyNaming=original`,
+      '--additional-properties', `npmVersion=0.0.1-${ tag }`,
+      '--template-dir', '/templates',
+      '--type-mappings', 'int-or-string=IntOrString,date-time-micro=V1MicroTime',
+    ], { stdio: 'inherit' });
+
+    console.log('Done.');
   } finally {
     await execFile(rddPath, ['service', 'stop']);
   }
-
-  // Determine the hash of this file, used as the tag for the images.
-  const tagHash = crypto.createHash('sha256');
-
-  await stream.promises.pipeline(fs.createReadStream(scriptPath), tagHash);
-  const tag = tagHash.digest('hex');
-  const pythonImageBase = `python:3-slim`;
-  const pythonImageName = `rdd-client-gen-python:${ tag }`;
-
-  // Build the docker image if needed.
-  async function hasImage(imageName: string): Promise<boolean> {
-    const { stdout } = await execFile('docker', ['images', '--quiet', imageName]);
-
-    return !!stdout.trim();
-  }
-
-  if (!await hasImage(pythonImageName)) {
-    console.log(`Building python image ${ pythonImageName }...`);
-    const genRepo = 'https://raw.githubusercontent.com/kubernetes-client/gen';
-    const dockerFile = new stream.Readable();
-
-    for (const line of [
-      `FROM ${ pythonImageBase }`,
-      `RUN pip3 install urllib3`,
-      `ADD ${ genRepo }/${ KUBERNETES_GEN_COMMIT }/openapi/preprocess_spec.py /`,
-      `ADD ${ genRepo }/${ KUBERNETES_GEN_COMMIT }/openapi/custom_objects_spec.json /`,
-      'ENV OPENAPI_SKIP_FETCH_SPEC=true',
-      `ENTRYPOINT ["python3", "/preprocess_spec.py", "typescript", "${ KUBERNETES_BRANCH }", "/out/swagger.json", "kubernetes", "kubernetes"]`,
-    ]) {
-      dockerFile.push(line + '\n');
-    }
-    dockerFile.push(null);
-
-    await spawnFile('docker', [
-      'build',
-      '-',
-      '-t', pythonImageName,
-    ], { stdio: [dockerFile, 'inherit', 'inherit'] });
-  }
-
-  // Generate the models
-  console.log('Generating models...');
-  await spawnFile('docker', [
-    'run',
-    '--rm',
-    `--volume=${ outDir }:/out:rw`,
-    pythonImageName,
-  ], { stdio: 'inherit' });
-  await spawnFile('docker', [
-    'run',
-    '--rm',
-    `--user=${ process.getuid?.() ?? 0 }`,
-    `--volume=${ outDir }:/output_dir`,
-    `--volume=${ templateDir }:/templates:ro`,
-    'openapitools/openapi-generator-cli:v7.19.0',
-    'generate',
-    '--input-spec', '/output_dir/swagger.json',
-    '--skip-validate-spec',
-    '--generator-name', 'typescript',
-    '--import-mappings', 'IntOrString=../../types,V1MicroTime=../../types',
-    '--output', '/output_dir',
-    '--additional-properties', 'framework=fetch-api',
-    '--additional-properties', 'npmName=@rancher/rdd-client',
-    '--additional-properties', 'packageAsSourceOnlyLibrary=true',
-    '--additional-properties', 'platform=browser',
-    '--additional-properties', 'sortParamsByRequiredFlag=true',
-    '--additional-properties', 'supportsES6=true',
-    '--additional-properties', 'useObjectParameters=true',
-    '--additional-properties', `importFileExtension=`,
-    '--additional-properties', `modelPropertyNaming=original`,
-    '--additional-properties', `npmVersion=0.0.1-${ tag }`,
-    '--template-dir', '/templates',
-    '--type-mappings', 'int-or-string=IntOrString,date-time-micro=V1MicroTime',
-  ], { stdio: 'inherit' });
-
-  console.log('Done.');
 }
 
 await run();
