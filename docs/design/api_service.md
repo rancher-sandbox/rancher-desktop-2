@@ -18,7 +18,10 @@ Unless otherwise specified, all objects mentioned here will be created in the `r
 
 ## Service shutdown
 
-The control plane will be notified to shut down, either by receiving a SIGTERM signal from the user (via `rdd service stop`), or by the OS preparing to shut down the host.
+The control plane is notified to shut down, either by `rdd service stop`
+(SIGINT on Unix, `CTRL_BREAK_EVENT` on Windows; if the wait deadline expires
+the wait force-terminates with SIGTERM on Unix or `TerminateProcess` on
+Windows), or by the OS preparing to shut down the host.
 
 Some controllers need to be notified of pending shutdown so they can gracefully terminate, e.g. shut down virtual machines.
 

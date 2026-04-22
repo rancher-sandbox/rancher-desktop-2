@@ -14,28 +14,28 @@ Create a new `LimaVM` instance `NAME` in `NAMESPACE` (or `default`) using `TEMPL
 
 - `--start` (default `false`): Set `spec.running=true` to start the VM immediately after creation.
 - `--wait` (default `true`): When used with `--start`, wait until the Running condition becomes True before returning.
-- `--timeout` (default `0`): Maximum time to wait. A value of `0` waits indefinitely. Accepts Go duration strings (e.g., `30s`, `5m`).
+- `--timeout` (default `5m`): Maximum time to wait. A value of `0` waits indefinitely. Accepts Go duration strings (e.g., `30s`, `5m`). If the deadline expires, `rdd` exits with code 4.
 
 ### `rdd limavm start NAME`
 
 Set `spec.running` of the specified instance to `true`. There is no `--namespace` option because `LimaVM` names are globally unique (within the control plane).
 
 - `--wait` (default `true`): Wait until the Running condition becomes True before returning.
-- `--timeout` (default `0`): Maximum time to wait. A value of `0` waits indefinitely. Accepts Go duration strings (e.g., `30s`, `5m`).
+- `--timeout` (default `5m`): Maximum time to wait. A value of `0` waits indefinitely. If the deadline expires, `rdd` exits with code 4.
 
 ### `rdd limavm stop NAME`
 
 Set `spec.running` of the specified instance to `false`.
 
 - `--wait` (default `true`): Wait until the Running condition becomes False before returning.
-- `--timeout` (default `0`): Maximum time to wait. A value of `0` waits indefinitely.
+- `--timeout` (default `5m`): Maximum time to wait. A value of `0` waits indefinitely. If the deadline expires, `rdd` exits with code 4.
 
 ### `rdd limavm delete NAME`
 
 Stop and delete the instance. The `LimaVM` resource deletion triggers cleanup of all owned resources: the `status.templateConfigMap`, and the `spec.templateRef.name` template if `rdd limavm create` created it.
 
-- `--wait` (default `false`): Wait until the resource is fully deleted before returning.
-- `--timeout` (default `0`): Maximum time to wait. A value of `0` waits indefinitely.
+- `--wait` (default `true`): Wait until the resource is fully deleted before returning.
+- `--timeout` (default `5m`): Maximum time to wait. A value of `0` waits indefinitely. If the deadline expires, `rdd` exits with code 4.
 
 ### `rdd limavm params NAME1=VALUE1 NAME2=VALUE2`
 
@@ -54,7 +54,7 @@ Set `lima.rancherdesktop.io/resetRequested` annotation to the current timestamp.
 Set `lima.rancherdesktop.io/restartRequested` annotation and `spec.running=true` in a single patch. The annotation tells the reconciler to stop the instance if it is running; setting `spec.running=true` ensures the instance starts afterward, even if it had been stopped initially.
 
 - `--wait` (default `true`): Wait until `status.restartCount` increments (the instance has fully restarted) before returning.
-- `--timeout` (default `0`): Maximum time to wait. A value of `0` waits indefinitely.
+- `--timeout` (default `5m`): Maximum time to wait. A value of `0` waits indefinitely. If the deadline expires, `rdd` exits with code 4.
 
 ### `rdd limavm shell NAME CMD`
 

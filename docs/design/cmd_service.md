@@ -90,20 +90,36 @@ Runs `rdd service serve` to actually start the control plane in the background
 
 Additional options:
 
-*   `--no-wait`
-    Return immediately and don't wait for all controllers to be ready. The user can force a wait
-    later by running `rdd service start` without any options.
+*   `--wait=false`
+    Return immediately, without waiting for all controllers to be ready. Run `rdd service start`
+    again with no options to wait.
+
+*   `--timeout=90s`
+    How long to wait for the control plane to become ready. Pass `0` to wait indefinitely.
+    If the deadline expires, `rdd` exits with code 4.
 
 
 ### `rdd service stop`
 
-Sends SIGTERM signal to control plane process (`rdd.pid`).
+Sends SIGINT to the control plane process (`rdd.pid`) and waits up to 5 minutes for
+it to exit. On Windows the signal is delivered as `CTRL_BREAK_EVENT`. If the deadline
+expires, the wait sends SIGTERM on Unix (or calls `TerminateProcess` on Windows)
+as a fallback and `rdd` exits with code 4. Pass `--wait=false` to return immediately,
+or `--timeout=0` to wait indefinitely. The default matches the per-VM ceiling because
+graceful shutdown will eventually stop every running LimaVM before the service exits.
 
 ### `rdd service delete`
 
 Stops the control plane and removes the instance directory, the short directory
 (which contains the Lima home), and — unless `RDD_KEEP_LOGS` is set — the log
 directory.
+
+Delete always waits for the control plane to exit before removing files, because
+removing the instance directory under a live process corrupts it on Windows and
+breaks PID-file mutual exclusion on Unix. Use `--timeout` to bound that wait
+(default `5m`); `0` waits indefinitely. If the deadline expires, `rdd` exits
+with code 4 and the directory is left in place. See [`rdd service stop`](#rdd-service-stop)
+for the signal and fallback details of the shutdown itself.
 
 ### `rdd service reset`
 

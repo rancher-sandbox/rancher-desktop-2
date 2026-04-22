@@ -6,6 +6,11 @@
 // admission rejection, wait timeout, and generic internal errors.
 package exit
 
+import (
+	"context"
+	"errors"
+)
+
 // Predefined exit codes. 0 and 1 are the defaults handled by main; 2 is
 // reserved for cobra usage errors, so named codes start at 3.
 const (
@@ -43,4 +48,18 @@ func Rejected(err error) *Error {
 // Timeout wraps err with [CodeTimeout].
 func Timeout(err error) *Error {
 	return &Error{Code: CodeTimeout, Err: err}
+}
+
+// Classify wraps err with [CodeTimeout] when err wraps
+// [context.DeadlineExceeded]. Already-classified errors and unrelated
+// errors pass through unchanged, so callers may Classify repeatedly.
+func Classify(err error) error {
+	var exitErr *Error
+	if errors.As(err, &exitErr) {
+		return err
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return Timeout(err)
+	}
+	return err
 }

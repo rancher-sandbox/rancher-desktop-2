@@ -38,6 +38,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	watchtools "k8s.io/client-go/tools/watch"
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/cli/globalflag"
 	logsapi "k8s.io/component-base/logs/api/v1"
@@ -165,6 +166,17 @@ func Running() bool {
 	return PID() != PIDNotFound
 }
 
+// StartTime returns the start time of the running service, read
+// from the PID file's mtime. Use it to anchor freshness checks for
+// state the service creates after startup.
+func StartTime() (time.Time, error) {
+	fi, err := os.Stat(instance.PIDFile())
+	if err != nil {
+		return time.Time{}, err
+	}
+	return fi.ModTime().Truncate(time.Second), nil
+}
+
 // Create a new control plane instance with the given arguments.
 func Create(args []string) error {
 	if Exists() {
@@ -210,11 +222,9 @@ func getRuntimeControllersFromCluster(ctx context.Context) ([]string, error) {
 	return enabledControllers, nil
 }
 
-// Start the service in a background subprocess.
+// Start the service in a background subprocess. Callers must verify Exists()
+// first; Start assumes the instance exists.
 func Start(ctx context.Context, args []string) error {
-	if !Exists() {
-		return fmt.Errorf("%q create control plane does not exist", instance.Name())
-	}
 	if Running() {
 		return fmt.Errorf("%q control plane is already running", instance.Name())
 	}
@@ -332,22 +342,20 @@ func Wait(ctx context.Context) error {
 	}
 }
 
-// WaitWithTimeout calls Wait with a timeout.
-func WaitWithTimeout(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, 90*time.Second) // Increased timeout for CRD establishment
-	defer cancel()
-	return Wait(ctx)
-}
-
-// StopWithWait sends a shutdown signal to the service. If wait is true, it blocks
-// until the process exits or a timeout expires.
-func StopWithWait(wait bool) error {
+// StopWithWait sends a shutdown signal to the service. When wait is true, it
+// blocks until the process exits, ctx is cancelled, or timeout elapses; pass
+// timeout 0 to wait indefinitely (bounded only by ctx).
+func StopWithWait(ctx context.Context, wait bool, timeout time.Duration) error {
 	if !Running() {
 		return fmt.Errorf("%q control plane is not running", instance.Name())
 	}
 
-	// Clean up discovery configmap while cluster is still accessible
-	_ = cleanupDiscoveryConfigMap() // Clean up discovery configmap to prevent stale controller info
+	// Delete the discovery configmap before signaling so the kube-API
+	// delete still has a live apiserver. Trade-off: a timed-out --wait
+	// leaves the configmap deleted while the daemon drains, so a quick
+	// `rdd svc start` polls the missing configmap until startWaitTimeout.
+	// Moving cleanup into the daemon's own shutdown path is the durable fix.
+	_ = cleanupDiscoveryConfigMap()
 
 	pid := PID()
 	// Try graceful shutdown first. On Unix, Kill already sends SIGTERM which
@@ -368,24 +376,31 @@ func StopWithWait(wait bool) error {
 	}
 
 	if wait {
-		// Wait for the process to actually terminate. The service needs up to
-		// 30s for graceful hostagent shutdown plus overhead, so allow 60s total.
-		timeout := time.After(60 * time.Second)
+		ctx, cancel := watchtools.ContextWithOptionalTimeout(ctx, timeout)
+		defer cancel()
 		ticker := time.NewTicker(100 * time.Millisecond)
 		defer ticker.Stop()
 
 		for {
 			select {
-			case <-timeout:
-				// Graceful shutdown timed out; terminate so we don't leave
-				// a hung service process. Kill targets only the service; on
-				// Windows (TerminateProcess) this avoids killing hostagents
-				// that are children of the service but run in their own
-				// process groups. On Unix, SIGTERM suffices because the
-				// service is responsive to signals (it's just slow shutting
-				// down hostagents sequentially).
+			case <-ctx.Done():
+				// Deadline fired or caller cancelled; terminate either way
+				// to ensure the service process exits. Kill targets the
+				// service alone: on Windows (TerminateProcess) it spares
+				// hostagents, which live in their own process groups. On
+				// Unix, Kill delivers SIGTERM, which is the second
+				// shutdown signal after the earlier SIGINT; the apiserver's
+				// SetupSignalContext handler responds to a second signal
+				// with os.Exit(1), forcing immediate exit. The daemon also
+				// caps its own drain at 45s before returning from Run, so
+				// timeout values shorter than stopWaitTimeout (5m) routinely
+				// race a still-draining daemon.
 				_ = process.Kill(pid)
-				return fmt.Errorf("timed out waiting for %q control plane with pid %d to stop", instance.Name(), pid)
+				err := ctx.Err()
+				if errors.Is(err, context.DeadlineExceeded) {
+					return fmt.Errorf("timed out waiting for %q control plane with pid %d to stop: %w", instance.Name(), pid, err)
+				}
+				return fmt.Errorf("wait for %q control plane with pid %d to stop cancelled: %w", instance.Name(), pid, err)
 			case <-ticker.C:
 				if !Running() {
 					_ = os.Remove(instance.Config()) // Ignore error as file might not exist
@@ -395,14 +410,10 @@ func StopWithWait(wait bool) error {
 		}
 	}
 
-	_ = os.Remove(instance.Config()) // Ignore error as file might not exist
+	// --wait=false: the daemon may still be serving for tens of seconds.
+	// Leave instance.Config() alone so concurrent `rdd ctl`/`rdd kubectl`
+	// calls keep working; the next `Start` rewrites it.
 	return nil
-}
-
-// Stop the service and wait for the process to exit.
-func Stop() error {
-	// For backward compatibility, always wait
-	return StopWithWait(true)
 }
 
 // cleanupDiscoveryConfigMap removes the discovery configmap to prevent readiness check confusion.
@@ -428,12 +439,30 @@ func cleanupDiscoveryConfigMap() error {
 	return nil // Don't fail stop operation due to discovery cleanup issues
 }
 
-// Delete the service and remove all instance data.
-func Delete() error {
-	if !Exists() {
-		return fmt.Errorf("%q control plane does not exist", instance.Name())
+// Delete removes all instance data. Callers must verify Exists() first; Delete
+// assumes the instance exists. If the service is running, Delete waits up to
+// timeout for it to exit before removing files; removing instance.Dir() while
+// the serve process holds rdd.pid, rdd.sqlite3, and log files corrupts the
+// directory on Windows and breaks PID-file mutual exclusion on Unix.
+// Pass timeout 0 to wait indefinitely (bounded only by ctx).
+func Delete(ctx context.Context, timeout time.Duration) error {
+	if Running() {
+		if err := StopWithWait(ctx, true, timeout); err != nil {
+			// Return the error whenever the process is alive or the
+			// deadline expired, so deletion never races a live daemon
+			// and the CLI exits 4 on timeout per docs/design/cmd_service.md.
+			// The predicate also absorbs signal-delivery failures and
+			// context cancellation when the process has already exited;
+			// the invariant is "the directory survives unless the daemon
+			// is confirmed gone." context.Canceled is unreachable today
+			// because the CLI runs on context.Background(); wiring SIGINT
+			// into cmd.Context() would let Ctrl-C fall through to deletion
+			// during a live stop, and needs an explicit decision here.
+			if errors.Is(err, context.DeadlineExceeded) || Running() {
+				return err
+			}
+		}
 	}
-	_ = Stop()
 	preserveAllInstanceLogs()
 	if os.Getenv("RDD_KEEP_LOGS") == "" {
 		_ = os.RemoveAll(instance.LogDir())

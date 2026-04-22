@@ -75,7 +75,12 @@ patch_resource() {
 setup_rdd_control_plane() {
     local controllers=${1:-"*"}
 
-    rdd svc delete
+    # Bound delete so a stuck prior daemon cannot hang the helper for the
+    # full 5m stopWaitTimeout, and let the bounded delete fail loudly: a
+    # timed-out delete leaves the instance directory behind, which turns
+    # `create` into a no-op and leaks the prior controller set into the
+    # next suite.
+    rdd svc delete --timeout=120s
     rdd svc create --controllers="${controllers}"
     rdd svc start
 }

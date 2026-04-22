@@ -75,7 +75,7 @@ assert_created() {
     assert_running "false"
 
     # Delete the VM
-    run -0 rdd limavm delete --wait "test-vm"
+    run -0 rdd limavm delete "test-vm"
     assert_output --partial 'deleted'
     run -1 rdd ctl get limavm "test-vm" --namespace "${LIMA_TEST_NS}"
     assert_output --partial "not found"
@@ -91,7 +91,7 @@ assert_created() {
     run -0 rdd ctl get limavm "start-vm" --namespace "${LIMA_TEST_NS}" -o jsonpath='{.spec.running}'
     assert_output "true"
 
-    run -0 rdd limavm delete --wait "start-vm"
+    rdd limavm delete "start-vm"
 }
 
 @test "lima create with file template" {
@@ -128,9 +128,6 @@ assert_created() {
     # Delete the LimaVM
     run -0 rdd limavm delete "test-vm-file"
     assert_output --partial 'deleted'
-
-    # Wait for LimaVM to be fully deleted
-    rdd ctl wait --for=delete "limavm/test-vm-file" --namespace "${LIMA_TEST_NS}" --timeout="30s"
 
     # Verify ConfigMap was auto-deleted by controller finalizer
     run -1 rdd ctl get configmap "test-vm-file" --namespace "${LIMA_TEST_NS}"
@@ -193,8 +190,7 @@ assert_created() {
     assert_output "true"
 
     # Delete the VM
-    run -0 rdd limavm delete "restart-vm"
-    rdd ctl wait --for=delete "limavm/restart-vm" --namespace "${LIMA_TEST_NS}" --timeout="30s"
+    rdd limavm delete "restart-vm"
 }
 
 @test "lima start --timeout fails when VM cannot reach desired state" {
@@ -204,7 +200,55 @@ assert_created() {
     assert_created "timeout-vm" "${LIMA_TEST_NS}" "timeout-vm"
 
     # Non-functional template cannot boot, so --wait --timeout should fail
-    run -1 rdd limavm start --wait --timeout=3s "timeout-vm"
+    # with exit code 4 (cliexit.CodeTimeout) to match `rdd set`.
+    run -4 rdd limavm start --wait --timeout=3s "timeout-vm"
+    assert_output --partial 'context deadline exceeded'
+}
+
+@test "lima create --start --timeout fails when VM cannot boot" {
+    rdd ctl create configmap "create-timeout-vm" --namespace "${LIMA_TEST_NS}" \
+        --from-literal="template=${TEMPLATE}"
+
+    # Create with --start: the VM never reaches Running=True because the
+    # template is non-functional, so --wait --timeout exits with code 4.
+    run -4 rdd limavm create "create-timeout-vm" "create-timeout-vm" \
+        --namespace "${LIMA_TEST_NS}" --start --wait --timeout=3s
+    assert_output --partial 'context deadline exceeded'
+}
+
+@test "lima restart --timeout fails when VM cannot restart" {
+    rdd ctl create configmap "restart-timeout-vm" --namespace "${LIMA_TEST_NS}" \
+        --from-literal="template=${TEMPLATE}"
+    run_e -0 rdd limavm create "restart-timeout-vm" "restart-timeout-vm" --namespace "${LIMA_TEST_NS}"
+    assert_created "restart-timeout-vm" "${LIMA_TEST_NS}" "restart-timeout-vm"
+
+    # Restart waits for status.restartCount to increment, which requires the
+    # VM to come back up. The non-functional template never boots, so the
+    # counter stays at zero and --wait --timeout exits with code 4.
+    run -4 rdd limavm restart --wait --timeout=3s "restart-timeout-vm"
+    assert_output --partial 'context deadline exceeded'
+}
+
+@test "lima stop --timeout exits with code 4" {
+    rdd ctl create configmap "stop-timeout-vm" --namespace "${LIMA_TEST_NS}" \
+        --from-literal="template=${TEMPLATE}"
+    run_e -0 rdd limavm create "stop-timeout-vm" "stop-timeout-vm" \
+        --namespace "${LIMA_TEST_NS}" --start --wait=false
+    assert_created "stop-timeout-vm" "${LIMA_TEST_NS}" "stop-timeout-vm"
+
+    # 1ms deadline fires before the Running=False condition propagates.
+    run -4 rdd limavm stop --wait --timeout=1ms "stop-timeout-vm"
+    assert_output --partial 'context deadline exceeded'
+}
+
+@test "lima delete --timeout exits with code 4" {
+    rdd ctl create configmap "delete-timeout-vm" --namespace "${LIMA_TEST_NS}" \
+        --from-literal="template=${TEMPLATE}"
+    run_e -0 rdd limavm create "delete-timeout-vm" "delete-timeout-vm" --namespace "${LIMA_TEST_NS}"
+    assert_created "delete-timeout-vm" "${LIMA_TEST_NS}" "delete-timeout-vm"
+
+    # 1ms deadline fires before the finalizer removes the resource.
+    run -4 rdd limavm delete --wait --timeout=1ms "delete-timeout-vm"
     assert_output --partial 'context deadline exceeded'
 }
 

@@ -25,16 +25,21 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	k8swatch "k8s.io/apimachinery/pkg/watch"
 	corev1scheme "k8s.io/client-go/kubernetes/scheme"
-	toolswatch "k8s.io/client-go/tools/watch"
+	watchtools "k8s.io/client-go/tools/watch"
 	"k8s.io/kubectl/pkg/cmd/util/editor"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	limav1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
+	cliexit "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/exit"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 	service "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/cmd"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail"
 )
+
+// limaLongWaitTimeout is the default --timeout for VM boot and shutdown waits,
+// which routinely take minutes.
+const limaLongWaitTimeout = 5 * time.Minute
 
 func newLimaVMCommand() *cobra.Command {
 	command := &cobra.Command{
@@ -143,7 +148,7 @@ TEMPLATE can be one of:
 	command.Flags().BoolVar(&dryRun, "dry-run", false, "If set, do not commit any changes to the cluster")
 	command.Flags().BoolVar(&start, "start", false, "Start the VM after creation")
 	command.Flags().BoolVar(&wait, "wait", true, "Wait for the operation to complete (only applies with --start)")
-	command.Flags().DurationVar(&timeout, "timeout", 0, "Timeout for --wait (0 means wait indefinitely)")
+	command.Flags().DurationVar(&timeout, "timeout", limaLongWaitTimeout, "Timeout for --wait; ignored without --start or with --wait=false (0 means wait indefinitely)")
 	return command
 }
 
@@ -159,7 +164,7 @@ func newLimaVMStartCommand() *cobra.Command {
 		},
 	}
 	command.Flags().BoolVar(&wait, "wait", true, "Wait for the operation to complete")
-	command.Flags().DurationVar(&timeout, "timeout", 0, "Timeout for --wait (0 means wait indefinitely)")
+	command.Flags().DurationVar(&timeout, "timeout", limaLongWaitTimeout, "Timeout for --wait; ignored if --wait=false (0 means wait indefinitely)")
 	return command
 }
 
@@ -175,7 +180,7 @@ func newLimaVMStopCommand() *cobra.Command {
 		},
 	}
 	command.Flags().BoolVar(&wait, "wait", true, "Wait for the operation to complete")
-	command.Flags().DurationVar(&timeout, "timeout", 0, "Timeout for --wait (0 means wait indefinitely)")
+	command.Flags().DurationVar(&timeout, "timeout", limaLongWaitTimeout, "Timeout for --wait; ignored if --wait=false (0 means wait indefinitely)")
 	return command
 }
 
@@ -192,7 +197,7 @@ func newLimaVMRestartCommand() *cobra.Command {
 		},
 	}
 	command.Flags().BoolVar(&wait, "wait", true, "Wait for the operation to complete")
-	command.Flags().DurationVar(&timeout, "timeout", 0, "Timeout for --wait (0 means wait indefinitely)")
+	command.Flags().DurationVar(&timeout, "timeout", limaLongWaitTimeout, "Timeout for --wait; ignored if --wait=false (0 means wait indefinitely)")
 	return command
 }
 
@@ -222,13 +227,13 @@ func limaVMRestartAction(ctx context.Context, name string, wait bool, timeout ti
 	logrus.Infof("LimaVM %q restart requested in namespace %q", name, limaVM.Namespace)
 
 	if wait {
-		waitCtx, cancel := toolswatch.ContextWithOptionalTimeout(ctx, timeout)
+		waitCtx, cancel := watchtools.ContextWithOptionalTimeout(ctx, timeout)
 		defer cancel()
 		key := client.ObjectKeyFromObject(limaVM)
 		if err := watchUntil(waitCtx, c, key, func(vm *limav1alpha1.LimaVM) bool {
 			return vm.Status.RestartCount > beforeCount
 		}); err != nil {
-			return fmt.Errorf("failed waiting for restart to complete: %w", err)
+			return cliexit.Classify(fmt.Errorf("failed waiting for restart to complete: %w", err))
 		}
 		logrus.Infof("LimaVM %q restarted in namespace %q", name, limaVM.Namespace)
 	}
@@ -246,8 +251,8 @@ func newLimaVMDeleteCommand() *cobra.Command {
 			return limaVMDeleteAction(cmd.Context(), args[0], wait, timeout)
 		},
 	}
-	command.Flags().BoolVar(&wait, "wait", false, "Wait for the VM to be deleted before returning")
-	command.Flags().DurationVar(&timeout, "timeout", 0, "Timeout for --wait (0 means wait indefinitely)")
+	command.Flags().BoolVar(&wait, "wait", true, "Wait for the VM to be deleted before returning")
+	command.Flags().DurationVar(&timeout, "timeout", limaLongWaitTimeout, "Timeout for --wait; ignored if --wait=false (0 means wait indefinitely)")
 	return command
 }
 
@@ -402,13 +407,13 @@ func limaVMCreateAction(ctx context.Context, name, template, namespace string, d
 	}
 
 	if start && wait && !dryRun {
-		waitCtx, cancel := toolswatch.ContextWithOptionalTimeout(ctx, timeout)
+		waitCtx, cancel := watchtools.ContextWithOptionalTimeout(ctx, timeout)
 		defer cancel()
 		key := client.ObjectKeyFromObject(limaVM)
 		if err := watchUntil(waitCtx, c, key, func(vm *limav1alpha1.LimaVM) bool {
 			return apimeta.IsStatusConditionPresentAndEqual(vm.Status.Conditions, "Running", metav1.ConditionTrue)
 		}); err != nil {
-			return fmt.Errorf("failed waiting for LimaVM to start: %w", err)
+			return cliexit.Classify(fmt.Errorf("failed waiting for LimaVM to start: %w", err))
 		}
 		logrus.Infof("LimaVM %q started in namespace %q", name, namespace)
 	}
@@ -442,13 +447,13 @@ func limaVMSetRunningAction(ctx context.Context, name string, running, wait bool
 	logrus.Infof("LimaVM %q %s in namespace %q", name, action, limaVM.Namespace)
 
 	if wait {
-		waitCtx, cancel := toolswatch.ContextWithOptionalTimeout(ctx, timeout)
+		waitCtx, cancel := watchtools.ContextWithOptionalTimeout(ctx, timeout)
 		defer cancel()
 		key := client.ObjectKeyFromObject(limaVM)
 		if err := watchUntil(waitCtx, c, key, func(vm *limav1alpha1.LimaVM) bool {
 			return apimeta.IsStatusConditionPresentAndEqual(vm.Status.Conditions, "Running", desiredStatus)
 		}); err != nil {
-			return fmt.Errorf("failed waiting for LimaVM to be %s: %w", action, err)
+			return cliexit.Classify(fmt.Errorf("failed waiting for LimaVM to be %s: %w", action, err))
 		}
 	}
 	return nil
@@ -489,7 +494,22 @@ func watchUntil(ctx context.Context, c client.WithWatch, key client.ObjectKey, c
 			return nil
 		}
 	}
-	return ctx.Err()
+	// ResultChan closed. If ctx ended, return its error. Otherwise the
+	// watch dropped (server close, proxy timeout, watch expiry); re-read
+	// and re-evaluate to distinguish a satisfied predicate from a drop.
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := c.Get(ctx, key, &vm); err != nil {
+		if apierrors.IsNotFound(err) {
+			return fmt.Errorf("LimaVM %q was deleted while waiting", key.Name)
+		}
+		return err
+	}
+	if check(&vm) {
+		return nil
+	}
+	return fmt.Errorf("watch closed before LimaVM %q reached the desired state", key.Name)
 }
 
 // watchUntilDeleted watches a LimaVM until it is deleted.
@@ -527,7 +547,23 @@ func watchUntilDeleted(ctx context.Context, c client.WithWatch, limaVM *limav1al
 			return apierrors.FromObject(ev.Object)
 		}
 	}
-	return ctx.Err()
+	// ResultChan closed. If ctx ended, return its error. Otherwise the
+	// watch dropped; re-read and treat NotFound or a new UID as
+	// confirmation of deletion.
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	var current limav1alpha1.LimaVM
+	if err := c.Get(ctx, key, &current); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	if current.UID != limaVM.UID {
+		return nil
+	}
+	return fmt.Errorf("watch closed before LimaVM %q was deleted", key.Name)
 }
 
 func limaVMDeleteAction(ctx context.Context, name string, wait bool, timeout time.Duration) error {
@@ -546,10 +582,10 @@ func limaVMDeleteAction(ctx context.Context, name string, wait bool, timeout tim
 	}
 
 	if wait {
-		waitCtx, cancel := toolswatch.ContextWithOptionalTimeout(ctx, timeout)
+		waitCtx, cancel := watchtools.ContextWithOptionalTimeout(ctx, timeout)
 		defer cancel()
 		if err := watchUntilDeleted(waitCtx, c, limaVM); err != nil {
-			return fmt.Errorf("failed to wait for LimaVM deletion: %w", err)
+			return cliexit.Classify(fmt.Errorf("failed to wait for LimaVM deletion: %w", err))
 		}
 	}
 

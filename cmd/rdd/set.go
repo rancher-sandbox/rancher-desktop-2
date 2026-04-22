@@ -89,8 +89,8 @@ func newSetCommand() *cobra.Command {
 		"Validate changes against the API server without persisting them")
 	command.Flags().BoolVar(&wait, "wait", true,
 		"Wait for the desired state after the patch is accepted")
-	command.Flags().DurationVar(&timeout, "timeout", 300*time.Second,
-		"Timeout for waiting (0 to wait indefinitely)")
+	command.Flags().DurationVar(&timeout, "timeout", limaLongWaitTimeout,
+		"Timeout for --wait; ignored if --wait=false (0 means wait indefinitely)")
 
 	// Override help to append live property descriptions from the CRD schema.
 	defaultHelp := command.HelpFunc()
@@ -322,10 +322,7 @@ func setAction(ctx context.Context, args []string, dryRun, wait bool, timeout ti
 		return nil
 	}
 	if err := waitForDesiredState(ctx, restConfig, timeout, targetGen); err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return cliexit.Timeout(err)
-		}
-		return err
+		return cliexit.Classify(err)
 	}
 	return nil
 }
