@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260422-125913-pr-336</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block.
+ * The filename is a GitHub permalink to the displayed line range.
+ * Text color is light gray (#adbac7) for the bar, green (#7ee787)
+ * for the hyperlink — matching GitHub's dark-mode file header. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Deep Review: 20260422-125913-pr-336</h1>
+
+    <table class="meta-table">
+      <tr><td>Date</td><td>2026-04-22 12:59</td></tr>
+      <tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+      <tr><td>Round</td><td>5</td></tr>
+      <tr><td>Author</td><td><a href="https://github.com/jandubois">@jandubois</a></td></tr>
+      <tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/336" class="gh-ref" data-title="cli: standardize --wait and --timeout across svc and limavm" data-state="open" data-type="pr">#336</a> — cli: standardize --wait and --timeout across svc and limavm</td></tr>
+      <tr><td>Branch</td><td><code>wait-timeout-cleanup</code></td></tr>
+      <tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/4bf0ec5"><code>4bf0ec5</code></a> cli: standardize --wait and --timeout across svc and limavm</td></tr>
+      <tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.7 (effort: xhigh), <span class="pill pill-codex">Codex</span> GPT 5.4 (effort: high), <span class="pill pill-gemini">Gemini</span> 3.1 Pro (effort: default)</td></tr>
+      <tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; same SHA as Round 4 (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/4bf0ec5"><code>4bf0ec5</code></a>), so every Round 4 Important remains. Round 5 re-confirms both of them — (I1) <code>watchUntil</code> / <code>watchUntilDeleted</code> returning <code>nil</code> on a closed watch, which the new default <code>--wait=true</code> on <code>limavm delete</code> now exposes on the happy path, and (I3) <code>svc start</code>&#39;s already-running branch calling <code>waitForDiscoveryConfigMap</code> without the <code>beforeStart</code> anchor the cold-start path uses — and surfaces one new Important: (I2) <code>StopWithWait</code>&#39;s deadline branch now fires on parent-context cancellation too, but the error message still reads &quot;timed out waiting for …&quot; and <code>cliexit.Classify</code> routes it to exit 1, so a Ctrl-C during <code>svc stop --wait</code> prints a timeout message with a non-timeout exit code. Eight Suggestions follow, six of which restate unaddressed Round 4 items. No Critical.</td></tr>
+      <tr><td>Wall-clock time</td><td><code>18 min 38 s</code></td></tr>
+    </table>
+
+    <hr>
+
+    <hr>
+    <h2 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>Round 5 reviews the same commit (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/4bf0ec5"><code>4bf0ec5</code></a>) as Round 4, so every finding carries over. The two Round 4 Importants land again from independent agent sessions: <code>watchUntil</code> / <code>watchUntilDeleted</code> at <code>cmd/rdd/limavm.go:485-497, 527-535</code> still return <code>ctx.Err()</code> when the watch channel closes before the condition is met — <code>ctx.Err()</code> is <code>nil</code> while the context is still valid, so every <code>limavm create/start/stop/restart/delete --wait</code> path silently reports success on a dropped watch (Codex + Gemini); and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/cmd/rdd/service.go#L271"><code>cmd/rdd/service.go:271</code></a> still calls <code>waitForDiscoveryConfigMap(ctx)</code> in the already-running branch, which resolves to <code>waitForFreshDiscoveryConfigMap(ctx, time.Time{})</code> at <code>:132-134</code>, so the freshness check the cold-start path uses at <code>:122-128</code> is skipped (Codex). The PR description&#39;s &quot;matching the cold-start path&quot; claim is therefore partially incorrect as written.</p>
+    <p>The new Round 5 finding is <code>StopWithWait</code>&#39;s deadline branch at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/pkg/service/cmd/service.go#L373-L382"><code>pkg/service/cmd/service.go:373-382</code></a>. Round 4 moved the wait onto <code>watchtools.ContextWithOptionalTimeout(ctx, timeout)</code>, which means <code>ctx.Done()</code> now fires on parent-context cancellation (<code>context.Canceled</code>) as well as timeout. The branch still kills the service and returns <code>&quot;timed out waiting for … : context canceled&quot;</code> — misleading wording, and <code>cliexit.Classify</code> only matches <code>context.DeadlineExceeded</code>, so Ctrl-C during a wait produces exit 1 with a &quot;timed out&quot; message. <code>Delete</code> at <code>:434</code> happens to route around this by gating its recovery on <code>errors.Is(err, context.DeadlineExceeded)</code> (cancellation falls through to the <code>Running()</code> check), but that safety is incidental.</p>
+    <p>Eight Suggestions follow, six restating unaddressed Round 4 items: <code>Delete</code> abandons the process it just SIGTERM&#39;d; no BATS coverage for <code>svc delete --timeout</code>; <code>ensureServiceRunning</code> hardcodes a 90s ceiling regardless of the caller&#39;s <code>--timeout</code>; <code>svc delete --timeout</code>&#39;s help text still reads &quot;stop-and-wait&quot;; <code>cliexit.Classify</code> can double-wrap on any path that passes an already-classified error through a second <code>Classify</code> call; and the already-running <code>svc start</code> branch has no &quot;is ready&quot; log on success. Two new Suggestions — <code>stopWaitTimeout</code>&#39;s comment couples the default to unwritten LimaVM-drain orchestration, and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/bats/tests/33-lima-controllers/limavm-cli.bats#L193"><code>bats/tests/33-lima-controllers/limavm-cli.bats:193</code></a>&#39;s <code>run -0 rdd limavm delete &quot;restart-vm&quot;</code> is now the only BATS <code>run -0</code> with no subsequent <code>${output}</code> / <code>${status}</code> check since the PR removed the trailing <code>rdd ctl wait</code> line — round out the list.</p>
+    <p>No Critical issues. Claude missed Codex/Gemini&#39;s I1 (watch fall-through) despite the pattern being spelled out in <code>deep-review-context.md</code> line 47 (&quot;<code>for ev := range watcher.ResultChan() { ... } return ctx.Err()</code> loop converts a dropped watch into a spurious success&quot;). Codex missed Claude&#39;s I2 (cancellation mislabel) but found the complementary I3 (discovery freshness).</p>
+    </div>
+    <hr>
+    <h2 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-critical">
+    <p>None.</p>
+    </div>
+    <hr>
+    <h2 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I1">
+        <span class="finding-num">I1.</span> <code>watchUntil</code> / <code>watchUntilDeleted</code> return <code>nil</code> on a closed watch, silently succeeding <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span><a href="#I1" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/cmd/rdd/limavm.go#L480-L502">cmd/rdd/limavm.go</a></div>
+      <pre data-start="480" data-line="485-497"><code class="language-go">	if err != nil {
+		return err
+	}
+	defer watcher.Stop()
+
+	for ev := range watcher.ResultChan() {
+		switch ev.Type {
+		case k8swatch.Error:
+			return apierrors.FromObject(ev.Object)
+		case k8swatch.Deleted:
+			return fmt.Errorf(&quot;LimaVM %q was deleted while waiting&quot;, key.Name)
+		}
+		updated, ok := ev.Object.(*limav1alpha1.LimaVM)
+		if ok &amp;&amp; check(updated) {
+			return nil
+		}
+	}
+	return ctx.Err()
+}
+
+// watchUntilDeleted watches a LimaVM until it is deleted.
+func watchUntilDeleted(ctx context.Context, c client.WithWatch, limaVM *limav1alpha1.LimaVM) error {
+	key := client.ObjectKeyFromObject(limaVM)</code></pre>
+    <p>When the API server closes the watch before the condition holds — proxy timeout, graceful server shutdown, or a standard watch-expiry without an <code>Error</code> event — <code>ResultChan()</code> drains and the loop falls through. <code>ctx.Err()</code> is <code>nil</code> while the context is still valid, so the caller sees success and <code>limaVMDeleteAction</code> at <code>:553-557</code> logs <code>&quot;LimaVM %q deleted&quot;</code> though the resource may still exist.</p>
+    <p>Pre-PR, <code>limavm delete</code> defaulted to <code>--wait=false</code>, so the delete-wait path rarely ran. The PR flips the default to <code>--wait=true</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/cmd/rdd/limavm.go#L254-L255"><code>cmd/rdd/limavm.go:254-255</code></a> and removes the test&#39;s <code>rdd ctl wait --for=delete</code> safety nets at <code>bats/tests/33-lima-controllers/limavm-cli.bats:129-131, 194-197</code>, which puts <code>watchUntilDeleted</code> on the happy path without a backup check. The exit-code-4 contract also relies on the timeout actually firing; a silent success converts that to exit 0.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/cmd/rdd/limavm.go#L249-L260">cmd/rdd/limavm.go</a></div>
+      <pre data-start="249" data-line="254-255"><code class="language-go">		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return limaVMDeleteAction(cmd.Context(), args[0], wait, timeout)
+		},
+	}
+	command.Flags().BoolVar(&amp;wait, &quot;wait&quot;, true, &quot;Wait for the VM to be deleted before returning&quot;)
+	command.Flags().DurationVar(&amp;timeout, &quot;timeout&quot;, limaLongWaitTimeout, &quot;Timeout for --wait; ignored if --wait=false (0 means wait indefinitely)&quot;)
+	return command
+}
+
+// getKubeClient returns a controller-runtime client configured for the RDD control plane.
+// The returned client supports Watch for event-driven waiting on resource changes.</code></pre>
+    <p>Fix: return a distinct &quot;watch closed before condition met&quot; error on fall-through. For <code>watchUntilDeleted</code>, re-<code>Get</code> by name and UID before declaring success so <code>NotFound</code> or a changed UID confirms deletion; for <code>watchUntil</code>, re-<code>Get</code> once and re-evaluate <code>check</code> before returning success.</p>
+      <pre><code class="language-diff">     if ok &amp;&amp; check(updated) {
+         return nil
+     }
+ }
+-return ctx.Err()
++if err := ctx.Err(); err != nil {
++    return err
++}
++return fmt.Errorf(&quot;watch closed before condition met for LimaVM %q&quot;, key.Name)</code></pre>
+    <p><em>(important, regression)</em></p>
+    </div>
+    <div class="card card-important">
+      <div class="finding-title" id="I2">
+        <span class="finding-num">I2.</span> <code>StopWithWait</code>&#39;s deadline branch mis-labels parent-context cancellation as a timeout <span class="pill pill-claude">Claude</span><a href="#I2" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/pkg/service/cmd/service.go#L360-L387">pkg/service/cmd/service.go</a></div>
+      <pre data-start="360" data-line="365-382"><code class="language-go">		if err := process.Kill(pid); err != nil {
+			return fmt.Errorf(&quot;failed to stop %q control plane with pid %d: %w&quot;, instance.Name(), pid, err)
+		}
+	}
+
+	if wait {
+		ctx, cancel := watchtools.ContextWithOptionalTimeout(ctx, timeout)
+		defer cancel()
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case &lt;-ctx.Done():
+				// Graceful shutdown timed out; terminate so we don&#39;t leave
+				// a hung service process. Kill targets only the service; on
+				// Windows (TerminateProcess) this avoids killing hostagents
+				// that are children of the service but run in their own
+				// process groups. On Unix, SIGTERM suffices because the
+				// service is responsive to signals (it&#39;s just slow shutting
+				// down hostagents sequentially).
+				_ = process.Kill(pid)
+				return fmt.Errorf(&quot;timed out waiting for %q control plane with pid %d to stop: %w&quot;, instance.Name(), pid, ctx.Err())
+			case &lt;-ticker.C:
+				if !Running() {
+					_ = os.Remove(instance.Config()) // Ignore error as file might not exist
+					return nil
+				}</code></pre>
+    <p>Pre-PR, the wait selected on <code>time.After(60 * time.Second)</code> with no context channel, so the <code>&lt;-timeout</code> case only fired on genuine deadline expiry. The PR unifies the parent context with the timeout via <code>watchtools.ContextWithOptionalTimeout</code> (line 366), which makes <code>ctx.Done()</code> fire on parent-context cancellation as well. A user who presses Ctrl-C during <code>rdd svc stop --wait</code> now gets:</p>
+    <ul>
+      <li>the literal message <code>&quot;timed out waiting for … : context canceled&quot;</code> — the wording contradicts the cause;</li>
+      <li>exit code 1, because <code>cliexit.Classify</code> only matches <code>context.DeadlineExceeded</code>.</li>
+    </ul>
+    <p><code>Delete</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/cmd/rdd/service.go#L428-L438"><code>cmd/rdd/service.go:428-438</code></a> sidesteps the same ambiguity by gating its recovery on <code>errors.Is(err, context.DeadlineExceeded) || Running()</code>, so cancellation falls through to the <code>Running()</code> check. That safety is coincidental — <code>Delete</code>&#39;s current call path happens to tolerate it.</p>
+    <p>Fix: branch on <code>ctx.Err()</code> to pick the right wording and classify the right code:</p>
+      <pre><code class="language-diff">             case &lt;-ctx.Done():
+                 _ = process.Kill(pid)
+-                return fmt.Errorf(&quot;timed out waiting for %q control plane with pid %d to stop: %w&quot;, instance.Name(), pid, ctx.Err())
++                err := ctx.Err()
++                if errors.Is(err, context.DeadlineExceeded) {
++                    return fmt.Errorf(&quot;timed out waiting for %q control plane with pid %d to stop: %w&quot;, instance.Name(), pid, err)
++                }
++                return fmt.Errorf(&quot;wait for %q control plane with pid %d to stop cancelled: %w&quot;, instance.Name(), pid, err)</code></pre>
+    <p><em>(important, regression)</em></p>
+    </div>
+    <div class="card card-important">
+      <div class="finding-title" id="I3">
+        <span class="finding-num">I3.</span> Already-running <code>svc start --wait</code> skips the discovery ConfigMap freshness check <span class="pill pill-codex">Codex</span><a href="#I3" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/cmd/rdd/service.go#L255-L277">cmd/rdd/service.go</a></div>
+      <pre data-start="255" data-line="260-272"><code class="language-go">		if err := service.Create(args); err != nil {
+			return err
+		}
+		logrus.Infof(&quot;successfully created %q control plane&quot;, instance.Name())
+	}
+	if service.Running() {
+		logrus.Infof(&quot;%q control plane is already running&quot;, instance.Name())
+		if !wait {
+			return nil
+		}
+		logrus.Infof(&quot;waiting for %q control plane to be ready&quot;, instance.Name())
+		ctx, cancel := watchtools.ContextWithOptionalTimeout(cmd.Context(), timeout)
+		defer cancel()
+		if err := service.Wait(ctx); err != nil {
+			return cliexit.Classify(err)
+		}
+		return cliexit.Classify(waitForDiscoveryConfigMap(ctx))
+	}
+
+	// Collect all provided flags as arguments for serve subprocess
+	var serveArgs []string
+	if cmd.Flags().Changed(&quot;controllers&quot;) {
+		controllers, err := cmd.Flags().GetString(&quot;controllers&quot;)</code></pre>
+    <p>The PR description frames this branch as &quot;matching the cold-start path&quot;. The cold-start path records <code>beforeStart := time.Now().Truncate(time.Second)</code> and waits for a ConfigMap whose <code>creationTimestamp</code> is at or after <code>beforeStart</code> (<code>cmd/rdd/service.go:117, 128</code>). The already-running branch instead calls <code>waitForDiscoveryConfigMap(ctx)</code>, which resolves to <code>waitForFreshDiscoveryConfigMap(ctx, time.Time{})</code> at <code>:132-134</code> — the zero time skips the freshness check per the comment at <code>:143</code>.</p>
+    <p>The serve process deletes and recreates the discovery ConfigMap inside <code>Run</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/pkg/service/cmd/service.go#L751-L753"><code>pkg/service/cmd/service.go:751-753</code></a>, but that happens only after <code>readiness.WaitForReady</code> returns. If a prior serve exited uncleanly (no <code>CleanupDiscovery</code>), the stale ConfigMap survives with <code>ReadyAnnotation=true</code>, and a concurrent <code>rdd svc start --wait</code> that races the in-progress new serve can observe the stale CM (via both <code>service.Wait</code>&#39;s <code>runtimeControllers</code> lookup and <code>waitForDiscoveryConfigMap</code>) before the new controllers register.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/pkg/service/cmd/service.go#L746-L758">pkg/service/cmd/service.go</a></div>
+      <pre data-start="746" data-line="751-753"><code class="language-go">	// Its creationTimestamp serves as the control plane start time.
+	initClient, err := kubernetes.NewForConfig(completed.ControlPlane.Generic.LoopbackClientConfig)
+	if err != nil {
+		return fmt.Errorf(&quot;failed to create kubernetes client for discovery init: %w&quot;, err)
+	}
+	if err := controllers.InitDiscovery(ctx, initClient); err != nil {
+		return fmt.Errorf(&quot;failed to initialize discovery: %w&quot;, err)
+	}
+
+	// Start shared controller manager for enabled controllers
+	var enabledControllers []base.Controller
+
+	// Get all registered controllers from the registry</code></pre>
+    <p>The race window is narrow, but the PR&#39;s stated goal is symmetry with the cold-start path, and the symmetry is incomplete.</p>
+    <p>Fix: anchor the freshness check to a marker the running service can expose — PID-file mtime, the process&#39;s <code>Start()</code> time via <code>os.Stat(instance.PIDFile())</code>, or a small startup timestamp file written by the serve process — and pass that to <code>waitForFreshDiscoveryConfigMap</code>. A small helper shared with cold-start keeps both paths honest.</p>
+    <p><em>(important, gap)</em></p>
+    </div>
+    <hr>
+    <h2 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S1">
+        <span class="finding-num">S1.</span> <code>Delete</code> abandons the process it already SIGTERM&#39;d <span class="pill pill-claude">Claude</span><a href="#S1" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/pkg/service/cmd/service.go#L419-L443">pkg/service/cmd/service.go</a></div>
+      <pre data-start="419" data-line="424-438"><code class="language-go">// Delete removes all instance data. If the service is running, Delete waits
+// up to timeout for it to exit before removing files; removing instance.Dir()
+// while the serve process holds rdd.pid, rdd.sqlite3, and log files corrupts
+// the directory on Windows and breaks PID-file mutual exclusion on Unix.
+// Pass timeout 0 to wait indefinitely (bounded only by ctx).
+func Delete(ctx context.Context, timeout time.Duration) error {
+	if !Exists() {
+		return fmt.Errorf(&quot;%q control plane does not exist&quot;, instance.Name())
+	}
+	if Running() {
+		if err := StopWithWait(ctx, true, timeout); err != nil {
+			// Suppress only the outer/inner Running() race, where the
+			// process exits between Delete&#39;s check and StopWithWait&#39;s.
+			// Deadline expiry must surface so the CLI exits 4 and leaves
+			// the directory in place, per docs/design/cmd_service.md.
+			if errors.Is(err, context.DeadlineExceeded) || Running() {
+				return err
+			}
+		}
+	}
+	preserveAllInstanceLogs()
+	if os.Getenv(&quot;RDD_KEEP_LOGS&quot;) == &quot;&quot; {
+		_ = os.RemoveAll(instance.LogDir())
+	}
+	_ = os.RemoveAll(instance.ShortDir())</code></pre>
+    <p>When the deadline expires, <code>StopWithWait</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/pkg/service/cmd/service.go#L381"><code>pkg/service/cmd/service.go:381</code></a> already calls <code>process.Kill(pid)</code>, so the process is almost always dead before the error returns. <code>Delete</code> still short-circuits on the <code>DeadlineExceeded</code> arm and leaves the directory in place; the user runs <code>rdd svc delete</code> a second time, which succeeds because <code>Running()</code> is now false. The two-step UX is awkward given the kill usually took effect.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/pkg/service/cmd/service.go#L376-L386">pkg/service/cmd/service.go</a></div>
+      <pre data-start="376" data-line="381"><code class="language-go">				// Windows (TerminateProcess) this avoids killing hostagents
+				// that are children of the service but run in their own
+				// process groups. On Unix, SIGTERM suffices because the
+				// service is responsive to signals (it&#39;s just slow shutting
+				// down hostagents sequentially).
+				_ = process.Kill(pid)
+				return fmt.Errorf(&quot;timed out waiting for %q control plane with pid %d to stop: %w&quot;, instance.Name(), pid, ctx.Err())
+			case &lt;-ticker.C:
+				if !Running() {
+					_ = os.Remove(instance.Config()) // Ignore error as file might not exist
+					return nil</code></pre>
+    <p>Consider re-checking <code>Running()</code> after the error and continuing with cleanup if the service has exited. Keep <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/docs/design/cmd_service.md#L117-L122"><code>docs/design/cmd_service.md:117-122</code></a> in sync if you change the behaviour.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/docs/design/cmd_service.md#L112-L127">docs/design/cmd_service.md</a></div>
+      <pre data-start="112" data-line="117-122"><code class="language-plaintext">
+Stops the control plane and removes the instance directory, the short directory
+(which contains the Lima home), and — unless `RDD_KEEP_LOGS` is set — the log
+directory.
+
+Delete always waits for the control plane to exit before removing files, because
+removing the instance directory under a live process corrupts it on Windows and
+breaks PID-file mutual exclusion on Unix. Use `--timeout` to bound that wait
+(default `5m`); `0` waits indefinitely. If the deadline expires, `rdd` exits
+with code 4 and the directory is left in place. See [`rdd service stop`](#rdd-service-stop)
+for the signal and fallback details of the shutdown itself.
+
+### `rdd service reset`
+
+Deletes the datastore, but create a new (empty) one with the same settings.
+</code></pre>
+    <p><em>(suggestion, enhancement)</em></p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S2">
+        <span class="finding-num">S2.</span> No BATS coverage for <code>svc delete --timeout</code> exit-code-4 <span class="pill pill-claude">Claude</span><a href="#S2" class="pilcrow">&#182;</a>
+      </div>
+    <p><code>6-timeout.bats</code> covers <code>svc stop --timeout=1ms</code>. <code>svc delete --timeout=1ms</code> has no equivalent, so the new branching in <code>Delete</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/pkg/service/cmd/service.go#L428-L438"><code>pkg/service/cmd/service.go:428-438</code></a> (the <code>errors.Is(err, context.DeadlineExceeded) || Running()</code> guard and the &quot;directory stays on timeout&quot; contract) is asserted only in docs. A test that runs <code>rdd svc delete --timeout=1ms</code>, asserts exit 4, and confirms the instance directory survives (e.g. via <code>rdd svc status</code> reporting <code>created: true</code>) would pin the contract down.</p>
+    <p><em>(suggestion, gap)</em></p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S3">
+        <span class="finding-num">S3.</span> <code>ensureServiceRunning</code> hardcodes a 90s ceiling regardless of caller <code>--timeout</code> <span class="pill pill-claude">Claude</span><a href="#S3" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/cmd/rdd/service.go#L83-L108">cmd/rdd/service.go</a></div>
+      <pre data-start="83" data-line="88-103"><code class="language-go">		RunE:  serviceConfigAction,
+	}
+	return command
+}
+
+func ensureServiceRunning(ctx context.Context) error {
+	if !service.Exists() {
+		if err := service.Create(nil); err != nil {
+			return err
+		}
+	}
+	if service.Running() {
+		ctx, cancel := context.WithTimeout(ctx, startWaitTimeout)
+		defer cancel()
+		if err := service.Wait(ctx); err != nil {
+			return cliexit.Classify(err)
+		}
+		return cliexit.Classify(waitForDiscoveryConfigMap(ctx))
+	}
+	return cliexit.Classify(startAndWaitForReady(ctx, nil, startWaitTimeout))
+}
+
+// startAndWaitForReady starts the service, waits for the API server and the
+// discovery ConfigMap to be ready. After an unclean shutdown the ConfigMap may
+// survive with stale data, so the freshness check waits for a ConfigMap whose
+// creationTimestamp is at or after the current startup.</code></pre>
+    <p><code>ensureServiceRunning</code> is called transitively by <code>rdd set</code>, every <code>rdd limavm *</code>, <code>rdd kubectl</code>, and <code>rdd service config</code>. It always applies the 90s <code>startWaitTimeout</code>, so <code>rdd limavm create --timeout=0</code> (user asks for indefinite wait) can still fail with exit 4 at 90s if the service is slow coming up. The PR framing that <code>--timeout</code> now flows uniformly through the autostart helper is not quite accurate — the user&#39;s timeout does not propagate through the start phase.</p>
+    <p>This is not a regression (the old code had the same 90s cap) but the function is already being reshaped. At minimum, the docstring at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/cmd/rdd/service.go#L31-L33"><code>cmd/rdd/service.go:31-33</code></a> should note that the 90s cap is independent of the caller&#39;s <code>--timeout</code>. Standardising on <code>watchtools.ContextWithOptionalTimeout</code> (Round 4 S1) would also align the style with every sibling wait in this PR.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/cmd/rdd/service.go#L26-L38">cmd/rdd/service.go</a></div>
+      <pre data-start="26" data-line="31-33"><code class="language-go">	service &quot;github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/cmd&quot;
+	&quot;github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers&quot;
+	&quot;github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail&quot;
+)
+
+// startWaitTimeout bounds the wait for the API server, CRDs, and
+// controller-manager registration to land. Cold start can take well over 30s
+// in CI on slower runners.
+const startWaitTimeout = 90 * time.Second
+
+// stopWaitTimeout bounds the wait for the control plane to shut down. The
+// service itself drains its controller-manager goroutines for up to 45s
+// (see Run in pkg/service/cmd/service.go); when LimaVM stop orchestration</code></pre>
+    <p><em>(suggestion, enhancement)</em></p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S4">
+        <span class="finding-num">S4.</span> <code>svc delete --timeout</code> help text reads &quot;stop-and-wait&quot; — jargon mismatched with siblings <span class="pill pill-claude">Claude</span><a href="#S4" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/cmd/rdd/service.go#L349-L359">cmd/rdd/service.go</a></div>
+      <pre data-start="349" data-line="354"><code class="language-go">	command := &amp;cobra.Command{
+		Use:  &quot;delete&quot;,
+		Long: &quot;Delete RDD control plane&quot;,
+		RunE: serviceDeleteAction,
+	}
+	command.Flags().Duration(&quot;timeout&quot;, stopWaitTimeout, &quot;Timeout for the stop-and-wait (0 means wait indefinitely)&quot;)
+	return command
+}
+
+func serviceDeleteAction(cmd *cobra.Command, _ []string) error {
+	if !service.Exists() {</code></pre>
+    <p>Every other <code>Duration(&quot;timeout&quot;, …)</code> in this PR uses <code>&quot;Timeout for --wait; ignored if --wait=false (0 means wait indefinitely)&quot;</code>. <code>svc delete</code> drops <code>--wait</code>, which is why the wording diverges, but &quot;stop-and-wait&quot; reads as a noun phrase rather than a knob description. The docs at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/docs/design/cmd_service.md#L117-L122"><code>docs/design/cmd_service.md:117-122</code></a> phrase it clearly.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/docs/design/cmd_service.md#L112-L127">docs/design/cmd_service.md</a></div>
+      <pre data-start="112" data-line="117-122"><code class="language-plaintext">
+Stops the control plane and removes the instance directory, the short directory
+(which contains the Lima home), and — unless `RDD_KEEP_LOGS` is set — the log
+directory.
+
+Delete always waits for the control plane to exit before removing files, because
+removing the instance directory under a live process corrupts it on Windows and
+breaks PID-file mutual exclusion on Unix. Use `--timeout` to bound that wait
+(default `5m`); `0` waits indefinitely. If the deadline expires, `rdd` exits
+with code 4 and the directory is left in place. See [`rdd service stop`](#rdd-service-stop)
+for the signal and fallback details of the shutdown itself.
+
+### `rdd service reset`
+
+Deletes the datastore, but create a new (empty) one with the same settings.
+</code></pre>
+      <pre><code class="language-diff">-    command.Flags().Duration(&quot;timeout&quot;, stopWaitTimeout, &quot;Timeout for the stop-and-wait (0 means wait indefinitely)&quot;)
++    command.Flags().Duration(&quot;timeout&quot;, stopWaitTimeout, &quot;Timeout for waiting for the control plane to exit before removing files (0 means wait indefinitely)&quot;)</code></pre>
+    <p><em>(suggestion, code clarity)</em></p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S5">
+        <span class="finding-num">S5.</span> <code>stopWaitTimeout</code> comment couples the default to unwritten future behaviour <span class="pill pill-claude">Claude</span><a href="#S5" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/cmd/rdd/service.go#L31-L47">cmd/rdd/service.go</a></div>
+      <pre data-start="31" data-line="36-42"><code class="language-go">// startWaitTimeout bounds the wait for the API server, CRDs, and
+// controller-manager registration to land. Cold start can take well over 30s
+// in CI on slower runners.
+const startWaitTimeout = 90 * time.Second
+
+// stopWaitTimeout bounds the wait for the control plane to shut down. The
+// service itself drains its controller-manager goroutines for up to 45s
+// (see Run in pkg/service/cmd/service.go); when LimaVM stop orchestration
+// lands, the drain will sequence each VM&#39;s shutdown, so the CLI deadline must
+// match the per-VM ceiling in [limaLongWaitTimeout]. A multi-VM instance may
+// still exceed this budget while shutdownAllHostagents drains sequentially.
+const stopWaitTimeout = limaLongWaitTimeout
+
+// logrusLevelToKlog converts current logrus level to klog level.
+func logrusLevelToKlog() string {
+	switch logrus.GetLevel() {
+	case logrus.DebugLevel:</code></pre>
+    <p>Today the service drains for 45s at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/pkg/service/cmd/service.go#L832"><code>pkg/service/cmd/service.go:832</code></a>, so <code>5m</code> is roughly 6× the actual worst case. The rationale is tied to &quot;when LimaVM stop orchestration lands&quot; — unwritten work whose shape may differ when it arrives. Rot risk is real: if that change never lands, or lands with a different budget, this comment points future readers at a policy that was never implemented.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/pkg/service/cmd/service.go#L827-L837">pkg/service/cmd/service.go</a></div>
+      <pre data-start="827" data-line="832"><code class="language-go">		mgrWg.Wait()
+		close(mgrDone)
+	}()
+	select {
+	case &lt;-mgrDone:
+	case &lt;-time.After(45 * time.Second):
+		klog.Warning(&quot;Controller manager did not shut down within 45s, exiting anyway&quot;)
+	}
+
+	return nil
+}</code></pre>
+    <p>A shorter rationale that states the current policy (&quot;the CLI waits longer than the service drain so slow disks or misconfigured hosts don&#39;t trip the default&quot;) survives code drift. The coupling-to-<code>limaLongWaitTimeout</code> constant can stay; the comment just needs to justify today&#39;s value.</p>
+    <p><em>(suggestion, code clarity)</em></p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S6">
+        <span class="finding-num">S6.</span> BATS <code>run -0</code> with no output/status check on <code>limavm delete &quot;restart-vm&quot;</code> <span class="pill pill-gemini">Gemini</span><a href="#S6" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/bats/tests/33-lima-controllers/limavm-cli.bats#L188-L198">bats/tests/33-lima-controllers/limavm-cli.bats</a></div>
+      <pre data-start="188" data-line="193"><code class="language-bash">    run -0 rdd ctl get limavm &quot;restart-vm&quot; --namespace &quot;${LIMA_TEST_NS}&quot; \
+        --output jsonpath=&#39;{.spec.running}&#39;
+    assert_output &quot;true&quot;
+
+    # Delete the VM
+    run -0 rdd limavm delete &quot;restart-vm&quot;
+}
+
+@test &quot;lima start --timeout fails when VM cannot reach desired state&quot; {
+    rdd ctl create configmap &quot;timeout-vm&quot; --namespace &quot;${LIMA_TEST_NS}&quot; \
+        --from-literal=&quot;template=${TEMPLATE}&quot;</code></pre>
+    <p>The PR removed the trailing <code>rdd ctl wait --for=delete &quot;limavm/restart-vm&quot; …</code> line (diff hunk at <code>-@@ -194,7 +191,6 @@</code>), leaving <code>run -0</code> followed only by the closing brace. Per the repo BATS style rules in <code>deep-review-context.md</code>:</p>
+    <p>&gt; Use <code>run -0</code> only when the next line reads <code>${output}</code> or <code>${status}</code>. For commands whose success is the entire assertion (setup, cleanup, fixture calls), invoke them directly.</p>
+    <p>The symmetric fix at line 94 (<code>run -0 rdd limavm delete --wait &quot;start-vm&quot;</code> → <code>rdd limavm delete &quot;start-vm&quot;</code>) was applied; the <code>restart-vm</code> case below was missed.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/bats/tests/33-lima-controllers/limavm-cli.bats#L89-L99">bats/tests/33-lima-controllers/limavm-cli.bats</a></div>
+      <pre data-start="89" data-line="94"><code class="language-plaintext">    assert_created &quot;start-vm&quot; &quot;${LIMA_TEST_NS}&quot; &quot;start-vm&quot;
+
+    run -0 rdd ctl get limavm &quot;start-vm&quot; --namespace &quot;${LIMA_TEST_NS}&quot; -o jsonpath=&#39;{.spec.running}&#39;
+    assert_output &quot;true&quot;
+
+    rdd limavm delete &quot;start-vm&quot;
+}
+
+@test &quot;lima create with file template&quot; {
+    # Create a temporary template file
+    local template_file=&quot;${BATS_TEST_TMPDIR}/test-template.yaml&quot;</code></pre>
+      <pre><code class="language-diff">     # Delete the VM
+-    run -0 rdd limavm delete &quot;restart-vm&quot;
++    rdd limavm delete &quot;restart-vm&quot;
+ }</code></pre>
+    <p><em>(suggestion, style)</em></p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S7">
+        <span class="finding-num">S7.</span> <code>cliexit.Classify</code> can double-wrap when called on an already-classified error <span class="pill pill-gemini">Gemini</span><a href="#S7" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/pkg/cli/exit/exit.go#L48-L60">pkg/cli/exit/exit.go</a></div>
+      <pre data-start="48" data-line="53-60"><code class="language-go">// Timeout wraps err with [CodeTimeout].
+func Timeout(err error) *Error {
+	return &amp;Error{Code: CodeTimeout, Err: err}
+}
+
+// Classify wraps err with [CodeTimeout] when err wraps
+// [context.DeadlineExceeded]. Other errors pass through unchanged.
+func Classify(err error) error {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return Timeout(err)
+	}
+	return err
+}</code></pre>
+    <p><code>errors.Is</code> unwraps, so <code>Classify(*Error{Code: CodeTimeout, Err: someDeadlineErr})</code> returns <code>*Error{Code: CodeTimeout, Err: *Error{Code: CodeTimeout, Err: someDeadlineErr}}</code>. The CLI driver still resolves the correct exit code via <code>errors.As</code>, but the nested Error structure is noisy in logs and defeats idempotence.</p>
+    <p>No current call path triggers the double-wrap (audited <code>ensureServiceRunning</code> → <code>getAppKubeClient</code> → <code>setAction</code> and every <code>svc *</code> / <code>limavm *</code> caller), but the call sites are growing, and the helper is a natural target for future refactors that may chain. A short-circuit on an existing <code>*Error{Code: CodeTimeout}</code> is cheap insurance:</p>
+      <pre><code class="language-diff"> func Classify(err error) error {
++    var exitErr *Error
++    if errors.As(err, &amp;exitErr) &amp;&amp; exitErr.Code == CodeTimeout {
++        return err
++    }
+     if errors.Is(err, context.DeadlineExceeded) {
+         return Timeout(err)
+     }
+     return err
+ }</code></pre>
+    <p><em>(suggestion, enhancement)</em></p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S8">
+        <span class="finding-num">S8.</span> Already-running <code>svc start</code> branch has no &quot;is ready&quot; log on success<a href="#S8" class="pilcrow">&#182;</a>
+      </div>
+    <p>The cold-start branch logs <code>&quot;%q control plane is ready&quot;</code> at <code>:297</code> after the wait succeeds. The already-running branch waits on the same readiness signal (<code>service.Wait</code> + <code>waitForDiscoveryConfigMap</code>) but returns silently on success — a user running <code>rdd svc start</code> against a running-but-still-initialising service sees the <code>&quot;waiting for … to be ready&quot;</code> line and then nothing. Mirror the cold-start log so both paths print the same terminator.</p>
+    <p><em>(suggestion, observation)</em></p>
+    </div>
+    <hr>
+    <h2 id="design-observations" class="section-design">Design Observations <a href="#design-observations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-design">
+    <h3 id="concerns">Concerns <a href="#concerns" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><em></em>Readiness contract is split between <code>service.Wait</code> and CLI-side discovery freshness checks<em></em> <code>(in-scope)</code> <span class="pill pill-codex">Codex</span>. <code>service.Wait</code> inspects the discovery ConfigMap via <code>getRuntimeControllersFromCluster</code> without checking <code>creationTimestamp</code>; the CLI then layers <code>waitForFreshDiscoveryConfigMap</code> on top. Folding &quot;current startup generation&quot; into one library helper would remove the branch skew behind I3 and give every caller a single definition of &quot;ready&quot;.</li>
+      <li><em></em><code>limaVMCreateAction</code> leaks the managed ConfigMap when <code>--start --wait</code> hits the deadline<em></em> <code>(in-scope)</code> <span class="pill pill-claude">Claude</span>. After <code>takeOwnership</code> runs, <code>createdConfigMap</code> is cleared and the deferred cleanup does not fire; if the watch then hits <code>DeadlineExceeded</code>, the ConfigMap stays and only <code>rdd limavm delete</code> removes it. The behaviour is intended (the LimaVM owns the CM), but the new 5m default on <code>--start --wait</code> makes this path hit more often than the pre-PR implicit <code>--timeout=0</code>. The BATS test at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/bats/tests/33-lima-controllers/limavm-cli.bats#L208-L217"><code>bats/tests/33-lima-controllers/limavm-cli.bats:208-217</code></a> already relies on namespace teardown to reap the LimaVM; no change required, but worth a note in the user-facing docs that a timed-out <code>--start --wait</code> leaves the template ConfigMap behind.</li>
+    </ul>
+    <h3 id="strengths">Strengths <a href="#strengths" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><em></em>Centralising deadline-to-exit-code translation in <code>cliexit.Classify</code><em></em> <span class="pill pill-claude">Claude</span>. Collapses three copies of the <code>if errors.Is(err, context.DeadlineExceeded) { return cliexit.Timeout(err) }</code> boilerplate (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/cmd/rdd/set.go#L322-L326"><code>cmd/rdd/set.go:322-326</code></a> is the clearest example) and makes every wait path self-consistent.</li>
+      <li><em></em><code>watchtools.ContextWithOptionalTimeout</code> standardisation<em></em> <span class="pill pill-claude">Claude</span>. Renaming <code>toolswatch</code> → <code>watchtools</code> across <code>cmd/rdd/limavm.go</code>, <code>cmd/rdd/service.go</code>, and <code>pkg/service/cmd/service.go</code> gives <code>timeout=0</code> a single documented meaning and makes text-search across the codebase reliable.</li>
+      <li><em></em>Threading caller context through <code>StopWithWait(ctx, wait, timeout)</code> and <code>Delete(ctx, timeout)</code><em></em> <span class="pill pill-claude">Claude</span>. The old API could not honour Ctrl-C or a caller deadline. Exposing I2 was the cost of making the right architectural choice.</li>
+      <li><em></em>Keeping <code>pkg/cli/exit</code> library-like and applying <code>Classify</code> only at the CLI boundary<em></em> <span class="pill pill-codex">Codex</span>. <code>pkg/service</code> stays free of CLI exit-code semantics; the CLI gets a uniform contract.</li>
+      <li><em></em><code>svc delete</code> stops the service before removing state<em></em> <span class="pill pill-codex">Codex</span>. Correct for both Windows file semantics and Unix PID-file mutual exclusion, and the comment at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/pkg/service/cmd/service.go#L419-L422"><code>pkg/service/cmd/service.go:419-422</code></a> documents why.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li>The new timeout contract still lacks direct entry-point coverage for <code>rdd svc start --timeout</code>, <code>rdd svc delete --timeout</code>, and autostart callers such as <code>rdd svc config</code>, <code>rdd kubectl</code>, or <code>rdd set</code>. The assertion that every wait-capable command exits 4 on deadline holds only for the paths the BATS suite exercises, and only <code>rdd set</code> (existing) and the three new <code>limavm</code> tests cover it.</li>
+      <li>No test exercises <code>watchUntil</code> / <code>watchUntilDeleted</code> with a closed watch channel before the condition fires (I1). The bug can ship green because the default test templates reach <code>Running=True</code> quickly enough that the watch stays open.</li>
+      <li>No test for the I3 startup race: one process starting the service while another runs <code>rdd svc start --wait</code> against a stale discovery ConfigMap. Hard to reproduce deterministically without harness-level hooks, but a unit test that drives <code>waitForFreshDiscoveryConfigMap</code> with a pre-seeded stale ConfigMap would at least pin the freshness contract.</li>
+      <li>No test forces a Ctrl-C through <code>rdd svc stop --wait</code> to cover I2. An acceptable substitute: a unit test on the <code>StopWithWait</code> loop body with a cancelled context that asserts the error message and the classified exit code.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li><code>docs/design/cmd_service.md</code> and <code>docs/design/cmd_lima.md</code> reflect the new defaults and the exit-4 contract cleanly.</li>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/docs/design/api_service.md#L21"><code>docs/design/api_service.md:21</code></a> now names both SIGINT (primary) and SIGTERM (fallback) on Unix, matching <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/pkg/service/cmd/service.go#L359-L363"><code>pkg/service/cmd/service.go:359-363</code></a>.</li>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/cmd/rdd/service.go#L131"><code>cmd/rdd/service.go:131</code></a> still reads &quot;waitForDiscoveryConfigMap polls until the discovery ConfigMap exists&quot; — the helper at <code>:144-168</code> also requires <code>ReadyAnnotation == &quot;true&quot;</code>. Minor doc drift; tighten the sentence to match the implementation.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>Single commit (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/4bf0ec5"><code>4bf0ec5</code></a>), self-contained, message accurate. Round 5 reviews the same SHA as Round 4 — no amend or rebase since.</p>
+    </div>
+    <hr>
+    <h2 id="acknowledged-limitations">Acknowledged Limitations <a href="#acknowledged-limitations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/cmd/rdd/service.go#L40-L41"><code>cmd/rdd/service.go:40-41</code></a> comment acknowledges that a multi-VM instance may exceed the 5m <code>stopWaitTimeout</code>. S5 argues for rewording but not changing the value.</li>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/bats/tests/20-service/2-create.bats#L3"><code>bats/tests/20-service/2-create.bats:3</code></a> carries a pre-existing <code># TODO: test rdd svc start --wait=false</code> comment that the PR does not address.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="unresolved-feedback">Unresolved Feedback <a href="#unresolved-feedback" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>None — the PR carries no inline review comments.</p>
+    </div>
+    <hr>
+    <h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <h3 id="claude"><span class="pill pill-claude">Claude</span> <a href="#claude" class="pilcrow">&#182;</a></h3>
+    <p>Strongest on narrow, nuanced correctness: the <code>StopWithWait</code> cancellation mislabel (I2) was a Round 5 original that neither other agent raised, and required noticing the semantic shift when Round 4 moved the wait onto <code>watchtools.ContextWithOptionalTimeout</code>. Six Suggestions — most restate Round 4 items that remain unaddressed — plus a useful design note on the <code>limaVMCreateAction</code> ConfigMap leak under <code>--start --wait</code> deadline expiry. Missed I1 (<code>watchUntil</code> fall-through) despite <code>deep-review-context.md</code> line 47 spelling out the exact <code>for ev := range ... return ctx.Err()</code> anti-pattern. The repo-context rule was loaded into the prompt; Claude did not pattern-match to it. Also missed I3 (Codex&#39;s discovery-freshness gap).</p>
+    <h3 id="codex"><span class="pill pill-codex">Codex</span> <a href="#codex" class="pilcrow">&#182;</a></h3>
+    <p>Tight, high-signal output: two Important findings and zero Suggestions. Both Importants are real — I1 (watch fall-through) and I3 (discovery freshness) — and I3 was an original Round 5 contribution grounded in reading the PR description against the code (&quot;matches the cold-start path&quot; vs the zero-time call). The Testing Assessment was the most useful of the three: named the I1 and I3 test gaps and called out the missing <code>rdd svc start/delete --timeout</code> and autostart-caller coverage. Tried to run BATS but found <code>bats/lib/bats-core</code> empty in the worktree — no agent can run BATS against a fresh worktree until the helper populates submodules; this is a deep-review tooling gap, not a Codex bug.</p>
+    <h3 id="gemini"><span class="pill pill-gemini">Gemini</span> <a href="#gemini" class="pilcrow">&#182;</a></h3>
+    <p>Three findings — two Important and one Suggestion — with the coverage-summary format the retro table expects. Caught I1 cleanly alongside Codex and correctly labelled it a regression based on the default flip. Flagged the BATS <code>run -0</code> style violation at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/4bf0ec534cb6ae5ff0acd19a6c0607de62333180/bats/tests/33-lima-controllers/limavm-cli.bats#L193"><code>bats/tests/33-lima-controllers/limavm-cli.bats:193</code></a> (downgraded here to a Suggestion since <code>run -0</code> already asserts exit 0, so the functional behaviour is equivalent — only the repo style rule is violated). The Classify double-wrap Suggestion restates Round 4 S5. Gemini&#39;s strength this round was the coverage grid: short, scanner-friendly, and both I1/I2 (its own numbering) mapped to files without hedging.</p>
+    <h3 id="summary">Summary <a href="#summary" class="pilcrow">&#182;</a></h3>
+    <table class="retro-table">
+      <thead><tr><th></th><th><span class="pill pill-claude">Claude</span> Opus 4.7</th><th><span class="pill pill-codex">Codex</span> GPT 5.4</th><th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th></tr></thead>
+      <tbody>
+        <tr><td>Duration</td><td>8m 20s</td><td>8m 12s</td><td>3m 01s</td></tr>
+        <tr><td>Findings</td><td>1I 5S</td><td>2I</td><td>1I 2S</td></tr>
+        <tr><td>Tool calls</td><td>31 (Read 12, Bash 11, Grep 8)</td><td>53 (shell 51, stdin 2)</td><td>14 (grep<em>search 7, read</em>file 4, run<em>shell</em>command 3)</td></tr>
+        <tr><td>Design observations</td><td>1</td><td>1</td><td>0</td></tr>
+        <tr><td>False positives</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>Unique insights</td><td>2</td><td>1</td><td>1</td></tr>
+        <tr><td>Files reviewed</td><td>10</td><td>10</td><td>10</td></tr>
+        <tr><td>Coverage misses</td><td>1</td><td>0</td><td>0</td></tr>
+        <tr><td><strong>Totals</strong></td><td><strong>1I 5S</strong></td><td><strong>2I</strong></td><td><strong>1I 2S</strong></td></tr>
+        <tr><td>Downgraded</td><td>0</td><td>0</td><td>1 (I→S)</td></tr>
+        <tr><td>Dropped</td><td>1</td><td>0</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Reconciliation</strong> — Gemini raised the BATS <code>run -0</code> issue at Important severity; downgraded to Suggestion (S6) in consolidation. <code>run -0</code> without a follow-up <code>${output}</code> / <code>${status}</code> check is a style violation, not a functional failure: <code>run -0</code> already asserts exit 0, so the command still fails the test if it fails. The repo BATS style rules document the convention for discoverability and consistency — important to keep, but not the same weight as a correctness bug.</p>
+    <p>Overall: Codex produced the highest value density — two valid Importants from a short output. Claude carried the most volume and a valuable original in I2 but missed a finding the prompt had pre-armed it for. Gemini&#39;s coverage grid and regression labelling were the best of the three. No agent made a false positive that survived consolidation.</p>
+    </div>
+    <hr>
+    <h2 id="review-process-notes">Review Process Notes <a href="#review-process-notes" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <h3 id="repo-context-updates">Repo context updates <a href="#repo-context-updates" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><strong>[repo] Re-reviewing the same commit is a common operating mode.</strong> Five rounds against the same SHA (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/4bf0ec5"><code>4bf0ec5</code></a>) on this PR — Round 5 is a re-review of Round 4&#39;s target. A note in <code>deep-review-context.md</code> steering agents to open the prior round&#39;s <code>.reviews/*pr-N*.md</code> (if any) and list <em>unaddressed</em> findings before generating new ones would cut prompt-to-answer latency on re-reviews and reduce duplicate Suggestions. The orchestrator already does this in the prior-round gate; arming agents to do it in parallel would produce richer first-pass output.</li>
+      <li><strong>[repo] Pre-populate BATS submodules in agent worktrees.</strong> Codex attempted <code>bin/rdd</code> + BATS validation but hit an empty <code>bats/lib/bats-core</code>. The worktree setup in <code>deep-review-setup</code> does not init submodules; a future enhancement would let any agent actually run the suite against its own code read. Until then, the live-verification note in <code>deep-review-context.md</code> should explicitly say BATS is not available in agent worktrees and agents should use unit tests or the built <code>rdd</code> binary only.</li>
+    </ul>
+    </div>
+  </main>
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+  <script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+
+  </script>
+</body>
+</html>
