@@ -12,10 +12,10 @@ import (
 	"strconv"
 	"time"
 
-	cerrdefs "github.com/containerd/errdefs"
+	"github.com/containerd/errdefs"
 	"github.com/go-logr/logr"
 	"github.com/moby/moby/api/types/events"
-	dockerclient "github.com/moby/moby/client"
+	mobyclient "github.com/moby/moby/client"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +34,7 @@ var _ engine = (*dockerWatcher)(nil)
 // dockerWatcher manages a Docker client connection and event stream. It
 // performs a full sync on connect and then watches for incremental changes.
 type dockerWatcher struct {
-	cli *dockerclient.Client
+	cli *mobyclient.Client
 	k8s client.Client
 
 	// apiNamespace is the Kubernetes namespace where mirror resources live.
@@ -51,8 +51,8 @@ type dockerWatcher struct {
 // the event stream watcher goroutine.
 func newDockerWatcher(ctx context.Context, k8s client.Client, apiNamespace string, reconcileChan chan<- event.GenericEvent) (*dockerWatcher, error) {
 	socketPath := instance.DockerSocket()
-	cli, err := dockerclient.New(
-		dockerclient.WithHost("unix://" + socketPath),
+	cli, err := mobyclient.New(
+		mobyclient.WithHost("unix://" + socketPath),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Docker client: %w", err)
@@ -61,7 +61,7 @@ func newDockerWatcher(ctx context.Context, k8s client.Client, apiNamespace strin
 	// Verify the connection by pinging Docker.
 	pingCtx, pingCancel := context.WithTimeout(ctx, 5*time.Second)
 	defer pingCancel()
-	if _, err := cli.Ping(pingCtx, dockerclient.PingOptions{}); err != nil {
+	if _, err := cli.Ping(pingCtx, mobyclient.PingOptions{}); err != nil {
 		cli.Close()
 		return nil, fmt.Errorf("failed to ping Docker: %w", err)
 	}
@@ -104,10 +104,10 @@ func newDockerWatcher(ctx context.Context, k8s client.Client, apiNamespace strin
 
 // dockerEventsSince returns a Docker events "Since" timestamp anchored
 // on the daemon's own clock, avoiding host/guest clock skew.
-func dockerEventsSince(ctx context.Context, cli *dockerclient.Client) (string, error) {
+func dockerEventsSince(ctx context.Context, cli *mobyclient.Client) (string, error) {
 	infoCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	result, err := cli.Info(infoCtx, dockerclient.InfoOptions{})
+	result, err := cli.Info(infoCtx, mobyclient.InfoOptions{})
 	if err != nil {
 		return "", fmt.Errorf("failed to query Docker info: %w", err)
 	}
@@ -169,12 +169,12 @@ func (w *dockerWatcher) run(ctx context.Context, since string) {
 		}
 	}()
 
-	eventFilter := dockerclient.Filters{}.
+	eventFilter := mobyclient.Filters{}.
 		Add("type", string(events.ContainerEventType)).
 		Add("type", string(events.ImageEventType)).
 		Add("type", string(events.VolumeEventType))
 
-	result := w.cli.Events(ctx, dockerclient.EventsListOptions{
+	result := w.cli.Events(ctx, mobyclient.EventsListOptions{
 		Since:   since,
 		Filters: eventFilter,
 	})
@@ -420,11 +420,11 @@ func (w *dockerWatcher) dispatchContainerAction(ctx context.Context, log logr.Lo
 	switch action {
 	case containersv1alpha1.ContainerActionStart:
 		log.Info("Starting container", "id", id)
-		_, err := w.cli.ContainerStart(ctx, id, dockerclient.ContainerStartOptions{})
+		_, err := w.cli.ContainerStart(ctx, id, mobyclient.ContainerStartOptions{})
 		return err
 	case containersv1alpha1.ContainerActionStop:
 		log.Info("Stopping container", "id", id)
-		_, err := w.cli.ContainerStop(ctx, id, dockerclient.ContainerStopOptions{})
+		_, err := w.cli.ContainerStop(ctx, id, mobyclient.ContainerStopOptions{})
 		return err
 	case containersv1alpha1.ContainerActionPause:
 		_, paused, err := w.containerRunState(ctx, id)
@@ -435,7 +435,7 @@ func (w *dockerWatcher) dispatchContainerAction(ctx context.Context, log logr.Lo
 			return nil
 		}
 		log.Info("Pausing container", "id", id)
-		_, err = w.cli.ContainerPause(ctx, id, dockerclient.ContainerPauseOptions{})
+		_, err = w.cli.ContainerPause(ctx, id, mobyclient.ContainerPauseOptions{})
 		return err
 	case containersv1alpha1.ContainerActionUnpause:
 		running, paused, err := w.containerRunState(ctx, id)
@@ -449,11 +449,11 @@ func (w *dockerWatcher) dispatchContainerAction(ctx context.Context, log logr.Lo
 			return nil
 		}
 		log.Info("Unpausing container", "id", id)
-		_, err = w.cli.ContainerUnpause(ctx, id, dockerclient.ContainerUnpauseOptions{})
+		_, err = w.cli.ContainerUnpause(ctx, id, mobyclient.ContainerUnpauseOptions{})
 		return err
 	case containersv1alpha1.ContainerActionRestart:
 		log.Info("Restarting container", "id", id)
-		_, err := w.cli.ContainerRestart(ctx, id, dockerclient.ContainerRestartOptions{})
+		_, err := w.cli.ContainerRestart(ctx, id, mobyclient.ContainerRestartOptions{})
 		return err
 	}
 	return fmt.Errorf("unknown container action %q", action)
@@ -464,7 +464,7 @@ func (w *dockerWatcher) dispatchContainerAction(ctx context.Context, log logr.Lo
 // also checks running so that unpause on a stopped container reports a
 // failure instead of a silent success.
 func (w *dockerWatcher) containerRunState(ctx context.Context, id string) (running, paused bool, err error) {
-	inspect, err := w.cli.ContainerInspect(ctx, id, dockerclient.ContainerInspectOptions{})
+	inspect, err := w.cli.ContainerInspect(ctx, id, mobyclient.ContainerInspectOptions{})
 	if err != nil {
 		return false, false, err
 	}
@@ -546,8 +546,8 @@ func (w *dockerWatcher) removeActionAnnotation(ctx context.Context, latest *cont
 // running. Images use Force: false so in-use images are kept and the
 // finalizer retries until the last consumer goes away.
 func (w *dockerWatcher) deleteContainer(ctx context.Context, c *containersv1alpha1.Container) error {
-	_, err := w.cli.ContainerRemove(ctx, c.Name, dockerclient.ContainerRemoveOptions{Force: true})
-	if cerrdefs.IsNotFound(err) {
+	_, err := w.cli.ContainerRemove(ctx, c.Name, mobyclient.ContainerRemoveOptions{Force: true})
+	if errdefs.IsNotFound(err) {
 		return nil
 	}
 	return err
@@ -560,8 +560,8 @@ func (w *dockerWatcher) deleteImage(ctx context.Context, img *containersv1alpha1
 	if img.Status.RepoTag != "" {
 		ref = img.Status.RepoTag
 	}
-	_, err := w.cli.ImageRemove(ctx, ref, dockerclient.ImageRemoveOptions{})
-	if cerrdefs.IsNotFound(err) {
+	_, err := w.cli.ImageRemove(ctx, ref, mobyclient.ImageRemoveOptions{})
+	if errdefs.IsNotFound(err) {
 		return nil
 	}
 	return err
@@ -570,8 +570,8 @@ func (w *dockerWatcher) deleteImage(ctx context.Context, img *containersv1alpha1
 // deleteVolume removes a volume from Docker. See deleteContainer for the
 // error-handling contract.
 func (w *dockerWatcher) deleteVolume(ctx context.Context, v *containersv1alpha1.Volume) error {
-	_, err := w.cli.VolumeRemove(ctx, v.Status.Name, dockerclient.VolumeRemoveOptions{Force: true})
-	if cerrdefs.IsNotFound(err) {
+	_, err := w.cli.VolumeRemove(ctx, v.Status.Name, mobyclient.VolumeRemoveOptions{Force: true})
+	if errdefs.IsNotFound(err) {
 		return nil
 	}
 	return err

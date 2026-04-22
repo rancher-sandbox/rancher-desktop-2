@@ -43,7 +43,7 @@ local_setup_file() {
         --field-selector "status.repoTag=busybox:latest" --timeout=30s
 }
 
-@test "docker rmi of one tag removes only the tag mirror" {
+@test "docker image rm of one tag removes only the tag mirror" {
     # Docker's untag event carries the image ID hash, not the tag
     # name, so the engine cannot match the event payload against
     # status.repoTag directly. reconcileImageByID re-inspects the
@@ -58,7 +58,7 @@ local_setup_file() {
         --field-selector "status.repoTag=busybox:latest" -o name
     assert_output
 
-    docker rmi busybox:alias
+    docker image rm busybox:alias
     rdd ctl wait --for=delete --namespace="${RDD_NAMESPACE}" image \
         --field-selector "status.repoTag=busybox:alias" --timeout=30s
 
@@ -81,13 +81,13 @@ local_setup_file() {
     alpine_id=${output}
 
     # The pin must be a running container: in this VM's Docker,
-    # rmi --force will fully remove an image whose only references are
+    # image rm --force will fully remove an image whose only references are
     # stopped containers, leaving nothing for the dangling-mirror path
     # to observe.
     docker run -d --name dangling-pin alpine:latest sleep inf
 
     # Remove the only tag; the running container keeps the image alive.
-    docker rmi --force alpine:latest
+    docker image rm --force alpine:latest
 
     # The dangling mirror has no RepoTag — query by status.id instead.
     rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" image \
@@ -116,7 +116,7 @@ local_setup_file() {
 
     # Cleanup.
     docker rm --force dangling-pin
-    docker rmi dangling-tag-test:v1
+    docker image rm dangling-tag-test:v1
 }
 
 # --- Container lifecycle mirroring ---

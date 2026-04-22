@@ -496,7 +496,7 @@ func (r *EngineReconciler) deleteAllOfType(ctx context.Context, list client.Obje
 
 // reconcileContainerActions processes the AnnotationAction annotation on
 // every container that carries one. Per-container errors are joined and
-// returned; a patch failure requeues the reconcile so the caller retries.
+// returned; a patch failure re-queues the reconcile so the caller retries.
 // Containers without the annotation are skipped.
 func (r *EngineReconciler) reconcileContainerActions(ctx context.Context) error {
 	r.watcherMu.Lock()

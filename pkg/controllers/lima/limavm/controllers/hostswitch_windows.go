@@ -304,7 +304,7 @@ func vsockHandshake(ctx context.Context, logger logr.Logger) (net.Listener, erro
 
 // getVMGUID discovers the Hyper-V VM running our distro by polling the
 // registry for VM GUIDs and handshaking with each in parallel. The registry
-// is rescanned every second so that VMs starting after the initial scan
+// is re-scanned every second so that VMs starting after the initial scan
 // (e.g., the WSL2 utility VM on a fresh system) are discovered.
 //
 // The signature-based discovery assumes only one opensuse WSL2 instance

@@ -1,4 +1,4 @@
-name: Windows Typeperf Sampler
+name: Windows typeperf Sampler
 description: >-
   Low-overhead perf counter collection using typeperf. Collects into a
   BLG (binary log) which captures processes that start mid-run. On stop,

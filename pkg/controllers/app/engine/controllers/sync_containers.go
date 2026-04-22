@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	cerrdefs "github.com/containerd/errdefs"
+	"github.com/containerd/errdefs"
 	mobycontainer "github.com/moby/moby/api/types/container"
 	mobynetwork "github.com/moby/moby/api/types/network"
-	dockerclient "github.com/moby/moby/client"
+	mobyclient "github.com/moby/moby/client"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,7 +38,7 @@ import (
 func (w *dockerWatcher) syncAllContainers(ctx context.Context) error {
 	log := logf.FromContext(ctx).WithName("docker-watcher")
 
-	listResult, err := w.cli.ContainerList(ctx, dockerclient.ContainerListOptions{All: true})
+	listResult, err := w.cli.ContainerList(ctx, mobyclient.ContainerListOptions{All: true})
 	if err != nil {
 		return fmt.Errorf("failed to list containers: %w", err)
 	}
@@ -82,8 +82,8 @@ func (w *dockerWatcher) syncAllContainers(ctx context.Context) error {
 // raced a concurrent delete between List and Inspect, and the stale
 // mirror is pruned later in syncAllContainers.
 func (w *dockerWatcher) syncContainer(ctx context.Context, id string) error {
-	result, err := w.cli.ContainerInspect(ctx, id, dockerclient.ContainerInspectOptions{})
-	if cerrdefs.IsNotFound(err) {
+	result, err := w.cli.ContainerInspect(ctx, id, mobyclient.ContainerInspectOptions{})
+	if errdefs.IsNotFound(err) {
 		return nil
 	}
 	if err != nil {

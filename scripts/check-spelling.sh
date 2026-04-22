@@ -86,6 +86,8 @@ INPUTS=$(yq --output-format=json <<EOF
     use_magic_file: 1
     report-timing: 1
     warnings: $(IFS=,; echo "${warnings[*]}")
+    ignore-next-line: |
+        no-spell-check-next-line
     use_sarif: ${CI:-0}
     extra_dictionary_limit: 20
     extra_dictionaries:

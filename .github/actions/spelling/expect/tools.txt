@@ -67,14 +67,11 @@ PATHCONV
 batslib
 
 # C & compilers
-ALLOCA
 ftell
 ldflags
 sprintf
 
 # make
-addprefix
-addsuffix
 DBSTAT
 DSQLITE
 endef

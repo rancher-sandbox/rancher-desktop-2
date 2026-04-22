@@ -3,21 +3,21 @@ backgrounding
 backquotes
 cooloff
 crt
+Dilithium
 filewatcher
 FQDNs
 gui
 hyperlinks
 keypair
 lte
+MBytes
 NONINFRINGEMENT
 OIDC
 remoting
 seek'ed
+tsv
 vendored
 vms
-
-# Architectures
-aarch
 
 # Kubernetes and KubeBuilder
 applyconfiguration
@@ -27,6 +27,8 @@ printcolumn
 
 # Linux
 binfmt
+# as in /proc/*/cmdline
+cmdline
 COLORTERM
 distros
 kvm
@@ -37,15 +39,25 @@ pgid
 pids
 qcow
 rootfs
+# as in /etc/sysconfig
+sysconfig
 tarball
 veth
 zst
 zypper
 
+# macOS
+# metadata server, see mds_store
+mds
+
 # Windows
-APPDATA
+# typeperf binary logs
+blg
+Cim
 cygwin
 ERRORLEVEL
+HKLM
+LASTEXITCODE
 LOCALAPPDATA
 mnt
 msys
@@ -53,12 +65,15 @@ MSYSTEM
 netsh
 PROGRAMFILES
 pwsh
+relog
 SYSTEMROOT
 taskkill
+typeperf
 UCRT
 usebackq
+WINDIR
 winver
 wsl
-WSLENV
+wslconfig
 wslpath
 wslservice

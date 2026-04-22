@@ -174,8 +174,8 @@ func limaVMShellAction(cmd *cobra.Command, args []string) error {
 
 	// ConnectTimeout caps the TCP handshake at 30s. ServerAliveInterval=30
 	// with ServerAliveCountMax=3 closes a wedged session after ~90s of
-	// unanswered keepalives. Interactive shells and long-running commands
-	// ack the keepalives and stay connected.
+	// unanswered keep-alives. Interactive shells and long-running commands
+	// ack the keep-alives and stay connected.
 	sshArgs = append(sshArgs, []string{
 		"-o", fmt.Sprintf("LogLevel=%s", logLevel),
 		"-o", "ConnectTimeout=30",

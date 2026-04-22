@@ -13,9 +13,9 @@ import (
 	"sort"
 	"time"
 
-	cerrdefs "github.com/containerd/errdefs"
+	"github.com/containerd/errdefs"
 	mobyimage "github.com/moby/moby/api/types/image"
-	dockerclient "github.com/moby/moby/client"
+	mobyclient "github.com/moby/moby/client"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,7 +54,7 @@ func imageMirrorNames(id string, repoTags []string) []string {
 func (w *dockerWatcher) syncAllImages(ctx context.Context) error {
 	log := logf.FromContext(ctx).WithName("docker-watcher")
 
-	listResult, err := w.cli.ImageList(ctx, dockerclient.ImageListOptions{All: true})
+	listResult, err := w.cli.ImageList(ctx, mobyclient.ImageListOptions{All: true})
 	if err != nil {
 		return fmt.Errorf("failed to list images: %w", err)
 	}
@@ -99,7 +99,7 @@ func (w *dockerWatcher) syncAllImages(ctx context.Context) error {
 // pruned later by syncAllImages.
 func (w *dockerWatcher) syncImageFromSummary(ctx context.Context, summary mobyimage.Summary) error {
 	result, err := w.cli.ImageInspect(ctx, summary.ID)
-	if cerrdefs.IsNotFound(err) {
+	if errdefs.IsNotFound(err) {
 		return nil
 	}
 	if err != nil {
@@ -206,7 +206,7 @@ func (w *dockerWatcher) applyImage(
 // name — notably Docker's untag events (see handleImageEvent).
 func (w *dockerWatcher) reconcileImageByID(ctx context.Context, id string) error {
 	result, err := w.cli.ImageInspect(ctx, id)
-	if cerrdefs.IsNotFound(err) {
+	if errdefs.IsNotFound(err) {
 		return w.removeImagesByID(ctx, id)
 	}
 	if err != nil {

@@ -32,12 +32,12 @@ func Test_computeSettledCondition(t *testing.T) {
 	// makeApp builds an App at the given generation, running spec, and
 	// conditions. Callers pass generation=2 so stale ObservedGeneration
 	// values have room below.
-	makeApp := func(generation int64, running bool, conds ...metav1.Condition) *v1alpha1.App {
+	makeApp := func(generation int64, running bool, conditions ...metav1.Condition) *v1alpha1.App {
 		return &v1alpha1.App{
 			ObjectMeta: metav1.ObjectMeta{Generation: generation},
 			Spec:       v1alpha1.AppSpec{Running: running},
 			Status: v1alpha1.AppStatus{
-				Conditions: conds,
+				Conditions: conditions,
 			},
 		}
 	}

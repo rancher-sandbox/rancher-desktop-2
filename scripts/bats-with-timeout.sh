@@ -5,8 +5,8 @@
 # SPDX-FileCopyrightText: The Rancher Desktop Authors
 
 # Run a bats target with a timeout. Always writes a support bundle
-# (process tree, pgid, wchan, open fds) at the end so CI artifacts carry
-# the evidence needed to diagnose hangs and leaked processes. On timeout,
+# (process tree, pgid, wchan, open file descriptors) at the end so CI artifacts
+# carry the evidence needed to diagnose hangs and leaked processes. On timeout,
 # additionally kills the target with SIGTERM then SIGKILL.
 #
 # Non-destructive state capture is unfiltered so the bundle shows sibling
@@ -100,7 +100,7 @@ dump_linux_proc() {
         echo "state: $(grep -m1 ^State "$pid_dir/status" 2>/dev/null || echo ?)"
         echo "wchan: $(cat "$pid_dir/wchan" 2>/dev/null || echo ?)"
         echo "cmdline: $(tr '\0' ' ' <"$pid_dir/cmdline" 2>/dev/null || echo ?)"
-        echo "fds:"
+        echo "file descriptors:"
         ls -l "$pid_dir/fd/" 2>/dev/null | sed 's/^/  /' || true
     done
 }
@@ -114,14 +114,14 @@ dump_macos_ps() {
         if is_interesting_process "$comm"; then
             pids+=("$pid")
         fi
-    done < <(ps -axo pid=,ucomm= 2>/dev/null || true)
+    done < <(ps -a -x -o pid=,ucomm= 2>/dev/null || true)
 
     for pid in "${pids[@]}"; do
         echo
         echo "--- pid=${pid} ---"
         ps -p "$pid" -o pid,pgid,stat,wchan,command 2>/dev/null | sed 's/^/  /' || true
         if command -v lsof >/dev/null 2>&1; then
-            echo "fds (lsof):"
+            echo "file descriptors (lsof):"
             lsof -p "$pid" 2>/dev/null | sed 's/^/  /' || true
         fi
         # `sample` captures user-space call stacks on macOS without attaching.
@@ -133,16 +133,18 @@ dump_macos_ps() {
 }
 
 dump_sockets() {
+    local -a cmd
     if command -v ss >/dev/null 2>&1; then
-        echo "=== Open sockets (ss -tupn) ==="
-        ss -tupn 2>&1 || true
+        cmd=(ss --tcp --udp --processes --numeric)
     elif command -v lsof >/dev/null 2>&1; then
-        echo "=== Open sockets (lsof -iP) ==="
-        lsof -iP 2>&1 || true
+        cmd=(lsof -i -P)
     elif command -v netstat >/dev/null 2>&1; then
-        echo "=== Open sockets (netstat -an) ==="
-        netstat -an 2>&1 || true
+        cmd=(netstat -a -n)
+    else
+        return
     fi
+    echo "=== Open sockets (${cmd[*]}) ==="
+    "${cmd[@]}" 2>&1 || true
 }
 
 # Capture evidence of memory pressure or external process kills.
@@ -158,6 +160,7 @@ dump_memory_pressure() {
         Darwin)
             vm_stat 2>&1 || true
             echo
+            # no-spell-check-next-line
             sysctl vm.swapusage 2>&1 || true
             ;;
         Linux)
@@ -185,8 +188,19 @@ dump_memory_pressure() {
             # bats target (30-min timeout + slack). --style compact keeps
             # output small.
             if command -v log >/dev/null 2>&1; then
+                local predicate=(
+                    '(sender == "kernel") AND'
+                    '('
+                    '(eventMessage CONTAINS[c] "jetsam") OR '
+                    # no-spell-check-next-line
+                    '(eventMessage CONTAINS[c] "memorystatus") OR '
+                    '(eventMessage CONTAINS[c] "low swap") OR '
+                    # no-spell-check-next-line
+                    '(eventMessage CONTAINS[c] "lowmem")'
+                    ')'
+                )
                 log show --style compact --last 1h \
-                    --predicate '(sender == "kernel") AND ((eventMessage CONTAINS[c] "jetsam") OR (eventMessage CONTAINS[c] "memorystatus") OR (eventMessage CONTAINS[c] "low swap") OR (eventMessage CONTAINS[c] "lowmem"))' \
+                    --predicate "${predicate[*]}" \
                     2>&1 | tail -100 || true
             fi
             ;;
@@ -194,7 +208,7 @@ dump_memory_pressure() {
             # OOM killer activations appear in dmesg. The ring buffer is
             # capped, so tail is sufficient.
             if command -v dmesg >/dev/null 2>&1; then
-                dmesg 2>/dev/null | grep -iE 'oom|killed process|out of memory' | tail -50 || true
+                dmesg 2>/dev/null | grep -iE 'OOM|killed process|out of memory' | tail -50 || true
             fi
             ;;
     esac
@@ -260,13 +274,13 @@ dump_api_state() {
 capture_state() {
     local context=$1
     {
-        echo "=== Support bundle for RDD_INSTANCE=${instance} (${context}) at $(date -Iseconds 2>/dev/null || date) ==="
+        echo "=== Support bundle for RDD_INSTANCE=${instance} (${context}) at $(date --iso-8601=seconds 2>/dev/null || date) ==="
         echo "uname: $(uname -a)"
 
         echo
         echo "=== ps ==="
-        # ps auxf is Linux-only; fall back to plain aux on macOS/BSD.
-        ps auxf 2>/dev/null || ps aux 2>&1 || true
+        # `ps --forest` is Linux-only; fall back to without on macOS/BSD.
+        ps aux --forest 2>/dev/null || ps aux 2>&1 || true
 
         echo
         echo "=== Per-process state ==="
@@ -311,12 +325,12 @@ our_leaked_pids() {
         if matches_our_instance "$(cmdline_of "$pid")"; then
             echo "$pid"
         fi
-    done < <(ps -axo pid=,ucomm= 2>/dev/null || ps -eo pid=,ucomm= 2>/dev/null || true)
+    done < <(ps -a -x -o pid=,ucomm= 2>/dev/null || ps -e -o pid=,ucomm= 2>/dev/null || true)
 }
 
 # SIGQUIT Go processes belonging to our RDD_INSTANCE so their goroutine
 # stacks land in the preserved stderr logs. No-op if nothing is leaked.
-sigquit_our_go_leaks() {
+sig_quit_our_go_leaks() {
     local pid
     local leaked
     leaked=$(our_leaked_pids 1)
@@ -338,7 +352,7 @@ sigquit_our_go_leaks() {
 
 # SIGKILL any process still running under our RDD_INSTANCE so the CI
 # runner is clean for later steps. No-op if nothing is leaked.
-sigkill_our_leaks() {
+sig_kill_our_leaks() {
     local pid
     local leaked
     leaked=$(our_leaked_pids 0)
@@ -360,14 +374,14 @@ cmd_pid=$!
 
 # Poll for the deadline or command completion. Must run in the main shell
 # so we can reliably wait for both the dump and the command to finish
-# before exiting (a backgrounded watchdog would be killed mid-dump when
+# before exiting (a background watchdog would be killed mid-dump when
 # the main shell exits).
 deadline=$(($(date +%s) + timeout_seconds))
 while kill -0 "${cmd_pid}" 2>/dev/null; do
     if [ "$(date +%s)" -ge "${deadline}" ]; then
         echo "bats-with-timeout: RDD_INSTANCE=${instance} exceeded ${timeout_seconds}s, capturing support bundle" >&2
         capture_state "timeout"
-        sigquit_our_go_leaks
+        sig_quit_our_go_leaks
         echo "bats-with-timeout: sending SIGTERM to ${cmd_pid}" >&2
         kill -TERM "${cmd_pid}" 2>/dev/null || true
         # Give it 30s to shut down gracefully, then SIGKILL.
@@ -389,10 +403,10 @@ exit_code=0
 wait "${cmd_pid}" || exit_code=$?
 
 # Always capture a post-run bundle so leaked grandchildren get recorded
-# even when the bats target itself succeeded. sigkill_our_leaks cleans up
+# even when the bats target itself succeeded. sig_kill_our_leaks cleans up
 # anything still matching our RDD_INSTANCE so sibling targets aren't
 # confused and the CI runner exits clean.
 capture_state "post-run"
-sigkill_our_leaks
+sig_kill_our_leaks
 
 exit "${exit_code}"

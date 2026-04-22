@@ -1,12 +1,13 @@
 name: Disable Compatibility Telemetry
 description: >-
-  Block CompatTelRunner.exe via IFEO debugger redirect and disable the
-  DiagTrack service. Runs only on Windows; harmless no-op otherwise.
+  Block CompatTelRunner.exe via Image File Execution Options debugger redirect
+  and disable the DiagTrack service. Runs only on Windows; harmless no-op
+  otherwise.
 
 runs:
   using: composite
   steps:
-  - name: Block CompatTelRunner via IFEO redirect
+  - name: Block CompatTelRunner via Image File Execution Options redirect
     if: runner.os == 'Windows'
     shell: pwsh
     run: |
@@ -19,9 +20,9 @@ runs:
       # On a 2-vCPU GitHub runner, CompatTelRunner consumed ~340 CPU-seconds
       # over a 24-minute BATS job (~22% of one core), crowding out gzip/xz
       # decompression and causing intermittent timeouts.
-      $ifeo = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\CompatTelRunner.exe'
-      New-Item -Path $ifeo -Force | Out-Null
-      New-ItemProperty -Path $ifeo -Name Debugger `
+      $key = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\CompatTelRunner.exe'
+      New-Item -Path $key -Force | Out-Null
+      New-ItemProperty -Path $key -Name Debugger `
         -Value "$env:WINDIR\System32\where.exe" `
         -PropertyType String -Force | Out-Null
 
@@ -41,7 +42,7 @@ runs:
     if: runner.os == 'Windows'
     shell: pwsh
     run: |
-      $ifeo = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\CompatTelRunner.exe'
+      $key = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\CompatTelRunner.exe'
 
       # Log scheduled tasks referencing CompatTel so we have data
       # if the IFEO trick stops working on a future Windows image.
@@ -51,6 +52,6 @@ runs:
       } | Select-Object TaskPath, TaskName, State | Format-Table -AutoSize
 
       Write-Output "--- Verification ---"
-      Get-ItemProperty -Path $ifeo -Name Debugger | Select-Object Debugger
+      Get-ItemProperty -Path $key -Name Debugger | Select-Object Debugger
       Get-Service DiagTrack -ErrorAction SilentlyContinue |
         Format-List Name, Status, StartType

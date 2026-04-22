@@ -102,14 +102,13 @@ try {
         }
         $sw.Stop()
         $writeMs = $sw.Elapsed.TotalMilliseconds
-        $writeMBs = [math]::Round($sizeMB * 1000 / $writeMs, 1)
 
         $sw.Restart()
         $fs = [System.IO.File]::OpenRead($benchFile)
         try {
             $total = 0
-            $readbuf = New-Object byte[] (1MB)
-            while (($n = $fs.Read($readbuf, 0, $readbuf.Length)) -gt 0) {
+            $readBuf = New-Object byte[] (1MB)
+            while (($n = $fs.Read($readBuf, 0, $readBuf.Length)) -gt 0) {
                 $total += $n
             }
         } finally {
@@ -117,15 +116,14 @@ try {
         }
         $sw.Stop()
         $readMs = $sw.Elapsed.TotalMilliseconds
-        $readMBs = [math]::Round($sizeMB * 1000 / $readMs, 1)
 
         [PSCustomObject]@{
             File = $benchFile
             SizeMB = $sizeMB
             WriteMs = [math]::Round($writeMs, 1)
-            WriteMBPerSec = $writeMBs
+            WriteMBPerSec = [math]::Round($sizeMB * 1000 / $writeMs, 1)
             ReadMs  = [math]::Round($readMs, 1)
-            ReadMBPerSec  = $readMBs
+            ReadMBPerSec  = [math]::Round($sizeMB * 1000 / $readMs, 1)
         } | Format-List
     } catch {
         Write-Output "disk bench failed: $($_.Exception.Message)"
@@ -157,8 +155,8 @@ try {
     & wsl.exe --version 2>&1
     Write-Output ''
     Write-Output "--- .wslconfig (if present) ---"
-    $wslconf = Join-Path $env:USERPROFILE '.wslconfig'
-    if (Test-Path $wslconf) { Get-Content $wslconf } else { "(no .wslconfig)" }
+    $wslconfig = Join-Path $env:USERPROFILE '.wslconfig'
+    if (Test-Path $wslconfig) { Get-Content $wslconfig } else { "(no .wslconfig)" }
 
     Write-Output ''
     Write-Output "=== Hyper-V services ==="

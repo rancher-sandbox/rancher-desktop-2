@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"time"
 
-	cerrdefs "github.com/containerd/errdefs"
+	"github.com/containerd/errdefs"
 	mobyvolume "github.com/moby/moby/api/types/volume"
-	dockerclient "github.com/moby/moby/client"
+	mobyclient "github.com/moby/moby/client"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,7 +38,7 @@ func volumeMirrorName(dockerName string) string {
 func (w *dockerWatcher) syncAllVolumes(ctx context.Context) error {
 	log := logf.FromContext(ctx).WithName("docker-watcher")
 
-	volumeList, err := w.cli.VolumeList(ctx, dockerclient.VolumeListOptions{})
+	volumeList, err := w.cli.VolumeList(ctx, mobyclient.VolumeListOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list volumes: %w", err)
 	}
@@ -82,8 +82,8 @@ func (w *dockerWatcher) syncAllVolumes(ctx context.Context) error {
 // a concurrent delete between List and Inspect, and the stale mirror
 // is pruned later in syncAllVolumes.
 func (w *dockerWatcher) syncVolume(ctx context.Context, name string) error {
-	result, err := w.cli.VolumeInspect(ctx, name, dockerclient.VolumeInspectOptions{})
-	if cerrdefs.IsNotFound(err) {
+	result, err := w.cli.VolumeInspect(ctx, name, mobyclient.VolumeInspectOptions{})
+	if errdefs.IsNotFound(err) {
 		return nil
 	}
 	if err != nil {

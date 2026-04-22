@@ -6,12 +6,14 @@ devmode
 eio
 genericfeatures
 goruntime
+hostswitch
 mountpoint
 nerdctl
 nochange
 rancherdesktop
 rdctl
 rdd
+unexpose
 
 # container namespace (resource short name)
 cns

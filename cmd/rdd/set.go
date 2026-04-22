@@ -236,15 +236,15 @@ func collectEntries(schema *apiextensionsv1.JSONSchemaProps, prefix string, out 
 
 		info := "(" + prop.Type + ")"
 		if len(prop.Enum) > 0 {
-			var vals []string
+			var values []string
 			for _, e := range prop.Enum {
 				var s string
 				if json.Unmarshal(e.Raw, &s) == nil {
-					vals = append(vals, s)
+					values = append(values, s)
 				}
 			}
-			if len(vals) > 0 {
-				info = "(" + strings.Join(vals, "|") + ")"
+			if len(values) > 0 {
+				info = "(" + strings.Join(values, "|") + ")"
 			}
 		}
 
@@ -584,12 +584,12 @@ func getAppKubeClient(ctx context.Context) (client.Client, *rest.Config, error) 
 // fetchSpecSchema retrieves the App CRD from the API server and returns the
 // OpenAPI v3 schema for the spec field.
 func fetchSpecSchema(ctx context.Context, config *rest.Config) (*apiextensionsv1.JSONSchemaProps, error) {
-	apiextClient, err := apiextensionsclientset.NewForConfig(config)
+	client, err := apiextensionsclientset.NewForConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create apiextensions client: %w", err)
 	}
 
-	crd, err := apiextClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, appCRDName, metav1.GetOptions{})
+	crd, err := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, appCRDName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, errors.New("app CRD is not installed; make sure the control plane is running with the app controller enabled")

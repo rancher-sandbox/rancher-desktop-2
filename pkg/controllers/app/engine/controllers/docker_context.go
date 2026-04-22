@@ -14,7 +14,7 @@ import (
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/context/docker"
 	"github.com/docker/cli/cli/context/store"
-	dockerclient "github.com/moby/moby/client"
+	mobyclient "github.com/moby/moby/client"
 )
 
 // dockerContextProbeTimeout is the maximum time allowed to ping a Docker
@@ -46,8 +46,7 @@ func newContextStore() (store.Store, error) {
 	// Pass nil for the context-metadata TypeGetter; the store decodes a nil
 	// type into a map[string]any, which is all we need since we never inspect
 	// the Metadata field. This avoids importing cli/command, which would pull
-	// in the docker/cli metrics + telemetry chain (otel/sdk/metric, go-metrics,
-	// gorilla/mux, backoff/v5, morikuni/aec).
+	// in the docker/cli metrics + telemetry chain (otel/sdk/metric, etc.).
 	cfg := store.NewConfig(
 		nil,
 		store.EndpointTypeGetter(docker.DockerEndpoint, func() any { return &docker.EndpointMeta{} }),
@@ -155,11 +154,11 @@ func clearCurrentDockerContext(name string) error {
 func probeDockerContext(ctx context.Context, host string) bool {
 	probeCtx, cancel := context.WithTimeout(ctx, dockerContextProbeTimeout)
 	defer cancel()
-	cli, err := dockerclient.New(dockerclient.WithHost(host))
+	cli, err := mobyclient.New(mobyclient.WithHost(host))
 	if err != nil {
 		return false
 	}
 	defer cli.Close()
-	_, err = cli.Ping(probeCtx, dockerclient.PingOptions{})
+	_, err = cli.Ping(probeCtx, mobyclient.PingOptions{})
 	return err == nil
 }

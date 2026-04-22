@@ -8,7 +8,7 @@
 //
 // Usage:
 //
-//	go run .github/actions/windows-typeperf-sampler/summarize-typeperf.go <perfdata.tsv> [topN]
+//	go run .github/actions/windows-typeperf-sampler/summarize-typeperf.go <perf-data.tsv> [topN]
 package main
 
 import (
@@ -46,7 +46,7 @@ var headerRe = regexp.MustCompile(`\\Process\(([^)]+)\)\\(.+)$`)
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "usage: summarize-typeperf <perfdata.tsv> [topN]\n")
+		fmt.Fprintf(os.Stderr, "usage: summarize-typeperf <perf-data.tsv> [topN]\n")
 		os.Exit(1)
 	}
 	topN := 10
@@ -78,7 +78,7 @@ func main() {
 	// Build indices during single header pass.
 	var sysColIdx []int
 	sysNames := map[int]string{}
-	procs := map[string]*procIndex{}
+	processes := map[string]*procIndex{}
 	instances := make([]string, 0, 256)
 
 	for i, h := range headers {
@@ -95,10 +95,10 @@ func main() {
 		if inst == "_Total" || inst == "Idle" {
 			continue
 		}
-		pi, ok := procs[inst]
+		pi, ok := processes[inst]
 		if !ok {
 			pi = &procIndex{-1, -1, -1, -1, -1}
-			procs[inst] = pi
+			processes[inst] = pi
 			instances = append(instances, inst)
 		}
 		switch counter {
@@ -115,7 +115,7 @@ func main() {
 		}
 	}
 
-	fmt.Printf("Processes tracked: %d\n", len(procs))
+	fmt.Printf("Processes tracked: %d\n", len(processes))
 
 	rowNum := 0
 	for {
@@ -157,7 +157,7 @@ func main() {
 		// Per-process snapshots via precomputed indices
 		snaps := make([]procSnap, 0, len(instances))
 		for _, inst := range instances {
-			pi := procs[inst]
+			pi := processes[inst]
 			cpu, cpuOK := colFloat(record, pi.cpu)
 			ws, wsOK := colFloat(record, pi.ws)
 			if !cpuOK && !wsOK {
