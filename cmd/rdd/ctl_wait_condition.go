@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	watchtools "k8s.io/client-go/tools/watch"
 
+	cliexit "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/exit"
 	service "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/cmd"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
 )
@@ -131,7 +132,7 @@ func ctlWaitConditionAction(cmd *cobra.Command, rawArgs []string) error {
 			return checker.check(obj), nil
 		},
 	)
-	return err
+	return cliexit.Classify(err)
 }
 
 // parseConditionArg parses "TYPE[=STATUS]" into condition type and status.
