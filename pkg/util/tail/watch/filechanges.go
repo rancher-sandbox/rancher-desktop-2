@@ -5,8 +5,11 @@
 
 package watch
 
-// FileChanges groups the channels a FileWatcher uses to signal
-// file-level modifications, truncations, and deletions.
+// FileChanges groups the channels a FileWatcher uses to signal file
+// modifications, truncations, and deletions. Each channel has a
+// buffer of 1: a notification arriving while a prior one is still
+// pending is dropped (coalesced). Consumers that must observe every
+// event cannot rely on FileChanges alone.
 type FileChanges struct {
 	Modified  chan bool // Channel to get notified of modifications
 	Truncated chan bool // Channel to get notified of truncations

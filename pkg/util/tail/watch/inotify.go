@@ -9,7 +9,6 @@ package watch
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -123,13 +122,14 @@ func (fw *InotifyFileWatcher) ChangeEvents(t *tomb.Tomb, pos int64, wg *sync.Wai
 				evt.Op&fsnotify.Write == fsnotify.Write:
 				fi, err := os.Stat(fw.Filename)
 				if err != nil {
-					if os.IsNotExist(err) {
-						_ = untrack(fw.Filename)
-						changes.NotifyDeleted()
-						return
-					}
-					// XXX: report this error back to the user
-					panic(fmt.Sprintf("Failed to stat file %v: %v", fw.Filename, err))
+					// Treat any stat failure (IsNotExist, permission,
+					// transient I/O) as a deletion: the tail reopens on the
+					// next cycle or exits cleanly. Panicking would crash
+					// the host process, because this runs in a detached
+					// goroutine the caller cannot recover from.
+					_ = untrack(fw.Filename)
+					changes.NotifyDeleted()
+					return
 				}
 				fw.Size = fi.Size()
 

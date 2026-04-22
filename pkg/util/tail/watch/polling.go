@@ -8,9 +8,7 @@
 package watch
 
 import (
-	"fmt"
 	"os"
-	"runtime"
 	"sync"
 	"time"
 
@@ -83,16 +81,14 @@ func (fw *PollingFileWatcher) ChangeEvents(t *tomb.Tomb, pos int64, wg *sync.Wai
 
 			fi, err := os.Stat(fw.Filename)
 			if err != nil {
-				// Windows cannot delete a file if a handle is still open (tail keeps one open)
-				// so it gives access denied to anything trying to read it until all handles are released.
-				if os.IsNotExist(err) || (runtime.GOOS == "windows" && os.IsPermission(err)) {
-					// File does not exist (has been deleted).
-					changes.NotifyDeleted()
-					return
-				}
-
-				// XXX: report this error back to the user
-				panic(fmt.Sprintf("Failed to stat file %v: %v", fw.Filename, err))
+				// Treat any stat failure (IsNotExist, permission — Windows
+				// keeps a handle open while the tail holds the file —
+				// transient I/O) as a deletion: the tail reopens on the
+				// next cycle or exits cleanly. Panicking would crash the
+				// host process, because this runs in a detached goroutine
+				// the caller cannot recover from.
+				changes.NotifyDeleted()
+				return
 			}
 
 			// File got moved/renamed?

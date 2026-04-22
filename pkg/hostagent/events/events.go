@@ -13,6 +13,7 @@ package events
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -137,20 +138,38 @@ func Watch(ctx context.Context, haStdoutPath, haStderrPath string, begin time.Ti
 	}
 }
 
-// tailLogger adapts a logr.Logger to the subset of the stdlib log.Logger
-// API that pkg/util/tail's Config.Logger accepts. In practice tail only
-// calls Printf; the other methods exist to satisfy the interface and
-// forward through Info so a stray call at least surfaces in the log.
+// tailLogger adapts a logr.Logger to the subset of log.Logger that
+// pkg/util/tail's Config.Logger requires. Tail only calls Printf in
+// practice. Fatal* logs at Error severity so a stray call stands out
+// in the log stream; it does not os.Exit, because the daemon owns
+// process lifetime, not a leaf logger. Panic* logs at Error and then
+// panics, honoring log.Logger's contract.
 type tailLogger struct {
 	logger logr.Logger
 }
 
-func (t tailLogger) Fatal(v ...any)                 { t.logger.Info(fmt.Sprint(v...)) }
-func (t tailLogger) Fatalf(format string, v ...any) { t.logger.Info(fmt.Sprintf(format, v...)) }
-func (t tailLogger) Fatalln(v ...any)               { t.logger.Info(fmt.Sprintln(v...)) }
-func (t tailLogger) Panic(v ...any)                 { t.logger.Info(fmt.Sprint(v...)) }
-func (t tailLogger) Panicf(format string, v ...any) { t.logger.Info(fmt.Sprintf(format, v...)) }
-func (t tailLogger) Panicln(v ...any)               { t.logger.Info(fmt.Sprintln(v...)) }
+func (t tailLogger) Fatal(v ...any)                 { t.logger.Error(nil, fmt.Sprint(v...)) }
+func (t tailLogger) Fatalf(format string, v ...any) { t.logger.Error(nil, fmt.Sprintf(format, v...)) }
+func (t tailLogger) Fatalln(v ...any)               { t.logger.Error(nil, fmt.Sprintln(v...)) }
+
+func (t tailLogger) Panic(v ...any) {
+	s := fmt.Sprint(v...)
+	t.logger.Error(errors.New(s), "tail panic")
+	panic(s)
+}
+
+func (t tailLogger) Panicf(format string, v ...any) {
+	s := fmt.Sprintf(format, v...)
+	t.logger.Error(errors.New(s), "tail panic")
+	panic(s)
+}
+
+func (t tailLogger) Panicln(v ...any) {
+	s := fmt.Sprintln(v...)
+	t.logger.Error(errors.New(s), "tail panic")
+	panic(s)
+}
+
 func (t tailLogger) Print(v ...any)                 { t.logger.Info(fmt.Sprint(v...)) }
 func (t tailLogger) Printf(format string, v ...any) { t.logger.Info(fmt.Sprintf(format, v...)) }
 func (t tailLogger) Println(v ...any)               { t.logger.Info(fmt.Sprintln(v...)) }

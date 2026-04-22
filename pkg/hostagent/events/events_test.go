@@ -144,6 +144,32 @@ func TestWatchReturnsOnCtxCancel(t *testing.T) {
 	}
 }
 
+// TestWatchPropagatesTailError forces the stdout tail to die with a
+// fatal error and asserts that Watch surfaces that error to the
+// caller, instead of returning nil when the Lines channel closes.
+// The setup uses a path whose parent is a regular file, so
+// os.OpenFile returns ENOTDIR — a non-IsNotExist error that
+// tail.reopen() wraps and uses to kill the tomb.
+func TestWatchPropagatesTailError(t *testing.T) {
+	dir := t.TempDir()
+	intermediate := filepath.Join(dir, "not-a-dir")
+	err := os.WriteFile(intermediate, []byte("x"), 0o644)
+	assert.NilError(t, err)
+	stdoutPath := filepath.Join(intermediate, "ha.stdout.log")
+
+	stderrPath := filepath.Join(dir, "ha.stderr.log")
+	_, err = os.Create(stderrPath)
+	assert.NilError(t, err)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	err = Watch(ctx, stdoutPath, stderrPath, time.Time{}, func(_ Event) bool {
+		return false
+	})
+	assert.ErrorContains(t, err, "ha.stdout.log")
+}
+
 func TestWatchDrainsStderrWithoutPropagating(t *testing.T) {
 	stdoutPath, stderrPath, stdoutW, stderrW := setupLogs(t)
 	_, err := fmt.Fprintln(stderrW, "hostagent: some stderr noise")

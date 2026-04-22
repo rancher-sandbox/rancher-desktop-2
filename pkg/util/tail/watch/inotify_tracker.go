@@ -9,6 +9,7 @@ package watch
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -47,11 +48,24 @@ var (
 	// globally shared InotifyTracker; ensures only one fsnotify.Watcher is used.
 	shared *InotifyTracker
 
+	// sharedErr records any fsnotify.NewWatcher failure from goRun, so the
+	// first track or untrack call surfaces it to the caller instead of the
+	// shared goroutine panicking. sync.Once guarantees a single attempt:
+	// inotify, kqueue, and ReadDirectoryChanges init failures (EMFILE,
+	// ENOMEM) do not self-heal, so retrying is pointless.
+	sharedErr error
+
 	// these are used to ensure the shared InotifyTracker is run exactly once.
 	once  = sync.Once{}
 	goRun = func() {
+		watcher, err := fsnotify.NewWatcher()
+		if err != nil {
+			sharedErr = fmt.Errorf("failed to create fsnotify.Watcher: %w", err)
+			return
+		}
 		shared = &InotifyTracker{
 			mux:       sync.Mutex{},
+			watcher:   watcher,
 			chans:     make(map[string]chan fsnotify.Event),
 			done:      make(map[string]chan bool),
 			watchNums: make(map[string]int),
@@ -85,6 +99,9 @@ func trackCreate(fname string) error {
 func watch(winfo *watchInfo) error {
 	// start running the shared InotifyTracker if not already running
 	once.Do(goRun)
+	if sharedErr != nil {
+		return sharedErr
+	}
 
 	winfo.fname = filepath.Clean(winfo.fname)
 	shared.watch <- winfo
@@ -111,6 +128,9 @@ func untrackCreate(fname string) error {
 func remove(winfo *watchInfo) error {
 	// start running the shared InotifyTracker if not already running
 	once.Do(goRun)
+	if sharedErr != nil {
+		return sharedErr
+	}
 
 	winfo.fname = filepath.Clean(winfo.fname)
 	shared.mux.Lock()
@@ -139,8 +159,9 @@ func Cleanup(fname string) error {
 	return untrack(fname)
 }
 
-// watchFlags calls fsnotify.WatchFlags for the input filename and flags, creating
-// a new Watcher if the previous Watcher was closed.
+// addWatch registers a new per-file watcher. If the filename is not yet
+// tracked, it also subscribes the shared fsnotify.Watcher to the path
+// (the parent directory when winfo.isCreate()).
 func (t *InotifyTracker) addWatch(winfo *watchInfo) error {
 	t.mux.Lock()
 	defer t.mux.Unlock()
@@ -248,12 +269,6 @@ func (t *InotifyTracker) sendEvent(event fsnotify.Event) {
 // produces. The RPC goroutine is still allowed to block on fsnotify —
 // its blocking no longer starves the drainers.
 func (t *InotifyTracker) run() {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		panic("failed to create fsnotify.Watcher: " + err.Error())
-	}
-	t.watcher = watcher
-
 	// Drain Events forever. Routes each event to the per-file channel
 	// registered via addWatch.
 	go func() {
@@ -268,13 +283,10 @@ func (t *InotifyTracker) run() {
 	// and readEvents blocks trying to send.
 	go func() {
 		for err := range t.watcher.Errors {
-			if err == nil {
+			if err == nil || errors.Is(err, syscall.EINTR) {
 				continue
 			}
-			var sysErr *os.SyscallError
-			if !errors.As(err, &sysErr) || !errors.Is(sysErr.Err, syscall.EINTR) {
-				logger.Printf("Error in Watcher Error channel: %s", err)
-			}
+			logger.Printf("Error in Watcher Error channel: %s", err)
 		}
 	}()
 
