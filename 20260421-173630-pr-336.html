@@ -194,14 +194,16 @@ h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1
       <pre data-start="419" data-line="424-438"><code class="language-go">	return nil // Don&#39;t fail stop operation due to discovery cleanup issues
 }
 
-// Delete removes all instance data. If the service is running, Delete stops
-// it first, honoring wait and timeout as in [StopWithWait].
-func Delete(wait bool, timeout time.Duration) error {
+// Delete removes all instance data. If the service is running, Delete waits
+// up to timeout for it to exit before removing files; removing instance.Dir()
+// while the serve process holds rdd.pid, rdd.sqlite3, and log files corrupts
+// the directory on Windows and breaks PID-file mutual exclusion on Unix.
+func Delete(timeout time.Duration) error {
 	if !Exists() {
 		return fmt.Errorf(&quot;%q control plane does not exist&quot;, instance.Name())
 	}
 	if Running() {
-		if err := StopWithWait(wait, timeout); err != nil {
+		if err := StopWithWait(true, timeout); err != nil {
 			return err
 		}
 	}
@@ -213,9 +215,7 @@ func Delete(wait bool, timeout time.Duration) error {
 	return os.RemoveAll(instance.Dir())
 }
 
-// preserveAllInstanceLogs moves .log files from each Lima instance directory
-// to the service log directory before the instance directories are deleted.
-// This is a no-op unless RDD_KEEP_LOGS is set.</code></pre>
+// preserveAllInstanceLogs moves .log files from each Lima instance directory</code></pre>
     <p>Before the PR, <code>Delete()</code> always called <code>Stop()</code>, which always waited. This PR exposes <code>--wait=false</code> on <code>svc delete</code> and threads it through to <code>StopWithWait</code>. When the user passes <code>--wait=false</code>, <code>StopWithWait</code> signals the process and returns immediately (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/pkg/service/cmd/service.go#L358-L395"><code>pkg/service/cmd/service.go:358-395</code></a>); <code>Delete</code> then calls <code>os.RemoveAll(instance.LogDir())</code>, <code>os.RemoveAll(instance.ShortDir())</code>, and <code>os.RemoveAll(instance.Dir())</code> while the serve subprocess still holds open handles to <code>rdd.pid</code>, <code>rdd.sqlite3</code>, <code>rdd.stderr.log</code>, <code>rdd.stdout.log</code>, and has its working directory pinned to <code>instance.Dir()</code> (set in <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/cmd/rdd/service.go#L607"><code>service.go:607</code></a>).</p>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/pkg/service/cmd/service.go#L353-L400">pkg/service/cmd/service.go</a></div>
       <pre data-start="353" data-line="358-395"><code class="language-go">	// Kill fallback never fires. On Windows, Interrupt uses
@@ -324,18 +324,20 @@ func Running() bool {
 	&quot;github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail&quot;
 )
 
-// defaultWaitTimeout is the default --timeout for subcommands whose wait
-// normally settles within seconds.
-const defaultWaitTimeout = 30 * time.Second
+// startWaitTimeout bounds the wait for the API server, CRDs, and
+// controller-manager registration to land. Cold start can take well over 30s
+// in CI on slower runners.
+const startWaitTimeout = 90 * time.Second
 
-// timeoutError wraps a deadline-expiry err with [cliexit.Timeout] so the CLI
-// exits with [cliexit.CodeTimeout], matching `rdd set`. Other errors pass
-// through unchanged.
-func timeoutError(err error) error {</code></pre>
+// stopWaitTimeout bounds the wait for the control plane to shut down. The
+// service itself drains its controller-manager goroutines for up to 45s
+// (see Run in pkg/service/cmd/service.go); when LimaVM stop orchestration</code></pre>
     <p>The new default wires into three subcommands with different sizing constraints:</p>
     <p><em>Stop / delete path.</em> The serve subprocess allows up to 45s for its controller-manager goroutine to drain (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/pkg/service/cmd/service.go#L826"><code>pkg/service/cmd/service.go:826</code></a>: <code>case &lt;-time.After(45 * time.Second)</code>), and Lima hostagents get 30s of that budget for graceful shutdown. When the CLI&#39;s 30s deadline fires first, <code>StopWithWait</code> calls <code>process.Kill(pid)</code> at line 384, aborting the subprocess&#39;s own 45s window. The now-removed comment inside <code>StopWithWait</code> captured exactly this: <code>// The service needs up to 30s for graceful hostagent shutdown plus overhead, so allow 60s total.</code> With the new default, a healthy shutdown of a service running a Lima VM will routinely force-kill instead of draining cleanly.</p>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/pkg/service/cmd/service.go#L821-L831">pkg/service/cmd/service.go</a></div>
-      <pre data-start="821" data-line="826"><code class="language-go">		mgrWg.Wait()
+      <pre data-start="821" data-line="826"><code class="language-go">	mgrDone := make(chan struct{})
+	go func() {
+		mgrWg.Wait()
 		close(mgrDone)
 	}()
 	select {
@@ -343,34 +345,32 @@ func timeoutError(err error) error {</code></pre>
 	case &lt;-time.After(45 * time.Second):
 		klog.Warning(&quot;Controller manager did not shut down within 45s, exiting anyway&quot;)
 	}
-
-	return nil
-}</code></pre>
+</code></pre>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/cmd/rdd/service.go#L379-L389">cmd/rdd/service.go</a></div>
-      <pre data-start="379" data-line="384"><code class="language-go">	command := &amp;cobra.Command{
+      <pre data-start="379" data-line="384"><code class="language-go">}
+
+func newServiceStatusCommand() *cobra.Command {
+	command := &amp;cobra.Command{
 		Use:  &quot;status&quot;,
 		Long: &quot;Show control plane status&quot;,
 		RunE: func(*cobra.Command, []string) error {
 			logrus.SetLevel(logrus.InfoLevel)
 			logrus.Infof(&quot;%q control plane has been created: %v&quot;, instance.Name(), service.Exists())
 			logrus.Infof(&quot;%q control plane has been started: %v&quot;, instance.Name(), service.Running())
-			logrus.Infof(&quot;%q control plane PID is: %v&quot;, instance.Name(), service.PID())
-			if developer.Mode() {
-				logrus.Info(&quot;developer mode is enabled&quot;)
-			}</code></pre>
+			logrus.Infof(&quot;%q control plane PID is: %v&quot;, instance.Name(), service.PID())</code></pre>
     <p><em>Start path.</em> The replaced <code>WaitWithTimeout</code> used 90s with the comment <code>// Increased timeout for CRD establishment</code>. Both <code>ensureServiceRunning</code> call sites (<code>cmd/rdd/service.go:97, 104</code>) still use 90s, which is the correct budget for CRD establishment + controller-manager registration + discovery ConfigMap readiness. The explicit <code>rdd svc start</code> path at line 234 now uses 30s. Either 90s is right in both places or 30s is right in both places — the split is itself evidence that 30s is too tight for the readiness path.</p>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/cmd/rdd/service.go#L229-L239">cmd/rdd/service.go</a></div>
-      <pre data-start="229" data-line="234"><code class="language-go">		Use:  &quot;start&quot;,
-		Long: &quot;Start RDD control plane. When called without parameters, uses default parameters from create. When called with parameters, those override the defaults for this session only.&quot;,
-		RunE: serviceStartAction,
+      <pre data-start="229" data-line="234"><code class="language-go">		return err
 	}
-	command.Flags().Bool(&quot;wait&quot;, true, &quot;Wait for control plane to be ready&quot;)
-	command.Flags().Duration(&quot;timeout&quot;, defaultWaitTimeout, &quot;Timeout for --wait (0 means wait indefinitely)&quot;)
+	logrus.Infof(&quot;successfully created %q control plane&quot;, instance.Name())
+	return nil
+}
 
-	// Add serve command flags to start command so they can be passed through
-	command.Flags().String(&quot;controllers&quot;, &quot;&quot;, &quot;Controllers to enable for this session (overrides create defaults)&quot;)
-	command.Flags().Int(&quot;secure-port&quot;, 0, &quot;The port on which to serve HTTPS with authentication and authorization (overrides create defaults)&quot;)
-	if !developer.Mode() {</code></pre>
+func newServiceStartCommand() *cobra.Command {
+	command := &amp;cobra.Command{
+		Use:  &quot;start&quot;,
+		Long: &quot;Start RDD control plane. When called without parameters, uses default parameters from create. When called with parameters, those override the defaults for this session only.&quot;,
+		RunE: serviceStartAction,</code></pre>
     <p><em>Test exposure.</em> <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/bats/tests/20-service/2-create.bats#L65"><code>bats/tests/20-service/2-create.bats:65</code></a>, <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/bats/tests/20-service/4-start-parameters.bats#L45-L63"><code>4-start-parameters.bats:45-63</code></a>, and <code>5-port-fallback.bats:72, 105, 147</code> all run <code>run -0 rdd svc stop</code> against services that may have a live Lima VM. Those now risk exit-code-4 flakes when the hostagent drain exceeds 30s.</p>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/bats/tests/20-service/2-create.bats#L60-L70">bats/tests/20-service/2-create.bats</a></div>
       <pre data-start="60" data-line="65"><code class="language-plaintext">    # stdout may be empty, just verify the command succeeds
@@ -439,41 +439,41 @@ func timeoutError(err error) error {</code></pre>
       <li><code>--timeout=0</code> (indefinite wait) on any command</li>
     </ul>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/cmd/rdd/service.go#L289-L299">cmd/rdd/service.go</a></div>
-      <pre data-start="289" data-line="294"><code class="language-go">	serveArgs = append(serveArgs, &quot;-v&quot;, logrusLevelToKlog())
-	serveArgs = append(serveArgs, args...)
-
-	if wait {
-		if err := startAndWaitForReady(cmd.Context(), serveArgs, timeout); err != nil {
-			return timeoutError(err)
+      <pre data-start="289" data-line="294"><code class="language-go">	}
+	if cmd.Flags().Changed(&quot;secure-port&quot;) {
+		securePort, err := cmd.Flags().GetInt(&quot;secure-port&quot;)
+		if err != nil {
+			return err
 		}
-		logrus.Infof(&quot;%q control plane is ready&quot;, instance.Name())
-	} else {
-		if err := service.Start(cmd.Context(), serveArgs); err != nil {
-			return err</code></pre>
+		serveArgs = append(serveArgs, &quot;--secure-port&quot;, strconv.Itoa(securePort))
+	}
+	serveArgs = append(serveArgs, &quot;-v&quot;, logrusLevelToKlog())
+	serveArgs = append(serveArgs, args...)
+</code></pre>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/cmd/rdd/service.go#L321-L331">cmd/rdd/service.go</a></div>
-      <pre data-start="321" data-line="326"><code class="language-go">	if err != nil {
-		return err
+      <pre data-start="321" data-line="326"><code class="language-go">		return nil
 	}
 
-	if err := service.StopWithWait(wait, timeout); err != nil {
-		return timeoutError(err)
-	}
-	if wait {
-		logrus.Infof(&quot;%q control plane has stopped&quot;, instance.Name())
-	} else {
-		logrus.Infof(&quot;%q control plane is stopping&quot;, instance.Name())</code></pre>
-      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/cmd/rdd/service.go#L367-L377">cmd/rdd/service.go</a></div>
-      <pre data-start="367" data-line="372"><code class="language-go">	timeout, err := cmd.Flags().GetDuration(&quot;timeout&quot;)
+	wait, err := cmd.Flags().GetBool(&quot;wait&quot;)
 	if err != nil {
 		return err
 	}
-	if err := service.Delete(wait, timeout); err != nil {
+	timeout, err := cmd.Flags().GetDuration(&quot;timeout&quot;)
+	if err != nil {
+		return err
+	}</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/cmd/rdd/service.go#L367-L377">cmd/rdd/service.go</a></div>
+      <pre data-start="367" data-line="372"><code class="language-go">		logrus.Infof(&quot;%q control plane does not exist&quot;, instance.Name())
+		return nil
+	}
+	timeout, err := cmd.Flags().GetDuration(&quot;timeout&quot;)
+	if err != nil {
+		return err
+	}
+	if err := service.Delete(timeout); err != nil {
 		return timeoutError(err)
 	}
-	logrus.Infof(&quot;%q control plane has been deleted&quot;, instance.Name())
-	return nil
-}
-</code></pre>
+	logrus.Infof(&quot;%q control plane has been deleted&quot;, instance.Name())</code></pre>
     <p>A regression that returns the underlying error directly instead of the <code>cliexit.Timeout</code> envelope will ship green. The pre-existing TODO at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/bats/tests/20-service/2-create.bats#L3"><code>bats/tests/20-service/2-create.bats:3</code></a> (<code># TODO: test rdd svc start --wait=false</code>) also becomes newly relevant: the PR formalizes that flag&#39;s semantics but the test is still missing.</p>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/bats/tests/20-service/2-create.bats#L1-L8">bats/tests/20-service/2-create.bats</a></div>
       <pre data-start="1" data-line="3"><code class="language-plaintext">load &#39;../../helpers/load&#39;
@@ -499,7 +499,7 @@ func timeoutError(err error) error {</code></pre>
 
 - `--start` (default `false`): Set `spec.running=true` to start the VM immediately after creation.
 - `--wait` (default `true`): When used with `--start`, wait until the Running condition becomes True before returning.
-- `--timeout` (default `0`): Maximum time to wait. A value of `0` waits indefinitely. Accepts Go duration strings (e.g., `30s`, `5m`).
+- `--timeout` (default `5m`): Maximum time to wait. A value of `0` waits indefinitely. Accepts Go duration strings (e.g., `30s`, `5m`). If the deadline expires, `rdd` exits with code 4.
 
 ### `rdd limavm start NAME`
 
@@ -518,14 +518,14 @@ Set `spec.running` of the specified instance to `true`. There is no `--namespace
 	&quot;github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail&quot;
 )
 
-// defaultWaitTimeout is the default --timeout for subcommands whose wait
-// normally settles within seconds.
-const defaultWaitTimeout = 30 * time.Second
+// startWaitTimeout bounds the wait for the API server, CRDs, and
+// controller-manager registration to land. Cold start can take well over 30s
+// in CI on slower runners.
+const startWaitTimeout = 90 * time.Second
 
-// timeoutError wraps a deadline-expiry err with [cliexit.Timeout] so the CLI
-// exits with [cliexit.CodeTimeout], matching `rdd set`. Other errors pass
-// through unchanged.
-func timeoutError(err error) error {</code></pre>
+// stopWaitTimeout bounds the wait for the control plane to shut down. The
+// service itself drains its controller-manager goroutines for up to 45s
+// (see Run in pkg/service/cmd/service.go); when LimaVM stop orchestration</code></pre>
     <p>The previous code carried a sizing comment at the wait site explaining why 60s was the right number (&quot;service needs up to 30s for graceful hostagent shutdown plus overhead&quot;). After this PR the constant is shared but the rationale is gone. Whoever next tunes this number will not know which path it has to cover. Tie the constant&#39;s value to a concrete invariant (e.g., &quot;must exceed the 45s controller-manager drain in <code>pkg/service/cmd/service.go</code> Run&quot;). This pairs with I2.</p>
     </div>
     <div class="card card-suggestion">
@@ -538,12 +538,12 @@ func timeoutError(err error) error {</code></pre>
 
 ### `rdd service stop`
 
-Sends SIGTERM to the control plane process (`rdd.pid`) and waits up to 30s for it to exit.
-Pass `--wait=false` to return immediately, or `--timeout=0` to wait indefinitely. If the
-deadline expires, `rdd` exits with code 4.
-
-### `rdd service delete`
-</code></pre>
+Sends SIGINT to the control plane process (`rdd.pid`) and waits up to 5 minutes for
+it to exit. On Windows the signal is delivered as `CTRL_BREAK_EVENT`. Pass
+`--wait=false` to return immediately, or `--timeout=0` to wait indefinitely. If the
+deadline expires, `rdd` exits with code 4. The default matches the per-VM ceiling
+because graceful shutdown will eventually stop every running LimaVM before the
+service exits.</code></pre>
     <p><code>StopWithWait</code> calls <code>process.Interrupt(pid)</code> first (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/pkg/service/cmd/service.go#L358"><code>pkg/service/cmd/service.go:358</code></a>), and <code>Interrupt</code> on Unix is <code>unix.Kill(pid, unix.SIGINT)</code> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/pkg/util/process/process_unix.go#L26-L28"><code>pkg/util/process/process_unix.go:26-28</code></a>). <code>process.Kill</code> (which does send SIGTERM) is only used as a fallback when <code>Interrupt</code> fails or on the timeout path. The PR edited this doc section for the new flag behavior but did not fix the pre-existing signal name:</p>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/pkg/service/cmd/service.go#L353-L363">pkg/service/cmd/service.go</a></div>
       <pre data-start="353" data-line="358"><code class="language-go">	// Kill fallback never fires. On Windows, Interrupt uses
@@ -600,17 +600,17 @@ func Kill(pid int) error {
         <span class="finding-num">S5.</span> <code>svc delete</code> log message lies when the deletion races a still-running serve <span class="pill pill-claude">Claude</span><a href="#S5" class="pilcrow">&#182;</a>
       </div>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/cmd/rdd/service.go#L369-L379">cmd/rdd/service.go</a></div>
-      <pre data-start="369" data-line="374"><code class="language-go">		return err
+      <pre data-start="369" data-line="374"><code class="language-go">	}
+	timeout, err := cmd.Flags().GetDuration(&quot;timeout&quot;)
+	if err != nil {
+		return err
 	}
-	if err := service.Delete(wait, timeout); err != nil {
+	if err := service.Delete(timeout); err != nil {
 		return timeoutError(err)
 	}
 	logrus.Infof(&quot;%q control plane has been deleted&quot;, instance.Name())
 	return nil
-}
-
-func newServiceStatusCommand() *cobra.Command {
-	command := &amp;cobra.Command{</code></pre>
+}</code></pre>
     <p>If I1 is fixed by always waiting on delete, this is moot. If <code>--wait=false</code> stays, the log line lies — the process is mid-shutdown and the directory may be partially gone. Replace with something like <code>&quot;%q control plane delete initiated&quot;</code> when <code>wait=false</code>.</p>
     </div>
     <div class="card card-suggestion">
@@ -619,24 +619,24 @@ func newServiceStatusCommand() *cobra.Command {
       </div>
       <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/99aa4e3a17de6540c09a74af838c027b7a21630c/cmd/rdd/service.go#L31-L49">cmd/rdd/service.go</a></div>
       <pre data-start="31" data-line="36-44"><code class="language-go">
-// defaultWaitTimeout is the default --timeout for subcommands whose wait
-// normally settles within seconds.
-const defaultWaitTimeout = 30 * time.Second
+// startWaitTimeout bounds the wait for the API server, CRDs, and
+// controller-manager registration to land. Cold start can take well over 30s
+// in CI on slower runners.
+const startWaitTimeout = 90 * time.Second
 
-// timeoutError wraps a deadline-expiry err with [cliexit.Timeout] so the CLI
+// stopWaitTimeout bounds the wait for the control plane to shut down. The
+// service itself drains its controller-manager goroutines for up to 45s
+// (see Run in pkg/service/cmd/service.go); when LimaVM stop orchestration
+// lands, the drain will sequence each VM&#39;s shutdown, so the CLI deadline must
+// match the per-VM ceiling in [limaLongWaitTimeout].
+const stopWaitTimeout = limaLongWaitTimeout
+
+// timeoutError wraps a deadline-expiry error with [cliexit.Timeout] so the CLI
 // exits with [cliexit.CodeTimeout], matching `rdd set`. Other errors pass
 // through unchanged.
 func timeoutError(err error) error {
 	if errors.Is(err, context.DeadlineExceeded) {
-		return cliexit.Timeout(err)
-	}
-	return err
-}
-
-// logrusLevelToKlog converts current logrus level to klog level.
-func logrusLevelToKlog() string {
-	switch logrus.GetLevel() {
-	case logrus.DebugLevel:</code></pre>
+		return cliexit.Timeout(err)</code></pre>
       <pre><code class="language-diff">-// timeoutError wraps a deadline-expiry err with [cliexit.Timeout] so the CLI
 +// timeoutError wraps a deadline-expiry error with [cliexit.Timeout] so the CLI</code></pre>
     </div>
