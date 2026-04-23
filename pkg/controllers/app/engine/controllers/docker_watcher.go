@@ -461,7 +461,7 @@ func (w *dockerWatcher) dispatchContainerAction(ctx context.Context, log logr.Lo
 }
 
 func (w *dockerWatcher) hasTTY(ctx context.Context, c *containersv1alpha1.Container) (bool, error) {
-	inspect, err := w.cli.ContainerInspect(ctx, c.Name, dockerclient.ContainerInspectOptions{})
+	inspect, err := w.cli.ContainerInspect(ctx, c.Name, mobyclient.ContainerInspectOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -478,7 +478,7 @@ func (w *dockerWatcher) getLogs(ctx context.Context, c *containersv1alpha1.Conta
 		opt(options)
 	}
 
-	return w.cli.ContainerLogs(ctx, c.Name, dockerclient.ContainerLogsOptions{
+	return w.cli.ContainerLogs(ctx, c.Name, mobyclient.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Follow:     options.follow,
