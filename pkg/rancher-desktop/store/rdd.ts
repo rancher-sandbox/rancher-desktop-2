@@ -51,12 +51,6 @@ export const getters = {
       return conditions?.find((condition: any) => condition.type === type)?.status === 'True';
     };
   },
-  created(state, getters) {
-    return getters.status('Created');
-  },
-  running(state, getters) {
-    return getters.status('Running');
-  },
   settled(state, getters) {
     return getters.status('Settled');
   },
