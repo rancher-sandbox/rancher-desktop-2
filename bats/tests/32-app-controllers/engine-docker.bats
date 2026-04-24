@@ -170,6 +170,44 @@ do_websocket() { # endpoint
         container/"${cid}" --timeout=30s
 }
 
+@test "ports mirror with and without host bindings" {
+    # nginx has EXPOSE 80 in its Dockerfile. Running it without -p
+    # yields NetworkSettings.Ports={"80/tcp":null} — an exposed but
+    # unpublished port. Running it with -p 80 adds IPv4 and IPv6 host
+    # bindings. The mirror must surface both cases: the port name
+    # always appears, and bindings appear only when the port is
+    # published.
+    run_e -0 docker run -d --name test-exposed nginx
+    exposed_cid=${output}
+    run_e -0 docker run -d --name test-published -p 80 nginx
+    published_cid=${output}
+
+    rdd ctl wait --for=jsonpath='{.status.status}'=running \
+        --namespace="${RDD_NAMESPACE}" container/"${exposed_cid}" --timeout=30s
+    rdd ctl wait --for=jsonpath='{.status.status}'=running \
+        --namespace="${RDD_NAMESPACE}" container/"${published_cid}" --timeout=30s
+
+    # Both mirrors list the exposed port by name.
+    run -0 rdd ctl get container "${exposed_cid}" --namespace="${RDD_NAMESPACE}" \
+        -o jsonpath='{.status.ports[*].name}'
+    assert_output "80/tcp"
+    run -0 rdd ctl get container "${published_cid}" --namespace="${RDD_NAMESPACE}" \
+        -o jsonpath='{.status.ports[*].name}'
+    assert_output "80/tcp"
+
+    # Unpublished: no bindings.
+    run -0 rdd ctl get container "${exposed_cid}" --namespace="${RDD_NAMESPACE}" \
+        -o jsonpath='{.status.ports[?(@.name=="80/tcp")].bindings[*].hostPort}'
+    refute_output
+
+    # Published: at least one binding.
+    run -0 rdd ctl get container "${published_cid}" --namespace="${RDD_NAMESPACE}" \
+        -o jsonpath='{.status.ports[?(@.name=="80/tcp")].bindings[*].hostPort}'
+    assert_output
+
+    docker rm --force test-exposed test-published
+}
+
 # --- Container logs ---
 
 @test "docker logs for container with tty" {

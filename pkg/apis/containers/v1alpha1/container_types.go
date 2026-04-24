@@ -115,11 +115,11 @@ type ContainerPort struct {
 	//
 	// +required
 	Name string `json:"name"`
-	// Bindings to the host port; can contain multiple entries to e.g. express
-	// IPv4 and IPv6 bindings.
+	// Bindings to the host port; empty for an exposed but unpublished port,
+	// otherwise one entry per binding (e.g. IPv4 and IPv6).
 	//
-	// +required
-	Bindings []ContainerPortBinding `json:"bindings"`
+	// +optional
+	Bindings []ContainerPortBinding `json:"bindings,omitempty"`
 }
 
 // ContainerSpec is currently empty. Actions are requested via the AnnotationAction

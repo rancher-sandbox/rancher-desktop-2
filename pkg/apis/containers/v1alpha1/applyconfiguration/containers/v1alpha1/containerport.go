@@ -9,8 +9,8 @@ package v1alpha1
 type ContainerPortApplyConfiguration struct {
 	// Name of the port; in the form [port]/[protocol], e.g. "80/tcp".
 	Name *string `json:"name,omitempty"`
-	// Bindings to the host port; can contain multiple entries to e.g. express
-	// IPv4 and IPv6 bindings.
+	// Bindings to the host port; empty for an exposed but unpublished port,
+	// otherwise one entry per binding (e.g. IPv4 and IPv6).
 	Bindings []ContainerPortBindingApplyConfiguration `json:"bindings,omitempty"`
 }
 
