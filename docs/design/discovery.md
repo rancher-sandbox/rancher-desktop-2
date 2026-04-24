@@ -38,7 +38,7 @@ The ConfigMap is named `rdd-controller-manager` in the `rdd-system` namespace. E
 
 The control plane creates the ConfigMap with an empty `data` map as soon as the API server is ready, before any controller manager starts. Its `creationTimestamp` therefore marks the control plane start time, which [`rdd ctl await --since=startup`](cmd_service.md) uses to filter condition transitions.
 
-A controller manager patches the ConfigMap on startup (adding its API group key) and removes the key on shutdown. The ConfigMap itself is owned by the control plane: only the control plane creates or deletes it. The control plane recreates it on startup (dropping any stale entries from a previous crash) and deletes it on shutdown.
+A controller manager patches the ConfigMap on startup (adding its API group key) and removes the key on shutdown. The ConfigMap itself is owned by the control plane: only the control plane creates or replaces it. The control plane recreates it on startup, dropping any stale entries from a previous crash. Shutdown does not delete the ConfigMap; while the daemon is still serving, concurrent clients can continue to use the last published discovery data, and the next startup is responsible for clearing stale state.
 
 ## Ready annotation
 

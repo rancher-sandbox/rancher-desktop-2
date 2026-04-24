@@ -346,9 +346,6 @@ func StopWithWait(wait bool) error {
 		return fmt.Errorf("%q control plane is not running", instance.Name())
 	}
 
-	// Clean up discovery configmap while cluster is still accessible
-	_ = cleanupDiscoveryConfigMap() // Clean up discovery configmap to prevent stale controller info
-
 	pid := PID()
 	// Try graceful shutdown first. On Unix, Kill already sends SIGTERM which
 	// triggers the Go signal handler. On Windows, Kill uses TerminateProcess
@@ -403,29 +400,6 @@ func StopWithWait(wait bool) error {
 func Stop() error {
 	// For backward compatibility, always wait
 	return StopWithWait(true)
-}
-
-// cleanupDiscoveryConfigMap removes the discovery configmap to prevent readiness check confusion.
-func cleanupDiscoveryConfigMap() error {
-	// Try to get kubeconfig, but ignore errors since control plane might be stopped
-	config, err := GetKubeRestConfig()
-	if err != nil {
-		logrus.WithError(err).Debug("Could not get kubeconfig for discovery cleanup, control plane likely stopped")
-		return nil // Not an error, just means control plane is already stopped
-	}
-
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		logrus.WithError(err).Debug("Could not create kubernetes client for discovery cleanup")
-		return nil // Not a critical error during shutdown
-	}
-
-	err = controllers.CleanupDiscovery(context.TODO(), client)
-	if err != nil {
-		logrus.WithError(err).Debug("Failed to delete discovery configmap")
-	}
-
-	return nil // Don't fail stop operation due to discovery cleanup issues
 }
 
 // Delete the service and remove all instance data.

@@ -185,7 +185,7 @@ func (d *ControllerManagerDiscoveryGroup) registerControllerManagerImpl(ctx cont
 
 // UnregisterControllerManager removes this controller manager's data entry
 // from the discovery ConfigMap. The ConfigMap itself is owned by the control
-// plane; only [InitDiscovery] and [CleanupDiscovery] create or delete it.
+// plane and only [InitDiscovery] creates or replaces it.
 func (d *ControllerManagerDiscoveryGroup) UnregisterControllerManager(ctx context.Context) error {
 	patchData, err := json.Marshal(map[string]any{
 		"data": map[string]any{
@@ -426,22 +426,5 @@ func MarkControlPlaneReady(ctx context.Context, client kubernetes.Interface) err
 	klog.FromContext(ctx).Info("Marked control plane as ready",
 		"namespace", RDDSystemNamespace,
 		"configmap", ControllerManagerConfigMapName)
-	return nil
-}
-
-// CleanupDiscovery deletes the controller manager discovery ConfigMap.
-func CleanupDiscovery(ctx context.Context, client *kubernetes.Clientset) error {
-	err := client.CoreV1().ConfigMaps(RDDSystemNamespace).Delete(ctx, ControllerManagerConfigMapName, metav1.DeleteOptions{})
-	if errors.IsNotFound(err) {
-		return nil // Already deleted, no error
-	}
-	if err != nil {
-		return fmt.Errorf("failed to delete controller manager configmap: %w", err)
-	}
-
-	klog.FromContext(ctx).Info("Cleaned up stale controller manager discovery configmap",
-		"namespace", RDDSystemNamespace,
-		"configmap", ControllerManagerConfigMapName)
-
 	return nil
 }
