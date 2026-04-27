@@ -129,7 +129,7 @@ export const actions = {
   },
 } satisfies ActionTree<RDDState, RootState, typeof mutations, typeof getters>;
 
-export const plugins: Plugin<RDDState>[] = [
+export const plugins: Plugin<RootState>[] = [
   function(store) {
     store.dispatch('rdd/setupResourceWatch', {
       callback: (error: Error) => {

@@ -108,7 +108,7 @@ export const actions = {
 } satisfies ActionTree<RDDConnectionState, any, typeof mutations>;
 
 /** Vuex plugins for managing the RDD connection. */
-export const plugins: Plugin<RDDConnectionState>[] = [
+export const plugins: Plugin<RootState>[] = [
   function(store) {
     store.dispatch('rdd-connection/fetchConfig').catch(ex => {
       console.error(ex);

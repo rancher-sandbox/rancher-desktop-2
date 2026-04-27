@@ -35,9 +35,6 @@ const modules = {
 };
 
 export type Modules = typeof modules;
-type moduleTypes = { [K in keyof Modules]: Modules[K] }[keyof Modules];
-type pluginType<T extends moduleTypes> = T extends { plugins: any } ? Plugin<ReturnType<T['state']>> : never;
-type pluginTypes = pluginType<moduleTypes>;
 
 export type RootState = {
   [K in keyof Modules]: ReturnType<Modules[K]['state']>;
@@ -50,7 +47,7 @@ export type RootGetters = {
 
 export default createStore<any>({
   modules: Object.fromEntries(Object.entries(modules).map(([k, v]) => [k, { namespaced: true, ...v }])),
-  plugins: Object.values(modules).flatMap<pluginTypes>(v => 'plugins' in v ? v.plugins : []),
+  plugins: Object.values(modules).flatMap<Plugin<RootState>>(v => 'plugins' in v ? v.plugins : []),
 });
 
 /**

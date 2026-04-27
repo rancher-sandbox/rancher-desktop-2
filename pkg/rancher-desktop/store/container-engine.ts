@@ -1,5 +1,6 @@
 import { Plugin } from 'vuex';
 
+import { RootState } from '@pkg/entry/store';
 import { defineResource, listNamespacedResource, resourceMutations, resourceState, resourceWatchActions, ResourceNames } from '@pkg/store/rddConnection';
 import { ActionContext, ActionTree, GetterTree, MutationsType } from '@pkg/store/ts-helpers';
 import { RecursivePartial } from '@pkg/utils/typeUtils';
@@ -257,7 +258,7 @@ export const actions = {
   },
 } satisfies ActionTree<ContainerEngineState, any, typeof mutations>;
 
-export const plugins: Plugin<ContainerEngineState>[] = [
+export const plugins: Plugin<RootState>[] = [
   function(store) {
     store.dispatch('container-engine/setupResourceWatch', {
       callback: (error: Error, resourceName: string) => {
