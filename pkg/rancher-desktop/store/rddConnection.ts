@@ -4,10 +4,11 @@
 import { markRaw } from 'vue';
 import { Plugin } from 'vuex';
 
+import type { RootState } from '@pkg/entry/store';
 import { ActionContext, ActionTree, Commit, MutationsType } from '@pkg/store/ts-helpers';
 import ipcRenderer from '@pkg/utils/ipcRenderer';
 import Latch from '@pkg/utils/latch';
-import { UpperSnakeCase } from '@pkg/utils/typeUtils';
+import { UnionToIntersection, UpperSnakeCase } from '@pkg/utils/typeUtils';
 import * as RDDClient from '@rdd-client';
 
 /**
@@ -20,8 +21,6 @@ export interface RDDConnectionState {
   watch:               RDDClient.Watch;
   /** The key should be of the form `module/resource`. */
   disconnectCallbacks: Record<string, () => void>;
-  /** Kubernetes namespace RDD objects live in; must not be empty. */
-  namespace:           string;
 };
 
 /** Vuex state for managing the RDD connection. */
@@ -32,7 +31,6 @@ export const state: () => RDDConnectionState = () => {
     error:               undefined,
     watch:               markRaw(new RDDClient.Watch(config)),
     disconnectCallbacks: {},
-    namespace:           'rancher-desktop',
   };
 };
 
@@ -135,30 +133,32 @@ type ItemType<C, TypeName extends string> =
       : never;
 
 /**
- * Converts a union type to an intersection type.
- * `A | B | C` becomes `A & B & C`.
- */
-type UnionToIntersection<U> =
-  (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
-
-/**
  * Intersects all elements of a mapped type indexed by number.
  * `{ 0: A, 1: B, 2: C }` becomes `A & B & C`.
  */
-type IntersectMapped<T> =
-  UnionToIntersection<T[keyof T & number]>;
+type IntersectMapped<T> = UnionToIntersection<T[keyof T & number]>;
 
 /**
  * ResourceTypeLike is a loose structural type used for parameter constraints.
  * It avoids invariance issues that arise from using ResourceType directly.
  */
 interface ResourceTypeLike {
+  /** The name of the state, typically plural. */
   name:           string;
+  /** The name of the resource kind, used in the API name. */
   type?:          string;
+  /**
+   * The API path to the resources, given the Kubernetes namespace.  The
+   * namespace is required; however, implementations may ignore it.
+   */
   path:           (namespace: string) => string;
+  /** Optional label selector to filter resources. */
   labelSelector?: (context: any) => string | undefined;
+  /** Optional field selector to filter resources. */
   fieldSelector?: (context: any) => string | undefined;
+  /** A function which returns the type of client needed to list the resource. */
   makeClient:     (config: RDDClient.KubeConfig) => any;
+  /** A function which lists the resource. */
   list:           (client: any, options: ListResourceOptions<any>) => Promise<RDDClient.KubernetesListObject<any>>;
 }
 
@@ -182,22 +182,12 @@ export interface ListResourceOptions<State> {
  * ResourceType describes a resource type definition.
  */
 interface ResourceType<C, StateName extends string, TypeName extends string> extends ResourceTypeLike {
-  /** The name of the state, typically plural. */
   name:           StateName;
-  /** The name of the resource kind, used in the API name. */
   type?:          TypeName;
-  /**
-   * The API path to the resources, given the Kubernetes namespace.  The
-   * namespace is required.
-   */
   path:           (namespace: string) => string;
-  /** Optional label selector to filter resources. */
   labelSelector?: (context: any) => string | undefined;
-  /** Optional field selector to filter resources. */
   fieldSelector?: (context: any) => string | undefined;
-  /** A function which returns the type of client needed to list the resource. */
   makeClient:     (config: RDDClient.KubeConfig) => C,
-  /** A function which lists the resource. */
   list:           (client: C, options: ListResourceOptions<ResourceStateItem<StateName, ItemType<C, TypeName>>>) => Promise<RDDClient.KubernetesListObject<ItemType<C, TypeName>>>;
 }
 
@@ -365,7 +355,7 @@ ResourceWatchActionsReturn<T> {
 
   return {
     async setupResourceWatch(actionContext: ActionContext<State>, options?: ResourceWatchActionsOptions<T>) {
-      const { commit, state, dispatch, rootState } = actionContext;
+      const { commit, state, dispatch, rootState, rootGetters } = actionContext;
       const rddState = rootState['rdd-connection'];
 
       while (!rddState.config.currentContext) {
@@ -392,11 +382,11 @@ ResourceWatchActionsReturn<T> {
           const client = r.makeClient(rddState.config);
           const watcher = new Watcher(
             r.name,
-            r.path(rddState.namespace),
+            r.path(rootGetters['rdd/kubernetesNamespace'] ?? 'default'),
             async() => { // listFn
-            // If this throws, the `doneFn` callback gets called with the exception.
+              // If this throws, the `doneFn` callback gets called with the exception.
               const listOptions: ListResourceOptions<any> = {
-                namespace:       rddState.namespace,
+                namespace:       rootGetters['rdd/kubernetesNamespace'] ?? 'default',
                 state,
                 connectionState: rddState,
                 fieldSelector:   r.fieldSelector?.(actionContext),
@@ -443,8 +433,8 @@ ResourceWatchActionsReturn<T> {
             [r.name]: { watcher, options: resourceOptions, refCount },
           } as any);
           if (refCount > 0) {
-          // If the existing refcount is set (i.e. a reconnect), start watching
-          // automatically.
+            // If the existing refcount is set (i.e. a reconnect), start watching
+            // automatically.
             watcher.start();
           }
           const key = `${ module }/${ r.name }`;
@@ -468,8 +458,8 @@ ResourceWatchActionsReturn<T> {
       await state._watchersInitialized;
       for (const resource of resources) {
         const watcherInfo = state._watchers[resource];
-        if (!watcherInfo) {
-          const error = new Error(`Action watchResources(${ resource }) called before setupWatch`);
+        if (!watcherInfo?.watcher) {
+          const error = new Error(`Action watchResources(${ resource }) called before setupResourceWatch`);
           console.error(error);
           throw error;
         }
@@ -497,7 +487,7 @@ ResourceWatchActionsReturn<T> {
       for (const resource of resources) {
         const watcherInfo = state._watchers[resource];
         if (!watcherInfo) {
-          console.error(`Action unwatchResources(${ resource }) called before setupWatch`);
+          console.error(`Action unwatchResources(${ resource }) called before setupResourceWatch`);
           continue;
         }
         const count = watcherInfo.refCount ?? 0;
@@ -524,7 +514,7 @@ ResourceWatchActionsReturn<T> {
       await Promise.all(resources.map(async(resource) => {
         const watcherInfo = state._watchers[resource];
         if (!watcherInfo) {
-          const error = new Error(`Action waitForResources(${ resource }) called before setupWatch`);
+          const error = new Error(`Action waitForResources(${ resource }) called before setupResourceWatch`);
           console.error(error);
           throw error;
         }

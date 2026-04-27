@@ -1,5 +1,5 @@
 import type { Modules, RootGetters, RootState } from '@pkg/entry/store';
-import type { UpperSnakeCase } from '@pkg/utils/typeUtils';
+import type { UnionToIntersection, UpperSnakeCase } from '@pkg/utils/typeUtils';
 
 import type { CommitOptions, Dispatch, MutationTree, Store } from 'vuex';
 
@@ -21,22 +21,30 @@ type MutationsPayloadType<M> = {
   [key in keyof M]: M[key] extends (...args: any) => any ? Parameters<M[key]>[1] : never;
 };
 
+type moduleNames = keyof Modules;
+type mutationTypes<MN extends moduleNames> = keyof Modules[MN]['mutations'] & string;
+type fullMutationType<MN extends moduleNames, MT extends mutationTypes<MN>> = `${ MN }/${ MT }`;
+
+type flattenedGetters = UnionToIntersection<{
+  [MN in moduleNames]: Modules[MN] extends { getters: any } ? {
+    [getter in keyof Modules[MN]['getters'] & string as `${ MN }/${ getter }`]:
+    Modules[MN]['getters'][getter] extends (...args: any) => infer R ? R : never;
+  } : never;
+}[moduleNames]>;
+
 /**
  * ActionContext is the first argument for an action.  We only declare the
  * subset we currently need.  We're not using the types from Vuex as that does
  * not provide typing to match the mutations.
  */
 export interface ActionContext<S, M = MutationsType<S>, G = GetterTree<S>> {
-  commit:    Commit<M>;
-  dispatch:  Dispatch;
-  state:     S;
-  rootState: RootState;
-  getters:   { [key in keyof G]: G[key] extends (...args: any) => any ? ReturnType<G[key]> : never };
+  commit:      Commit<M>;
+  dispatch:    Dispatch;
+  state:       S;
+  rootState:   RootState;
+  getters:     { [key in keyof G]: G[key] extends (...args: any) => any ? ReturnType<G[key]> : never };
+  rootGetters: flattenedGetters;
 }
-
-type moduleNames = keyof Modules;
-type mutationTypes<MN extends moduleNames> = keyof Modules[MN]['mutations'] & string;
-type fullMutationType<MN extends moduleNames, MT extends mutationTypes<MN>> = `${ MN }/${ MT }`;
 
 export interface Commit<M> {
   <mutationType extends keyof M>(type: mutationType, payload: MutationsPayloadType<M>[mutationType], commitOptions?: Omit<CommitOptions, 'root'>): void;

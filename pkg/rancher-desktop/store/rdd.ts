@@ -48,6 +48,10 @@ export const getters = {
   settled(state, getters) {
     return getters.status('Settled');
   },
+  kubernetesNamespace(state, getters) {
+    const app: RDDClient.IoRancherdesktopAppV1alpha1App | undefined = getters.app;
+    return app?.spec?.namespace;
+  },
 } satisfies GetterTree<RDDState>;
 
 export const mutations = {

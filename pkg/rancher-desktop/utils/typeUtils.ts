@@ -18,6 +18,13 @@ export type RecursiveReadonly<T> = {
       T[P];
 };
 
+/**
+ * Converts a union type to an intersection type.
+ * `A | B | C` becomes `A & B & C`.
+ */
+export type UnionToIntersection<U> =
+  (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
+
 export type ReadWrite<T> = {
   -readonly [P in keyof T]: T[P];
 };

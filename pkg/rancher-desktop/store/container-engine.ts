@@ -259,13 +259,26 @@ export const actions = {
 } satisfies ActionTree<ContainerEngineState, any, typeof mutations>;
 
 export const plugins: Plugin<RootState>[] = [
+  // Re-watch resources on Kubernetes namespace change; since the namespace is
+  // initially undefined, we don't need to start immediately.
   function(store) {
-    store.dispatch('container-engine/setupResourceWatch', {
-      callback: (error: Error, resourceName: string) => {
-        store.commit('container-engine/SET_ERROR', { error, source: resourceName });
+    let currentNamespace: string | undefined = store.getters['rdd/kubernetesNamespace'];
+
+    store.watch(
+      (_state, getters) => getters['rdd/kubernetesNamespace'],
+      (newNamespace: string | undefined) => {
+        if (newNamespace === currentNamespace) {
+          return;
+        }
+        currentNamespace = newNamespace;
+        store.dispatch('container-engine/setupResourceWatch', {
+          callback: (error: Error, resourceName: string) => {
+            store.commit('container-engine/SET_ERROR', { error, source: resourceName });
+          },
+        }).catch((error: Error) => {
+          store.commit('container-engine/SET_ERROR', { error, source: 'containers' });
+        });
       },
-    }).catch((error: Error) => {
-      store.commit('container-engine/SET_ERROR', { error, source: 'containers' });
-    });
+    );
   },
 ];
