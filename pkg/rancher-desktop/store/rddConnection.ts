@@ -575,7 +575,7 @@ class Watcher<
         // The watcher errored out because we called stop(); do not propagate
         // this as an actual error.
         return;
-      } else if (err.code === 429) {
+      } else if (err.statusCode === 429) {
         // We can get this if we request too early (when the backend restarts),
         // with a message of "storage is (re)initializing".  Just retry.
         let delay = 0.1;
