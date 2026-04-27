@@ -15,12 +15,6 @@ const resources = [
     list:       client => client.listNamespace(),
   }),
   defineResource({
-    name:       'configMaps',
-    path:       (namespace) => `/api/v1/namespaces/${ namespace }/configmaps`,
-    makeClient: config => config.makeApiClient(RDDClient.CoreV1Api),
-    list:       listNamespacedResource('ConfigMap'),
-  }),
-  defineResource({
     name:       'systemConfigMaps',
     type:       'ConfigMap',
     path:       () => '/api/v1/namespaces/rdd-system/configmaps',
