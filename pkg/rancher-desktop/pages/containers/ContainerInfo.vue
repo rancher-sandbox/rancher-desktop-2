@@ -118,6 +118,7 @@
 </template>
 
 <script setup lang="ts">
+import { Banner } from '@rancher/components';
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore } from 'vuex';
