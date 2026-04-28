@@ -310,7 +310,7 @@ IntersectMapped<{ [K in keyof T]: ResourceMutationsReturn<T[K]> }> {
  */
 interface ResourceWatchActionsOptions<T extends readonly ResourceTypeLike[]> {
   /** Callback that is invoked when an error occurs. */
-  callback?: (error: Error, resourceName: ResourceNames<T>[number]) => void,
+  callback?: (error: Error, resourceName: ResourceNames<T>) => void,
 }
 
 /** ResourceWatchActionsReturn defines the return type of resourceWatchActions(). */
@@ -638,11 +638,11 @@ class Watcher<
       }
     });
     watcher.on('error', (err) => {
-      clearTimeout(this.#restartTimeout);
       if (!Object.is(watcher, this.#watcher)) {
         // This error is from a stale watcher; ignore it.
         return;
       }
+      clearTimeout(this.#restartTimeout);
       this.#loaded.reset();
       this.#loaded.catch(() => { /* ignore */ });
       if (Object.is(err, errorManuallyStopped)) {
@@ -701,8 +701,9 @@ class Watcher<
   }
 
   close() {
-    clearTimeout(this.#notifyDelay);
     clearTimeout(this.#restartTimeout);
+    clearTimeout(this.#notifyDelay);
+    this.#notifyDelay = undefined;
     this.#loaded.reset();
     this.#loaded.catch(() => { /* ignore */ });
     return this.#watcher?.stop(errorManuallyStopped);

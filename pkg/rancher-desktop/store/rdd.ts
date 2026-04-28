@@ -48,6 +48,10 @@ export const getters = {
   settled(state, getters) {
     return getters.status('Settled');
   },
+  /**
+   * Get the current Kubernetes namespace from the app; undefined if the app is
+   * missing or does not specify one (which is invalid due to the defaulter).
+   */
   kubernetesNamespace(state, getters) {
     const app: RDDClient.IoRancherdesktopAppV1alpha1App | undefined = getters.app;
     return app?.spec?.namespace;
