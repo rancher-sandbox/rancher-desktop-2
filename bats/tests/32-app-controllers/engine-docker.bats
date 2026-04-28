@@ -13,6 +13,14 @@ local_setup_file() {
     # The Docker socket access pattern used by these tests is not yet wired
     # up for Windows/WSL2.
     skip_on_windows
+
+    # Isolate all Docker config reads and writes from the developer's real
+    # ~/.docker directory. Set DOCKER_CONFIG before starting the service so
+    # the controller process inherits it (service.Start uses exec.Command
+    # without an explicit Env, so it inherits the caller's environment).
+    export DOCKER_CONFIG="${BATS_FILE_TMPDIR}/docker-config"
+    mkdir -p "${DOCKER_CONFIG}"
+
     # Deliberately skip setup_rdd_control_plane here: `rdd set` internally
     # calls ensureServiceRunning, which is exactly the CLI path we want to
     # exercise — the engine controller is part of the default controller
@@ -743,7 +751,7 @@ docker_context_dir() {
     else
         hash=$(printf '%s' "${name}" | shasum -a 256 | awk '{print $1}')
     fi
-    echo "${HOME}/.docker/contexts/meta/${hash}"
+    echo "${DOCKER_CONFIG}/contexts/meta/${hash}"
 }
 
 @test "moby engine creates Docker context for the instance" {
@@ -771,14 +779,22 @@ docker_context_dir() {
 @test "moby engine sets currentContext when no healthy context exists" {
     local context_name="rancher-desktop-${RDD_INSTANCE}"
 
-    # Save and clear any existing currentContext so the probe finds no
-    # healthy context and promotes ours. Restored in teardown.
-    local saved_context
-    saved_context=$(jq -r '.currentContext // empty' "${HOME}/.docker/config.json" 2>/dev/null || true)
-
-    # Clear the current context and restart the engine so the probe runs fresh.
-    jq 'del(.currentContext)' "${HOME}/.docker/config.json" >"${HOME}/.docker/config.json.tmp" &&
-        mv "${HOME}/.docker/config.json.tmp" "${HOME}/.docker/config.json"
+    # Seed a named context pointing at an unreachable socket and make it
+    # current. This forces the reconciler into the probeNamedDockerContext
+    # branch with a guaranteed-failing endpoint, independent of whether the
+    # host has a running Docker daemon at the default socket (e.g.
+    # ubuntu-latest runners ship Docker pre-installed). Using a named context
+    # also avoids the stale-env issue: the service process's DOCKER_HOST is
+    # frozen at first start, so FromEnv-based probing of "" / "default" is
+    # host-dependent and unreliable from inside a long-lived daemon.
+    probe_target="test-unreachable"
+    run_e -0 docker_context_dir "${probe_target}"
+    probe_dir="${output}"
+    mkdir -p "${probe_dir}"
+    cat >"${probe_dir}/meta.json" <<EOF
+{"Name":"${probe_target}","Endpoints":{"docker":{"Host":"unix:///nonexistent/does-not-exist.sock","SkipTLSVerify":false}}}
+EOF
+    printf '{"currentContext":"%s"}\n' "${probe_target}" >"${DOCKER_CONFIG}/config.json"
 
     rdd set running=false
     rdd set running=true containerEngine.name=moby
@@ -786,17 +802,10 @@ docker_context_dir() {
 
     # The probe goroutine runs asynchronously; give it a moment.
     try --max 6 --delay 1 -- \
-        bash -c "jq -r '.currentContext' '${HOME}/.docker/config.json' | grep -qx '${context_name}'"
+        bash -c "jq -r '.currentContext' '${DOCKER_CONFIG}/config.json' | grep -qx '${context_name}'"
 
-    run -0 jq -r '.currentContext' "${HOME}/.docker/config.json"
+    run -0 jq -r '.currentContext' "${DOCKER_CONFIG}/config.json"
     assert_output "${context_name}"
-
-    # Restore the original context if there was one.
-    if [[ -n "${saved_context}" ]]; then
-        jq --arg ctx "${saved_context}" '.currentContext = $ctx' \
-            "${HOME}/.docker/config.json" >"${HOME}/.docker/config.json.tmp" &&
-            mv "${HOME}/.docker/config.json.tmp" "${HOME}/.docker/config.json"
-    fi
 }
 
 @test "stopping moby engine removes Docker context and clears currentContext" {
@@ -812,6 +821,6 @@ docker_context_dir() {
     assert_dir_not_exists "${context_dir}"
 
     # currentContext should either be gone or point to something else.
-    run jq -r '.currentContext // empty' "${HOME}/.docker/config.json"
+    run jq -r '.currentContext // empty' "${DOCKER_CONFIG}/config.json"
     refute_output "${context_name}"
 }

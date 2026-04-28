@@ -5,11 +5,15 @@
 package controllers
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/containerd/errdefs"
+	"github.com/docker/cli/cli/context/docker"
+	"github.com/docker/cli/cli/context/store"
 	"gotest.tools/v3/assert"
 )
 
@@ -28,12 +32,34 @@ func newDockerTestDir(t *testing.T) string {
 	return filepath.Join(dockerDir, "config.json")
 }
 
+// testGetContextHost fetches the docker endpoint Host for name from the store.
+// Returns ("", nil) if the context does not exist or has no docker endpoint.
+func testGetContextHost(t *testing.T, name string) (string, error) {
+	t.Helper()
+	s, err := newContextStore()
+	if err != nil {
+		return "", err
+	}
+	md, err := s.GetMetadata(name)
+	if err != nil {
+		if errdefs.IsNotFound(err) {
+			return "", nil
+		}
+		return "", err
+	}
+	ep, err := docker.EndpointFromContext(md)
+	if err != nil {
+		return "", nil
+	}
+	return ep.Host, nil
+}
+
 func Test_createReplaceDockerContext(t *testing.T) {
 	newDockerTestDir(t)
 
 	assert.NilError(t, createReplaceDockerContext("rancher-desktop-2", "/tmp/docker.sock"))
 
-	host, err := getDockerContextHost("rancher-desktop-2")
+	host, err := testGetContextHost(t, "rancher-desktop-2")
 	assert.NilError(t, err)
 	assert.Equal(t, host, "unix:///tmp/docker.sock")
 
@@ -48,7 +74,7 @@ func Test_createReplaceDockerContext(t *testing.T) {
 
 	// Replacing with a new socket updates the host.
 	assert.NilError(t, createReplaceDockerContext("rancher-desktop-2", "/run/docker.sock"))
-	host, err = getDockerContextHost("rancher-desktop-2")
+	host, err = testGetContextHost(t, "rancher-desktop-2")
 	assert.NilError(t, err)
 	assert.Equal(t, host, "unix:///run/docker.sock")
 }
@@ -86,23 +112,16 @@ func Test_getCurrentDockerContext_malformedAuth(t *testing.T) {
 	assert.Assert(t, err != nil, "malformed auths entry must surface as an error")
 }
 
-func Test_getDockerContextHost_missing(t *testing.T) {
-	newDockerTestDir(t)
-	host, err := getDockerContextHost("does-not-exist")
-	assert.NilError(t, err)
-	assert.Equal(t, host, "")
-}
-
 func Test_deleteDockerContext(t *testing.T) {
 	newDockerTestDir(t)
 
 	assert.NilError(t, createReplaceDockerContext("rancher-desktop-2", "/tmp/docker.sock"))
-	host, err := getDockerContextHost("rancher-desktop-2")
+	host, err := testGetContextHost(t, "rancher-desktop-2")
 	assert.NilError(t, err)
 	assert.Equal(t, host, "unix:///tmp/docker.sock")
 
 	assert.NilError(t, deleteDockerContext("rancher-desktop-2"))
-	host, err = getDockerContextHost("rancher-desktop-2")
+	host, err = testGetContextHost(t, "rancher-desktop-2")
 	assert.NilError(t, err)
 	assert.Equal(t, host, "")
 
@@ -190,5 +209,51 @@ func Test_currentDockerContext(t *testing.T) {
 		assert.NilError(t, json.Unmarshal(data, &cfg))
 		_, hasAuths := cfg["auths"]
 		assert.Assert(t, hasAuths, "auths key must be preserved across clear")
+	})
+}
+
+func Test_probeNamedDockerContext(t *testing.T) {
+	// seedContext writes a named docker context with the given Host into the
+	// store. It uses the same store config as production code so the context
+	// is readable by probeNamedDockerContext.
+	seedContext := func(t *testing.T, name, host string) {
+		t.Helper()
+		s, err := newContextStore()
+		assert.NilError(t, err)
+		assert.NilError(t, s.CreateOrUpdate(store.Metadata{
+			Name:     name,
+			Metadata: map[string]any{},
+			Endpoints: map[string]any{
+				docker.DockerEndpoint: docker.EndpointMeta{Host: host},
+			},
+		}))
+	}
+
+	t.Run("missing context returns false", func(t *testing.T) {
+		newDockerTestDir(t)
+		result := probeNamedDockerContext(context.Background(), "does-not-exist")
+		assert.Assert(t, !result, "missing context must be treated as unhealthy")
+	})
+
+	t.Run("ssh context returns true (non-probed scheme)", func(t *testing.T) {
+		newDockerTestDir(t)
+		seedContext(t, "ssh-ctx", "ssh://user@remote-host")
+		result := probeNamedDockerContext(context.Background(), "ssh-ctx")
+		assert.Assert(t, result, "ssh context must be assumed healthy to avoid clobbering user's choice")
+	})
+
+	t.Run("unix context with unreachable socket returns false", func(t *testing.T) {
+		newDockerTestDir(t)
+		seedContext(t, "local-ctx", "unix:///nonexistent/does-not-exist.sock")
+		result := probeNamedDockerContext(context.Background(), "local-ctx")
+		assert.Assert(t, !result, "unreachable unix socket must be treated as unhealthy")
+	})
+
+	t.Run("tcp context with unreachable endpoint returns false", func(t *testing.T) {
+		newDockerTestDir(t)
+		// Port 1 is reserved and will be refused on any sane host.
+		seedContext(t, "tcp-ctx", "tcp://127.0.0.1:1")
+		result := probeNamedDockerContext(context.Background(), "tcp-ctx")
+		assert.Assert(t, !result, "unreachable tcp endpoint must be treated as unhealthy")
 	})
 }

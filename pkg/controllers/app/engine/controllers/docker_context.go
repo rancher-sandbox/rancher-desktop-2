@@ -8,13 +8,16 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/containerd/errdefs"
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/context/docker"
 	"github.com/docker/cli/cli/context/store"
-	mobyclient "github.com/moby/moby/client"
+	dockerclient "github.com/moby/moby/client"
+
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // dockerContextProbeTimeout is the maximum time allowed to ping a Docker
@@ -46,7 +49,8 @@ func newContextStore() (store.Store, error) {
 	// Pass nil for the context-metadata TypeGetter; the store decodes a nil
 	// type into a map[string]any, which is all we need since we never inspect
 	// the Metadata field. This avoids importing cli/command, which would pull
-	// in the docker/cli metrics + telemetry chain (otel/sdk/metric, etc.).
+	// in the docker/cli metrics + telemetry chain (otel/sdk/metric, go-metrics,
+	// gorilla/mux, backoff/v5, morikuni/aec).
 	cfg := store.NewConfig(
 		nil,
 		store.EndpointTypeGetter(docker.DockerEndpoint, func() any { return &docker.EndpointMeta{} }),
@@ -74,30 +78,6 @@ func deleteDockerContext(name string) error {
 		return err
 	}
 	return s.Remove(name)
-}
-
-// getDockerContextHost returns the full Docker host URL (e.g. "unix:///path/to/docker.sock"
-// or "tcp://192.168.1.1:2376") for the named context's docker endpoint.
-// Returns an empty string if the context does not exist or has no docker endpoint.
-func getDockerContextHost(name string) (string, error) {
-	s, err := newContextStore()
-	if err != nil {
-		return "", err
-	}
-	md, err := s.GetMetadata(name)
-	if err != nil {
-		if errdefs.IsNotFound(err) {
-			return "", nil
-		}
-		return "", err
-	}
-	ep, err := docker.EndpointFromContext(md)
-	if err != nil {
-		// Missing or mistyped docker endpoint — treat as empty, not an error.
-		// The configured EndpointTypeGetter normally prevents the mistyped case.
-		return "", nil
-	}
-	return ep.Host, nil
 }
 
 // getCurrentDockerContext reads the currentContext field from ~/.docker/config.json.
@@ -149,16 +129,73 @@ func clearCurrentDockerContext(name string) error {
 	return cf.Save()
 }
 
-// probeDockerContext tries to ping the Docker daemon at the given host URL.
-// It returns true if the daemon responds within dockerContextProbeTimeout.
-func probeDockerContext(ctx context.Context, host string) bool {
-	probeCtx, cancel := context.WithTimeout(ctx, dockerContextProbeTimeout)
-	defer cancel()
-	cli, err := mobyclient.New(mobyclient.WithHost(host))
+// pingDocker creates a Docker client with opts and pings it within ctx.
+func pingDocker(ctx context.Context, opts ...dockerclient.Opt) bool {
+	cli, err := dockerclient.New(opts...)
 	if err != nil {
 		return false
 	}
 	defer cli.Close()
-	_, err = cli.Ping(probeCtx, mobyclient.PingOptions{})
+	_, err = cli.Ping(ctx, dockerclient.PingOptions{})
 	return err == nil
+}
+
+// probeDockerContext pings the implicit default Docker endpoint
+// (DOCKER_HOST or the platform default socket) within dockerContextProbeTimeout.
+// Used when currentContext is "" or "default".
+func probeDockerContext(ctx context.Context) bool {
+	probeCtx, cancel := context.WithTimeout(ctx, dockerContextProbeTimeout)
+	defer cancel()
+	return pingDocker(probeCtx, dockerclient.FromEnv)
+}
+
+// probeNamedDockerContext pings the Docker endpoint for the named context
+// within dockerContextProbeTimeout and returns true if the endpoint is healthy.
+//
+// When we cannot determine whether the context is healthy — because the store
+// is unreadable, the endpoint metadata is missing or malformed, the scheme is
+// not tcp/unix (e.g. SSH), or the TLS config cannot be loaded — we return true
+// (assume healthy). This conservatism prevents RDD from clobbering a context
+// that is in the middle of being edited or migrated.
+func probeNamedDockerContext(ctx context.Context, name string) bool {
+	log := logf.FromContext(ctx).WithName("docker-context").WithValues("context", name)
+
+	s, err := newContextStore()
+	if err != nil {
+		log.Error(err, "Cannot open context store; assuming context healthy")
+		return true
+	}
+	md, err := s.GetMetadata(name)
+	if err != nil {
+		if errdefs.IsNotFound(err) {
+			return false
+		}
+		log.Error(err, "Cannot read context metadata; assuming context healthy")
+		return true
+	}
+	epMeta, err := docker.EndpointFromContext(md)
+	if err != nil {
+		log.Error(err, "Cannot decode docker endpoint; assuming context healthy")
+		return true
+	}
+	scheme, _, _ := strings.Cut(epMeta.Host, "://")
+	switch scheme {
+	case "unix", "tcp":
+	default:
+		log.Info("Non-tcp/unix endpoint scheme; assuming context healthy", "scheme", scheme)
+		return true
+	}
+	ep, err := docker.WithTLSData(s, name, epMeta)
+	if err != nil {
+		log.Error(err, "Cannot load TLS data; assuming context healthy")
+		return true
+	}
+	opts, err := ep.ClientOpts()
+	if err != nil {
+		log.Error(err, "Cannot build client options; assuming context healthy")
+		return true
+	}
+	probeCtx, cancel := context.WithTimeout(ctx, dockerContextProbeTimeout)
+	defer cancel()
+	return pingDocker(probeCtx, opts...)
 }
