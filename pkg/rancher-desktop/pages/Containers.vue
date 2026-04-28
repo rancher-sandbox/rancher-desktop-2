@@ -45,10 +45,7 @@
       </template>
       <template #col:containerState="{ row }: { row: RowItem }">
         <td>
-          <badge-state
-            :color="isRunning(row) ? 'bg-success' : 'bg-darker'"
-            :label="row.status?.status || 'unknown'"
-          />
+          <container-status-badge :container="row" />
         </td>
       </template>
       <template #col:imageName="{ row }: { row: RowItem }">
@@ -133,11 +130,12 @@
 </template>
 
 <script lang="ts">
-import { BadgeState, Banner } from '@rancher/components';
+import { Banner } from '@rancher/components';
 import dayjs from 'dayjs';
 import { shell } from 'electron';
 import { defineComponent } from 'vue';
 
+import ContainerStatusBadge from '@pkg/components/ContainerStatusBadge.vue';
 import SortableTable from '@pkg/components/SortableTable';
 import { mapTypedActions, mapTypedGetters, mapTypedMutations, mapTypedState } from '@pkg/entry/store';
 import { hasField } from '@pkg/utils/iterator';
@@ -171,7 +169,7 @@ type RowItem = Container & {
 export default defineComponent({
   name:       'Containers',
   title:      'Containers',
-  components: { SortableTable, BadgeState, Banner },
+  components: { SortableTable, ContainerStatusBadge, Banner },
   data() {
     return {
       collapsed:                   {} as Record<string, boolean>,
