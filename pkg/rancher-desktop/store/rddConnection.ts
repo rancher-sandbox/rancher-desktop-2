@@ -649,6 +649,9 @@ class Watcher<
         // The watcher errored out because we called stop(); do not propagate
         // this as an actual error.
         return;
+      } else if (err instanceof DOMException && err.name === 'AbortError') {
+        // Connection aborted; suppress this error assuming we just stopped.
+        return;
       } else if (err.statusCode === 429) {
         // We can get this if we request too early (when the backend restarts),
         // with a message of "storage is (re)initializing".  Just retry.
@@ -660,9 +663,7 @@ class Watcher<
         this.#restartTimeout = setTimeout(() => this.start(), delay * 1_000);
         return;
       }
-      // `err` is an object that calls `toString()` on `console.log`, so we
-      // need to re-convert it to a plain object for better debugging.
-      console.debug(`${ this.#type } watch error`, JSON.parse(JSON.stringify(err)));
+      // this.#doneFn(err) logs the error already, no need to do so here.
       this.#loaded.reject(err);
       this.#doneFn(err);
     });
