@@ -2719,115 +2719,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/xattr-android-arm-eabi@npm:1.0.3":
-  version: 1.0.3
-  resolution: "@napi-rs/xattr-android-arm-eabi@npm:1.0.3"
-  conditions: os=android & cpu=arm
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-android-arm64@npm:1.0.3":
-  version: 1.0.3
-  resolution: "@napi-rs/xattr-android-arm64@npm:1.0.3"
-  conditions: os=android & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-darwin-arm64@npm:1.0.3":
-  version: 1.0.3
-  resolution: "@napi-rs/xattr-darwin-arm64@npm:1.0.3"
-  conditions: os=darwin & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-darwin-x64@npm:1.0.3":
-  version: 1.0.3
-  resolution: "@napi-rs/xattr-darwin-x64@npm:1.0.3"
-  conditions: os=darwin & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-freebsd-x64@npm:1.0.3":
-  version: 1.0.3
-  resolution: "@napi-rs/xattr-freebsd-x64@npm:1.0.3"
-  conditions: os=freebsd & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-linux-arm-gnueabihf@npm:1.0.3":
-  version: 1.0.3
-  resolution: "@napi-rs/xattr-linux-arm-gnueabihf@npm:1.0.3"
-  conditions: os=linux & cpu=arm
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-linux-arm64-gnu@npm:1.0.3":
-  version: 1.0.3
-  resolution: "@napi-rs/xattr-linux-arm64-gnu@npm:1.0.3"
-  conditions: os=linux & cpu=arm64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-linux-arm64-musl@npm:1.0.3":
-  version: 1.0.3
-  resolution: "@napi-rs/xattr-linux-arm64-musl@npm:1.0.3"
-  conditions: os=linux & cpu=arm64 & libc=musl
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-linux-x64-gnu@npm:1.0.3":
-  version: 1.0.3
-  resolution: "@napi-rs/xattr-linux-x64-gnu@npm:1.0.3"
-  conditions: os=linux & cpu=x64 & libc=glibc
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr-linux-x64-musl@npm:1.0.3":
-  version: 1.0.3
-  resolution: "@napi-rs/xattr-linux-x64-musl@npm:1.0.3"
-  conditions: os=linux & cpu=x64 & libc=musl
-  languageName: node
-  linkType: hard
-
-"@napi-rs/xattr@npm:^1.0.3":
-  version: 1.0.3
-  resolution: "@napi-rs/xattr@npm:1.0.3"
-  dependencies:
-    "@napi-rs/xattr-android-arm-eabi": "npm:1.0.3"
-    "@napi-rs/xattr-android-arm64": "npm:1.0.3"
-    "@napi-rs/xattr-darwin-arm64": "npm:1.0.3"
-    "@napi-rs/xattr-darwin-x64": "npm:1.0.3"
-    "@napi-rs/xattr-freebsd-x64": "npm:1.0.3"
-    "@napi-rs/xattr-linux-arm-gnueabihf": "npm:1.0.3"
-    "@napi-rs/xattr-linux-arm64-gnu": "npm:1.0.3"
-    "@napi-rs/xattr-linux-arm64-musl": "npm:1.0.3"
-    "@napi-rs/xattr-linux-x64-gnu": "npm:1.0.3"
-    "@napi-rs/xattr-linux-x64-musl": "npm:1.0.3"
-  dependenciesMeta:
-    "@napi-rs/xattr-android-arm-eabi":
-      optional: true
-    "@napi-rs/xattr-android-arm64":
-      optional: true
-    "@napi-rs/xattr-darwin-arm64":
-      optional: true
-    "@napi-rs/xattr-darwin-x64":
-      optional: true
-    "@napi-rs/xattr-freebsd-x64":
-      optional: true
-    "@napi-rs/xattr-linux-arm-gnueabihf":
-      optional: true
-    "@napi-rs/xattr-linux-arm64-gnu":
-      optional: true
-    "@napi-rs/xattr-linux-arm64-musl":
-      optional: true
-    "@napi-rs/xattr-linux-x64-gnu":
-      optional: true
-    "@napi-rs/xattr-linux-x64-musl":
-      optional: true
-  checksum: 10c0/407773d0a4871d5da2ad910d59be559211559454fa3ce9a2a7cc0e2ada3a146085b4bd2ee296276ce7bc4359c9a3645bc166ac8924b779c1ecfadbd0dee86a52
-  languageName: node
-  linkType: hard
-
 "@nicolo-ribaudo/eslint-scope-5-internals@npm:5.1.1-v1":
   version: 5.1.1-v1
   resolution: "@nicolo-ribaudo/eslint-scope-5-internals@npm:5.1.1-v1"
@@ -6438,15 +6329,6 @@ __metadata:
   version: 2.0.1
   resolution: "async-exit-hook@npm:2.0.1"
   checksum: 10c0/81407a440ef0aab328df2369f1a9d957ee53e9a5a43e3b3dcb2be05151a68de0e4ff5e927f4718c88abf85800731f5b3f69a47a6642ce135f5e7d43ca0fce41d
-  languageName: node
-  linkType: hard
-
-"async-mutex@npm:^0.5.0":
-  version: 0.5.0
-  resolution: "async-mutex@npm:0.5.0"
-  dependencies:
-    tslib: "npm:^2.4.0"
-  checksum: 10c0/9096e6ad6b674c894d8ddd5aa4c512b09bb05931b8746ebd634952b05685608b2b0820ed5c406e6569919ff5fe237ab3c491e6f2887d6da6b6ba906db3ee9c32
   languageName: node
   linkType: hard
 
@@ -11823,7 +11705,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"json5@npm:^2.1.2, json5@npm:^2.2.2, json5@npm:^2.2.3":
+"json5@npm:^2.1.2, json5@npm:^2.2.3":
   version: 2.2.3
   resolution: "json5@npm:2.2.3"
   bin:
@@ -14365,7 +14247,6 @@ __metadata:
     "@eslint/compat": "npm:2.0.5"
     "@eslint/js": "npm:10.0.1"
     "@kubernetes/client-node": "npm:1.4.0"
-    "@napi-rs/xattr": "npm:^1.0.3"
     "@playwright/test": "npm:1.59.1"
     "@rancher/components": "npm:0.3.0-alpha.1"
     "@types/cross-spawn": "npm:6.0.6"
@@ -14396,7 +14277,6 @@ __metadata:
     "@yarnpkg/cli": "npm:^4.14.1"
     "@yarnpkg/core": "npm:^4.7.0"
     "@yarnpkg/types": "npm:^4.0.1"
-    async-mutex: "npm:^0.5.0"
     babel-core: "npm:7.0.0-bridge.0"
     babel-jest: "npm:30.3.0"
     babel-loader: "npm:10.1.1"
@@ -14448,7 +14328,6 @@ __metadata:
     tar-stream: "npm:3.1.8"
     ts-jest: "npm:29.4.9"
     ts-loader: "npm:^9.5.7"
-    tsconfig-paths: "npm:4.2.0"
     tsx: "npm:4.21.0"
     typescript: "npm:6.0.3"
     vue: "npm:3.5.32"
@@ -15805,13 +15684,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"strip-bom@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "strip-bom@npm:3.0.0"
-  checksum: 10c0/51201f50e021ef16672593d7434ca239441b7b760e905d9f33df6e4f3954ff54ec0e0a06f100d028af0982d6f25c35cd5cda2ce34eaebccd0250b8befb90d8f1
-  languageName: node
-  linkType: hard
-
 "strip-bom@npm:^4.0.0":
   version: 4.0.0
   resolution: "strip-bom@npm:4.0.0"
@@ -16357,17 +16229,6 @@ __metadata:
     typescript: "*"
     webpack: ^5.0.0
   checksum: 10c0/e68d997962046afc40fbb6131a5f329128691917bf288d18df4f95719ca1557e72f614bf078e06544ab0c970f734495a356f3eeb5f11ca18459944237b3635a1
-  languageName: node
-  linkType: hard
-
-"tsconfig-paths@npm:4.2.0":
-  version: 4.2.0
-  resolution: "tsconfig-paths@npm:4.2.0"
-  dependencies:
-    json5: "npm:^2.2.2"
-    minimist: "npm:^1.2.6"
-    strip-bom: "npm:^3.0.0"
-  checksum: 10c0/09a5877402d082bb1134930c10249edeebc0211f36150c35e1c542e5b91f1047b1ccf7da1e59babca1ef1f014c525510f4f870de7c9bda470c73bb4e2721b3ea
   languageName: node
   linkType: hard
 
