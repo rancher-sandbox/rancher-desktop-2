@@ -1,4 +1,4 @@
-lima: 1.2.1.rd2
+lima: 1.2.1.rd3
 qemu: 9.2.0.rd2
 socketVMNet: 1.2.2
 alpineLimaISO:
@@ -7,22 +7,22 @@ alpineLimaISO:
 WSLDistro: "0.95"
 kuberlr: 0.6.1
 helm: 4.1.4
-dockerCLI: 29.4.0
+dockerCLI: 29.4.1
 dockerBuildx: 0.33.0
-dockerCompose: 5.1.2
+dockerCompose: 5.1.3
 golangci-lint: 2.11.4
-trivy: 0.69.3
+trivy: 0.70.0
 steve: 0.1.0-beta9.1
 rancherDashboard: 2.11.1.rd4
-dockerProvidedCredentialHelpers: 0.9.5
+dockerProvidedCredentialHelpers: 0.9.6
 ECRCredentialHelper: 0.12.0
 mobyOpenAPISpec: "1.54"
 wix: v3.14.1
 hostSwitch: 1.2.7
 moproxy: 0.5.1
-spinShim: 0.23.0
+spinShim: 0.24.0
 spinOperator: 0.6.1
 certManager: 1.20.1
-spinCLI: 3.6.2
+spinCLI: 4.0.0
 spinKubePlugin: 0.4.0
 check-spelling: 0.0.26

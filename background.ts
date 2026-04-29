@@ -15,7 +15,6 @@ import Logging, { clearLoggingDirectory } from '@pkg/utils/logging';
 import { fetchMacOsVersion, getMacOsVersion } from '@pkg/utils/osVersion';
 import paths from '@pkg/utils/paths';
 import { protocolsRegistered, setupProtocolHandlers } from '@pkg/utils/protocols';
-import { getVersion } from '@pkg/utils/version';
 import getWSLVersion from '@pkg/utils/wslVersion';
 import * as window from '@pkg/window';
 import '@pkg/main/rdd-ctl';
@@ -98,7 +97,7 @@ Electron.app.whenReady().then(async() => {
 
     await setupNetworking();
 
-    await initUI();
+    initUI();
   } catch (ex: any) {
     console.error(`Error starting up: ${ ex }`, ex.stack);
     gone = true;
@@ -106,7 +105,7 @@ Electron.app.whenReady().then(async() => {
   }
 });
 
-async function initUI() {
+function initUI() {
   if (gone) {
     console.log('User triggered quit during first-run');
 
@@ -120,7 +119,7 @@ async function initUI() {
     // also needs to be updated in electron-builder.yml
     copyright:          'Copyright © 2021-2026 SUSE LLC',
     applicationName:    `${ Electron.app.name } by SUSE`,
-    applicationVersion: `Version ${ await getVersion() }`,
+    applicationVersion: `Version ${ process.env.RD_VERSION }`,
     iconPath:           path.join(paths.resources, 'icons', 'logo-square-512.png'),
   });
   // TODO: Tray.getInstance().show();
@@ -237,10 +236,6 @@ mainEvents.on('dialog-info', (args) => {
   window.getWindow(args.dialog)?.webContents.send('dialog/info', args);
 });
 
-ipcMainProxy.on('get-app-version', async(event) => {
-  event.reply('get-app-version', await getVersion());
-});
-
 ipcMainProxy.on('dialog/error', (event, args) => {
   window.getWindow(args.dialog)?.webContents.send('dialog/error', args);
 });
@@ -257,8 +252,8 @@ ipcMainProxy.handle('host/isArm', () => {
   return process.arch === 'arm64';
 });
 
-ipcMainProxy.on('help/preferences/open-url', async() => {
-  Help.preferences.openUrl(await getVersion());
+ipcMainProxy.on('help/preferences/open-url', () => {
+  Help.preferences.openUrl();
 });
 
 ipcMainProxy.handle('show-message-box', (_event, options: Electron.MessageBoxOptions): Promise<Electron.MessageBoxReturnValue> => {
