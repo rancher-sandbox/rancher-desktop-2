@@ -268,7 +268,7 @@ export default defineComponent({
               {
                 label:      'Stop',
                 action:     'stopContainer',
-                enabled:    this.isRunning(container),
+                enabled:    this.isRunning(container) || this.isPaused(container),
                 bulkable:   true,
                 bulkAction: 'stopContainer',
               },
