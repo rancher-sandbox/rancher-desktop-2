@@ -4,13 +4,12 @@ import os from 'os';
 import path from 'path';
 
 import * as goUtils from '@/scripts/dependencies/go-source';
-import { Lima, Qemu, SocketVMNet, AlpineLimaISO } from '@/scripts/dependencies/lima';
 import { MobyOpenAPISpec } from '@/scripts/dependencies/moby-openapi';
 import { SudoPrompt } from '@/scripts/dependencies/sudo-prompt';
-import { ExtensionProxyImage, WSLDistroImage } from '@/scripts/dependencies/tar-archives';
+import { ExtensionProxyImage } from '@/scripts/dependencies/tar-archives';
 import * as tools from '@/scripts/dependencies/tools';
 import { Wix } from '@/scripts/dependencies/wix';
-import { WSLDistro, Moproxy } from '@/scripts/dependencies/wsl';
+import { Moproxy } from '@/scripts/dependencies/wsl';
 import {
   DependencyPlatform, DependencyVersions, readDependencyVersions, DownloadContext, Dependency,
 } from '@/scripts/lib/dependencies';
@@ -50,22 +49,15 @@ const userTouchedDependencies = [
 ];
 
 // Dependencies that are specific to unix hosts.
-const unixDependencies = [
-  new Lima(),
-  new Qemu(),
-  new AlpineLimaISO(),
-];
+const unixDependencies: Dependency[] = [];
 
 // Dependencies that are specific to macOS hosts.
 const macOSDependencies = [
-  new SocketVMNet(),
   new SudoPrompt(),
 ];
 
 // Dependencies that are specific to windows hosts.
 const windowsDependencies = [
-  new WSLDistro(),
-  new WSLDistroImage(),
   new Wix(),
   new goUtils.GoDependency('networking/cmd/host', 'internal/host-switch'),
   new goUtils.WSLHelper(versionToStamp),

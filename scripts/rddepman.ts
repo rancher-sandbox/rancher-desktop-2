@@ -7,11 +7,10 @@ import semver from 'semver';
 
 import { getExtensions } from './lib/extension-data';
 
-import { Lima, Qemu, SocketVMNet, AlpineLimaISO } from '@/scripts/dependencies/lima';
 import { MobyOpenAPISpec } from '@/scripts/dependencies/moby-openapi';
 import * as tools from '@/scripts/dependencies/tools';
 import { Wix } from '@/scripts/dependencies/wix';
-import { WSLDistro, Moproxy } from '@/scripts/dependencies/wsl';
+import { Moproxy } from '@/scripts/dependencies/wsl';
 import {
   AlpineLimaISOVersion, getOctokit,
   iterateIterator,
@@ -42,11 +41,6 @@ const dependencies: VersionedDependency[] = [
   new tools.Steve(),
   new tools.RancherDashboard(),
   new tools.ECRCredHelper(),
-  new Lima(),
-  new Qemu(),
-  new SocketVMNet(),
-  new AlpineLimaISO(),
-  new WSLDistro(),
   new Wix(),
   new MobyOpenAPISpec(),
   new Moproxy(),

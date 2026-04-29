@@ -30,18 +30,3 @@ export class Moproxy extends GlobalDependency(GitHubDependency) {
     await fs.promises.rm(archivePath);
   }
 }
-
-export class WSLDistro extends GlobalDependency(GitHubDependency) {
-  readonly name = 'WSLDistro';
-  readonly githubOwner = 'rancher-sandbox';
-  readonly githubRepo = 'rancher-desktop-wsl-distro';
-
-  async download(context: DownloadContext): Promise<void> {
-    const baseUrl = `https://github.com/${ this.githubOwner }/${ this.githubRepo }/releases/download`;
-    const tarName = `distro-${ context.versions.WSLDistro }.tar`;
-    const url = `${ baseUrl }/v${ context.versions.WSLDistro }/${ tarName }`;
-    const destPath = path.join(context.resourcesDir, context.platform, 'staging', tarName);
-
-    await download(url, destPath, { access: fs.constants.W_OK });
-  }
-}
