@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260504-192042-pr-348</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block.
+ * The filename is a GitHub permalink to the displayed line range.
+ * Text color is light gray (#adbac7) for the bar, green (#7ee787)
+ * for the hyperlink — matching GitHub's dark-mode file header. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Supply-chain Summary table — first column gets breathing room,
+ * numeric middle columns center, header keeps its label on one line. */
+.summary-table { width: 100%; border-collapse: collapse; margin: 0.4rem 0 0.8rem; font-size: 0.92rem; }
+.summary-table th, .summary-table td {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid #d5d9e0;
+  vertical-align: top;
+  text-align: left;
+}
+.summary-table th { background: rgba(255, 255, 255, 0.65); font-weight: 600; white-space: nowrap; }
+.summary-table td:first-child { min-width: 11rem; white-space: nowrap; }
+.summary-table th:not(:first-child):not(:last-child),
+.summary-table td:not(:first-child):not(:last-child) { text-align: center; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Supply-chain issue rows — used by issueList for bullets that
+ * uniformly start with a `file:line` reference. The location renders
+ * in a dark bar above the description so the eye picks up the path
+ * separately from the prose. */
+.issue-list { margin: 0.6rem 0; }
+.issue-row {
+  margin-bottom: 0.7rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.55);
+}
+.issue-loc {
+  background: #2d333b;
+  color: #adbac7;
+  padding: 0.3rem 0.7rem;
+  font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+}
+.issue-loc a { color: #7ee787; text-decoration: none; }
+.issue-loc a:hover { text-decoration: underline; }
+.issue-loc code { background: none; padding: 0; color: inherit; font-size: 1em; }
+.issue-desc { padding: 0.55rem 0.8rem; }
+.issue-desc code { font-size: 0.85em; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Deep Review: 20260504-192042-pr-348</h1>
+
+    <table class="meta-table">
+      <tr><td>Date</td><td>2026-05-04 19:20</td></tr>
+      <tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+      <tr><td>Round</td><td>6</td></tr>
+      <tr><td>Author</td><td><a href="https://github.com/jandubois">@jandubois</a></td></tr>
+      <tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/348" class="gh-ref" data-title="rdd kubectl: embed kuberlr-style version resolver" data-state="open" data-type="pr">#348</a> — rdd kubectl: embed kuberlr-style version resolver</td></tr>
+      <tr><td>Branch</td><td><code>embed-kuberlr</code></td></tr>
+      <tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/72bfad2"><code>72bfad2</code></a> rdd kubectl: embed kuberlr-style version resolver</td></tr>
+      <tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.7 (effort: xhigh), <span class="pill pill-codex">Codex</span> GPT 5.5 (effort: xhigh), <span class="pill pill-gemini">Gemini</span> 3.1 Pro (effort: default)</td></tr>
+      <tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; Round 5 fixes for S1 docs, S2 download UX, S4 BATS comment, S5 SkipResolver bool, and S6 dead error return all landed cleanly. Round 6 surfaces no Critical or Important findings; the round&#39;s most actionable item is S1 — the same Round 5 amendment that swapped <code>SkipResolver</code> from env-var to package bool left <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/docs/design/environment.md#L35"><code>docs/design/environment.md:35</code></a> describing <code>RDD_KUBECTL_RESOLVED</code> as written by <code>rdd ctl</code>, which is now untrue. Both Claude (I3) and Codex (S1) caught this regression. The remaining Suggestions are smaller defensive items (Gemini&#39;s <code>--</code> separator misclassification in <code>isClientOnly</code>, plus three Claude items: 256 MiB cap surfaces as checksum mismatch, missing User-Agent header, dead <code>os.Chmod</code> call on Windows).</td></tr>
+      <tr><td>Wall-clock time</td><td><code>33 min 47 s</code></td></tr>
+    </table>
+
+    <hr>
+
+    <hr>
+    <h2 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>Round 5&#39;s six Suggestions all landed; Round 6 produces no Critical or Important findings. The five surviving Suggestions group into three buckets:</p>
+    <ol>
+      <li><em></em>Documentation drift introduced by Round 5&#39;s <code>SkipResolver</code> fix<em></em> (S1, two agents). Round 5&#39;s S5 changed <code>SkipResolver()</code> from <code>os.Setenv(envSkipResolver, &quot;1&quot;)</code> to a package-level <code>skipResolver</code> bool. The internal-variables table in <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/docs/design/environment.md#L35"><code>docs/design/environment.md:35</code></a> still says &quot;<code>rdd ctl</code> sets it before invoking the kubectl action,&quot; which is no longer true — <code>rdd ctl</code> calls <code>kuberlr.SkipResolver()</code> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/cmd/rdd/kubectl.go#L48"><code>cmd/rdd/kubectl.go:48</code></a>), and the env var is set only by <code>kuberlr.Exec</code> on the kubectl child. A developer grepping a process tree for <code>RDD_KUBECTL_RESOLVED=1</code> will see it on a downloaded kubectl child but never on the <code>rdd ctl</code> parent the doc claims sets it.</li>
+      <li><em></em><code>--</code> separator boundary misclassified as client-only<em></em> (S2, Gemini). <code>isClientOnly</code> walks <code>args</code> and breaks on <code>--</code> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/resolver.go#L278-L280"><code>pkg/kuberlr/resolver.go:278-280</code></a>). For <code>kubectl -- get pods</code>, the loop breaks before recording any subcommand, the empty-<code>subcommand</code> fallback at line 312-314 returns <code>true</code>, and the resolver skips the probe — exactly the misclassification the cautionary comment at lines 264-269 calls out. The trigger is rare (no <code>kubectl</code> recipe puts <code>--</code> before the subcommand) but the fallback should still resolve, not skip.</li>
+      <li><strong>Defensive cleanup in the new code</strong> — S3 (<code>io.LimitReader</code>&#39;s 256 MiB cap silently truncates and surfaces as &quot;checksum mismatch&quot; rather than naming the cap), S4 (<code>Go-http-client/1.1</code> UA may be rate-limited by corporate/air-gapped mirrors), S5 (<code>os.Chmod(tmpName, 0o755)</code> is a no-op on Windows; comment or wrap).</li>
+    </ol>
+    <p>The Windows <code>os.Rename</code> race surfaced again from all three agents (Codex I1, Gemini I1, Claude I1) and was dropped per the prior-round-resolutions gate (declined Rounds 1–5). Gemini also brought back the <code>CacheRoot</code> panic as Critical with a different fix shape (silent <code>os.TempDir()</code> fallback); same finding declined in Round 5 as Suggestion S3, dropped per the gate.</p>
+    <p>Structure: 0 Critical · 0 Important · 5 Suggestions.</p>
+    </div>
+    <hr>
+    <h2 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-critical">
+    <p>None.</p>
+    </div>
+    <hr>
+    <h2 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-important">
+    <p>None.</p>
+    </div>
+    <hr>
+    <h2 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S1">
+        <span class="finding-num">S1.</span> <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/docs/design/environment.md#L35"><code>docs/design/environment.md:35</code></a> says <code>rdd ctl</code> sets <code>RDD_KUBECTL_RESOLVED</code>, but Round 5&#39;s S5 fix removed that env-var write <span class="pill pill-codex">Codex</span> <span class="pill pill-claude">Claude</span><a href="#S1" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/docs/design/environment.md#L30-L40">docs/design/environment.md</a></div>
+      <pre data-start="30" data-line="35"><code class="language-md">
+`rdd` sets these variables itself; users should leave them alone. They appear here so a developer reading a process tree or strace output can identify them.
+
+| Variable | Description |
+| --- | --- |
+| `RDD_KUBECTL_RESOLVED` | Recursion guard for the kubectl version resolver. `kuberlr.Exec` sets it on the kubectl child process so a downloaded kubectl that re-execs `rdd` through a shim cannot recurse back into version resolution. `rdd ctl` sets it before invoking the kubectl action so the resolver skips the redundant probe against the embedded apiserver, whose version matches the embedded kubectl by construction. |
+
+## Path Variables
+
+`rdd svc paths --output=shell` exports these variables. Most are informational; `RDD_CACHE_DIR` is also honored as the cache-root override (see Configuration Variables above).
+</code></pre>
+    <p>Round 5&#39;s S5 fix replaced the <code>os.Setenv(envSkipResolver, &quot;1&quot;)</code> body of <code>SkipResolver</code> with a package-level <code>skipResolver</code> bool (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/resolver.go#L30-L41"><code>pkg/kuberlr/resolver.go:30-41</code></a>); <code>rdd ctl</code> then calls that helper at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/cmd/rdd/kubectl.go#L48"><code>cmd/rdd/kubectl.go:48</code></a>. The internal-variables table in <code>environment.md</code> still credits <code>rdd ctl</code> with writing the env var. The intro at line 31 — &quot;they appear here so a developer reading a process tree or strace output can identify them&quot; — sets the wrong expectation: only the downloaded kubectl child carries <code>RDD_KUBECTL_RESOLVED=1</code> now.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/resolver.go#L25-L46">pkg/kuberlr/resolver.go</a></div>
+      <pre data-start="25" data-line="30-41"><code class="language-go">// envSkipResolver tells Resolve to short-circuit. Exec sets it on the
+// kubectl child process so a downloaded kubectl that re-execs us through
+// a shim cannot recurse back into version resolution.
+const envSkipResolver = &quot;RDD_KUBECTL_RESOLVED&quot;
+
+// skipResolver short-circuits Resolve for the rest of this process.
+// Same-process toggle; envSkipResolver covers the cross-process recursion
+// guard that Exec sets on the kubectl child.
+var skipResolver bool
+
+// SkipResolver short-circuits Resolve for the rest of this process.
+// rdd ctl calls this before kubectlAction because it always targets
+// the embedded apiserver, whose version matches the embedded kubectl
+// by construction — the probe would always fall through anyway.
+func SkipResolver() {
+	skipResolver = true
+}
+
+// serverProbeTimeout caps the discovery call. A reachable cluster answers
+// in under 100 ms; an unreachable one would otherwise stall every kubectl
+// invocation.
+const serverProbeTimeout = 2 * time.Second</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/cmd/rdd/kubectl.go#L43-L53">cmd/rdd/kubectl.go</a></div>
+      <pre data-start="43" data-line="48"><code class="language-go">		return fmt.Errorf(&quot;failed to set KUBECONFIG: %w&quot;, err)
+	}
+	// rdd ctl always targets the embedded apiserver. Embedded apiserver
+	// and embedded kubectl share a k8s.io/kubernetes module entry, so
+	// the version probe would always fall through. Skip it.
+	kuberlr.SkipResolver()
+	return kubectlAction(cmd, args)
+}
+
+func newKubectlCommand() *cobra.Command {
+	command := &amp;cobra.Command{</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/docs/design/environment.md#L26-L36">docs/design/environment.md</a></div>
+      <pre data-start="26" data-line="31"><code class="language-plaintext">| `RDD_NAMESPACE` | Default Kubernetes namespace for BATS controller tests. | `rdd-bats` |
+| `RDD_VM_TYPE` | Lima VM type for tests that boot a VM (`qemu` or `vz`). Useful for reproducing QEMU-specific failures on macOS. | Lima&#39;s default (`vz` on macOS, `qemu` on Linux) |
+
+### Internal Variables
+
+`rdd` sets these variables itself; users should leave them alone. They appear here so a developer reading a process tree or strace output can identify them.
+
+| Variable | Description |
+| --- | --- |
+| `RDD_KUBECTL_RESOLVED` | Recursion guard for the kubectl version resolver. `kuberlr.Exec` sets it on the kubectl child process so a downloaded kubectl that re-execs `rdd` through a shim cannot recurse back into version resolution. `rdd ctl` sets it before invoking the kubectl action so the resolver skips the redundant probe against the embedded apiserver, whose version matches the embedded kubectl by construction. |
+</code></pre>
+    <p>Fix: rewrite the second sentence to describe the in-process toggle.</p>
+      <pre><code class="language-diff">-| `RDD_KUBECTL_RESOLVED` | Recursion guard for the kubectl version resolver. `kuberlr.Exec` sets it on the kubectl child process so a downloaded kubectl that re-execs `rdd` through a shim cannot recurse back into version resolution. `rdd ctl` sets it before invoking the kubectl action so the resolver skips the redundant probe against the embedded apiserver, whose version matches the embedded kubectl by construction. |
++| `RDD_KUBECTL_RESOLVED` | Recursion guard for the kubectl version resolver. `kuberlr.Exec` sets it on the kubectl child process so a downloaded kubectl that re-execs `rdd` through a shim cannot recurse back into version resolution. `rdd ctl` achieves the same skip via the in-process `kuberlr.SkipResolver()` helper, not this env var. |</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S2">
+        <span class="finding-num">S2.</span> <code>isClientOnly</code> misclassifies <code>--</code> before subcommand as client-only <span class="pill pill-gemini">Gemini</span><a href="#S2" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/resolver.go#L265-L322">pkg/kuberlr/resolver.go</a></div>
+      <pre data-start="265" data-line="270-322"><code class="language-go">// subcommand. An unknown long flag (--foo) gets treated as no-value
+// so its successor stays a candidate for the subcommand position.
+// The conservative bias keeps Resolve probing on commands isClientOnly
+// cannot identify; misclassifying as client-only would skip the
+// version skew check and silently use a mismatched embedded kubectl.
+func isClientOnly(args []string) bool {
+	if len(args) == 0 {
+		return true
+	}
+	subcommand := &quot;&quot;
+	sawClient := false
+	for i := 0; i &lt; len(args); i++ {
+		arg := args[i]
+		if arg == &quot;--&quot; {
+			break
+		}
+		// kubectl bool flags accept both bare and equals form
+		// (`--help`, `--help=true`, `-h=false`, `--client=1`); the
+		// equals form follows pflag semantics, with last occurrence
+		// winning for repeated flags.
+		if arg == &quot;--help&quot; || arg == &quot;-h&quot; {
+			return true
+		}
+		if v, ok := boolFlagValue(arg, &quot;--help&quot;, &quot;-h&quot;); ok {
+			if v {
+				return true
+			}
+			continue
+		}
+		if arg == &quot;--client&quot; {
+			sawClient = true
+			continue
+		}
+		if v, ok := boolFlagValue(arg, &quot;--client&quot;); ok {
+			sawClient = v
+			continue
+		}
+		if strings.HasPrefix(arg, &quot;-&quot;) {
+			if !strings.Contains(arg, &quot;=&quot;) &amp;&amp; kubectlGlobalFlagsTakingValue[arg] &amp;&amp; i+1 &lt; len(args) {
+				i++
+			}
+			continue
+		}
+		if subcommand == &quot;&quot; {
+			subcommand = arg
+		}
+	}
+	if subcommand == &quot;&quot; {
+		return true
+	}
+	if subcommand == &quot;version&quot; {
+		// `kubectl version` (no --client) probes the server for its
+		// version. Treat that as cluster-bound so the resolver picks
+		// a version-matched binary to do the probe.
+		return sawClient
+	}
+	return clientOnlySubcommands[subcommand]
+}</code></pre>
+    <p><code>kubectl -- get pods</code> is syntactically valid: pflag treats <code>--</code> as the end-of-flags marker and Cobra reads the first positional as the subcommand. <code>isClientOnly</code> walks <code>args</code>, breaks on <code>--</code> at line 278-280, finds no subcommand, and returns <code>true</code> via the empty-<code>subcommand</code> fallback at line 312-314. The resolver then skips the probe and runs the embedded kubectl — exactly the misclassification the comment at lines 264-269 warns against. Probability is low (no documented <code>kubectl</code> recipe puts <code>--</code> before the subcommand) but the fallback&#39;s bias should still be &quot;probe, don&#39;t skip.&quot;</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/resolver.go#L259-L274">pkg/kuberlr/resolver.go</a></div>
+      <pre data-start="259" data-line="264-269"><code class="language-go">// the resolver can skip without losing correctness. Empty args, the
+// help flags, &quot;version --client&quot;, and the subcommands in
+// clientOnlySubcommands all qualify; everything else falls through
+// to the probe so the version skew check still runs.
+//
+// The walk skips known global flags and their values to land on the
+// subcommand. An unknown long flag (--foo) gets treated as no-value
+// so its successor stays a candidate for the subcommand position.
+// The conservative bias keeps Resolve probing on commands isClientOnly
+// cannot identify; misclassifying as client-only would skip the
+// version skew check and silently use a mismatched embedded kubectl.
+func isClientOnly(args []string) bool {
+	if len(args) == 0 {
+		return true
+	}
+	subcommand := &quot;&quot;</code></pre>
+    <p>Fix: take the next positional after <code>--</code> as the subcommand candidate before breaking.</p>
+      <pre><code class="language-diff"> for i := 0; i &lt; len(args); i++ {
+     arg := args[i]
+     if arg == &quot;--&quot; {
++        if subcommand == &quot;&quot; &amp;&amp; i+1 &lt; len(args) {
++            subcommand = args[i+1]
++        }
+         break
+     }</code></pre>
+    <p>A <code>TestIsClientOnly</code> row covering <code>[&quot;--&quot;, &quot;get&quot;, &quot;pods&quot;]</code> (expect <code>false</code>) would lock the fix in.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S3">
+        <span class="finding-num">S3.</span> <code>streamGet</code>&#39;s 256 MiB cap surfaces as &quot;checksum mismatch&quot;, not as &quot;binary too large&quot; <span class="pill pill-claude">Claude</span><a href="#S3" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/downloader.go#L100-L110">pkg/kuberlr/downloader.go</a></div>
+      <pre data-start="100" data-line="105"><code class="language-go">		return err
+	}
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName)
+	h := sha512.New()
+	if err := streamGet(ctx, base, io.MultiWriter(tmp, h), maxKubectlBytes); err != nil {
+		tmp.Close()
+		return fmt.Errorf(&quot;downloading %s: %w&quot;, base, err)
+	}
+	if err := tmp.Close(); err != nil {
+		return err</code></pre>
+    <p>If kubectl ever exceeds <code>maxKubectlBytes</code> (256 MiB), <code>io.LimitReader</code> returns silently after <code>maxBytes</code>, the digest covers a truncated body, and the caller sees a <code>checksum mismatch</code> error pointing at integrity instead of the size cap. <code>fetchSha512</code> already gets this right: a misconfigured mirror serving the binary at the <code>.sha512</code> URL surfaces as &quot;malformed checksum from %s: %d chars&quot; (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/downloader.go#L153-L159"><code>downloader.go:153-159</code></a>). Mirror the dedicated error path on the binary side so a future cap bump is signalled by a clear &quot;exceeds N MiB&quot; message rather than a misleading hash mismatch.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/downloader.go#L148-L164">pkg/kuberlr/downloader.go</a></div>
+      <pre data-start="148" data-line="153-159"><code class="language-go">	}
+	// Normalize to lowercase to match download&#39;s hex.EncodeToString
+	// output. PowerShell Get-FileHash emits uppercase hex; without
+	// this, the comparison rejects valid digests as mismatched.
+	digest := strings.ToLower(fields[0])
+	if len(digest) != sha512.Size*2 {
+		return &quot;&quot;, fmt.Errorf(&quot;malformed checksum from %s: %d chars, want %d&quot;, url, len(digest), sha512.Size*2)
+	}
+	for _, c := range digest {
+		if !(c &gt;= &#39;0&#39; &amp;&amp; c &lt;= &#39;9&#39; || c &gt;= &#39;a&#39; &amp;&amp; c &lt;= &#39;f&#39;) {
+			return &quot;&quot;, fmt.Errorf(&quot;malformed checksum from %s: non-hex character %q&quot;, url, c)
+		}
+	}
+	return digest, nil
+}
+
+// streamGet performs a GET on url and copies the response body into w,</code></pre>
+    <p>Fix: wrap the limit reader so reaching the cap returns a distinct sentinel and the error message names the cap.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S4">
+        <span class="finding-num">S4.</span> HTTP requests omit a <code>User-Agent</code> header <span class="pill pill-claude">Claude</span><a href="#S4" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/downloader.go#L164-L184">pkg/kuberlr/downloader.go</a></div>
+      <pre data-start="164" data-line="169-184"><code class="language-go">// streamGet performs a GET on url and copies the response body into w,
+// capped at maxBytes. The cap turns a malicious or misconfigured mirror
+// into a bounded failure: the underlying io.LimitReader stops reading
+// after maxBytes regardless of the server&#39;s intent. streamGet returns
+// an error on any non-200 status.
+func streamGet(ctx context.Context, url string, w io.Writer, maxBytes int64) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return err
+	}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf(&quot;GET %s: %s&quot;, url, resp.Status)
+	}
+	_, err = io.Copy(w, io.LimitReader(resp.Body, maxBytes))
+	return err
+}</code></pre>
+    <p><code>dl.k8s.io</code> is operated by SIG Release and accepts the default Go client UA today, but corporate proxies and air-gapped mirrors regularly use UA-based rate limiting or denylists for <code>Go-http-client/1.1</code>. A stable UA also helps the SIG Release team correlate kuberlr-style traffic. One header on each request closes the gap.</p>
+    <p>Fix:</p>
+      <pre><code class="language-diff"> req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+ if err != nil {
+     return err
+ }
++req.Header.Set(&quot;User-Agent&quot;, &quot;rdd-kuberlr/&quot;+componentbasever.Get().GitVersion)</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S5">
+        <span class="finding-num">S5.</span> <code>os.Chmod(tmpName, 0o755)</code> is a no-op on Windows <span class="pill pill-claude">Claude</span><a href="#S5" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/downloader.go#L111-L123">pkg/kuberlr/downloader.go</a></div>
+      <pre data-start="111" data-line="116-118"><code class="language-go">	}
+	got := hex.EncodeToString(h.Sum(nil))
+	if got != want {
+		return fmt.Errorf(&quot;checksum mismatch for %s: want %s, got %s&quot;, base, want, got)
+	}
+	if err := os.Chmod(tmpName, 0o755); err != nil {
+		return err
+	}
+	return os.Rename(tmpName, dst)
+}
+
+// Body-size caps for streamGet. maxSha512Bytes covers the longest
+// `sha512sum`-format line (128 hex chars + two spaces + a generous</code></pre>
+    <p>Windows file mode is reduced to a single read-only bit; executability is determined by extension (<code>.exe</code>) and PE header. <code>0o755</code> toggles only the read-only bit (writable, since the write bit is set), so the chmod call has no functional effect. Mode 0755 doesn&#39;t break anything, but the next reader of <code>downloader.go</code> will read the line as &quot;ensure +x on Windows,&quot; which it isn&#39;t. A one-line comment or a <code>runtime.GOOS != &quot;windows&quot;</code> guard removes the ambiguity.</p>
+    <p>Fix:</p>
+      <pre><code class="language-diff">+// On Windows the executable bit doesn&#39;t exist (extension and PE
++// header decide); chmod only affects the read-only bit. Skip the
++// call rather than mislead the next reader.
++if runtime.GOOS != &quot;windows&quot; {
++    if err := os.Chmod(tmpName, 0o755); err != nil {
++        return err
++    }
++}
+-if err := os.Chmod(tmpName, 0o755); err != nil {
+-    return err
+-}</code></pre>
+    </div>
+    <hr>
+    <h2 id="design-observations" class="section-design">Design Observations <a href="#design-observations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-design">
+    <h3 id="concerns">Concerns <a href="#concerns" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><em></em>Resolver runs against <code>context.Background()</code> (future)<em></em> <span class="pill pill-claude">Claude</span>. <code>cmd.Context()</code> returns <code>context.Background()</code> because <code>cli.RunNoErrOutput</code> calls <code>cmd.Execute()</code>, not <code>cmd.ExecuteContext()</code>. The 5 min <code>httpClient.Timeout</code> and the 2 s discovery <code>cfg.Timeout</code> are the only cancellation backstops; SIGINT to <code>rdd</code> during a download kills the process without running the <code>defer os.Remove(tmpName)</code>, so a Ctrl-C mid-download leaks a <code>.kubectl-*</code> tempfile. Wiring <code>signal.NotifyContext(context.Background(), os.Interrupt)</code> in <code>main</code> and switching to <code>cmd.SetContext(ctx)</code> would close this. Pairs with the existing <code>TODO(eviction)</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/cache.go#L33-L39"><code>cache.go:33-39</code></a>, which already covers the cleanup side.</li>
+      <li><strong>Cache hit trusts the on-disk binary without re-verification (future)</strong> <span class="pill pill-claude">Claude</span>. <code>ensureCached</code> returns immediately when <code>cachedPath(want)</code> exists; nothing checks the cached file&#39;s sha512 against the upstream digest on hit. Filesystem corruption or a manually-tampered cache file surfaces as a confusing kubectl exec failure rather than a &quot;cache integrity error&quot; the resolver could re-download from. Re-hashing every cached binary on every kubectl invocation is too expensive; a future LRU/TTL sweep (the <code>TODO(eviction)</code> at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/cache.go#L33-L39"><code>cache.go:33-39</code></a>) is the right place to verify before evicting or reusing.</li>
+      <li><strong>Mirror checksum gives no security against a compromised mirror (future, persistent)</strong> [carry-over from Round 5]. <code>download</code> fetches the kubectl binary and its <code>.sha512</code> from the same mirror; the hash protects against truncation and disk corruption but not against a mirror serving a malicious binary alongside a matching malicious checksum. SIG Release signs binaries with Sigstore/Cosign. Verifying the Cosign signatures (in addition to or in place of the mirror&#39;s own checksum) closes the supply-chain gap. Out of scope for this PR.</li>
+      <li><strong>Hand-rolled subcommand walker duplicates the bound pflag set (future, persistent)</strong> [carry-over from Rounds 3–5]. <code>parseKubeConfigFlags</code> already binds the kubectl global flags via <code>genericclioptions.ConfigFlags.AddFlags</code>; <code>isClientOnly</code> re-walks args manually with the hand-maintained <code>kubectlGlobalFlagsTakingValue</code> map. S2 this round is a fresh shape of the same drift class — <code>--</code> boundary handling slipping past the manual walker. Driving the walker from the same FlagSet (<code>fs.Args()</code> after parse returns the positional tokens) eliminates the map and most of the drift class.</li>
+    </ul>
+    <h3 id="strengths">Strengths <a href="#strengths" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><strong>Round 5 fixes landed without regression</strong> <span class="pill pill-claude">Claude</span><span class="pill pill-codex">Codex</span>. <code>environment.md</code> Path Variables preamble now scopes the no-effect claim correctly; <code>cmd_service.md</code> key table includes <code>cache_dir</code>; the BATS comment names the right export site; <code>SkipResolver</code> uses a package-level bool; <code>serverVersion</code> returns <code>(semver.Version, bool)</code> with the dead error path gone; the warn-level &quot;downloading kubectl&quot; line surfaces at the default log level.</li>
+      <li><strong>Process replacement on Unix vs. spawn on Windows is the right split</strong> <span class="pill pill-claude">Claude</span>. <code>syscall.Exec</code> keeps the kubectl child at the expected place in the process tree, and the Windows path&#39;s <code>*cliexit.Error</code> envelope plus the empty-message branch in <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/cmd/rdd/main.go#L163-L165"><code>cmd/rdd/main.go:163-165</code></a> propagates the kubectl exit code without a confusing <code>logrus.Error</code> line.</li>
+      <li><strong>Same-process toggle plus cross-process env-var recursion guard</strong> <span class="pill pill-claude">Claude</span>. <code>SkipResolver()</code> for <code>rdd ctl</code> (in-process bool) and <code>RDD_KUBECTL_RESOLVED</code> for the rare downloaded-shim re-exec (env-based) cover their respective shapes minimally; the env var no longer leaks into unrelated subprocesses.</li>
+      <li><strong>Hash before mutation; body caps at the right place; reusing kubectl&#39;s flag binding</strong> <span class="pill pill-claude">Claude</span><span class="pill pill-codex">Codex</span><span class="pill pill-gemini">Gemini</span>. Round 5 strengths persist: <code>download</code> verifies the digest before any chmod or rename; <code>streamGet</code> caps the digest body at 4 KiB and the binary at 256 MiB; <code>parseKubeConfigFlags</code> binds <code>genericclioptions.NewConfigFlags(true)</code> so the resolver and kubectl child target the same cluster by construction.</li>
+      <li><strong>Graceful fall-through on probe failure</strong> <span class="pill pill-gemini">Gemini</span>. <code>serverVersion</code> returns <code>ok=false</code> for missing kubeconfig, malformed config, unreachable cluster, and unparseable version. Each path falls through to the embedded kubectl rather than aborting the kubectl invocation. Client-only commands keep working when the cluster is unreachable.</li>
+      <li><strong>Robust BATS server fixture</strong> <span class="pill pill-gemini">Gemini</span>. <code>fake-kube-server</code> opens its log file with <code>O_APPEND</code> so the BATS-side <code>: &gt;&quot;${LOG_FILE}&quot;</code> truncation between tests does not race with the server&#39;s writes.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>Coverage gaps surfaced this round, ordered by user-reachable risk:</p>
+    <ol>
+      <li><em></em><code>isClientOnly</code> with <code>--</code> before subcommand<em></em> (S2). <code>TestIsClientOnly</code> covers <code>[&quot;exec&quot;, &quot;pod&quot;, &quot;--&quot;, &quot;completion&quot;]</code> (<code>--</code> after subcommand) but not <code>[&quot;--&quot;, &quot;get&quot;, &quot;pods&quot;]</code> (<code>--</code> before subcommand). One row pinning the post-fix behavior would close the gap and lock the conservative bias in.</li>
+      <li><strong>Concurrent first-use cache miss</strong> (declined Rounds 1–5; raised again this round by all three agents). Acknowledged limitation.</li>
+      <li><em></em>Download larger than <code>maxKubectlBytes</code><em></em> (S3). <code>streamGet</code>&#39;s 256 MiB cap has no test asserting the post-cap behavior; a unit test that points <code>streamGet</code> at a body larger than <code>maxBytes</code> would document the truncation contract.</li>
+      <li><strong>End-to-end Windows execution path</strong> (<code>pkg/kuberlr/exec_windows.go</code>). PR description gates the merge on Windows BATS support; the path remains compile-only.</li>
+      <li><em></em><code>embeddedVersion</code> parse failure<em></em> (the <code>go run</code> case the comment at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/resolver.go#L79-L83"><code>resolver.go:79-83</code></a> names). A unit test that injects an unparseable string and asserts <code>Resolve</code> returns <code>(&quot;&quot;, nil)</code> with no probe would lock in the documented dev-build fall-through.</li>
+      <li><em></em><code>RDD_KUBECTL_RESOLVED=1</code> on the parent <code>rdd kubectl</code><em></em> <span class="pill pill-claude">Claude</span>. No test confirms the env-var recursion guard short-circuits Resolve; only the same-process <code>SkipResolver</code> boolean is exercised indirectly via <code>rdd ctl</code>.</li>
+    </ol>
+    <p>Verification this round: Codex ran <code>go test ./pkg/kuberlr</code> (passed) and <code>go test ./...</code> inside <code>bats/tests/10-cli/fake-kube</code> (passed); <code>go test ./cmd/rdd</code> failed in the worktree on a missing embedded asset (<code>pkg/guestagent/lima-guestagent.gz</code>), unrelated to the PR.</p>
+    </div>
+    <hr>
+    <h2 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/docs/design/environment.md#L35"><code>docs/design/environment.md:35</code></a> (Internal Variables) carries the regression in S1: the <code>RDD_KUBECTL_RESOLVED</code> row still credits <code>rdd ctl</code> with writing the env var that Round 5&#39;s <code>SkipResolver</code> change removed.</li>
+      <li>The Path Variables preamble at line 39 (post Round 5 fix) now correctly carves out <code>RDD_CACHE_DIR</code> from the &quot;no effect on RDD&#39;s behavior&quot; claim.</li>
+      <li><code>docs/design/cmd_service.md</code> key table at lines 127-138 includes <code>cache_dir</code> after Round 5; example output at lines 152-164 matches.</li>
+      <li><code>pkg/kuberlr/cache.go</code> package doc at lines 5-10 still accurately describes the resolve-or-fall-through model.</li>
+      <li><code>parseKubeConfigFlags</code> docstring at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/resolver.go#L157-L178"><code>pkg/kuberlr/resolver.go:157-178</code></a> enumerates the bound flag surface and explains the deliberate <code>--username</code>/<code>--password</code> carve-out.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>Single commit <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/72bfad2"><code>72bfad2</code></a> (amended from Round 5&#39;s <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/fb0811d"><code>fb0811d</code></a>). Message accurately describes the change. Clean.</p>
+    </div>
+    <hr>
+    <h2 id="acknowledged-limitations">Acknowledged Limitations <a href="#acknowledged-limitations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li><strong>Cache eviction not implemented</strong> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/cache.go#L33-L39"><code>pkg/kuberlr/cache.go:33-39</code></a>. <code>TODO(eviction)</code> covers both growth (~50 MB per minor version) and <code>.kubectl-*</code> temp leftovers from SIGKILL/power loss; SIGINT mid-download (resolver runs against <code>context.Background()</code>) is the most likely source of a leaked tempfile and pairs with the cache-hit re-verification design observation above.</li>
+      <li><strong>Offline mode not implemented</strong> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/resolver.go#L66-L69"><code>pkg/kuberlr/resolver.go:66-69</code></a>, <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/downloader.go#L46-L48"><code>pkg/kuberlr/downloader.go:46-48</code></a>. TODOs cover the planned env-var/config opt-out for download attempts.</li>
+      <li><strong>Windows BATS host deferred</strong> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/bats/tests/10-cli/7-kubectl-cache.bats#L14-L20"><code>bats/tests/10-cli/7-kubectl-cache.bats:14-20</code></a>. PR description gates the merge on Windows BATS support; the resolver&#39;s Windows-specific code paths remain compile-only.</li>
+      <li><em></em><code>local_teardown_file()</code> deviation from BATS convention<em></em> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/bats/tests/10-cli/7-kubectl-cache.bats#L103-L110"><code>bats/tests/10-cli/7-kubectl-cache.bats:103-110</code></a>. Inline rationale stands.</li>
+      <li><strong>Falling back to embedded on any cluster-probe failure</strong> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/resolver.go#L115-L145"><code>pkg/kuberlr/resolver.go:115-145</code></a>. Each fall-through path is documented; the design choice is sound.</li>
+      <li><strong>Embedded version unparseable in dev builds</strong> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/resolver.go#L77-L86"><code>pkg/kuberlr/resolver.go:77-86</code></a>. <code>go run ./cmd/rdd kubectl ...</code> and IDE debug builds skip <code>-ldflags -X</code>; falling through to embedded kubectl rather than breaking every dev invocation is the right call.</li>
+      <li><em></em><code>--username</code>/<code>--password</code> deliberately unbound on the resolver side<em></em> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/pkg/kuberlr/resolver.go#L168-L175"><code>pkg/kuberlr/resolver.go:168-175</code></a>. Binding them via <code>WithDeprecatedPasswordFlag</code> would force the interactive kubeconfig loader; the resolver&#39;s silent fall-through on probe failure covers the asymmetry.</li>
+      <li><em></em><code>RDD_KUBECTL_MIRROR</code> accepts non-HTTPS URLs<em></em> — Implicit. The BATS test relies on <code>http://127.0.0.1:port</code>; for users who set this to a non-localhost http URL, MITM is possible. Trusting the env-var owner is consistent with other <code>RDD_*</code> overrides.</li>
+      <li><em></em>Empty-message <code>cliexit.Error</code> contract<em></em> — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/cmd/rdd/main.go#L159-L160"><code>cmd/rdd/main.go:159-160</code></a>. The contract is clear in context but currently single-call-site (only <code>kuberlr.Exec</code> produces one).</li>
+    </ul>
+    <h3 id="declined-in-prior-rounds">Declined in prior rounds <a href="#declined-in-prior-rounds" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><em></em>Concurrent first-use Windows <code>os.Rename</code> race<em></em> — declined Rounds 1, 2, 3, 4, 5. Raised this round by all three agents (Claude I1, Codex I1, Gemini I1); dropped per the resolutions gate. The recurring re-raise (now six rounds running) keeps strengthening the case for an inline <code>// design note: see review history</code> style TODO documenting the deliberate design choice so future agents recognize the decline pattern in the code itself.</li>
+      <li><em></em><code>CacheRoot</code> panic on <code>os.UserCacheDir</code> failure<em></em> — declined Rounds 1, 2, 3 (&quot;trigger requires neither $HOME nor %LocalAppData% to resolve&quot;); declined Round 5 as Suggestion S3 (blast-radius re-raise: structural change touches multiple files for a low-probability defensive case). Raised this round by Gemini as C1 with a different fix shape (silent <code>os.TempDir()</code> fallback). Dropped per the resolutions gate; the underlying decline reasoning (rare trigger, structural change disproportionate) holds across the new fix proposal.</li>
+      <li><em></em>Drive-by <code>config.json</code> → <code>config.yaml</code> rename in <code>cmd_service.md</code><em></em> — declined Round 5 (&quot;Round 4&#39;s S3 — raised by Claude itself — explicitly asked for the rename, which then landed&quot;). Raised again this round by Claude as S4 (drive-by); dropped per the gate.</li>
+      <li><em></em><code>RDD_CACHE_DIR</code> scope rename<em></em> — declined Round 1.</li>
+      <li><em></em>Server <code>log.Fatal*</code> bypassing <code>defer logFD.Close()</code><em></em> — declined Round 1: test fixture; OS reclaims fd.</li>
+      <li><strong>Pure-Go unit coverage thin on download/cache machinery</strong> — declined Round 2: BATS suite covers the integration concerns.</li>
+      <li><strong>BATS coverage for HTTP timeout/hang, network cancel, Windows Exec, sha512sum-format mirror, trailing-slash mirror, default-log-level message capture, unreachable-server probe</strong> — declined Rounds 1–3.</li>
+      <li><em></em><code>info.GitVersion</code> empty/unknown unit test<em></em> — declined Round 1: requires mocked discovery client.</li>
+      <li><strong>Resolver-policy summary and recursion-guard rationale duplicated across files</strong> — declined Round 1: each duplicate serves a different audience.</li>
+      <li><em></em><code>SkipResolver</code> swallows <code>os.Setenv</code> error<em></em> — declined Round 3; moot since Round 5 removed the <code>Setenv</code> call entirely.</li>
+      <li><strong>Cache the server-version probe across invocations</strong> — declined Round 3: performance optimisation; explicit follow-up.</li>
+      <li><em></em>Move package doc-comment from <code>cache.go</code> to <code>resolver.go</code><em></em> — declined Round 3.</li>
+      <li><em></em>Drop <code>is_macos</code> branch in <code>write_kubectl_sha512</code><em></em> — declined Round 3.</li>
+      <li><em></em>Round 4 S6: <code>serverVersion</code> ignores ctx<em></em> — skipped Round 4: UX gap bounded by 2 s probe timeout.</li>
+      <li><em></em>Round 4 S10: 5 min <code>downloadTimeout</code> covers headers + body<em></em> — skipped Round 4: speculative.</li>
+      <li><strong>Round 5 testing gaps (S3 panic test, download UX assertion, concurrent cache miss, Windows execution path, unparseable gitVersion BATS)</strong> — Skipped Round 5; rationale stands.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="unresolved-feedback">Unresolved Feedback <a href="#unresolved-feedback" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li><em></em>@mook-as on <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/cmd/rdd/service_paths.go#L33"><code>cmd/rdd/service_paths.go:33</code></a><em></em> — <code>https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/348#discussion_r3182959199</code>: &quot;Would it be possible to expose <code>RDD_CACHE_DIR</code> here too?&quot; Resolved across rounds. <code>cache_dir</code> (<code>kuberlr.CacheRoot()</code>) and <code>kubectl_cache</code> (<code>kuberlr.CacheDir()</code>) appear in <code>instancePaths()</code> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/cmd/rdd/service_paths.go#L32-L33"><code>service_paths.go:32-33</code></a>), the <code>environment.md</code> Path Variables table, and the <code>cmd_service.md</code> example output and key table.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <h3 id="claude"><span class="pill pill-claude">Claude</span> <a href="#claude" class="pilcrow">&#182;</a></h3>
+    <p>Claude carried this round&#39;s coverage: four Suggestions kept (the shared S1 docs regression with Codex, plus three unique items — S3 the 256 MiB cap surfacing as checksum mismatch, S4 the missing User-Agent, S5 the dead <code>os.Chmod</code> on Windows) plus two Design Observations (resolver running against <code>context.Background()</code> and trusting cache hits without re-verification). The S1 catch was the round&#39;s most actionable item; Claude noticed that Round 5&#39;s <code>SkipResolver</code> change broke the env-var documentation in the same file Round 5 fixed earlier. Three findings dropped: I1 (Windows rename race) per the resolutions gate (six rounds running), I2 (a self-downgraded note about <code>--instance</code> interaction with the walker), and S4 (drive-by <code>config.json → config.yaml</code>, which Round 5 already declined as the rename Round 4 explicitly asked for). Claude S2 (cache-hit re-verification) moved to Design Observations as Claude himself flagged it as &quot;no fix required for this PR.&quot;</p>
+    <h3 id="codex"><span class="pill pill-codex">Codex</span> <a href="#codex" class="pilcrow">&#182;</a></h3>
+    <p>Codex ran a tight one-Important / one-Suggestion shape: I1 (Windows rename race, dropped per the gate) and S1 (RDD<em>KUBECTL</em>RESOLVED docs, kept and shared with Claude). Codex framed the docs finding as Suggestion-severity from the start, which matches the calibration the consolidation settled on; Claude&#39;s I3 was downgraded to align. Codex also ran <code>go test ./pkg/kuberlr</code> and <code>go test ./...</code> inside <code>bats/tests/10-cli/fake-kube</code> (both passed) — verification work hard to parallelize across agents and consistent across rounds.</p>
+    <h3 id="gemini"><span class="pill pill-gemini">Gemini</span> <a href="#gemini" class="pilcrow">&#182;</a></h3>
+    <p>Gemini brought back the <code>CacheRoot</code> panic as Critical (C1, dropped per the gate — declined Round 5 for the same blast-radius reasoning) and the Windows rename race as Important (I1, also dropped). The keeper was I2: the <code>--</code> boundary misclassification in <code>isClientOnly</code>. No other agent traced the empty-<code>subcommand</code> fallback path through to the cautionary comment at lines 264-269. Severity calibrated down from Important to Suggestion (S2) given how rare <code>kubectl -- subcommand</code> is in practice. One unique finding from Gemini balances out the two declined re-raises.</p>
+    <h3 id="summary">Summary <a href="#summary" class="pilcrow">&#182;</a></h3>
+    <table class="retro-table">
+      <thead><tr><th></th><th><span class="pill pill-claude">Claude</span> Opus 4.7</th><th><span class="pill pill-codex">Codex</span> GPT 5.5</th><th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th></tr></thead>
+      <tbody>
+        <tr><td>Duration</td><td>15m 21s</td><td>6m 02s</td><td>—</td></tr>
+        <tr><td>Findings</td><td>4S</td><td>1S</td><td>1S</td></tr>
+        <tr><td>Tool calls</td><td>45 (Bash 24, Read 21)</td><td>35 (shell 35)</td><td>—</td></tr>
+        <tr><td>Design observations</td><td>2</td><td>0</td><td>0</td></tr>
+        <tr><td>False positives</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>Unique insights</td><td>3</td><td>0</td><td>1</td></tr>
+        <tr><td>Files reviewed</td><td>19</td><td>19</td><td>19</td></tr>
+        <tr><td>Coverage misses</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td><strong>Totals</strong></td><td><strong>4S</strong></td><td><strong>1S</strong></td><td><strong>1S</strong></td></tr>
+        <tr><td>Downgraded</td><td>1 (I→S)</td><td>0</td><td>1 (I→S)</td></tr>
+        <tr><td>Dropped</td><td>4</td><td>1</td><td>2</td></tr>
+      </tbody>
+    </table>
+    <p>Claude provided the most coverage (three unique Suggestions plus two Design Observations). Codex&#39;s S1 was the round&#39;s most actionable item (the regression Round 5 introduced). Gemini&#39;s S2 was the round&#39;s most surprising — a real walker-bias bug in code that has been reviewed five times.</p>
+    <p>#### Reconciliation</p>
+    <ul>
+      <li>Claude I1 (Windows rename race): important → dropped per resolutions gate (declined Rounds 1–5).</li>
+      <li>Claude I2 (--instance walker interaction): important → dropped (Claude self-downgraded to a doc-comment note; marginal value).</li>
+      <li>Claude I3 (RDD<em>KUBECTL</em>RESOLVED docs): important → suggestion S1 (docs-only regression; merged with Codex S1).</li>
+      <li>Claude S2 (cache hit re-verification): suggestion → Design Observation (Claude flagged &quot;no fix required for this PR&quot;).</li>
+      <li>Claude S4 (drive-by config.yaml rename): suggestion → dropped per resolutions gate (declined Round 5).</li>
+      <li>Codex I1 (Windows rename race): important → dropped per resolutions gate.</li>
+      <li>Gemini C1 (CacheRoot panic): critical → dropped per resolutions gate (declined Round 5 with same blast-radius reasoning; Gemini&#39;s TempDir-fallback fix shape doesn&#39;t change the decline rationale).</li>
+      <li>Gemini I1 (Windows rename race): important → dropped per resolutions gate.</li>
+      <li>Gemini I2 (<code>--</code> separator misclassification): important → suggestion S2 (rare trigger; conservative-bias correction).</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="review-process-notes">Review Process Notes <a href="#review-process-notes" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <h3 id="skill-improvements">Skill improvements <a href="#skill-improvements" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><strong>Add a &quot;watch for documentation regressions in the same file as the code fix&quot; rule to the consolidation gates.</strong> When a prior round amends a function&#39;s behavior (env-var write removed, return type changed, semantics inverted) and a docs file in the same PR describes that behavior, the docs are highly likely to drift in the round that lands the code fix. Today the prior-round-resolutions gate verifies that fixes landed; add a sibling check: for every Resolution table row marked &quot;Fixed&quot; that touched named functions or constants, grep the diff for documentation references to those names and confirm they describe the post-fix behavior. The check would have caught S1 mechanically — Round 5&#39;s S5 fix removed <code>os.Setenv(envSkipResolver, …)</code> from <code>SkipResolver</code>, but <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/72bfad22683c74d5d654c70fba598249b987fac9/docs/design/environment.md#L35"><code>environment.md:35</code></a> still says &quot;rdd ctl sets it.&quot; Future amendments that rename, remove, or invert behavior carry the same shape.</li>
+    </ul>
+    <h3 id="repo-context-updates">Repo context updates <a href="#repo-context-updates" class="pilcrow">&#182;</a></h3>
+    <p>None this round. The existing <code>deep-review-context.md</code> carries enough for agents to surface S1 (docs-vs-code drift) and S2 (walker bias against the conservative-bias comment) on a careful read; no new repo-specific patterns emerged.</p>
+    </div>
+  </main>
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+  <script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+
+  </script>
+</body>
+</html>
