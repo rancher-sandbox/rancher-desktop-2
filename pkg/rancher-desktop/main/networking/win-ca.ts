@@ -16,11 +16,6 @@ limitations under the License.
 
 import tls from 'tls';
 
-import * as childProcess from '@pkg/utils/childProcess';
-import AsyncCallbackIterator from '@pkg/utils/iterator';
-import Logging from '@pkg/utils/logging';
-import { executable } from '@pkg/utils/resources';
-
 /**
  * Asynchronously enumerate the certificate authorities that should be used to
  * build the Rancher Desktop trust store, in PEM format in undefined order.
@@ -32,46 +27,7 @@ export default async function * getWinCertificates(): AsyncIterable<string> {
   // behaviour, we will enumerate both the Windows store as well as the OpenSSL
   // one built into NodeJS.
 
-  let buffer = '';
-  const proc = childProcess.spawn(executable('wsl-helper'), ['certificates'], {
-    stdio:       ['ignore', 'pipe', await Logging['networking-ca'].fdStream],
-    windowsHide: true,
-  });
-  const iterator = new AsyncCallbackIterator<string>();
-
-  proc.stdout.on('data', async(chunk: string | Buffer) => {
-    try {
-      if (Buffer.isBuffer(chunk)) {
-        buffer += chunk.toString('utf-8');
-      } else {
-        buffer += chunk;
-      }
-      while (true) {
-        const [match] = /^.*?-----END CERTIFICATE-----\r?\n?/s.exec(buffer) ?? [];
-
-        if (!match) {
-          break;
-        }
-        buffer = buffer.substring(match.length);
-        await iterator.emit(match);
-      }
-    } catch (ex) {
-      await iterator.error(ex);
-    }
-  });
-  proc.on('exit', async(code, signal) => {
-    if (!(code === 0 || signal === 'SIGTERM')) {
-      iterator.error(code || signal);
-    } else {
-      try {
-        await iterator.emit(buffer);
-        iterator.end();
-      } catch (ex) {
-        await iterator.error(ex);
-      }
-    }
-  });
-
-  yield * iterator;
+  // TODO: Implement, if this is still needed.
+  await new Promise((resolve) => resolve);
   yield * tls.rootCertificates;
 }
