@@ -36,7 +36,7 @@ export function setLogLevel(level: logLevel): void {
 }
 
 export class Log {
-  constructor(topic: string, directory = paths.logs) {
+  constructor(topic: string, directory = paths.log_dir) {
     if (process.type === 'renderer') {
       topic = `${ topic }-renderer`;
     }
@@ -199,14 +199,14 @@ export function clearLoggingDirectory(): void {
     return;
   }
 
-  const entries = fs.readdirSync(paths.logs, { withFileTypes: true });
+  const entries = fs.readdirSync(paths.log_dir, { withFileTypes: true });
 
   for (const entry of entries) {
     if (entry.isFile() && entry.name.endsWith('.log')) {
       const topic = path.basename(entry.name, '.log');
 
       if (!logs.has(topic)) {
-        const fullPath = path.join(paths.logs, entry.name);
+        const fullPath = path.join(paths.log_dir, entry.name);
 
         try {
           fs.unlinkSync(fullPath);
@@ -227,4 +227,4 @@ export function reopenLogs() {
   }
 }
 
-fs.mkdirSync(paths.logs, { recursive: true });
+fs.mkdirSync(paths.log_dir, { recursive: true });

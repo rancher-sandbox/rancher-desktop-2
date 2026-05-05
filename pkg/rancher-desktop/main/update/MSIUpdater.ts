@@ -99,7 +99,7 @@ export default class MsiUpdater extends NsisUpdater {
 
     const args: string[] = [
       '/norestart',
-      '/lv*', path.join(paths.logs, 'msiexec.log'),
+      '/lv*', path.join(paths.log_dir, 'msiexec.log'),
       '/i', installerPath,
     ];
     const elevate = options.isAdminRightsRequired || this.shouldElevate;

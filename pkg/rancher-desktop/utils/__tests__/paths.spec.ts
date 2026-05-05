@@ -1,142 +1,165 @@
-import os from 'os';
-import path from 'path';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
-import mockModules from '../testUtils/mockModules';
+import { jest } from '@jest/globals';
+
+import mockModules from '@pkg/utils/testUtils/mockModules';
 
 import type { Paths } from '../paths';
 
-const RESOURCES_PATH = path.join(process.cwd(), 'resources');
-
-type Platform = 'darwin' | 'linux' | 'win32';
-type expectedData = Record<Platform, string | Error>;
-
-mockModules({
+const modules = mockModules({
+  child_process: {
+    spawnSync: jest.fn(),
+  },
   electron: {
     app: {
       isPackaged: false,
-      getAppPath: () => process.cwd(),
     },
+  },
+  fs: {
+    ...fs,
+    accessSync: jest.spyOn(fs, 'accessSync').mockReturnValue(undefined),
+  },
+  which: {
+    sync: jest.fn(),
   },
 });
 
-const { default: paths } = await import('../paths');
+const { getRDDPath, getPaths, TEST_PLATFORM } = await import('../paths');
 
-describe('paths', () => {
-  const cases: Record<keyof Paths, expectedData> = {
-    appHome: {
-      win32:  '%LOCALAPPDATA%/rancher-desktop/',
-      linux:  '%HOME%/.local/share/rancher-desktop/',
-      darwin: '%HOME%/Library/Application Support/rancher-desktop/',
-    },
-    altAppHome: {
-      win32:  '%LOCALAPPDATA%/rancher-desktop/',
-      linux:  '%HOME%/.rd/',
-      darwin: '%HOME%/.rd/',
-    },
-    config: {
-      win32:  '%LOCALAPPDATA%/rancher-desktop/',
-      linux:  '%HOME%/.config/rancher-desktop/',
-      darwin: '%HOME%/Library/Preferences/rancher-desktop/',
-    },
-    logs: {
-      win32:  '%LOCALAPPDATA%/rancher-desktop/logs/',
-      linux:  '%HOME%/.local/share/rancher-desktop/logs/',
-      darwin: '%HOME%/Library/Logs/rancher-desktop/',
-    },
-    cache: {
-      win32:  '%LOCALAPPDATA%/rancher-desktop/cache/',
-      linux:  '%HOME%/.cache/rancher-desktop/',
-      darwin: '%HOME%/Library/Caches/rancher-desktop/',
-    },
-    wslDistro: {
-      win32:  '%LOCALAPPDATA%/rancher-desktop/distro/',
-      linux:  new Error('wslDistro'),
-      darwin: new Error('wslDistro'),
-    },
-    wslDistroData: {
-      win32:  '%LOCALAPPDATA%/rancher-desktop/distro-data/',
-      linux:  new Error('wslDistroData'),
-      darwin: new Error('wslDistroData'),
-    },
-    lima: {
-      win32:  new Error('lima'),
-      linux:  '%HOME%/.local/share/rancher-desktop/lima/',
-      darwin: '%HOME%/Library/Application Support/rancher-desktop/lima/',
-    },
-    integration: {
-      win32:  new Error('integration'),
-      linux:  '%HOME%/.rd/bin',
-      darwin: '%HOME%/.rd/bin',
-    },
-    resources: {
-      win32:  RESOURCES_PATH,
-      linux:  RESOURCES_PATH,
-      darwin: RESOURCES_PATH,
-    },
-    deploymentProfileSystem: {
-      win32:  new Error('Windows profiles will be read from Registry'),
-      linux:  '/etc/rancher-desktop',
-      darwin: '/Library/Managed Preferences',
-    },
-    altDeploymentProfileSystem: {
-      win32:  new Error('Windows profiles will be read from Registry'),
-      linux:  '/usr/etc/rancher-desktop',
-      darwin: '/Library/Preferences',
-    },
-    deploymentProfileUser: {
-      win32:  new Error('Windows profiles will be read from Registry'),
-      linux:  '%HOME%/.config',
-      darwin: '%HOME%/Library/Preferences',
-    },
-    extensionRoot: {
-      win32:  '%LOCALAPPDATA%/rancher-desktop/extensions/',
-      linux:  '%HOME%/.local/share/rancher-desktop/extensions/',
-      darwin: '%HOME%/Library/Application Support/rancher-desktop/extensions/',
-    },
-    snapshots: {
-      win32:  '%LOCALAPPDATA%/rancher-desktop/snapshots/',
-      linux:  '%HOME%/.local/share/rancher-desktop/snapshots/',
-      darwin: '%HOME%/Library/Application Support/rancher-desktop/snapshots/',
-    },
-    containerdShims: {
-      win32:  '%LOCALAPPDATA%/rancher-desktop/containerd-shims/',
-      linux:  '%HOME%/.local/share/rancher-desktop/containerd-shims/',
-      darwin: '%HOME%/Library/Application Support/rancher-desktop/containerd-shims/',
-    },
-  };
-
-  const table = Object.entries(cases).flatMap(
-    ([prop, data]) => Object.entries(data).map<[string, Platform, string | Error]>(
-      ([platform, expected]) => [prop, platform as Platform, expected],
-    ),
-  ).filter(([_, platform]) => platform === process.platform);
-
-  // Make a fake environment, because these would not be available on mac.
-  const env = Object.assign(process.env, {
-    APPDATA:      path.join(os.homedir(), 'AppData', 'Roaming'),
-    LOCALAPPDATA: path.join(os.homedir(), 'AppData', 'Local'),
+describe('getRDDPath', () => {
+  const exeName = process.platform === 'win32' ? 'rdd.exe' : 'rdd';
+  let resourcesPath: string, packagedPath: string, relativePath: string, environmentPath: string;
+  beforeAll(async() => {
+    resourcesPath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'r-d-a-paths-'));
+    packagedPath = path.join(resourcesPath, 'resources', process.platform, 'bin', exeName);
+    relativePath = path.join(process.cwd(), 'resources', process.platform, 'bin', exeName);
+    environmentPath = path.join(resourcesPath, exeName);
   });
+  afterAll(async() => {
+    await fs.promises.rm(resourcesPath, { recursive: true });
+  });
+  describe('when packaged', () => {
+    beforeEach(() => {
+      // The tests run under Node.JS, so `process.resourcesPath` is not set.
+      (process as any).resourcesPath ||= resourcesPath;
+      jest.replaceProperty(process, 'resourcesPath', resourcesPath);
+      jest.replaceProperty(modules.electron.app, 'isPackaged', true);
+    });
+    it('should return packaged path if it exists', () => {
+      const actual = getRDDPath(false);
+      expect(modules.fs.accessSync).toHaveBeenCalledWith(packagedPath, fs.constants.X_OK);
+      expect(actual).toBe(packagedPath);
+    });
+    it('should ignore inaccessible packaged path', () => {
+      modules.fs.accessSync.mockImplementationOnce(() => { throw new Error('inaccessible') });
+      const actual = getRDDPath(false);
+      expect(modules.fs.accessSync).toHaveBeenCalledWith(relativePath, fs.constants.X_OK);
+      expect(actual).toBe(relativePath);
+    });
+  });
+  describe('when not packaged', () => {
+    beforeEach(() => {
+      jest.replaceProperty(modules.electron.app, 'isPackaged', false);
+    });
+    it('should return relative path if it exists', () => {
+      const actual = getRDDPath(false);
+      expect(modules.fs.accessSync).toHaveBeenCalledWith(relativePath, fs.constants.X_OK);
+      expect(actual).toBe(relativePath);
+    });
+    it('should return PATH path if it exists', () => {
+      modules.fs.accessSync.mockImplementationOnce(() => { throw new Error('inaccessible') });
+      modules.which.sync.mockReturnValue(environmentPath);
+      expect(getRDDPath(false)).toBe(environmentPath);
+    });
+    it('should throw if no path is found', () => {
+      modules.fs.accessSync.mockImplementation(() => { throw new Error('inaccessible') });
+      modules.which.sync.mockReturnValue(null);
+      expect(() => getRDDPath(false)).toThrow();
+      expect(modules.which.sync).toHaveBeenCalledWith(exeName, { nothrow: true });
+    });
+  });
+});
 
-  test.each(table)('.%s (%s)', (prop, _, expected) => {
-    const propName = prop as keyof Paths;
-
-    if (expected instanceof Error) {
-      expect(() => paths[propName]).toThrow();
-    } else {
-      const replaceEnv = (_: string, name: string) => {
-        const result = env[name];
-
-        if (!result) {
-          throw new Error(`Missing environment variable ${ name }`);
-        }
-
-        return result;
+describe('getPaths', () => {
+  const rddPaths = {
+    resources:     'resources',
+    cache:         'cache',
+    args_file:     'args_file',
+    config:        'config',
+    dir:           'dir',
+    docker_socket: 'docker_socket',
+    lima_home:     'lima_home',
+    log_dir:       'log_dir',
+    pid_file:      'pid_file',
+    short_dir:     'short_dir',
+    tls_dir:       'tls_dir',
+  };
+  const expected: Paths = {
+    ...rddPaths,
+    rdd:       'rdd',
+    resources: 'resources',
+    cache:     path.join(rddPaths.dir, 'cache'),
+  };
+  beforeEach(() => {
+    // The tests run under Node.JS, so `process.resourcesPath` is not set.
+    (process as any).resourcesPath ||= expected.resources;
+    jest.replaceProperty(process, 'resourcesPath', expected.resources);
+  });
+  it('should throw on unsupported platform', () => {
+    modules.child_process.spawnSync.mockReturnValue({
+      stdout: JSON.stringify(rddPaths),
+      status: 0,
+    });
+    expect(() => {
+      getPaths('unused', 'AmigaOS' as any);
+    }).toThrow(/Unsupported platform: AmigaOS/);
+  });
+  it('should return all paths', () => {
+    modules.child_process.spawnSync.mockReturnValue({
+      stdout: JSON.stringify(rddPaths),
+      status: 0,
+    });
+    const actual = getPaths(expected.rdd, TEST_PLATFORM as any);
+    expect(actual).toEqual(expected);
+  });
+  describe('should return fallback paths if RDD fails', () => {
+    it.each([
+      ['by throwing an error', () => { throw new Error('spawn error') }],
+      ['by returning an error', () => { return { error: new Error('spawn error') } }],
+      ['by returning a non-zero exit code', () => { return { status: 1, stderr: 'some error' } }],
+      ['by returning invalid JSON', () => { return { stdout: 'not json', status: 0 } }],
+    ])('%s', (_, mockImplementation) => {
+      modules.child_process.spawnSync.mockImplementation(mockImplementation);
+      const expectedFallback: Partial<Paths> = {
+        dir:       path.join(os.tmpdir(), 'rancher-desktop'),
+        cache:     path.join(os.tmpdir(), 'rancher-desktop', 'cache'),
+        log_dir:   path.join(os.tmpdir(), 'rancher-desktop', 'log_dir'),
+        resources: expected.resources,
+        rdd:       expected.rdd,
       };
-      const replaced = expected.replace(/%(.*?)%/g, replaceEnv);
-      const cleaned = path.normalize(path.resolve(replaced, '.'));
-      const actual = path.normalize(path.resolve(paths[propName]));
-
-      expect(actual).toEqual(cleaned);
-    }
+      const actual = getPaths(expected.rdd, TEST_PLATFORM as any);
+      for (const untypedKey of Object.keys(expected)) {
+        const key = untypedKey as keyof Paths;
+        if (key in expectedFallback) {
+          expect(actual[key]).toEqual(expectedFallback[key]);
+        } else {
+          expect(() => actual[key]).toThrow(new RegExp(`\\b${ key }\\b`));
+        }
+      }
+      // It should not break things inherited from Object.prototype.
+      expect(() => actual.toString()).not.toThrow();
+    });
+  });
+  it('should return undefined if resources is missing in production', () => {
+    jest.replaceProperty(process.env, 'NODE_ENV', 'production');
+    jest.replaceProperty(process, 'resourcesPath', undefined as any);
+    modules.child_process.spawnSync.mockReturnValue({
+      stdout: '{}',
+      status: 0,
+    });
+    const actual = getPaths(expected.rdd, TEST_PLATFORM as any);
+    expect(actual).toHaveProperty('resources', undefined);
   });
 });

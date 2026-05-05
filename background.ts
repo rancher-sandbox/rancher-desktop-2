@@ -24,9 +24,9 @@ if (process.platform === 'linux') {
   Electron.app.commandLine.appendSwitch('gtk-version', '3');
 }
 
-Electron.app.setPath('userData', path.join(paths.appHome, 'electron'));
+Electron.app.setPath('userData', path.join(paths.dir, 'electron'));
 Electron.app.setPath('cache', paths.cache);
-Electron.app.setAppLogsPath(paths.logs);
+Electron.app.setAppLogsPath(paths.log_dir);
 
 const console = Logging.background;
 

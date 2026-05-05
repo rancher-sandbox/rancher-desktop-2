@@ -54,10 +54,8 @@ export class DiagnosticsManager {
       ? Promise.resolve(diagnostics)
       : (async() => {
         const imports = (await Promise.all([
-          import('./dockerCliSymlinks'),
           import('./integrationsWindows'),
           import('./kubeVersionsAvailable'),
-          import('./limaOverrides'),
           import('./mockForScreenshots'),
           import('./testCheckers'),
           import('./wslDistros'),

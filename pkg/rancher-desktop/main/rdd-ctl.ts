@@ -1,14 +1,9 @@
 // This file contains handlers to let the front end use `rdd ctl`.
-import fs from 'node:fs';
-import path from 'node:path';
-
-import Electron from 'electron';
-import which from 'which';
-
 import { getIpcMainProxy } from '@pkg/main/ipcMain';
 import mainEvents from '@pkg/main/mainEvents';
 import { spawnFile } from '@pkg/utils/childProcess';
 import Logging from '@pkg/utils/logging';
+import { getRDDPath } from '@pkg/utils/paths';
 
 const console = Logging.rdd;
 
@@ -25,15 +20,7 @@ async function fetchConfig(): Promise<string> {
     // Return any existing kubeconfig that is available.
     return lastKubeConfig;
   }
-  const srcDir = path.dirname(Electron.app.getAppPath());
-  const exeName = process.platform === 'win32' ? 'rdd.exe' : 'rdd';
-  let rddPath = path.join(srcDir, 'bin', exeName);
-
-  try {
-    await fs.promises.access(rddPath, fs.constants.X_OK);
-  } catch {
-    rddPath = await which('rdd');
-  }
+  const rddPath = getRDDPath();
 
   // Loop until the control plane is ready.
   while (true) {

@@ -71,6 +71,8 @@ function setupExtensionProtocolHandler(partition?: string): Promise<void> {
   const session = partition ? Electron.session.fromPartition(partition) : Electron.session.defaultSession;
 
   if (!session.protocol.isProtocolHandled(scheme)) {
+    // TODO: implement extensions
+    /*
     session.protocol.handle(
       scheme,
       (request) => {
@@ -83,6 +85,7 @@ function setupExtensionProtocolHandler(partition?: string): Promise<void> {
 
         return Electron.net.fetch(pathToFileURL(filepath).toString());
       });
+    */
   }
 
   return Promise.resolve();
