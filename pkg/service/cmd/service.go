@@ -65,6 +65,7 @@ import (
 	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/lima/limavm"
 	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/rdd/configmapreplicaset"
 	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/rdd/notary"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/developer"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/cmd/options"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
@@ -184,13 +185,48 @@ func Create(args []string) error {
 	return os.WriteFile(instance.ArgsFile(), data, 0o600)
 }
 
-// getRuntimeControllersFromCluster retrieves all enabled controllers from the cluster.
-func getRuntimeControllersFromCluster(ctx context.Context) ([]string, error) {
-	// Try to get the running controller configuration from the cluster
-	config, err := GetKubeRestConfig()
+// errorServerVersionUnsupported indicates the control plane is running an
+// unsupported version.
+type errorServerVersionUnsupported struct{ message string }
+
+func (e errorServerVersionUnsupported) Error() string {
+	return e.message
+}
+
+// checkSupportedVersion checks if the control plane is running a version that
+// is compatible with this client.
+func checkSupportedVersion(config *rest.Config) error {
+	if developer.Mode() {
+		// Skip the version check in developer mode, to make working on the
+		// client against a constantly running server easier.
+		return nil
+	}
+
+	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		klog.V(2).Infof("getRuntimeControllersFromCluster: kubeconfig error: %v", err)
-		return nil, fmt.Errorf("could not get kubeconfig to read running controllers: %w", err)
+		return fmt.Errorf("failed to create kubernetes client: %w", err)
+	}
+
+	serverVersion, err := client.Discovery().ServerVersion()
+	if err != nil {
+		return fmt.Errorf("failed to get server version: %w", err)
+	}
+
+	// Currently, we only support the version that is the exact version of the
+	// client.
+	if serverVersion.GitVersion != version.Get().GitVersion {
+		message := fmt.Sprintf(
+			"Unsupported server version %s (expected %s)",
+			serverVersion.GitVersion, version.Get().GitVersion)
+		return errorServerVersionUnsupported{message: message}
+	}
+	return nil
+}
+
+// getRuntimeControllersFromCluster retrieves all enabled controllers from the cluster.
+func getRuntimeControllersFromCluster(ctx context.Context, config *rest.Config) ([]string, error) {
+	if config == nil {
+		return nil, errors.New("nil config provided")
 	}
 
 	discovery, err := controllers.NewControllerManagerDiscovery(config)
@@ -260,8 +296,13 @@ func checkReadiness(ctx context.Context) error {
 		return err
 	}
 
+	if err := checkSupportedVersion(config); err != nil {
+		klog.V(2).Infof("%v", err)
+		return err
+	}
+
 	// Wait for the controller manager to register with the actual running controllers
-	runtimeControllers, err := getRuntimeControllersFromCluster(ctx)
+	runtimeControllers, err := getRuntimeControllersFromCluster(ctx, config)
 	if err != nil {
 		klog.V(2).Infof("getRuntimeControllersFromCluster: %v", err)
 		return err
@@ -325,8 +366,12 @@ func Wait(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			if err := checkReadiness(ctx); err == nil {
+			err := checkReadiness(ctx)
+			if err == nil {
 				return nil
+			} else if errors.As(err, &errorServerVersionUnsupported{}) {
+				// The error will never recover; stop waiting.
+				return err
 			}
 		}
 	}
