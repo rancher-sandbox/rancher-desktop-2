@@ -32,6 +32,7 @@ for apigroup in $API_GROUPS; do
 	for crd_path in "$TMPDIR"/*.yaml; do
 		kind=$(yq '.metadata.annotations."rdd.rancherdesktop.io/controller" // .spec.names.singular' < "$crd_path")
 		out_path="pkg/controllers/${apigroup}/${kind}/crd.yaml"
+		mock_path="pkg/controllers/mock/crd.yaml"
 
 		# Clear the output crd.yaml file if this is the first time we're seeing
 		# this kind in this apigroup.
@@ -42,6 +43,13 @@ for apigroup in $API_GROUPS; do
 		fi
 
 		mkdir -p "$(dirname "$out_path")"
+
+		if [ -z "${seen_mock:-}" ]; then
+			cp "$TMPDIR/header.txt" "$mock_path"
+			seen_mock=true
+		fi
+
 		cat "$crd_path" >> "$out_path"
+		cat "$crd_path" >> "$mock_path"
 	done
 done

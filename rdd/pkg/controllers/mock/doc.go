@@ -4,4 +4,5 @@
 
 // Package mock provides a test controller that populates the API server with
 // mock data on startup, for integration testing without real infrastructure.
+// This should be used with all the built-in controllers disabled.
 package mock

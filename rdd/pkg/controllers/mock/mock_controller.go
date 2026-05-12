@@ -6,6 +6,7 @@ package mock
 
 import (
 	"context"
+	_ "embed"
 	"maps"
 	"net/http"
 	"slices"
@@ -32,6 +33,9 @@ const (
 	controllerName     = "mock"
 	controllerLongName = controllerName + "-controller"
 )
+
+//go:embed crd.yaml
+var controllerCRD string
 
 func init() {
 	base.RegisterController(newController())
@@ -74,7 +78,7 @@ func (c *controller) SetWebhookPort(port int) {
 }
 
 func (c *controller) GetCRDData() string {
-	return ""
+	return controllerCRD
 }
 
 func (c *controller) GetPassthroughEndpoints() []string {
