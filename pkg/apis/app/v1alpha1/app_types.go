@@ -103,6 +103,10 @@ type AppSpec struct {
 
 // AppStatus defines the observed state of App.
 type AppStatus struct {
+	// kubernetesPort is the port that Kubernetes API server listens on.
+	// This is only set if Kubernetes is enabled.
+	// +optional
+	KubernetesPort int `json:"kubernetesPort,omitempty"`
 	// conditions represent the current state of the App resource.
 	// +listType=map
 	// +listMapKey=type

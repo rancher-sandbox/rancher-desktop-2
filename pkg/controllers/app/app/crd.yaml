@@ -158,6 +158,11 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              kubernetesPort:
+                description: |-
+                  kubernetesPort is the port that Kubernetes API server listens on.
+                  This is only set if Kubernetes is enabled.
+                type: integer
             type: object
         type: object
         x-kubernetes-validations:

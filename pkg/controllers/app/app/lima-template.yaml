@@ -33,6 +33,7 @@ provision:
     #!/bin/bash
 
     # All param need to be mentioned for Lima validation.
+    # $PARAM_KUBERNETES_PORT
 
     set -o errexit -o nounset -o pipefail -o xtrace
 
@@ -40,9 +41,9 @@ provision:
 
     # Write runtime parameters; service ExecCondition checks read these from this file.
     mkdir -p /etc/sysconfig
-    printf 'CONTAINER_ENGINE=%s\nKUBERNETES_ENABLED=%s\nKUBERNETES_PORT=6443\n' \
-        "${PARAM_CONTAINER_ENGINE}" "${PARAM_KUBERNETES_ENABLED}" \
-        >/etc/sysconfig/rancher-desktop
+    for p in "${!PARAM_@}"; do
+      printf '%s=%q\n' "${p#PARAM_}" "${!p}"
+    done > /etc/sysconfig/rancher-desktop
 
     # Enable the requested container engine and disable the other.
     # containerd.service has a Conflicts=docker, so we must not start both.
