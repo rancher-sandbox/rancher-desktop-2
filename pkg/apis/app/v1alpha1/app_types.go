@@ -16,6 +16,9 @@ const AppKind = "App"
 // discovery query reference this constant so they cannot drift.
 const EngineControllerName = "engine"
 
+// KubernetesControllerName is the registry name of the Kubernetes context controller.
+const KubernetesControllerName = "kubernetes"
+
 // App condition types.
 const (
 	// AppConditionRunning mirrors the LimaVM Running condition: True
@@ -32,6 +35,13 @@ const (
 	// ObservedGeneration, so `rdd set` can distinguish a stale True
 	// from a fresh one.
 	AppConditionContainerEngineReady = "ContainerEngineReady"
+
+	// AppConditionKubernetesReady goes True once the Kubernetes controller has
+	// confirmed that the k3s API server is reachable and has merged the
+	// rancher-desktop-{instance} context into ~/.kube/config. It is only
+	// meaningful when spec.kubernetes.enabled is true; when Kubernetes is
+	// disabled the condition is absent or False with reason NotApplicable.
+	AppConditionKubernetesReady = "KubernetesReady"
 
 	// AppConditionSettled reports whether the reconcile chain has
 	// fully caught up with the current spec: observed generations on
@@ -59,6 +69,32 @@ const (
 
 	// AppSettledReasonEngineStale means the engine controller has not yet observed the current generation.
 	AppSettledReasonEngineStale = "EngineStale"
+
+	// AppSettledReasonWaitingForKubernetes means the Kubernetes controller has not yet written KubernetesReady.
+	AppSettledReasonWaitingForKubernetes = "WaitingForKubernetes"
+
+	// AppSettledReasonKubernetesStale means the Kubernetes controller has not yet observed the current generation.
+	AppSettledReasonKubernetesStale = "KubernetesStale"
+)
+
+// Reasons for the KubernetesReady condition.
+const (
+	// AppKubernetesReasonReady means the k3s API server is reachable and the
+	// kubeconfig context has been merged into ~/.kube/config.
+	AppKubernetesReasonReady = "Ready"
+
+	// AppKubernetesReasonNotApplicable means spec.kubernetes.enabled is false;
+	// the condition is set to False with this reason so consumers can
+	// distinguish "disabled" from "still starting".
+	AppKubernetesReasonNotApplicable = "NotApplicable"
+
+	// AppKubernetesReasonNotRunning means the VM is not running, so k3s
+	// cannot be healthy.
+	AppKubernetesReasonNotRunning = "NotRunning"
+
+	// AppKubernetesReasonProbing means the controller is still waiting for
+	// the k3s API server to respond.
+	AppKubernetesReasonProbing = "Probing"
 )
 
 const (

@@ -337,7 +337,11 @@ EOF
 
 @test "start VM with Kubernetes enabled" {
     skip_on_windows "Kubernetes tests require further setup on Windows"
-    rdd set running=true
+    # Use a generous timeout: rdd set now waits for KubernetesReady=True, which
+    # requires VM boot + k3s startup. On a slow CI runner this can exceed the
+    # default 300s, so give it up to 900s (the outer bats-with-timeout still
+    # enforces the overall suite limit).
+    rdd set --timeout=900s running=true
     rdd ctl wait --for=condition=Running \
         limavm/"${VM_NAME}" --namespace "${RDD_NAMESPACE}" --timeout=300s
 }
