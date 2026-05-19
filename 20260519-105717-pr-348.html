@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deep Review: 20260519-105717-pr-348</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <style>
+/* Deep Review — canonical stylesheet
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Edit this file to change the look of all future reviews.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  background: #f8f9fb;
+  margin: 0;
+  padding: 2rem 1rem;
+}
+main { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #111827; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+hr { border: none; border-top: 2px solid #e5e7eb; margin: 2rem 0; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace; font-size: 0.85em; background: #f3f4f6; padding: 0.15em 0.35em; border-radius: 4px; }
+
+/* Code blocks — override Prism defaults */
+pre { margin: 0 !important; border-radius: 0 0 8px 8px !important; }
+pre[class*="language-"] { font-size: 0.78rem; line-height: 1.3; }
+pre code { background: none; padding: 0; }
+
+/* Report metadata table */
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.meta-table td { padding: 0.35rem 0.6rem; border: 1px solid #e5e7eb; vertical-align: top; }
+.meta-table td:first-child { font-weight: 600; width: 140px; background: #f9fafb; white-space: nowrap; }
+
+/* Cards — every section and finding lives in a card */
+.card { border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem; }
+.card-neutral { background: #f1f3f5; border: 1px solid #d5d9e0; }
+.card-critical { background: #ffeef0; border: 1px solid #f5c6cb; }
+.card-important { background: #fff0e0; border: 1px solid #f5d9a8; }
+.card-suggestion { background: #f0f6ff; border: 1px solid #c7d9f5; }
+.card-design { background: #f0faf4; border: 1px solid #b7e4c7; }
+
+/* Severity section headings — colored to match their cards */
+.section-critical { color: #9b1c1c; }
+.section-important { color: #92400e; }
+.section-suggestion { color: #1e40af; }
+.section-design { color: #065f46; }
+
+/* Agent attribution pills */
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.15em 0.55em; border-radius: 999px; margin-right: 0.3em; vertical-align: middle; letter-spacing: 0.01em; }
+.pill-claude { background: #e9d5ff; color: #6b21a8; }
+.pill-codex { background: #d1fae5; color: #065f46; }
+.pill-gemini { background: #ffe4e6; color: #9f1239; }
+.pill-qwen { background: #fed7aa; color: #9a3412; }
+.pill-gemma { background: #fef9c3; color: #854d0e; }
+.pill-glm { background: #cffafe; color: #155e75; }
+
+/* Finding titles */
+.finding-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.6rem; line-height: 1.4; }
+.finding-num { font-weight: 800; }
+
+/* Code file header — dark bar above each source code block.
+ * The filename is a GitHub permalink to the displayed line range.
+ * Text color is light gray (#adbac7) for the bar, green (#7ee787)
+ * for the hyperlink — matching GitHub's dark-mode file header. */
+.code-file-header { background: #2d333b; color: #adbac7; font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 8px 8px 0 0; margin-top: 0.8rem; }
+.code-file-header a { color: #7ee787; }
+.code-file-header a:hover { text-decoration: underline; }
+
+/* Line numbers (CSS counters) and line highlighting */
+.code-line { display: block; }
+.code-line::before {
+  content: counter(line);
+  counter-increment: line;
+  display: inline-block;
+  width: 3em;
+  margin-right: 0.8em;
+  padding-right: 0.5em;
+  text-align: right;
+  color: #636e7b;
+  border-right: 1px solid #3d4556;
+  user-select: none;
+}
+.line-hl { background: rgba(255, 199, 0, 0.18); }
+
+/* Pilcrow anchor links — hidden until parent is hovered */
+.pilcrow { color: #d1d5db; text-decoration: none; font-weight: 400; margin-left: 0.4em; opacity: 0; transition: opacity 0.15s; }
+h2:hover .pilcrow, h3:hover .pilcrow, .finding-title:hover .pilcrow { opacity: 1; }
+.pilcrow:hover { color: #6b7280; text-decoration: none; }
+
+/* Fix label */
+.fix-label { font-weight: 700; }
+
+/* Agent retro summary table */
+.retro-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.9rem; table-layout: fixed; }
+.retro-table th, .retro-table td { padding: 0.45rem 0.7rem; border: 1px solid #e5e7eb; text-align: left; }
+.retro-table th { background: #f3f4f6; font-weight: 600; }
+.retro-table tr:nth-child(even) { background: #f9fafb; }
+
+/* Supply-chain Summary table — first column gets breathing room,
+ * numeric middle columns center, header keeps its label on one line. */
+.summary-table { width: 100%; border-collapse: collapse; margin: 0.4rem 0 0.8rem; font-size: 0.92rem; }
+.summary-table th, .summary-table td {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid #d5d9e0;
+  vertical-align: top;
+  text-align: left;
+}
+.summary-table th { background: rgba(255, 255, 255, 0.65); font-weight: 600; white-space: nowrap; }
+.summary-table td:first-child { min-width: 11rem; white-space: nowrap; }
+.summary-table th:not(:first-child):not(:last-child),
+.summary-table td:not(:first-child):not(:last-child) { text-align: center; }
+
+/* Lists and paragraphs inside cards */
+.card ul, .card ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.card li { margin-bottom: 0.3rem; }
+.card p { margin: 0.5rem 0; }
+.card p:first-child { margin-top: 0; }
+
+/* Supply-chain issue rows — used by issueList for bullets that
+ * uniformly start with a `file:line` reference. The location renders
+ * in a dark bar above the description so the eye picks up the path
+ * separately from the prose. */
+.issue-list { margin: 0.6rem 0; }
+.issue-row {
+  margin-bottom: 0.7rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.55);
+}
+.issue-loc {
+  background: #2d333b;
+  color: #adbac7;
+  padding: 0.3rem 0.7rem;
+  font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+}
+.issue-loc a { color: #7ee787; text-decoration: none; }
+.issue-loc a:hover { text-decoration: underline; }
+.issue-loc code { background: none; padding: 0; color: inherit; font-size: 1em; }
+.issue-desc { padding: 0.55rem 0.8rem; }
+.issue-desc code { font-size: 0.85em; }
+
+/* Verdict highlight in metadata table */
+.verdict { font-weight: 700; }
+
+/* GitHub reference tooltips — shown on hover for #N links */
+.gh-tooltip {
+  position: absolute;
+  background: #1f2328;
+  color: #e6edf3;
+  padding: 0.55em 0.75em;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 380px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+.gh-tooltip-state {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.gh-state-open { background: #238636; color: #fff; }
+.gh-state-closed { background: #848d97; color: #fff; }
+.gh-state-merged { background: #8957e5; color: #fff; }
+.gh-tooltip-title { vertical-align: baseline; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  body { padding: 1rem 0.5rem; }
+  .card { padding: 0.9rem 1rem; }
+  pre code { font-size: 0.72rem; }
+}
+
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Deep Review: 20260519-105717-pr-348</h1>
+
+    <table class="meta-table">
+      <tr><td>Date</td><td>2026-05-19 10:57</td></tr>
+      <tr><td>Repo</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon">rancher-sandbox/rancher-desktop-daemon</a></td></tr>
+      <tr><td>Round</td><td>8</td></tr>
+      <tr><td>Author</td><td><a href="https://github.com/jandubois">@jandubois</a></td></tr>
+      <tr><td>PR</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/pull/348" class="gh-ref" data-title="rdd kubectl: embed kuberlr-style version resolver" data-state="open" data-type="pr">#348</a> — rdd kubectl: embed kuberlr-style version resolver</td></tr>
+      <tr><td>Branch</td><td><code>embed-kuberlr</code></td></tr>
+      <tr><td>Commits</td><td><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/ce035d5"><code>ce035d5</code></a> rdd kubectl: embed kuberlr-style version resolver</td></tr>
+      <tr><td>Reviewers</td><td><span class="pill pill-claude">Claude</span> Opus 4.7 (effort: xhigh), <span class="pill pill-codex">Codex</span> GPT 5.5 (effort: xhigh), <span class="pill pill-gemini">Gemini</span> 3.1 Pro (effort: default)</td></tr>
+      <tr><td>Verdict</td><td><span class="verdict">Merge with fixes</span> &mdash; Round 8 surfaces three new Important findings on the Windows/WSL BATS plumbing introduced by Round 7&#39;s tightening of the <code>5-paths.bats</code> RDD<em>CACHE</em>DIR override test: the <code>kill ${SERVER_PID}</code> call in <code>local_teardown_file()</code> cannot reach the native Win32 <code>fake-kube-server.exe</code> (the helper file documents <code>process_kill</code> for this case), <code>env … rdd …</code> bypasses the <code>rdd()</code> shell function and its WSL path / WSLENV conversion, and <code>winpath</code> only handles MSYS so WSL invocations of native rdd.exe receive Linux-form paths. None of these affect macOS/Linux runs; they degrade the Windows/WSL CI matrix. I1 (<code>logrus.Warnf</code> for routine cache-miss download) is a judgment call against the repo&#39;s <code>RDD_LOG_LEVEL=warn</code> default — surface for decision rather than auto-flag. Three long-declined re-raises (Windows <code>os.Rename</code> race, <code>CacheRoot</code> panic) dropped per the resolutions gate; Claude&#39;s S2 was the same race shape and is dropped likewise.</td></tr>
+      <tr><td>Wall-clock time</td><td><code>17 min 30 s</code></td></tr>
+    </table>
+
+    <hr>
+
+    <hr>
+    <h2 id="executive-summary">Executive Summary <a href="#executive-summary" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>Round 8 reviews commit <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/ce035d5b"><code>ce035d5b</code></a> (Round 7 was <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/6b419bc"><code>6b419bc</code></a>; Round 7 fixes — <code>kustomize</code>/<code>plugin</code> in <code>clientOnlySubcommands</code>, <code>docker_socket</code>/<code>args.json</code> cmd_service.md sync, inline note on <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/exec_windows.go#L27"><code>exec_windows.go:27</code></a> — verified landed). The new commit also introduced <code>bats/helpers/paths.bash::winpath</code>, the <code>local_teardown_file()</code> cleanup hook on <code>7-kubectl-cache.bats</code>, and the <code>rdd svc paths honors RDD_CACHE_DIR override</code> test on <code>5-paths.bats</code>. All three Round 8 Important findings cluster on the BATS plumbing those Round 7 changes added — and all three are Windows/WSL-specific. On macOS and Linux the test surface is clean.</p>
+    <p>The keepers: I1 (Claude + Gemini) flags <code>logrus.Warnf</code> at downloader.go:78 in a routine download path — at the repo&#39;s default <code>RDD_LOG_LEVEL=warn</code> this surfaces a yellow WARN banner on every cache miss; the intent (operator-relevant &quot;downloading kubectl...&quot; status) is legitimate, but the level is a judgment call worth Jan&#39;s decision. I2 (Codex) notes that <code>local_teardown_file()</code> calls <code>kill ${SERVER_PID}</code> against <code>fake-kube-server.exe</code>, a native Win32 process MSYS <code>kill</code> cannot reach — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/helpers/os.bash#L96-L117"><code>bats/helpers/os.bash:96-117</code></a> documents this exact case and provides <code>process_kill</code>. I3 (Codex) notes that the new <code>run -0 env RDD_CACHE_DIR=... rdd ...</code> form in <code>5-paths.bats:45,48</code> and across <code>7-kubectl-cache.bats</code> execs <code>bin/rdd${EXE}</code> directly via PATH, bypassing the <code>rdd()</code> bash function — losing WSL <code>/mnt/...</code> path conversion and the WSLENV adjustment that propagates <code>RDD_*</code> vars across the WSL boundary.</p>
+    <p>Verification dropped Codex I1, Gemini I1, Gemini I2, and Claude S2 — all re-raises of the long-declined Windows <code>os.Rename</code> race or <code>CacheRoot</code> panic. The Round 7 retro already proposed a &quot;long-declined findings&quot; repo-context entry; Round 8 makes that recommendation more urgent: eight rounds, four agents, same two shapes.</p>
+    <p>Structure: 0 Critical · 3 Important · 7 Suggestions.</p>
+    </div>
+    <hr>
+    <h2 id="critical-issues" class="section-critical">Critical Issues <a href="#critical-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-critical">
+    <p>None.</p>
+    </div>
+    <hr>
+    <h2 id="important-issues" class="section-important">Important Issues <a href="#important-issues" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-important">
+      <div class="finding-title" id="I1">
+        <span class="finding-num">I1.</span> <code>logrus.Warnf</code> in routine cache-miss download surfaces a WARN banner at default log level <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span><a href="#I1" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/downloader.go#L73-L83">pkg/kuberlr/downloader.go</a></div>
+      <pre data-start="73" data-line="78"><code class="language-go">		return &quot;&quot;, err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return &quot;&quot;, err
+	}
+	logrus.Warnf(&quot;downloading kubectl v%d.%d.%d from %s&quot;, want.Major, want.Minor, want.Patch, mirrorURL())
+	if err := download(ctx, want, path); err != nil {
+		return &quot;&quot;, err
+	}
+	return path, nil
+}</code></pre>
+    <p>Outside developer mode, <code>RDD_LOG_LEVEL</code> defaults to <code>warn</code>, so every <code>logrus.Warn</code> reaches the user&#39;s terminal. A cache miss on a remote cluster&#39;s first invocation at a new minor version is a routine expected event: the resolver downloads, sha-verifies, and execs. The user sees a yellow <code>WARN[…]</code> banner above their normal <code>kubectl get pods</code> output. Compare to the <code>logrus.Debug</code> lines elsewhere in the resolver for routine fall-through paths.</p>
+    <p>The intent is legitimate — telling the user &quot;you are about to wait for a ~50 MB download&quot; is operator-relevant — so the choice of level is a judgment call. Claude raised it as such; Gemini flagged it as Warn-level misuse outright. Two reasonable shapes for the fix:</p>
+      <pre><code class="language-diff">- logrus.Warnf(&quot;downloading kubectl v%d.%d.%d from %s&quot;, want.Major, want.Minor, want.Patch, mirrorURL())
++ // One-time per (server-version, cache state) event. Surface what the
++ // resolver is doing without raising a WARN; the user sees kubectl
++ // output immediately after.
++ logrus.Infof(&quot;downloading kubectl v%d.%d.%d from %s&quot;, want.Major, want.Minor, want.Patch, mirrorURL())</code></pre>
+    <p>Or keep <code>Warnf</code> and document the rationale inline against the project&#39;s logging convention.</p>
+    </div>
+    <div class="card card-important">
+      <div class="finding-title" id="I2">
+        <span class="finding-num">I2.</span> <code>local_teardown_file()</code> cannot terminate the native Win32 fake-kube-server.exe <span class="pill pill-codex">Codex</span><a href="#I2" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/tests/10-cli/7-kubectl-cache.bats#L86-L104">bats/tests/10-cli/7-kubectl-cache.bats</a></div>
+      <pre data-start="86" data-line="91-99"><code class="language-bash">    CACHE_DIR=${BATS_FILE_TMPDIR}/cache
+
+    export GOOS GOARCH EXE MIRROR_ROOT MIRROR_BIN_DIR LOG_FILE KUBECONFIG_PATH CACHE_DIR PORT GIT_VERSION_FILE VERSION_STATUS_FILE
+}
+
+local_teardown_file() {
+    # Deviates from the &quot;no teardown_file&quot; rule. The rule&#39;s intent is to
+    # preserve rdd state for post-mortem inspection; an HTTP server bound
+    # to an ephemeral port is the opposite — leaving it running just leaks
+    # ports between sessions.
+    if load_var SERVER_PID; then
+        kill &quot;${SERVER_PID}&quot; 2&gt;/dev/null || true
+    fi
+}
+
+local_setup() {
+    rm -rf &quot;${CACHE_DIR}&quot;
+    : &gt;&quot;${LOG_FILE}&quot;
+    # Reset both /version override files so each test starts with the</code></pre>
+    <p><code>local_setup_file()</code> builds the fake server as <code>fake-kube-server.exe</code> on Windows and launches it (lines 35-39, 49-55). MSYS2 <code>kill</code> cannot reach Win32 processes — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/helpers/os.bash#L96-L117"><code>bats/helpers/os.bash:96-117</code></a> documents this case explicitly and provides <code>process_kill</code>, which dispatches to <code>taskkill.exe /F /PID</code> on Windows. The existing teardown silently fails on MSYS, leaking the HTTP server and the bound ephemeral port across BATS sessions, which is the exact behavior the deviation from the &quot;no <code>teardown_file</code>&quot; rule was added to prevent. The cleanup works on macOS and Linux.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/helpers/os.bash#L91-L117">bats/helpers/os.bash</a></div>
+      <pre data-start="91" data-line="96-117"><code class="language-bash">    # Check if we can run /usr/bin/true (or /bin/true) without requiring a password
+    run sudo --non-interactive --reset-timestamp true
+    ((status != 0))
+}
+
+# Cross-platform process management.
+# MSYS2&#39;s kill cannot reach Win32 processes, so use taskkill.exe on Windows.
+
+# Check if a process is alive. Returns 0 if alive, non-zero otherwise.
+assert_process_alive() {
+    local pid=$1
+    if is_windows; then
+        MSYS_NO_PATHCONV=1 tasklist.exe /FI &quot;PID eq ${pid}&quot; /NH 2&gt;/dev/null | grep -qw &quot;${pid}&quot;
+    else
+        kill -0 &quot;${pid}&quot; 2&gt;/dev/null
+    fi
+}
+
+# Send SIGKILL (or TerminateProcess on Windows) to a process.
+process_kill() {
+    local pid=$1
+    if is_windows; then
+        MSYS_NO_PATHCONV=1 taskkill.exe /PID &quot;${pid}&quot; /F &gt;/dev/null 2&gt;&amp;1
+    else
+        kill -9 &quot;${pid}&quot;
+    fi
+}</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/tests/10-cli/7-kubectl-cache.bats#L30-L44">bats/tests/10-cli/7-kubectl-cache.bats</a></div>
+      <pre data-start="30" data-line="35-39"><code class="language-plaintext">    (
+        cd &quot;${BATS_TEST_DIRNAME}/fake-kube&quot; || exit
+        go build -ldflags=&#39;-s -w&#39; \
+            -o &quot;$(winpath &quot;${MIRROR_BIN_DIR}/kubectl${EXE}&quot;)&quot; \
+            ./kubectl
+        go build -ldflags=&#39;-s -w&#39; \
+            -o &quot;$(winpath &quot;${BATS_FILE_TMPDIR}/fake-kube-server${EXE}&quot;)&quot; \
+            ./server
+    )
+    SERVER_BIN=${BATS_FILE_TMPDIR}/fake-kube-server${EXE}
+
+    PORT_FILE=${BATS_FILE_TMPDIR}/port
+    LOG_FILE=${BATS_FILE_TMPDIR}/server.log
+    GIT_VERSION_FILE=${BATS_FILE_TMPDIR}/git-version
+    VERSION_STATUS_FILE=${BATS_FILE_TMPDIR}/version-status</code></pre>
+      <pre><code class="language-diff"> local_teardown_file() {
+     if load_var SERVER_PID; then
+-        kill &quot;${SERVER_PID}&quot; 2&gt;/dev/null || true
++        process_kill &quot;${SERVER_PID}&quot; 2&gt;/dev/null || true
+     fi
+ }</code></pre>
+    </div>
+    <div class="card card-important">
+      <div class="finding-title" id="I3">
+        <span class="finding-num">I3.</span> <code>run -0 env … rdd …</code> bypasses the <code>rdd()</code> shell function on WSL <span class="pill pill-codex">Codex</span><a href="#I3" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/tests/10-cli/5-paths.bats#L40-L50">bats/tests/10-cli/5-paths.bats</a></div>
+      <pre data-start="40" data-line="45"><code class="language-bash">}
+
+@test &#39;rdd svc paths honors RDD_CACHE_DIR override&#39; {
+    cache_override=$(winpath &quot;${BATS_TEST_TMPDIR}/cache-override&quot;)
+
+    run -0 env RDD_CACHE_DIR=&quot;${cache_override}&quot; rdd svc paths cache_dir
+    assert_output &quot;${cache_override}&quot;
+
+    run -0 env RDD_CACHE_DIR=&quot;${cache_override}&quot; rdd svc paths kubectl_cache
+    assert_output --partial &quot;${cache_override}&quot;
+    assert_output --regexp &#39;kubectl[/\\][a-z0-9]+-[a-z0-9]+$&#39;</code></pre>
+    <p><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/helpers/commands.bash#L42-L89"><code>bats/helpers/commands.bash:42-89</code></a> defines <code>rdd()</code> as a bash function that handles three Windows boundaries: MSYS path conversion (lines 47-61), WSL <code>/mnt/...</code> path conversion (lines 62-70), and the WSLENV augmentation (lines 71-82) that adds every <code>RDD_*</code> env var to WSLENV so they cross the WSL→Win32 boundary into <code>rdd.exe</code>. <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/helpers/load.bash#L65"><code>bats/helpers/load.bash:65</code></a> puts <code>bin/</code> on PATH, so <code>env … rdd …</code> execvp&#39;s <code>bin/rdd${EXE}</code> directly — none of the wrapper logic runs. Two consequences on WSL:</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/helpers/commands.bash#L37-L89">bats/helpers/commands.bash</a></div>
+      <pre data-start="37" data-line="42-89"><code class="language-bash">        return 0
+    fi
+    return 1
+}
+
+rdd() {
+    local arg
+    local args=(&quot;$@&quot;)
+    if is_windows; then
+        args=()
+        if is_msys; then
+            # MSYS_NO_PATHCONV is set globally to protect URL-like paths
+            # (e.g. /passthrough/demo/hello), so convert filesystem paths
+            # to Windows format manually.
+            for arg in &quot;$@&quot;; do
+                if [[ &quot;${arg}&quot; =~ ^/([a-zA-Z]/|tmp(/|$)) ]]; then
+                    # Drive-letter mounts (/c/...) and /tmp are always
+                    # filesystem paths; convert without existence check.
+                    args+=(&quot;$(cygpath -w &quot;${arg}&quot;)&quot;)
+                elif [[ &quot;${arg}&quot; == /* ]] &amp;&amp; [[ -e &quot;${arg}&quot; ]]; then
+                    args+=(&quot;$(cygpath -w &quot;${arg}&quot;)&quot;)
+                else
+                    args+=(&quot;${arg}&quot;)
+                fi
+            done
+        else
+            # WSL: convert /mnt/... paths.
+            for arg in &quot;$@&quot;; do
+                if [[ &quot;${arg}&quot; != &quot;${arg#/mnt/}&quot; ]]; then
+                    args+=(&quot;$(wslpath -w &quot;${arg}&quot;)&quot;)
+                else
+                    args+=(&quot;${arg}&quot;)
+                fi
+            done
+            # Adjust WSLENV to include everything starting with RDD_
+            local env envs
+            mapfile -t envs &lt; &lt;({
+                tr : &#39;\n&#39; &lt;&lt;&lt;&quot;${WSLENV}&quot;
+                env | awk -F= &#39;/^RDD_/ { print $1 }&#39;
+            } | sort -u || true)
+            WSLENV=&quot;&quot;
+            for env in &quot;${envs[@]}&quot;; do
+                WSLENV=&quot;${WSLENV}:${env}&quot;
+            done
+            WSLENV=${WSLENV#:}
+            export WSLENV
+        fi
+    fi
+    # Close BATS&#39;s internal fds 3 and 4 so any daemon rdd spawns (hostagent,
+    # qemu) cannot inherit them. A grandchild that keeps fd 3 open will hang
+    # bats when it next tries to capture output via run/$(...).
+    &quot;${PATH_REPO_ROOT}/bin/rdd${EXE}&quot; &quot;${args[@]}&quot; 3&gt;&amp;- 4&gt;&amp;-
+}</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/helpers/load.bash#L60-L70">bats/helpers/load.bash</a></div>
+      <pre data-start="60" data-line="65"><code class="language-bash"># is_windows() etc from os.bash,
+# and PATH_* variables from paths.bash
+source &quot;${PATH_BATS_HELPERS}/commands.bash&quot;
+
+# Add repo-root/bin directory to the PATH. This is where the Makefile puts all compiled programs.
+export PATH=&quot;${PATH_BATS_ROOT}/../bin:${PATH}&quot;
+
+# If called from foo() this function will call local_foo() if it exist.
+call_local_function() {
+    local func
+    func=&quot;local_$(calling_function)&quot;</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/tests/10-cli/5-paths.bats#L42-L51">bats/tests/10-cli/5-paths.bats</a></div>
+      <pre data-start="42" data-line="47-82"><code class="language-plaintext">@test &#39;rdd svc paths honors RDD_CACHE_DIR override&#39; {
+    cache_override=$(winpath &quot;${BATS_TEST_TMPDIR}/cache-override&quot;)
+
+    run -0 env RDD_CACHE_DIR=&quot;${cache_override}&quot; rdd svc paths cache_dir
+    assert_output &quot;${cache_override}&quot;
+
+    run -0 env RDD_CACHE_DIR=&quot;${cache_override}&quot; rdd svc paths kubectl_cache
+    assert_output --partial &quot;${cache_override}&quot;
+    assert_output --regexp &#39;kubectl[/\\][a-z0-9]+-[a-z0-9]+$&#39;
+}</code></pre>
+      <pre><code class="language-bash"># bats/helpers/commands.bash:71-82 — WSLENV augmentation
+WSLENV=&quot;&quot;
+for env in &quot;${envs[@]}&quot;; do
+    WSLENV=&quot;${WSLENV}:${env}&quot;
+done</code></pre>
+    <p>First, <code>RDD_CACHE_DIR</code> and <code>RDD_KUBECTL_MIRROR</code> set on the <code>env</code> command line do not get added to WSLENV, so the values do not cross into <code>rdd.exe</code>. Second, <code>winpath</code> (see S1) does not handle WSL, so the pre-conversion in the test produces Linux-form paths that <code>rdd.exe</code> cannot read.</p>
+    <p>The fix routes the call through the bash function. Two ways:</p>
+      <pre><code class="language-diff">-    run -0 env \
+-        RDD_CACHE_DIR=&quot;$(winpath &quot;${CACHE_DIR}&quot;)&quot; \
+-        RDD_KUBECTL_MIRROR=&quot;http://127.0.0.1:${PORT}&quot; \
+-        KUBECONFIG=&quot;$(winpath &quot;${KUBECONFIG_PATH}&quot;)&quot; \
+-        rdd kubectl get pods
++    RDD_CACHE_DIR=&quot;${CACHE_DIR}&quot; \
++    RDD_KUBECTL_MIRROR=&quot;http://127.0.0.1:${PORT}&quot; \
++    KUBECONFIG=&quot;${KUBECONFIG_PATH}&quot; \
++    run -0 rdd kubectl get pods</code></pre>
+    <p>The temporary-assignment-before-command form invokes the <code>rdd</code> function with the env vars set for that one call; the function then handles path conversion and WSLENV. (<code>winpath</code> becomes redundant once the wrapper handles it.)</p>
+    </div>
+    <hr>
+    <h2 id="suggestions" class="section-suggestion">Suggestions <a href="#suggestions" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S1">
+        <span class="finding-num">S1.</span> <code>winpath</code> does not handle WSL→Windows.exe path conversion <span class="pill pill-codex">Codex</span><a href="#S1" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/helpers/paths.bash#L9-L25">bats/helpers/paths.bash</a></div>
+      <pre data-start="9" data-line="14-20"><code class="language-bash"># winpath converts an MSYS-namespace path to its Windows-native
+# equivalent (e.g. /tmp/x -&gt; C:\msys64\tmp\x). Use it for env vars
+# and command args that pass straight to a native Windows binary
+# without traversing the rdd shell function&#39;s path-conversion path.
+# Passes through unchanged on Linux and macOS.
+winpath() {
+    if is_msys; then
+        cygpath -w &quot;$1&quot;
+    else
+        printf &#39;%s&#39; &quot;$1&quot;
+    fi
+}
+
+# Convert &#39;export KEY=&quot;C:\win\path&quot;&#39; to POSIX paths (WSL or MSYS2).
+win_to_posix_exports() {
+    tr -d &quot;\r&quot; | while IFS= read -r line; do
+        if [[ &quot;${line}&quot; =~ ^(export\ [A-Z_]+=)\&quot;(.+)\&quot;$ ]]; then</code></pre>
+    <p><code>winpath</code> only converts on MSYS. WSL is the other shell that calls a native Windows <code>rdd.exe</code> (<a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/helpers/commands.bash#L4-L6"><code>commands.bash:4-6</code></a> sets <code>EXE=.exe</code> whenever <code>using_windows_exe</code> is true), and the existing repo convention for WSL path conversion is <code>wslpath -w</code> (see <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/helpers/commands.bash#L65-L66"><code>commands.bash:65-66</code></a> and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/helpers/paths.bash#L26-L27"><code>paths.bash:26-27</code></a>). On WSL the <code>$(winpath ...)</code> call sites pass Linux-form paths into <code>rdd.exe</code>, which cannot read them. The narrow fix:</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/helpers/commands.bash#L1-L11">bats/helpers/commands.bash</a></div>
+      <pre data-start="1" data-line="4-6"><code class="language-bash">EXE=&quot;&quot;
+PLATFORM=${OS}
+if is_windows; then
+    if using_windows_exe; then
+        EXE=&quot;.exe&quot;
+        PLATFORM=win32
+    else
+        # WSL with Linux binary (not yet supported).
+        PLATFORM=linux
+    fi
+fi</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/helpers/commands.bash#L60-L71">bats/helpers/commands.bash</a></div>
+      <pre data-start="60" data-line="65-66"><code class="language-bash">                fi
+            done
+        else
+            # WSL: convert /mnt/... paths.
+            for arg in &quot;$@&quot;; do
+                if [[ &quot;${arg}&quot; != &quot;${arg#/mnt/}&quot; ]]; then
+                    args+=(&quot;$(wslpath -w &quot;${arg}&quot;)&quot;)
+                else
+                    args+=(&quot;${arg}&quot;)
+                fi
+            done
+            # Adjust WSLENV to include everything starting with RDD_</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/helpers/paths.bash#L21-L32">bats/helpers/paths.bash</a></div>
+      <pre data-start="21" data-line="26-27"><code class="language-bash">
+# Convert &#39;export KEY=&quot;C:\win\path&quot;&#39; to POSIX paths (WSL or MSYS2).
+win_to_posix_exports() {
+    tr -d &quot;\r&quot; | while IFS= read -r line; do
+        if [[ &quot;${line}&quot; =~ ^(export\ [A-Z_]+=)\&quot;(.+)\&quot;$ ]]; then
+            if command -v wslpath &gt;/dev/null 2&gt;&amp;1; then
+                printf &#39;%s&quot;%s&quot;\n&#39; &quot;${BASH_REMATCH[1]}&quot; &quot;$(wslpath -u &quot;${BASH_REMATCH[2]}&quot;)&quot;
+            else
+                printf &#39;%s&quot;%s&quot;\n&#39; &quot;${BASH_REMATCH[1]}&quot; &quot;$(cygpath -u &quot;${BASH_REMATCH[2]}&quot;)&quot;
+            fi
+        fi
+    done</code></pre>
+      <pre><code class="language-diff"> winpath() {
+     if is_msys; then
+         cygpath -w &quot;$1&quot;
++    elif is_windows &amp;&amp; using_windows_exe; then
++        wslpath -w &quot;$1&quot;
+     else
+         printf &#39;%s&#39; &quot;$1&quot;
+     fi
+ }</code></pre>
+    <p>A wider fix routes the call sites through the <code>rdd()</code> shell function (see I3); doing both is defensible because <code>winpath</code> is also used in <code>local_setup_file</code> for raw <code>${SERVER_BIN}</code> args that never traverse the <code>rdd()</code> wrapper.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S2">
+        <span class="finding-num">S2.</span> Unbound kubectl-global bool flags can hide the subcommand from <code>isClientOnly</code> <span class="pill pill-claude">Claude</span><a href="#S2" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/resolver.go#L225-L264">pkg/kuberlr/resolver.go</a></div>
+      <pre data-start="225" data-line="230-264"><code class="language-go">//
+// Conservative bias: when isClientOnly cannot identify the
+// invocation, prefer to probe; misclassifying as client-only would
+// skip the version skew check and silently use a mismatched embedded
+// kubectl.
+func isClientOnly(args []string) bool {
+	if len(args) == 0 {
+		return true
+	}
+	fs := pflag.NewFlagSet(&quot;rdd-kubectl&quot;, pflag.ContinueOnError)
+	fs.ParseErrorsAllowlist.UnknownFlags = true
+	fs.SetOutput(io.Discard)
+	fs.Usage = func() {}
+
+	cf := genericclioptions.NewConfigFlags(true)
+	cf.AddFlags(fs)
+
+	var help, client, warningsAsErrors bool
+	fs.BoolVarP(&amp;help, &quot;help&quot;, &quot;h&quot;, false, &quot;&quot;)
+	fs.BoolVar(&amp;client, &quot;client&quot;, false, &quot;&quot;)
+	fs.BoolVar(&amp;warningsAsErrors, &quot;warnings-as-errors&quot;, false, &quot;&quot;)
+
+	_ = fs.Parse(args)
+
+	if help {
+		return true
+	}
+	positionals := fs.Args()
+	if len(positionals) == 0 {
+		return true
+	}
+	subcommand := positionals[0]
+	if subcommand == &quot;version&quot; {
+		// `kubectl version` (no --client) probes the server for its
+		// version. Treat that as cluster-bound so the resolver picks
+		// a version-matched binary to do the probe.
+		return client
+	}
+	return clientOnlySubcommands[subcommand]
+}</code></pre>
+    <p>The pflag UnknownFlags handling at lines 217-224 documents — and the test at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/resolver_test.go#L200"><code>resolver_test.go:200</code></a> confirms — that an unknown spaced flag consumes its next token as the assumed value. <code>kubectl --match-server-version config view</code> therefore has pflag swallow <code>config</code>, leaves <code>view</code> as the sole positional, and <code>view</code> is not in <code>clientOnlySubcommands</code>, so the resolver probes the cluster for a command kubectl can answer locally. The fall-through is correct (no silent mismatched execution), but the user pays the 2-second probe penalty. <code>--match-server-version</code> is the obvious candidate to add; an audit of upstream <code>staging/src/k8s.io/kubectl/pkg/cmd/cmd.go</code> would surface any other bool globals kubectl declares above the subcommand layer.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/resolver_test.go#L195-L205">pkg/kuberlr/resolver_test.go</a></div>
+      <pre data-start="195" data-line="200"><code class="language-go">		{&quot;--server URL must not be read as subcommand&quot;, []string{&quot;--server&quot;, &quot;completion&quot;, &quot;get&quot;, &quot;pods&quot;}, false},
+		{&quot;-n namespace before subcommand&quot;, []string{&quot;-n&quot;, &quot;kube-system&quot;, &quot;get&quot;, &quot;pods&quot;}, false},
+		{&quot;-n with config&quot;, []string{&quot;-n&quot;, &quot;ns&quot;, &quot;config&quot;, &quot;view&quot;}, true},
+		{&quot;--as-user-extra spaced before subcommand&quot;, []string{&quot;--as-user-extra&quot;, &quot;k=v&quot;, &quot;config&quot;, &quot;view&quot;}, true},
+		{&quot;--as-user-extra equals before subcommand&quot;, []string{&quot;--as-user-extra=k=v&quot;, &quot;config&quot;, &quot;view&quot;}, true},
+		{&quot;unknown long flag swallows next non-flag arg as assumed value&quot;, []string{&quot;--unknown&quot;, &quot;config&quot;, &quot;view&quot;}, false},
+		{&quot;stops at --&quot;, []string{&quot;exec&quot;, &quot;pod&quot;, &quot;--&quot;, &quot;completion&quot;}, false},
+		{&quot;-- before subcommand still finds the subcommand&quot;, []string{&quot;--&quot;, &quot;get&quot;, &quot;pods&quot;}, false},
+		{&quot;unknown --v spaced rides UnknownFlags path&quot;, []string{&quot;--v&quot;, &quot;4&quot;, &quot;config&quot;, &quot;view&quot;}, true},
+		{&quot;unknown --v=N equals form rides UnknownFlags path&quot;, []string{&quot;--v=4&quot;, &quot;config&quot;, &quot;view&quot;}, true},
+		{&quot;unknown --vmodule spaced rides UnknownFlags path&quot;, []string{&quot;--vmodule&quot;, &quot;foo=2&quot;, &quot;config&quot;, &quot;view&quot;}, true},</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/resolver.go#L212-L229">pkg/kuberlr/resolver.go</a></div>
+      <pre data-start="212" data-line="217-224"><code class="language-go">// (--v, --vmodule, --log_dir, …) intentionally stay unbound so their
+// values do not leak into klog&#39;s process-global state; pflag&#39;s
+// UnknownFlags handling consumes the assumed value of any spaced
+// unknown flag, so `--v 4 config view` correctly leaves [config,
+// view] as positionals.
+//
+// Bool-parse errors short-circuit pflag&#39;s parser: a malformed value
+// like `--client=garbage version` halts parse mid-args, leaves no
+// positionals, and lands in the empty-positionals branch below
+// (return true). This deviates from a strict conservative bias, but
+// kubectl rejects the same malformed flag in the embedded path
+// before contacting any cluster, so no silent mismatched execution
+// follows.
+//
+// Conservative bias: when isClientOnly cannot identify the
+// invocation, prefer to probe; misclassifying as client-only would
+// skip the version skew check and silently use a mismatched embedded
+// kubectl.</code></pre>
+      <pre><code class="language-diff"> var help, client, warningsAsErrors bool
+ fs.BoolVarP(&amp;help, &quot;help&quot;, &quot;h&quot;, false, &quot;&quot;)
+ fs.BoolVar(&amp;client, &quot;client&quot;, false, &quot;&quot;)
+ fs.BoolVar(&amp;warningsAsErrors, &quot;warnings-as-errors&quot;, false, &quot;&quot;)
++var matchServerVersion bool
++fs.BoolVar(&amp;matchServerVersion, &quot;match-server-version&quot;, false, &quot;&quot;)</code></pre>
+    <p>A mirror of the existing <code>--warnings-as-errors</code> test cases locks the behavior in: <code>{&quot;--match-server-version before config&quot;, []string{&quot;--match-server-version&quot;, &quot;config&quot;, &quot;view&quot;}, true}</code>.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S3">
+        <span class="finding-num">S3.</span> <code>skipResolver</code> global is a set-only toggle that leaks across hypothetical future tests <span class="pill pill-claude">Claude</span><a href="#S3" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/resolver.go#L26-L44">pkg/kuberlr/resolver.go</a></div>
+      <pre data-start="26" data-line="31-39"><code class="language-go">const envSkipResolver = &quot;RDD_KUBECTL_RESOLVED&quot;
+
+// skipResolver short-circuits Resolve for the rest of this process.
+// Same-process toggle; envSkipResolver covers the cross-process recursion
+// guard that Exec sets on the kubectl child.
+var skipResolver bool
+
+// SkipResolver short-circuits Resolve for the rest of this process.
+// rdd ctl calls this before kubectlAction because it always targets
+// the embedded apiserver, whose version matches the embedded kubectl
+// by construction — the probe would always fall through anyway.
+func SkipResolver() {
+	skipResolver = true
+}
+
+// serverProbeTimeout caps the discovery call. A reachable cluster answers
+// in under 100 ms; an unreachable one would otherwise stall every kubectl
+// invocation.
+const serverProbeTimeout = 2 * time.Second</code></pre>
+    <p><code>SkipResolver()</code> is a one-way toggle on a package-global; nothing flips it back. <code>TestResolveEmbeddedVersionUnparseable</code> swaps <code>embeddedVersion</code> via <code>t.Cleanup</code> but never touches <code>skipResolver</code>, so a future test that calls <code>SkipResolver()</code> would leave the bit set for any later test that exercises Resolve, and Resolve short-circuits on line 69 before the path the test means to exercise. The test would still pass but for the wrong reason.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/resolver.go#L64-L74">pkg/kuberlr/resolver.go</a></div>
+      <pre data-start="64" data-line="69"><code class="language-go">// TODO(offline): when no cached kubectl matches and the network is down,
+// Resolve currently fails with the download error. Add an opt-out for
+// download attempts (config flag or RDD_KUBECTL_OFFLINE) and fall back to
+// the cached binary closest to the server&#39;s minor.
+func Resolve(ctx context.Context, args []string) (string, error) {
+	if skipResolver || os.Getenv(envSkipResolver) != &quot;&quot; {
+		return &quot;&quot;, nil
+	}
+	if isClientOnly(args) {
+		return &quot;&quot;, nil
+	}</code></pre>
+    <p>In production the CLI process exits after one command, so the global is fine; the concern is purely test hygiene against future test additions.</p>
+      <pre><code class="language-diff"> func TestResolveEmbeddedVersionUnparseable(t *testing.T) {
++    origSkip := skipResolver
++    t.Cleanup(func() { skipResolver = origSkip })
+     orig := embeddedVersion
+     t.Cleanup(func() { embeddedVersion = orig })</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S4">
+        <span class="finding-num">S4.</span> <code>main.go</code> <code>errors.As</code> block captures <code>msg</code> it does not use; check <code>exitErr.Err</code> directly <span class="pill pill-claude">Claude</span><a href="#S4" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/cmd/rdd/main.go#L167-L181">cmd/rdd/main.go</a></div>
+      <pre data-start="167" data-line="172-178"><code class="language-go">	)
+	if err := cli.RunNoErrOutput(cmd); err != nil {
+		// *cliexit.Error lets a subcommand opt into a specific exit code; everything else gets exit 1.
+		// Empty Err means the subcommand has already written its own output (e.g. kuberlr.Exec
+		// propagating a kubectl child&#39;s exit code), so skip the redundant log line.
+		var exitErr *cliexit.Error
+		if errors.As(err, &amp;exitErr) {
+			if msg := err.Error(); msg != &quot;&quot; {
+				logrus.Error(err)
+			}
+			os.Exit(exitErr.Code)
+		}
+		logrus.Fatal(err)
+	}
+}</code></pre>
+    <p>The captured <code>msg</code> is unused; <code>logrus.Error(err)</code> calls <code>err.Error()</code> again. The empty-string check works today because <code>cliexit.Error.Error()</code> returns <code>&quot;&quot;</code> iff <code>Err == nil</code>. If a future caller wraps the <code>cliexit.Error</code> (e.g. <code>fmt.Errorf(&quot;foo: %w&quot;, &amp;cliexit.Error{Code: c})</code>), the outer <code>err.Error()</code> is non-empty even when the inner sentinel marks &quot;subcommand already wrote output,&quot; and the redundant log line returns. Checking <code>exitErr.Err != nil</code> states intent precisely and survives the wrap.</p>
+      <pre><code class="language-diff"> if errors.As(err, &amp;exitErr) {
+-    if msg := err.Error(); msg != &quot;&quot; {
++    if exitErr.Err != nil {
+         logrus.Error(err)
+     }
+     os.Exit(exitErr.Code)
+ }</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S5">
+        <span class="finding-num">S5.</span> <code>winpath</code> via <code>$(...)</code> swallows non-zero exits in standalone assignments <span class="pill pill-claude">Claude</span><a href="#S5" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/tests/10-cli/5-paths.bats#L38-L48">bats/tests/10-cli/5-paths.bats</a></div>
+      <pre data-start="38" data-line="43"><code class="language-bash">    assert_output --partial &#39;no_such_key&#39;
+    assert_output --partial &#39;valid keys&#39;
+}
+
+@test &#39;rdd svc paths honors RDD_CACHE_DIR override&#39; {
+    cache_override=$(winpath &quot;${BATS_TEST_TMPDIR}/cache-override&quot;)
+
+    run -0 env RDD_CACHE_DIR=&quot;${cache_override}&quot; rdd svc paths cache_dir
+    assert_output &quot;${cache_override}&quot;
+
+    run -0 env RDD_CACHE_DIR=&quot;${cache_override}&quot; rdd svc paths kubectl_cache</code></pre>
+    <p>The repo&#39;s BATS style rule prefers <code>run -0 cmd ...; value=${output}</code> over <code>value=$(cmd ...)</code> because command substitution discards the exit code and leaves the variable empty on failure. <code>winpath</code> delegates to <code>cygpath -w</code> on MSYS, which can fail in pathological cases. At the standalone assignment sites — <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/tests/10-cli/5-paths.bats#L43"><code>5-paths.bats:43</code></a> and the <code>SERVER_BIN=...</code> shape near <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/tests/10-cli/7-kubectl-cache.bats#L39"><code>7-kubectl-cache.bats:39</code></a> — the <code>run -0</code> form locks in the safety. Sites inside a <code>run</code> command line (most of <code>7-kubectl-cache.bats</code>) cannot use <code>run -0</code> recursively; those are unavoidable shell composition.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/tests/10-cli/5-paths.bats#L38-L48">bats/tests/10-cli/5-paths.bats</a></div>
+      <pre data-start="38" data-line="43"><code class="language-plaintext">    assert_output --partial &#39;no_such_key&#39;
+    assert_output --partial &#39;valid keys&#39;
+}
+
+@test &#39;rdd svc paths honors RDD_CACHE_DIR override&#39; {
+    cache_override=$(winpath &quot;${BATS_TEST_TMPDIR}/cache-override&quot;)
+
+    run -0 env RDD_CACHE_DIR=&quot;${cache_override}&quot; rdd svc paths cache_dir
+    assert_output &quot;${cache_override}&quot;
+
+    run -0 env RDD_CACHE_DIR=&quot;${cache_override}&quot; rdd svc paths kubectl_cache</code></pre>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/tests/10-cli/7-kubectl-cache.bats#L34-L44">bats/tests/10-cli/7-kubectl-cache.bats</a></div>
+      <pre data-start="34" data-line="39"><code class="language-plaintext">            ./kubectl
+        go build -ldflags=&#39;-s -w&#39; \
+            -o &quot;$(winpath &quot;${BATS_FILE_TMPDIR}/fake-kube-server${EXE}&quot;)&quot; \
+            ./server
+    )
+    SERVER_BIN=${BATS_FILE_TMPDIR}/fake-kube-server${EXE}
+
+    PORT_FILE=${BATS_FILE_TMPDIR}/port
+    LOG_FILE=${BATS_FILE_TMPDIR}/server.log
+    GIT_VERSION_FILE=${BATS_FILE_TMPDIR}/git-version
+    VERSION_STATUS_FILE=${BATS_FILE_TMPDIR}/version-status</code></pre>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S6">
+        <span class="finding-num">S6.</span> BATS coverage forces every test out of skew; the within-skew &quot;no download&quot; path runs only in unit tests <span class="pill pill-claude">Claude</span><a href="#S6" class="pilcrow">&#182;</a>
+      </div>
+    <p>The five <code>7-kubectl-cache.bats</code> tests all pin the fake apiserver at <code>v1.99.0</code>, always out of skew with the embedded kubectl. The end-to-end coverage exercises the download lifecycle (miss, hit, mirror 404, sha mismatch, apiserver 500 fall-through) but never the within-skew branch where <code>compatible()</code> returns true and <code>Resolve</code> returns <code>&quot;&quot;</code> without probing the mirror. The within-skew rule is covered by <code>TestCompatible</code> at the unit level; an end-to-end test (e.g. set <code>--git-version</code> to <code>v$(EMBEDDED_MINOR).0</code>) would prove the whole resolver respects the rule end-to-end.</p>
+    </div>
+    <div class="card card-suggestion">
+      <div class="finding-title" id="S7">
+        <span class="finding-num">S7.</span> Per-patch cache key accumulates one binary per patch release <span class="pill pill-claude">Claude</span><a href="#S7" class="pilcrow">&#182;</a>
+      </div>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/downloader.go#L81-L97">pkg/kuberlr/downloader.go</a></div>
+      <pre data-start="81" data-line="86-92"><code class="language-go">	}
+	return path, nil
+}
+
+// cachedPath returns the absolute path of the cached kubectl for v.
+func cachedPath(v semver.Version) string {
+	name := fmt.Sprintf(&quot;kubectl-v%d.%d.%d&quot;, v.Major, v.Minor, v.Patch)
+	if runtime.GOOS == &quot;windows&quot; {
+		name += &quot;.exe&quot;
+	}
+	return filepath.Join(CacheDir(), name)
+}
+
+// download fetches kubectl v from the upstream mirror, verifies its sha512
+// against the mirror&#39;s published checksum, and renames the verified file to
+// dst. A failure leaves no partial file behind for the next call to mistake
+// for a valid binary.</code></pre>
+    <p>A cluster stepping through <code>v1.30.5 → v1.30.6 → v1.30.7</code> accumulates three ~50 MB binaries even though any one would satisfy the skew rule. The eviction TODO in <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/cache.go#L33-L39"><code>cache.go:33-39</code></a> addresses growth but not consolidation. A future enhancement could cache one binary per server minor (the highest patch the mirror knows about for that minor) and reuse it for any server in the same minor band. Within scope of the existing TODO; flag for sequencing.</p>
+      <div class="code-file-header"><a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/cache.go#L28-L44">pkg/kuberlr/cache.go</a></div>
+      <pre data-start="28" data-line="33-39"><code class="language-go">//
+//	macOS:   ~/Library/Caches/rancher-desktop/kubectl/&lt;os&gt;-&lt;arch&gt;/
+//	Linux:   ~/.cache/rancher-desktop/kubectl/&lt;os&gt;-&lt;arch&gt;/  ($XDG_CACHE_HOME)
+//	Windows: %LocalAppData%\rancher-desktop\kubectl\&lt;os&gt;-&lt;arch&gt;\
+//
+// TODO(eviction): the cache only grows; a user switching across many
+// remote clusters accumulates ~50 MB per minor version indefinitely.
+// SIGKILL or power loss during a download also leaks the .kubectl-*
+// temp file that defer os.Remove normally cleans up. A per-version
+// TTL or LRU sweep should clear both stale binaries and stale
+// .kubectl-* leftovers before the directory becomes a noticeable
+// footprint.
+func CacheDir() string {
+	return filepath.Join(CacheRoot(), &quot;kubectl&quot;, runtime.GOOS+&quot;-&quot;+runtime.GOARCH)
+}
+
+// CacheRoot returns the rdd-wide cache root. RDD_CACHE_DIR overrides the</code></pre>
+    </div>
+    <hr>
+    <h2 id="design-observations" class="section-design">Design Observations <a href="#design-observations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-design">
+    <h3 id="concerns">Concerns <a href="#concerns" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><em></em>Double execution of KUBECONFIG <code>exec</code> auth plugins (in-scope)<em></em> [carried over from Round 7 retro]. <code>serverVersion</code> calls <code>discovery.NewDiscoveryClientForConfig(cfg).ServerVersion()</code>, which runs the user&#39;s kubeconfig <code>exec</code> credential plugin (SSO, IDP CLI, hardware-token). The probe runs the plugin once; if Resolve then downloads and execs a remote kubectl, kubectl invokes the same plugin again. Non-interactive plugins double the latency; interactive plugins double the prompts. The TODO at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/resolver.go#L64-L67"><code>resolver.go:64-67</code></a> for <code>RDD_KUBECTL_OFFLINE</code> is the natural escape hatch — offline mode should also suppress the probe so the user&#39;s <code>exec</code> plugin runs exactly once.</li>
+    </ul>
+    <h3 id="strengths">Strengths <a href="#strengths" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><em></em><code>genericclioptions.ConfigFlags</code> for resolver flag binding<em></em> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span>. The probe and the kubectl child stay aligned on kubeconfig precedence by construction — any future kubectl flag rename or addition flows through <code>NewConfigFlags(true).AddFlags(fs)</code> without a parallel implementation to drift.</li>
+      <li><em></em>Body-size caps and per-request timeout on <code>streamGet</code><em></em> <span class="pill pill-claude">Claude</span>. <code>maxSha512Bytes</code> (4 KiB) and <code>maxKubectlBytes</code> (256 MiB), paired with <code>downloadTimeout</code> (5 min), turn a malicious or misconfigured mirror into a bounded failure rather than an unbounded write.</li>
+      <li><strong>Sibling Go module for fake-kube fixtures</strong> <span class="pill pill-claude">Claude</span> <span class="pill pill-gemini">Gemini</span>. <code>bats/tests/10-cli/fake-kube/go.mod</code> keeps test-only dependencies out of the parent module, and a single server plays both apiserver <code>/version</code> and release mirror <code>/release/*</code> roles with file-based per-test overrides.</li>
+      <li><strong>Conservative probe fallback policy</strong> <span class="pill pill-codex">Codex</span> <span class="pill pill-gemini">Gemini</span>. Missing kubeconfig, malformed kubeconfig, unreachable cluster, and unparseable server version all fall through silently to the embedded kubectl. Only download and sha errors surface loudly, matching the &quot;user wants to know&quot; cut explicitly drawn in the resolver&#39;s comments.</li>
+      <li><strong>Cross-process recursion guard</strong> <span class="pill pill-claude">Claude</span>. The <code>RDD_KUBECTL_RESOLVED</code> env var plus the same-process <code>skipResolver</code> flag together cover both axes of recursion: kubectl reentry through a shim, and <code>rdd ctl</code> short-circuiting before it dispatches to <code>kubectlAction</code>.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="testing-assessment">Testing Assessment <a href="#testing-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>The Pure-Go coverage in <code>pkg/kuberlr/resolver_test.go</code> and the five-test BATS lifecycle in <code>7-kubectl-cache.bats</code> cover the user-reachable paths well. Round 8 surfaces three coverage gaps, all on the testing side rather than the production code:</p>
+    <ol>
+      <li><em></em><code>run -0 env … rdd …</code> form does not exercise the WSL wrapper path<em></em> (I3). Five sites in <code>7-kubectl-cache.bats</code> plus two in <code>5-paths.bats</code> use the bypass form. Re-routing them through the <code>rdd()</code> function (see I3&#39;s diff) restores Windows/WSL coverage without changing macOS/Linux behavior.</li>
+      <li><strong>No BATS test exercises the within-skew &quot;no download&quot; path</strong> (S6). <code>TestCompatible</code> covers the rule at the unit level; an end-to-end assertion that the resolver did not GET <code>/release/...</code> when the server version is within ±1 minor would close the loop.</li>
+      <li><strong>No unit test exercises the cross-process recursion guard.</strong> A test that sets <code>RDD_KUBECTL_RESOLVED=1</code> and asserts <code>Resolve(ctx, []string{&quot;get&quot;, &quot;pods&quot;})</code> returns <code>(&quot;&quot;, nil)</code> would lock the <code>envSkipResolver</code> short-circuit in.</li>
+    </ol>
+    </div>
+    <hr>
+    <h2 id="documentation-assessment">Documentation Assessment <a href="#documentation-assessment" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p><code>docs/design/cmd_service.md</code> and <code>docs/design/environment.md</code> match the resolver behavior — the Round 7 fixes landed (key table now lists <code>docker_socket</code>, <code>cache_dir</code>, <code>kubectl_cache</code>; example output shows <code>args.json</code> and <code>config.yaml</code>). No new documentation gaps surfaced this round.</p>
+    </div>
+    <hr>
+    <h2 id="commit-structure">Commit Structure <a href="#commit-structure" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>Single commit <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/commit/ce035d5"><code>ce035d5</code></a> &quot;rdd kubectl: embed kuberlr-style version resolver&quot;. The <code>config.json</code> → <code>config.yaml</code>, <code>rdd.args</code> → <code>args.json</code>, and <code>docker_socket</code> key-table additions in <code>cmd_service.md</code> are doc-sync corrections that predate this PR; Round 7 explicitly green-lit bundling them as drive-bys while editing the same paragraph. Worth noting in the commit body that the doc fixes are bundled with the feature, but the bundling decision itself is settled.</p>
+    </div>
+    <hr>
+    <h2 id="acknowledged-limitations">Acknowledged Limitations <a href="#acknowledged-limitations" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <ul>
+      <li><strong>Code comment</strong>: <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/cache.go#L33-L39"><code>pkg/kuberlr/cache.go:33-39</code></a> documents unbounded cache growth and leaked <code>.kubectl-*</code> temp files after SIGKILL or power loss; eviction work is deferred.</li>
+      <li><strong>Code comment</strong>: <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/downloader.go#L55-L57"><code>pkg/kuberlr/downloader.go:55-57</code></a> and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/resolver.go#L64-L67"><code>pkg/kuberlr/resolver.go:64-67</code></a> document the planned <code>RDD_KUBECTL_OFFLINE</code> opt-out; intentionally deferred.</li>
+      <li><strong>Code comment</strong>: <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/downloader.go#L138-L141"><code>pkg/kuberlr/downloader.go:138-141</code></a> documents <code>maxKubectlBytes</code> truncation surfacing as &quot;checksum mismatch&quot;; left as a comment per Round 6.</li>
+      <li><strong>Code comment</strong>: <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/exec_windows.go#L27-L30"><code>pkg/kuberlr/exec_windows.go:27-30</code></a> documents the dormant <code>CommandContext</code> hard-kill race against console-delivered Ctrl+C; a future refactor that wires signal-driven cancellation must revisit this site (Round 7 S3 → Commented).</li>
+      <li><strong>Code comment</strong>: <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/resolver.go#L217-L228"><code>pkg/kuberlr/resolver.go:217-228</code></a> documents the <code>--client=garbage</code> pflag short-circuit and the explicit deviation from the conservative bias.</li>
+      <li><strong>Code comment</strong>: <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/resolver.go#L168-L175"><code>pkg/kuberlr/resolver.go:168-175</code></a> documents leaving <code>--username</code>/<code>--password</code> unbound on the resolver side to dodge <code>ToRawKubeConfigLoader</code>&#39;s interactive prompt.</li>
+      <li><strong>Code comment</strong>: <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/bats/tests/10-cli/7-kubectl-cache.bats#L91-L99"><code>bats/tests/10-cli/7-kubectl-cache.bats:91-99</code></a> documents the deliberate deviation from the &quot;no <code>teardown_file</code>&quot; rule for the ephemeral HTTP-server fixture. See I2 for the implementation defect this deviation now needs to actually deliver on its intent.</li>
+    </ul>
+    <h3 id="declined-in-prior-rounds">Declined in prior rounds <a href="#declined-in-prior-rounds" class="pilcrow">&#182;</a></h3>
+    <ul>
+      <li><em></em>Concurrent first-use Windows <code>os.Rename</code> race<em></em> — declined Rounds 1, 2, 3, 4, 5, 6, 7. Re-raised this round by Codex (I1), Gemini (I1), and Claude (S2). Dropped per the resolutions gate. Eight rounds running.</li>
+      <li><em></em><code>CacheRoot</code> panic on <code>os.UserCacheDir</code> failure<em></em> — declined Rounds 1, 2, 3, 5, 7. Re-raised this round by Gemini (I2) and Claude (S8). Dropped per the resolutions gate.</li>
+    </ul>
+    </div>
+    <hr>
+    <h2 id="unresolved-feedback">Unresolved Feedback <a href="#unresolved-feedback" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p>None. The only PR review comment was @mook-as on <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/cmd/rdd/service_paths.go#L33"><code>cmd/rdd/service_paths.go:33</code></a> asking to expose <code>RDD_CACHE_DIR</code>; the current diff adds <code>cache_dir</code> and <code>kubectl_cache</code> to <code>instancePaths()</code>, and <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/docs/design/environment.md#L39"><code>docs/design/environment.md:39</code></a> documents the dual role. Round 7 marked this resolved.</p>
+    </div>
+    <hr>
+    <h2 id="agent-performance-retro">Agent Performance Retro <a href="#agent-performance-retro" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <h3 id="claude"><span class="pill pill-claude">Claude</span> <a href="#claude" class="pilcrow">&#182;</a></h3>
+    <p>Claude returned cleanly after Round 7&#39;s stream-idle timeout. The shape was thorough: three Important findings (I1 the <code>Warnf</code> UX call, I2 the <code>--match-server-version</code> flag binding, I3 the <code>skipResolver</code> test hygiene) plus eight Suggestions ranging from doc bundling to per-patch cache accumulation. Consolidation downgraded Claude I2 and I3 to Suggestions (S2 and S3) because the behavior Claude flagged is documented in code and covered by an existing test case (the <code>--unknown config view</code> test at <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/blob/ce035d5b9e9dcb02f4bb5bdb391c6cba3449f508/pkg/kuberlr/resolver_test.go#L200"><code>resolver_test.go:200</code></a>), and the test fragility hits only hypothetical future tests. The unique value: I1&#39;s read of the <code>RDD_LOG_LEVEL=warn</code> default against this PR&#39;s new <code>Warnf</code> (matched by Gemini), plus the <code>errors.As</code> redundancy in <code>main.go</code> (S4) that neither other agent surfaced. Coverage was complete on the 20 changed files.</p>
+    <h3 id="codex"><span class="pill pill-codex">Codex</span> <a href="#codex" class="pilcrow">&#182;</a></h3>
+    <p>Codex anchored the Round 8 keepers. Three new Important findings landed on the BATS plumbing introduced by the Round 7 fixes — and Codex was the only agent to read <code>bats/helpers/commands.bash</code> and <code>bats/helpers/os.bash</code> deeply enough to surface them (I2 <code>kill</code> vs <code>process_kill</code> for Win32, I3 <code>env … rdd …</code> bypass of the wrapper, S1 <code>winpath</code> WSL gap). Codex also re-raised the long-declined Windows <code>os.Rename</code> race (I1 → dropped per gate), but with no severity escalation and verified <code>go test ./pkg/kuberlr</code> passed before writing.</p>
+    <h3 id="gemini"><span class="pill pill-gemini">Gemini</span> <a href="#gemini" class="pilcrow">&#182;</a></h3>
+    <p>Gemini brought back two declined-in-prior-rounds findings (I1 Windows <code>os.Rename</code>, I2 <code>CacheRoot</code> panic) for the eighth and sixth time respectively. The single new contribution was I3 (the <code>Warnf</code> level critique), which Claude raised independently and consolidates with Claude&#39;s I1. No suggestions, no design observations. Gemini reviewed 20 files with no coverage misses but produced the thinnest net new signal of the three agents this round.</p>
+    <h3 id="summary">Summary <a href="#summary" class="pilcrow">&#182;</a></h3>
+    <table class="retro-table">
+      <thead><tr><th></th><th><span class="pill pill-claude">Claude</span> Opus 4.7</th><th><span class="pill pill-codex">Codex</span> GPT 5.5</th><th><span class="pill pill-gemini">Gemini</span> 3.1 Pro</th></tr></thead>
+      <tbody>
+        <tr><td>Duration</td><td>9m 40s</td><td>7m 03s</td><td>—</td></tr>
+        <tr><td>Findings</td><td>1I 6S</td><td>2I 1S</td><td>1I</td></tr>
+        <tr><td>Tool calls</td><td>24 (Read 16, Bash 4, Grep 4)</td><td>48 (shell 48)</td><td>—</td></tr>
+        <tr><td>Design observations</td><td>0</td><td>1</td><td>0</td></tr>
+        <tr><td>False positives</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>Unique insights</td><td>3</td><td>3</td><td>0</td></tr>
+        <tr><td>Files reviewed</td><td>20</td><td>20</td><td>20</td></tr>
+        <tr><td>Coverage misses</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td><strong>Totals</strong></td><td><strong>1I 6S</strong></td><td><strong>2I 1S</strong></td><td><strong>1I</strong></td></tr>
+        <tr><td>Downgraded</td><td>2 (I→S)</td><td>0</td><td>0</td></tr>
+        <tr><td>Dropped</td><td>1</td><td>1</td><td>2</td></tr>
+      </tbody>
+    </table>
+    <p>Overall: Codex provided the highest signal this round — three new Important findings on the Round 7 plumbing surface that the other two agents missed entirely. Claude rounded out the round with the unique main.go redundancy and the <code>--match-server-version</code> defensive binding. Gemini&#39;s contribution was confined to seconding Claude&#39;s <code>Warnf</code> call; its other findings were re-raises of long-declined items.</p>
+    </div>
+    <hr>
+    <h2 id="review-process-notes">Review Process Notes <a href="#review-process-notes" class="pilcrow">&#182;</a></h2>
+
+    <div class="card card-neutral">
+    <p><strong>Repo context updates</strong></p>
+    <ul>
+      <li><em></em>Add a &quot;long-declined findings on PR <a href="https://github.com/rancher-sandbox/rancher-desktop-daemon/issues/348" class="gh-ref" data-title="rdd kubectl: embed kuberlr-style version resolver" data-state="open" data-type="pr">#348</a>&quot; section to <code>deep-review-context.md</code><em></em> for the duration of this PR&#39;s review window. Round 7 made this recommendation; Round 8&#39;s repetition confirms the cost. List the two declined-three-or-more-rounds findings — Windows <code>os.Rename</code> cache-publish race (rounds 1-8) and <code>CacheRoot</code> panic on <code>os.UserCacheDir</code> failure (rounds 1, 2, 3, 5, 7, 8) — with one-line decline rationales. Agents reviewing future amendments will see them in the inlined repo context and can either skip or argue with new evidence rather than re-raise the same shape. Keep the list short and PR-scoped.</li>
+    </ul>
+    </div>
+  </main>
+  <script>window.Prism = window.Prism || {}; Prism.manual = true;</script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-diff.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+  <script>
+/* Deep Review — Prism initialization and line-number wrapping.
+ * Inlined into each generated HTML file by the beautify-review skill.
+ * Runs synchronously at the end of <body> — no event listeners.
+ *
+ * Prerequisite: a preceding <script> must set Prism.manual = true
+ * before the Prism core <script> loads.
+ */
+
+Prism.highlightAll();
+
+document.querySelectorAll('pre[data-start]').forEach(function(pre) {
+  var startLine = parseInt(pre.getAttribute('data-start'), 10) || 1;
+  var hlAttr = pre.getAttribute('data-line') || '';
+
+  /* Parse data-line into a Set of line numbers to highlight.
+   * Accepts comma-separated values: "75,76,77" or ranges: "75-84". */
+  var hlLines = new Set();
+  hlAttr.split(',').forEach(function(part) {
+    part = part.trim();
+    if (!part) return;
+    var m = part.match(/^(\d+)-(\d+)$/);
+    if (m) {
+      for (var i = parseInt(m[1], 10); i <= parseInt(m[2], 10); i++) hlLines.add(i);
+    } else {
+      hlLines.add(parseInt(part, 10));
+    }
+  });
+
+  var code = pre.querySelector('code');
+  if (!code) return;
+
+  var html = code.innerHTML;
+  var lines = html.split('\n');
+  /* Strip a trailing empty line that Prism sometimes leaves. */
+  if (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+  var wrapped = lines.map(function(line, idx) {
+    var lineNum = startLine + idx;
+    var cls = 'code-line' + (hlLines.has(lineNum) ? ' line-hl' : '');
+    return '<span class="' + cls + '">' + line + '</span>';
+  });
+
+  /* Join with '' (empty string) — NOT '\n'.
+   * Inside <pre>, newlines are literal whitespace. Since .code-line uses
+   * display: block, joining with '\n' produces double line spacing. */
+  code.innerHTML = wrapped.join('');
+  pre.style.counterReset = 'line ' + (startLine - 1);
+});
+
+/* GitHub reference tooltips — show title and state on hover for #N links.
+ * Links must have class="gh-ref" and data-title set by the generator. */
+document.querySelectorAll('a.gh-ref[data-title]').forEach(function(link) {
+  var tip = null;
+
+  link.addEventListener('mouseenter', function() {
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.className = 'gh-tooltip';
+
+    var state = link.getAttribute('data-state') || '';
+    var type = link.getAttribute('data-type') || 'issue';
+    var label = state.charAt(0).toUpperCase() + state.slice(1).toLowerCase();
+
+    var pill = document.createElement('span');
+    pill.className = 'gh-tooltip-state gh-state-' + state;
+    pill.textContent = label + (type === 'pr' ? ' PR' : '');
+
+    var title = document.createElement('span');
+    title.className = 'gh-tooltip-title';
+    title.textContent = link.getAttribute('data-title');
+
+    tip.appendChild(pill);
+    tip.appendChild(title);
+    document.body.appendChild(tip);
+
+    var rect = link.getBoundingClientRect();
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var left = rect.left + window.scrollX;
+    var top = rect.top + window.scrollY - th - 8;
+
+    if (left + tw > window.innerWidth - 12) left = window.innerWidth - tw - 12;
+    if (left < 4) left = 4;
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;
+
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.opacity = '1';
+  });
+
+  link.addEventListener('mouseleave', function() {
+    if (tip) { tip.remove(); tip = null; }
+  });
+});
+
+  </script>
+</body>
+</html>
