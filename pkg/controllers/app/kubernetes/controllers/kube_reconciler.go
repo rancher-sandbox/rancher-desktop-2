@@ -153,6 +153,14 @@ func probeK3sAPI(ctx context.Context) (bool, error) {
 		pool.AppendCertsFromPEM(cfg.CAData)
 		tlsCfg.RootCAs = pool
 	}
+	// Load client cert for mTLS auth (k3s kubeconfig uses client cert, not bearer token).
+	if len(cfg.CertData) > 0 && len(cfg.KeyData) > 0 {
+		cert, err := tls.X509KeyPair(cfg.CertData, cfg.KeyData)
+		if err != nil {
+			return false, fmt.Errorf("load client cert: %w", err)
+		}
+		tlsCfg.Certificates = []tls.Certificate{cert}
+	}
 	httpClient := &http.Client{
 		Transport: &http.Transport{TLSClientConfig: tlsCfg},
 	}
@@ -291,6 +299,14 @@ func probeCurrentKubeContext(ctx context.Context, current string) bool {
 		pool := x509.NewCertPool()
 		pool.AppendCertsFromPEM(restCfg.CAData)
 		tlsCfg.RootCAs = pool
+	}
+	// Load client cert for mTLS auth (k3s kubeconfig uses client cert, not bearer token).
+	if len(restCfg.CertData) > 0 && len(restCfg.KeyData) > 0 {
+		cert, err := tls.X509KeyPair(restCfg.CertData, restCfg.KeyData)
+		if err != nil {
+			return true // assume healthy if we can't load the cert
+		}
+		tlsCfg.Certificates = []tls.Certificate{cert}
 	}
 	httpClient := &http.Client{
 		Transport: &http.Transport{TLSClientConfig: tlsCfg},
