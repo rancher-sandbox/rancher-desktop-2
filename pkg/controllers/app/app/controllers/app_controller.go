@@ -159,7 +159,7 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 		"k8sEnabled", app.Spec.Kubernetes.Enabled,
 		"generation", app.Generation,
 		"resourceVersion", app.ResourceVersion,
-		"deletionTimestamp", app.DeletionTimestamp,
+		"beingDeleted", app.DeletionTimestamp != nil,
 	)
 
 	// Handle deletion, delete owned resources.
