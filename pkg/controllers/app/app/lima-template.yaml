@@ -28,22 +28,26 @@ portForwards:
   - 0
   hostSocket: "{{.Param.HOST_DOCKER_SOCKET}}"
 provision:
+# Write runtime parameters as a systemd EnvironmentFile. Using mode:data lets
+# Lima's Go template engine handle quoting via printf "%q", which produces
+# double-quoted strings compatible with systemd's EnvironmentFile parser.
+# Lima's boot script creates parent directories automatically.
+- mode: data
+  path: /etc/sysconfig/rancher-desktop
+  content: |
+    CONTAINER_ENGINE={{printf "%q" .Param.CONTAINER_ENGINE}}
+    HOST_DOCKER_SOCKET={{printf "%q" .Param.HOST_DOCKER_SOCKET}}
+    HOST_HOME_GUEST={{printf "%q" .Param.HOST_HOME_GUEST}}
+    KUBERNETES_ENABLED={{.Param.KUBERNETES_ENABLED}}
+    KUBERNETES_VERSION={{.Param.KUBERNETES_VERSION}}
+    KUBERNETES_PORT={{.Param.KUBERNETES_PORT}}
 - mode: system
   script: |
     #!/bin/bash
 
-    # All param need to be mentioned for Lima validation.
-    # $PARAM_KUBERNETES_PORT
-
     set -o errexit -o nounset -o pipefail -o xtrace
 
     systemctl stop rancher-desktop.target
-
-    # Write runtime parameters; service ExecCondition checks read these from this file.
-    mkdir -p /etc/sysconfig
-    for p in "${!PARAM_@}"; do
-      printf '%s=%q\n' "${p#PARAM_}" "${!p}"
-    done > /etc/sysconfig/rancher-desktop
 
     # Enable the requested container engine and disable the other.
     # containerd.service has a Conflicts=docker, so we must not start both.

@@ -103,8 +103,19 @@ type AppSpec struct {
 
 // AppStatus defines the observed state of App.
 type AppStatus struct {
-	// kubernetesPort is the port that Kubernetes API server listens on.
-	// This is only set if Kubernetes is enabled.
+	// kubernetesPort is the intended port for the Kubernetes API server.
+	// AppReconciler calls ResolvePort to find a free port, closes the
+	// listener, then persists this value. Lima's identity port-forward rule
+	// (guestPortRange:[1,65535] → hostPortRange:[0,0]) later binds the same
+	// port on the host.
+	//
+	// There is a TOCTOU window between ResolvePort releasing the port and
+	// Lima binding it (typically seconds to minutes). If another process
+	// claims the port in that window, Lima's forwarding silently fails,
+	// probeK3sAPI returns false, and KubernetesReady stays False until the
+	// App is recreated with a freshly resolved port. A future improvement
+	// would keep the listener open until Lima is ready to bind, or observe
+	// the actual host port from Lima state rather than storing an intent.
 	// +optional
 	KubernetesPort int `json:"kubernetesPort,omitempty"`
 	// conditions represent the current state of the App resource.

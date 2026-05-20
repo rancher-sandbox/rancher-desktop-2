@@ -182,6 +182,6 @@ The host-switch uses [gvisor-tap-vsock](https://github.com/containers/gvisor-tap
 
 ## Future Work
 
-- **Kubernetes port forwarding**: Pre-forward `127.0.0.1:6443` to `192.168.127.2:6443` so `kubectl` on the host reaches the K8s API inside the VM.
+- **Kubernetes port forwarding**: Pre-forward `127.0.0.1:<App.Status.KubernetesPort>` to the VM's k3s API server so `kubectl` on the host reaches the K8s API inside the VM. The port is allocated dynamically at `7441 + instance.Index()` and stored in `App.Status.KubernetesPort`.
 - **Dynamic port forwarding**: Run `wsl-proxy` in the guest to relay container port mappings from the guest agent to the host-switch's HTTP API.
 - **DNS search domains**: Read Windows DNS search domains and pass them to gvisor-tap-vsock's DHCP configuration.
