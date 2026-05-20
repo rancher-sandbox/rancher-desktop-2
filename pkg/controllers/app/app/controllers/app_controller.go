@@ -91,7 +91,7 @@ func (r *AppReconciler) engineEnabled(ctx context.Context) bool {
 	return slices.Contains(enabled, v1alpha1.EngineControllerName)
 }
 
-func applySpecToTemplate(baseTemplate string, spec v1alpha1.AppSpec, status v1alpha1.AppStatus) (string, error) {
+func applySpecToTemplate(baseTemplate string, spec v1alpha1.AppSpec, kubernetesPort int) (string, error) {
 	hostHome, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("failed to get host home directory: %w", err)
@@ -104,7 +104,7 @@ func applySpecToTemplate(baseTemplate string, spec v1alpha1.AppSpec, status v1al
 		fmt.Sprintf("  HOST_HOME_GUEST: %q", toLinuxPath(hostHome)),
 		fmt.Sprintf("  KUBERNETES_ENABLED: %v", spec.Kubernetes.Enabled),
 		fmt.Sprintf("  KUBERNETES_VERSION: %s", spec.Kubernetes.Version),
-		fmt.Sprintf("  KUBERNETES_PORT: %d", status.KubernetesPort),
+		fmt.Sprintf("  KUBERNETES_PORT: %d", kubernetesPort),
 		"",
 	}, "\n"), nil
 }
@@ -227,21 +227,56 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 		return ctrl.Result{}, limaVMErr
 	}
 
-	// If the Kubernetes port is not set, set it first.
+	// If the Kubernetes port is not set, resolve and persist it now.
+	// ResolvePort closes the listener immediately after probing, so there is
+	// a TOCTOU window before Lima binds the same port via its identity
+	// port-forward rule. In the unlikely event the port is stolen, Lima's
+	// forwarding fails and KubernetesReady stays False — a visible failure
+	// rather than a silent wrong connection. See AppStatus.KubernetesPort.
 	if app.Spec.Kubernetes.Enabled && app.Status.KubernetesPort == 0 {
-		app.Status.KubernetesPort, err = controllers.ResolvePort(ctx, 7441+instance.Index())
+		port, err := controllers.ResolvePort(ctx, 7441+instance.Index())
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to resolve Kubernetes port: %w", err)
 		}
-		if err := r.Status().Update(ctx, &app); err != nil {
+		if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			latest := &v1alpha1.App{}
+			if err := r.Get(ctx, client.ObjectKey{Name: appName}, latest); err != nil {
+				return err
+			}
+			if latest.Status.KubernetesPort != 0 {
+				return nil
+			}
+			latest.Status.KubernetesPort = port
+			return r.Status().Update(ctx, latest)
+		}); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to update App status: %w", err)
 		}
 		// The status update causes a requeue.
 		return ctrl.Result{}, nil
 	}
 
+	// Clear a stale port when Kubernetes is disabled so the next enable
+	// resolves a fresh port rather than reusing one that may have been
+	// claimed by another process during the intervening idle window.
+	if !app.Spec.Kubernetes.Enabled && app.Status.KubernetesPort != 0 {
+		if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			latest := &v1alpha1.App{}
+			if err := r.Get(ctx, client.ObjectKey{Name: appName}, latest); err != nil {
+				return err
+			}
+			if latest.Status.KubernetesPort == 0 {
+				return nil
+			}
+			latest.Status.KubernetesPort = 0
+			return r.Status().Update(ctx, latest)
+		}); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to clear Kubernetes port: %w", err)
+		}
+		return ctrl.Result{}, nil
+	}
+
 	if apierrors.IsNotFound(limaVMErr) {
-		template, err := applySpecToTemplate(r.LimaTemplateData, app.Spec, app.Status)
+		template, err := applySpecToTemplate(r.LimaTemplateData, app.Spec, app.Status.KubernetesPort)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to apply spec to template: %w", err)
 		}
@@ -325,7 +360,7 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 				return ctrl.Result{}, fmt.Errorf("failed to fetch LimaVM template ConfigMap: %w", err)
 			}
 		} else {
-			desired, err := applySpecToTemplate(r.LimaTemplateData, app.Spec, app.Status)
+			desired, err := applySpecToTemplate(r.LimaTemplateData, app.Spec, app.Status.KubernetesPort)
 			if err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed to apply spec to template: %w", err)
 			}

@@ -32,8 +32,10 @@ provision:
   script: |
     #!/bin/bash
 
-    # All param need to be mentioned for Lima validation.
-    # $PARAM_KUBERNETES_PORT
+    # Lima validates that every declared `param:` entry is referenced somewhere
+    # in the template. The loop below uses bash indirection that Lima's static
+    # scanner cannot see, so list any params consumed only via ${!PARAM_@} here:
+    #   $PARAM_KUBERNETES_PORT
 
     set -o errexit -o nounset -o pipefail -o xtrace
 

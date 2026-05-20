@@ -64,6 +64,7 @@ spec:
   namespace: rancher-desktop
 
 status:
+  kubernetesPort: 7443
   conditions:
   - type: Created
     status: "True"
@@ -93,6 +94,8 @@ status:
 - **spec.kubernetes.enabled**: Whether Kubernetes should be enabled in the VM. Defaults to `false`. Propagated to the `KUBERNETES_ENABLED` Lima template param.
 
 - **spec.kubernetes.version**: The Kubernetes version to use (e.g. `"1.30.2"`). Defaults to `"1.30.2"`. Propagated to the `KUBERNETES_VERSION` Lima template param.
+
+- **status.kubernetesPort**: The host TCP port allocated for the k3s API server (`7441 + instance.Index()` by default). Set by the App reconciler on the first reconcile after `spec.kubernetes.enabled` becomes `true`, and cleared when `spec.kubernetes.enabled` is set back to `false` so that a fresh port is resolved on the next enable. The `KUBERNETES_PORT` Lima template param is set to this value; Lima's identity port-forward rule binds the same port on the host and forwards it to the guest.
 
 - **status.conditions**: Multiple controllers write here. The App controller mirrors `Created` and `Running` from the owned `LimaVM`, computes `Settled`, and the engine controller writes `ContainerEngineReady`. All writers use `retry.RetryOnConflict` with a re-Get so concurrent status updates do not 409.
 

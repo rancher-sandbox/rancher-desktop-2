@@ -7,13 +7,20 @@ package controllers
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
+	limav1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
 )
 
 // fakeDiscovery satisfies ControllerDiscovery for unit tests.
@@ -241,4 +248,155 @@ func Test_engineEnabled(t *testing.T) {
 			assert.Equal(t, r.engineEnabled(t.Context()), tt.want)
 		})
 	}
+}
+
+func Test_applySpecToTemplate(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name            string
+		spec            v1alpha1.AppSpec
+		status          v1alpha1.AppStatus
+		wantPortLine    string
+		wantEnabledLine string
+	}{
+		{
+			name: "kubernetes enabled with port set emits the port",
+			spec: v1alpha1.AppSpec{
+				Kubernetes: v1alpha1.KubernetesSpec{Enabled: true, Version: "1.32.0"},
+			},
+			status:          v1alpha1.AppStatus{KubernetesPort: 7443},
+			wantPortLine:    "  KUBERNETES_PORT: 7443",
+			wantEnabledLine: "  KUBERNETES_ENABLED: true",
+		},
+		{
+			name: "kubernetes disabled with port zero emits zero",
+			spec: v1alpha1.AppSpec{
+				Kubernetes: v1alpha1.KubernetesSpec{Enabled: false},
+			},
+			status:          v1alpha1.AppStatus{KubernetesPort: 0},
+			wantPortLine:    "  KUBERNETES_PORT: 0",
+			wantEnabledLine: "  KUBERNETES_ENABLED: false",
+		},
+		{
+			name: "kubernetes disabled but port previously set still emits port",
+			spec: v1alpha1.AppSpec{
+				Kubernetes: v1alpha1.KubernetesSpec{Enabled: false},
+			},
+			status:          v1alpha1.AppStatus{KubernetesPort: 7444},
+			wantPortLine:    "  KUBERNETES_PORT: 7444",
+			wantEnabledLine: "  KUBERNETES_ENABLED: false",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := applySpecToTemplate("", tt.spec, tt.status.KubernetesPort)
+			assert.NilError(t, err)
+			assert.Assert(t, strings.Contains(got, tt.wantPortLine),
+				"expected output to contain %q, got:\n%s", tt.wantPortLine, got)
+			assert.Assert(t, strings.Contains(got, tt.wantEnabledLine),
+				"expected output to contain %q, got:\n%s", tt.wantEnabledLine, got)
+		})
+	}
+}
+
+// newTestScheme returns a scheme with all types the AppReconciler touches.
+func newTestScheme(t *testing.T) *k8sruntime.Scheme {
+	t.Helper()
+	s := k8sruntime.NewScheme()
+	assert.NilError(t, corev1.AddToScheme(s))
+	assert.NilError(t, v1alpha1.AddToScheme(s))
+	assert.NilError(t, limav1alpha1.AddToScheme(s))
+	return s
+}
+
+func Test_Reconcile_resolvesKubernetesPort(t *testing.T) {
+	t.Parallel()
+
+	scheme := newTestScheme(t)
+
+	app := &v1alpha1.App{
+		ObjectMeta: metav1.ObjectMeta{Name: appName},
+		Spec: v1alpha1.AppSpec{
+			Running:    false,
+			Kubernetes: v1alpha1.KubernetesSpec{Enabled: true, Version: "1.32.0"},
+		},
+	}
+
+	c := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(app).
+		WithStatusSubresource(app).
+		Build()
+
+	r := &AppReconciler{
+		Client:           c,
+		Scheme:           scheme,
+		LimaTemplateData: "",
+	}
+
+	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+
+	// First reconcile: adds the cleanup finalizer and returns early.
+	_, err := r.Reconcile(context.Background(), req)
+	assert.NilError(t, err)
+
+	// Second reconcile: past the finalizer, discovers KubernetesPort == 0,
+	// calls ResolvePort, and persists a non-zero port to Status.
+	_, err = r.Reconcile(context.Background(), req)
+	assert.NilError(t, err)
+
+	result := &v1alpha1.App{}
+	assert.NilError(t, c.Get(context.Background(), client.ObjectKey{Name: appName}, result))
+	assert.Assert(t, result.Status.KubernetesPort != 0,
+		"expected Status.KubernetesPort to be set after reconcile, got 0")
+}
+
+func Test_Reconcile_clearsKubernetesPortOnDisable(t *testing.T) {
+	t.Parallel()
+
+	scheme := newTestScheme(t)
+
+	// App starts with Kubernetes disabled but a stale port from a previous enable.
+	app := &v1alpha1.App{
+		ObjectMeta: metav1.ObjectMeta{Name: appName},
+		Spec: v1alpha1.AppSpec{
+			Running:    false,
+			Kubernetes: v1alpha1.KubernetesSpec{Enabled: false},
+		},
+	}
+
+	c := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(app).
+		WithStatusSubresource(app).
+		Build()
+
+	// Inject a stale port directly into status (simulates a prior enable cycle).
+	app.Status.KubernetesPort = 7443
+	assert.NilError(t, c.Status().Update(context.Background(), app))
+
+	r := &AppReconciler{
+		Client:           c,
+		Scheme:           scheme,
+		LimaTemplateData: "",
+	}
+
+	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+
+	// First reconcile: adds the cleanup finalizer and returns early.
+	_, err := r.Reconcile(context.Background(), req)
+	assert.NilError(t, err)
+
+	// Second reconcile: Kubernetes disabled + port set → clears the port.
+	_, err = r.Reconcile(context.Background(), req)
+	assert.NilError(t, err)
+
+	result := &v1alpha1.App{}
+	assert.NilError(t, c.Get(context.Background(), client.ObjectKey{Name: appName}, result))
+	assert.Equal(t, result.Status.KubernetesPort, 0,
+		"expected Status.KubernetesPort to be cleared when Kubernetes is disabled")
 }
