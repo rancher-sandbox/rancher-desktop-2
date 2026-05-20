@@ -60,10 +60,17 @@ func (r *KubernetesReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (c
 
 	var app appv1alpha1.App
 	if err := r.Get(ctx, client.ObjectKey{Name: appName}, &app); err != nil {
+		log.V(1).Info("reconcile: App get failed", "err", err)
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	running := apimeta.IsStatusConditionTrue(app.Status.Conditions, appv1alpha1.AppConditionRunning)
+	log.V(1).Info("reconcile entered",
+		"k8sEnabled", app.Spec.Kubernetes.Enabled,
+		"running", running,
+		"generation", app.Generation,
+		"resourceVersion", app.ResourceVersion,
+	)
 
 	// When Kubernetes is disabled, stamp the condition and clean up.
 	if !app.Spec.Kubernetes.Enabled {

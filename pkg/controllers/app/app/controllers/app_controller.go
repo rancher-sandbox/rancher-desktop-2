@@ -151,6 +151,14 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	log.V(1).Info("reconcile entered",
+		"specRunning", app.Spec.Running,
+		"k8sEnabled", app.Spec.Kubernetes.Enabled,
+		"generation", app.Generation,
+		"resourceVersion", app.ResourceVersion,
+		"deletionTimestamp", app.DeletionTimestamp,
+	)
+
 	// Handle deletion, delete owned resources.
 	if base.IsBeingDeleted(&app) {
 		log.Info("App resource is being deleted, performing cleanup")
