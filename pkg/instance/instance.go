@@ -86,9 +86,17 @@ var ArgsFile = sync.OnceValue(func() string {
 	return filepath.Join(Dir(), "args.json")
 })
 
-// Config returns the path to the kubeconfig file.
+// Config returns the path to the rdd apiserver's kubeconfig.
+// `rdd ctl` pass-throughs export this path as KUBECONFIG.
 var Config = sync.OnceValue(func() string {
 	return filepath.Join(Dir(), "config.yaml")
+})
+
+// K3sConfig returns the path where the in-VM k3s kubeconfig is mirrored
+// by the Lima probe. Distinct from Config() so kubectl pass-throughs
+// keep talking to the rdd apiserver, not k3s.
+var K3sConfig = sync.OnceValue(func() string {
+	return filepath.Join(Dir(), "k3s.yaml")
 })
 
 // PIDFile returns the path to the service PID file.

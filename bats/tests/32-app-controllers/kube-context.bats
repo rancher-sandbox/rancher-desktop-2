@@ -83,7 +83,7 @@ kube_user_exists() { # <user-name>
     local context_name="rancher-desktop-${RDD_INSTANCE}"
 
     # Read the server URL from the instance kubeconfig (written by k3s).
-    run -0 rdd svc paths config
+    run -0 rdd svc paths k3s_config
     local instance_kubeconfig="${output}"
 
     run -0 kubectl --kubeconfig="${instance_kubeconfig}" \

@@ -135,7 +135,7 @@ func (r *KubernetesReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (c
 // server. Returns (false, err) when the kubeconfig is unreadable, (false, nil)
 // when the server is unhealthy, and (true, nil) on success.
 func probeK3sAPI(ctx context.Context) (bool, error) {
-	kubeconfigPath := instance.Config()
+	kubeconfigPath := instance.K3sConfig()
 	data, err := os.ReadFile(kubeconfigPath)
 	if err != nil {
 		return false, fmt.Errorf("read instance kubeconfig: %w", err)
@@ -196,7 +196,7 @@ func (r *KubernetesReconciler) manageKubeContext(ctx context.Context) {
 	contextName := instance.Name()
 	log := logf.FromContext(ctx).WithName("kube-context")
 
-	if err := createReplaceKubeContext(contextName, instance.Config()); err != nil {
+	if err := createReplaceKubeContext(contextName, instance.K3sConfig()); err != nil {
 		log.Error(err, "Failed to create Kubernetes context", "context", contextName)
 		return
 	}

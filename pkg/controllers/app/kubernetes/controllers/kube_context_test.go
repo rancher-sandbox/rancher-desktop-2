@@ -15,8 +15,8 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
-// makeSrcKubeconfig writes a minimal instance kubeconfig (matching what
-// storeKubeConfigToDisk produces) to dir/config.yaml and returns the path.
+// makeSrcKubeconfig writes a minimal k3s kubeconfig (matching what the
+// Lima probe copies) to dir/k3s.yaml and returns the path.
 func makeSrcKubeconfig(t *testing.T, dir string) string {
 	t.Helper()
 	cfg := clientcmdapi.NewConfig()
@@ -28,7 +28,7 @@ func makeSrcKubeconfig(t *testing.T, dir string) string {
 	cfg.Contexts["root"] = &clientcmdapi.Context{Cluster: "root", AuthInfo: "system-admin"}
 	cfg.CurrentContext = "root"
 
-	path := filepath.Join(dir, "config.yaml")
+	path := filepath.Join(dir, "k3s.yaml")
 	err := clientcmd.WriteToFile(*cfg, path)
 	assert.NilError(t, err)
 	return path

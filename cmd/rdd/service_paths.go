@@ -25,6 +25,7 @@ func instancePaths() map[string]string {
 		"lima_home":     instance.LimaHome(),
 		"tls_dir":       instance.TLSDir(),
 		"config":        instance.Config(),
+		"k3s_config":    instance.K3sConfig(),
 		"pid_file":      instance.PIDFile(),
 		"args_file":     instance.ArgsFile(),
 		"docker_socket": instance.DockerSocket(),

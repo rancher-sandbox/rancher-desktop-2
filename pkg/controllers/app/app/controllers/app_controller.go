@@ -116,7 +116,7 @@ func applySpecToTemplate(baseTemplate string, spec v1alpha1.AppSpec) (string, er
 		"param:",
 		fmt.Sprintf("  CONTAINER_ENGINE: %s", spec.ContainerEngine.Name),
 		fmt.Sprintf("  HOST_DOCKER_SOCKET: %q", instance.DockerSocket()),
-		fmt.Sprintf("  HOST_INSTANCE_CONFIG: %q", toLinuxPath(instance.Config())),
+		fmt.Sprintf("  HOST_INSTANCE_CONFIG: %q", toLinuxPath(instance.K3sConfig())),
 		fmt.Sprintf("  KUBERNETES_ENABLED: %v", spec.Kubernetes.Enabled),
 		fmt.Sprintf("  KUBERNETES_VERSION: %s", spec.Kubernetes.Version),
 		"",
