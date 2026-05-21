@@ -45,11 +45,12 @@ const (
 
 	// AppConditionSettled reports whether the reconcile chain has
 	// fully caught up with the current spec: observed generations on
-	// the feeding conditions match the App's generation, and the VM
-	// and engine have reached a stable state for the desired config.
-	// A spec change forces Settled to False; once the chain quiesces,
-	// the App reconciler flips it back to True. `rdd set` waits on
-	// this condition.
+	// the feeding conditions match the App's generation, and the VM,
+	// engine, and (when spec.kubernetes.enabled is true) Kubernetes
+	// have reached a stable state for the desired config. A spec
+	// change forces Settled to False; once the chain quiesces, the
+	// App reconciler flips it back to True. `rdd set` waits on this
+	// condition.
 	AppConditionSettled = "Settled"
 )
 

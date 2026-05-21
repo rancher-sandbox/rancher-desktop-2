@@ -97,7 +97,7 @@ status:
 
 - **status.kubernetesPort**: The host TCP port allocated for the k3s API server (`7441 + instance.Index()` by default). Set by the App reconciler on the first reconcile after `spec.kubernetes.enabled` becomes `true`, and cleared when `spec.kubernetes.enabled` is set back to `false` so that a fresh port is resolved on the next enable. The `KUBERNETES_PORT` Lima template param is set to this value; Lima's identity port-forward rule binds the same port on the host and forwards it to the guest.
 
-- **status.conditions**: Multiple controllers write here. The App controller mirrors `Created` and `Running` from the owned `LimaVM`, computes `Settled`, and the engine controller writes `ContainerEngineReady`. All writers use `retry.RetryOnConflict` with a re-Get so concurrent status updates do not 409.
+- **status.conditions**: Multiple controllers write here. The App controller mirrors `Created` and `Running` from the owned `LimaVM` and computes `Settled`, the engine controller writes `ContainerEngineReady`, and the Kubernetes controller writes `KubernetesReady`. All writers use `retry.RetryOnConflict` with a re-Get so concurrent status updates do not 409.
 
   | Type                   | Status    | Reason           | Description                                                       |
   |------------------------|-----------|------------------|-------------------------------------------------------------------|
@@ -114,15 +114,22 @@ status:
   | `ContainerEngineReady` | `True`    | `NotApplicable`  | Mirroring is not implemented for the current backend (e.g. `containerd`); forced `True` so `rdd set` can finish waiting |
   | `ContainerEngineReady` | `False`   | `ConnectFailed`  | Engine controller failed to connect to Docker                     |
   | `ContainerEngineReady` | `False`   | `Stopped`        | The VM is stopped; the engine watcher is not running              |
+  | `KubernetesReady`      | `True`    | `Ready`          | k3s API server is reachable; instance context merged into `~/.kube/config` |
+  | `KubernetesReady`      | `False`   | `NotApplicable`  | `spec.kubernetes.enabled` is false                                |
+  | `KubernetesReady`      | `False`   | `NotRunning`     | VM is not running, so k3s cannot be healthy                       |
+  | `KubernetesReady`      | `False`   | `Probing`        | Waiting for k3s API server to respond                             |
+  | `KubernetesReady`      | `False`   | `MergeFailed`    | k3s is reachable but merging the instance kubeconfig failed (see `message`) |
   | `Settled`              | `True`    | `Settled`        | Reconcile chain has caught up with the current spec               |
   | `Settled`              | `False`   | `WaitingForLimaVM` | The App has no `Running` condition yet (nothing mirrored from LimaVM) |
   | `Settled`              | `False`   | `WaitingForEngine` | Engine controller has not yet written `ContainerEngineReady`    |
   | `Settled`              | `False`   | `EngineStale`    | Engine controller has not yet observed the current generation     |
-  | `Settled`              | `False`   | *(forwarded)*    | Forwarded from the blocking `Running` or `ContainerEngineReady` reason |
+  | `Settled`              | `False`   | `WaitingForKubernetes` | Kubernetes controller has not yet written `KubernetesReady`  |
+  | `Settled`              | `False`   | `KubernetesStale` | Kubernetes controller has not yet observed the current generation |
+  | `Settled`              | `False`   | *(forwarded)*    | Forwarded from the blocking `Running`, `ContainerEngineReady`, or `KubernetesReady` reason |
 
   `Running=True` means the Lima guest has finished booting and SSH is reachable. It says nothing about the container engine socket; consumers that depend on the engine (container/image/volume mirrors, `docker` against the forwarded socket) must also check `ContainerEngineReady`, which flips to `True` only after the engine controller has connected to the socket and completed its initial full sync.
 
-  The `Created` and `Running` conditions are mirrored from LimaVM, so their `lastTransitionTime` reflects the LimaVM transition rather than the copy — the timestamp is meaningful for staleness checks. The engine reconciler stamps `ContainerEngineReady.observedGeneration` with the App's `metadata.generation` at the time it writes the condition; if the App's generation advances between the reconciler's read and write, the stamp reflects the write-time generation rather than the observed one. The App reconciler computes `Settled` from the mirrored `Running` and the engine-written `ContainerEngineReady`, and stamps its own `observedGeneration` with the `metadata.generation` observed when it computed the condition, not the generation at write time. The retry-on-conflict loop re-reads on 409, so a successful write always carries the current generation. `rdd set` waits for `Settled.status=True` with `observedGeneration >= post-patch metadata.generation`, so stale snapshots cannot prematurely satisfy the wait.
+  The `Created` and `Running` conditions are mirrored from LimaVM, so their `lastTransitionTime` reflects the LimaVM transition rather than the copy — the timestamp is meaningful for staleness checks. The engine reconciler stamps `ContainerEngineReady.observedGeneration` with the App's `metadata.generation` at the time it writes the condition; if the App's generation advances between the reconciler's read and write, the stamp reflects the write-time generation rather than the observed one. The App reconciler computes `Settled` from the mirrored `Running`, the engine-written `ContainerEngineReady`, and the Kubernetes-written `KubernetesReady` (the last only when `spec.kubernetes.enabled` is true), and stamps its own `observedGeneration` with the `metadata.generation` observed when it computed the condition, not the generation at write time. The retry-on-conflict loop re-reads on 409, so a successful write always carries the current generation. `rdd set` waits for `Settled.status=True` with `observedGeneration >= post-patch metadata.generation`, so stale snapshots cannot prematurely satisfy the wait.
 
 Deleting the `App` resource triggers the finalizer to stop and delete the owned LimaVM (and wait for the LimaVM controller to complete its own cleanup before removing the App finalizer).
 

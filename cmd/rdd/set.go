@@ -467,9 +467,10 @@ func patchApp(ctx context.Context, c client.Client, app *appv1alpha1.App, specMa
 // waitForDesiredState waits for the App reconcile chain to settle on
 // the new spec. Every property change waits for Settled=True with
 // ObservedGeneration >= minGen. Settled gates on the LimaVM reaching
-// its terminal phase (Started or Stopped) and, when the engine
-// controller is registered, on ContainerEngineReady=True at the
-// current generation.
+// its terminal phase (Started or Stopped), on ContainerEngineReady=True
+// at the current generation when the engine controller is registered,
+// and on KubernetesReady=True at the current generation when
+// spec.kubernetes.enabled is true.
 //
 // Filtering on ObservedGeneration >= minGen blocks a stale
 // Settled=True from a prior reconcile from satisfying the wait

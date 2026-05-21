@@ -38,9 +38,9 @@ import (
 // ControllerDiscovery enumerates controllers enabled across all controller
 // managers in this control plane. AppReconciler queries it during
 // reconciliation to decide whether Settled must wait for
-// ContainerEngineReady. The interface mirrors a small subset of
-// pkg/service/controllers.ControllerManagerDiscovery so tests can substitute
-// a fake without taking on the full dependency.
+// ContainerEngineReady or KubernetesReady. The interface mirrors a small
+// subset of pkg/service/controllers.ControllerManagerDiscovery so tests can
+// substitute a fake without taking on the full dependency.
 type ControllerDiscovery interface {
 	GetEnabledControllers(ctx context.Context) ([]string, error)
 }
