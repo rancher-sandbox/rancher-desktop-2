@@ -9,7 +9,7 @@ BATS_CORE := ./lib/bats-core/bin/bats
 # BATS_TIMEOUT=0 disables the wrapper entirely, which also disables
 # support-bundle capture; for long local runs, set a large value
 # (e.g. 86400) instead of 0.
-BATS_TIMEOUT ?= 1800
+BATS_TIMEOUT ?= 2700
 BATS = $(if $(filter-out 0,$(BATS_TIMEOUT)),../scripts/bats-with-timeout.sh $(BATS_TIMEOUT)) $(BATS_CORE)
 
 default: bats-all

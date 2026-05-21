@@ -67,12 +67,13 @@ func Test_computeSettledCondition(t *testing.T) {
 	}
 
 	tests := []struct {
-		name          string
-		app           *v1alpha1.App
-		engineEnabled bool
-		wantStatus    metav1.ConditionStatus
-		wantReason    string
-		wantMessage   string
+		name              string
+		app               *v1alpha1.App
+		engineEnabled     bool
+		kubernetesEnabled bool
+		wantStatus        metav1.ConditionStatus
+		wantReason        string
+		wantMessage       string
 	}{
 		{
 			name:          "no Running condition yet",
@@ -243,13 +244,94 @@ func Test_computeSettledCondition(t *testing.T) {
 			wantReason:    "ImplosionFailed",
 			wantMessage:   "the virtual machine did not implode",
 		},
+		// Kubernetes-gating cases.
+		{
+			name: "kubernetes disabled does not gate Settled",
+			app: makeApp(2, true,
+				running("Started", "VM is running", metav1.ConditionTrue, 2),
+				engine("Ready", "engine is ready", metav1.ConditionTrue, 2),
+			),
+			engineEnabled:     true,
+			kubernetesEnabled: true,
+			// spec.kubernetes.enabled == false (default) → kube gate skipped
+			wantStatus:  metav1.ConditionTrue,
+			wantReason:  v1alpha1.AppSettledReasonSettled,
+			wantMessage: settledMessageSettled,
+		},
+		{
+			name: "kubernetes enabled but condition missing holds Settled false",
+			app: func() *v1alpha1.App {
+				a := makeApp(2, true,
+					running("Started", "VM is running", metav1.ConditionTrue, 2),
+					engine("Ready", "engine is ready", metav1.ConditionTrue, 2),
+				)
+				a.Spec.Kubernetes.Enabled = true
+				return a
+			}(),
+			engineEnabled:     true,
+			kubernetesEnabled: true,
+			wantStatus:        metav1.ConditionFalse,
+			wantReason:        v1alpha1.AppSettledReasonWaitingForKubernetes,
+			wantMessage:       settledMessageWaitingForKubernetes,
+		},
+		{
+			name: "kubernetes ready at stale generation blocks Settled",
+			app: func() *v1alpha1.App {
+				a := makeApp(2, true,
+					running("Started", "VM is running", metav1.ConditionTrue, 2),
+					engine("Ready", "engine is ready", metav1.ConditionTrue, 2),
+					cond(v1alpha1.AppConditionKubernetesReady, v1alpha1.AppKubernetesReasonReady, "ready", metav1.ConditionTrue, 1),
+				)
+				a.Spec.Kubernetes.Enabled = true
+				return a
+			}(),
+			engineEnabled:     true,
+			kubernetesEnabled: true,
+			wantStatus:        metav1.ConditionFalse,
+			wantReason:        v1alpha1.AppSettledReasonKubernetesStale,
+			wantMessage:       settledMessageKubernetesStale,
+		},
+		{
+			name: "kubernetes not ready surfaces its reason",
+			app: func() *v1alpha1.App {
+				a := makeApp(2, true,
+					running("Started", "VM is running", metav1.ConditionTrue, 2),
+					engine("Ready", "engine is ready", metav1.ConditionTrue, 2),
+					cond(v1alpha1.AppConditionKubernetesReady, v1alpha1.AppKubernetesReasonProbing, "waiting", metav1.ConditionFalse, 2),
+				)
+				a.Spec.Kubernetes.Enabled = true
+				return a
+			}(),
+			engineEnabled:     true,
+			kubernetesEnabled: true,
+			wantStatus:        metav1.ConditionFalse,
+			wantReason:        v1alpha1.AppKubernetesReasonProbing,
+			wantMessage:       "waiting",
+		},
+		{
+			name: "all conditions ready with kubernetes settles",
+			app: func() *v1alpha1.App {
+				a := makeApp(2, true,
+					running("Started", "VM is running", metav1.ConditionTrue, 2),
+					engine("Ready", "engine is ready", metav1.ConditionTrue, 2),
+					cond(v1alpha1.AppConditionKubernetesReady, v1alpha1.AppKubernetesReasonReady, "ready", metav1.ConditionTrue, 2),
+				)
+				a.Spec.Kubernetes.Enabled = true
+				return a
+			}(),
+			engineEnabled:     true,
+			kubernetesEnabled: true,
+			wantStatus:        metav1.ConditionTrue,
+			wantReason:        v1alpha1.AppSettledReasonSettled,
+			wantMessage:       settledMessageSettled,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := computeSettledCondition(tt.app, tt.engineEnabled)
+			got := computeSettledCondition(tt.app, tt.engineEnabled, tt.kubernetesEnabled)
 			assert.Equal(t, got.Type, v1alpha1.AppConditionSettled)
 			assert.Equal(t, got.Status, tt.wantStatus)
 			assert.Equal(t, got.Reason, tt.wantReason)

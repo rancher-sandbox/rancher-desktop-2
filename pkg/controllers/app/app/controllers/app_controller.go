@@ -58,11 +58,13 @@ const (
 // Messages for the Settled condition. Kept as constants so tests can
 // assert on them without duplicating string literals.
 const (
-	settledMessageSettled          = "App has reached the desired state"
-	settledMessageWaitingForLimaVM = "Waiting for LimaVM to report its state"
-	settledMessageWaitingForEngine = "Waiting for container engine condition"
-	settledMessageEngineStale      = "Container engine needs to be synchronized"
-	settledMessageLimaVMNotReached = "LimaVM has not yet reached "
+	settledMessageSettled              = "App has reached the desired state"
+	settledMessageWaitingForLimaVM     = "Waiting for LimaVM to report its state"
+	settledMessageWaitingForEngine     = "Waiting for container engine condition"
+	settledMessageEngineStale          = "Container engine needs to be synchronized"
+	settledMessageWaitingForKubernetes = "Waiting for Kubernetes condition"
+	settledMessageKubernetesStale      = "Kubernetes context needs to be synchronized"
+	settledMessageLimaVMNotReached     = "LimaVM has not yet reached "
 )
 
 // AppReconciler reconciles the singleton App resource and manages its LimaVM lifecycle.
@@ -72,10 +74,10 @@ type AppReconciler struct {
 	LimaTemplateData string
 
 	// Discovery is consulted on each reconcile to determine whether the
-	// engine controller is enabled in any controller manager. When it
-	// is, Settled gates on ContainerEngineReady; when it is not, the
-	// engine condition is ignored. nil disables the engine gate, which
-	// is appropriate for unit tests that do not exercise the engine.
+	// engine and/or kubernetes controllers are enabled in any controller
+	// manager. When enabled, Settled gates on ContainerEngineReady /
+	// KubernetesReady respectively. nil disables both gates, which is
+	// appropriate for unit tests that do not exercise those controllers.
 	Discovery ControllerDiscovery
 }
 
@@ -94,6 +96,22 @@ func (r *AppReconciler) engineEnabled(ctx context.Context) bool {
 	return slices.Contains(enabled, v1alpha1.EngineControllerName)
 }
 
+// kubernetesEnabled reports whether KubernetesReady should gate Settled
+// (only when spec.kubernetes.enabled is also true).
+// On discovery errors it defaults to true so the wait does not return
+// prematurely while discovery is transiently unavailable.
+func (r *AppReconciler) kubernetesEnabled(ctx context.Context) bool {
+	if r.Discovery == nil {
+		return false
+	}
+	enabled, err := r.Discovery.GetEnabledControllers(ctx)
+	if err != nil {
+		logf.FromContext(ctx).Error(err, "Failed to query controller-manager discovery; assuming kubernetes controller is enabled")
+		return true
+	}
+	return slices.Contains(enabled, v1alpha1.KubernetesControllerName)
+}
+
 func applySpecToTemplate(baseTemplate string, spec v1alpha1.AppSpec, kubernetesPort int) (string, error) {
 	hostHome, err := os.UserHomeDir()
 	if err != nil {
@@ -105,6 +123,7 @@ func applySpecToTemplate(baseTemplate string, spec v1alpha1.AppSpec, kubernetesP
 		fmt.Sprintf("  CONTAINER_ENGINE: %s", spec.ContainerEngine.Name),
 		fmt.Sprintf("  HOST_DOCKER_SOCKET: %q", instance.DockerSocket()),
 		fmt.Sprintf("  HOST_HOME_GUEST: %q", toLinuxPath(hostHome)),
+		fmt.Sprintf("  HOST_INSTANCE_CONFIG: %q", toLinuxPath(instance.K3sConfig())),
 		fmt.Sprintf("  KUBERNETES_ENABLED: %v", spec.Kubernetes.Enabled),
 		fmt.Sprintf("  KUBERNETES_VERSION: %s", spec.Kubernetes.Version),
 		fmt.Sprintf("  KUBERNETES_PORT: %d", kubernetesPort),
@@ -412,6 +431,7 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 	// EngineReconciler.setEngineCondition; without it, concurrent
 	// writers 409-loop through controller-runtime requeues.
 	engineEnabled := r.engineEnabled(ctx)
+	kubernetesEnabled := r.kubernetesEnabled(ctx)
 	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		latest := &v1alpha1.App{}
 		if err := r.Get(ctx, client.ObjectKeyFromObject(&app), latest); err != nil {
@@ -430,7 +450,7 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 				LastTransitionTime: cond.LastTransitionTime,
 			}) || changed
 		}
-		settled := computeSettledCondition(latest, engineEnabled)
+		settled := computeSettledCondition(latest, engineEnabled, kubernetesEnabled)
 		changed = apimeta.SetStatusCondition(&latest.Status.Conditions, settled) || changed
 		if !changed {
 			return nil
@@ -446,24 +466,28 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 
 // computeSettledCondition derives Settled from the feeding conditions
 // that live on app.Status.Conditions: the LimaVM Running condition
-// (mirrored just above) and ContainerEngineReady (written by the
-// engine controller). The output condition carries the App's current
-// generation, so waiters can filter out snapshots from earlier spec
-// versions.
+// (mirrored just above), ContainerEngineReady (written by the engine
+// controller), and KubernetesReady (written by the kubernetes controller).
+// The output condition carries the App's current generation, so waiters can
+// filter out snapshots from earlier spec versions.
 //
 // Settled answers "has the reconcile chain caught up with the current
 // spec?". It goes True when the VM has reached the desired running
-// state with a terminal reason (Started/Stopped) and the engine has
-// observed and processed the current generation. A transient phase
-// (Starting, Stopping, Reconciling, RestartNeeded) holds Settled at
-// False even if the VM is momentarily running, so `rdd set` does not
-// return before the chain stabilises.
+// state with a terminal reason (Started/Stopped) and all enabled
+// sub-controllers have observed and processed the current generation.
+// A transient phase (Starting, Stopping, Reconciling, RestartNeeded)
+// holds Settled at False even if the VM is momentarily running, so
+// `rdd set` does not return before the chain stabilises.
 //
 // engineEnabled is false when no controller in this process writes
 // ContainerEngineReady; in that case the engine condition is ignored.
-func computeSettledCondition(app *v1alpha1.App, engineEnabled bool) metav1.Condition {
+// kubernetesEnabled is false when no controller writes KubernetesReady;
+// it also gates on spec.kubernetes.enabled so a stopped cluster does not
+// hold Settled pending.
+func computeSettledCondition(app *v1alpha1.App, engineEnabled, kubernetesEnabled bool) metav1.Condition {
 	runningCond := apimeta.FindStatusCondition(app.Status.Conditions, v1alpha1.AppConditionRunning)
 	engineCond := apimeta.FindStatusCondition(app.Status.Conditions, v1alpha1.AppConditionContainerEngineReady)
+	kubeCond := apimeta.FindStatusCondition(app.Status.Conditions, v1alpha1.AppConditionKubernetesReady)
 	desiredRunning := app.Spec.Running
 
 	settled := metav1.Condition{
@@ -486,11 +510,11 @@ func computeSettledCondition(app *v1alpha1.App, engineEnabled bool) metav1.Condi
 		settled.Status = metav1.ConditionFalse
 		settled.Reason = runningCond.Reason
 		settled.Message = runningLimaVMMessage(runningCond, "Stopped")
-	case !engineEnabled:
+	case !engineEnabled && !kubernetesEnabled:
 		settled.Status = metav1.ConditionTrue
 		settled.Reason = v1alpha1.AppSettledReasonSettled
 		settled.Message = settledMessageSettled
-	case !desiredRunning:
+	case !desiredRunning && engineEnabled:
 		// Wait for the engine reconciler to confirm cleanup for this
 		// generation before declaring settled. Two conditions must both
 		// hold:
@@ -520,18 +544,36 @@ func computeSettledCondition(app *v1alpha1.App, engineEnabled bool) metav1.Condi
 			settled.Reason = v1alpha1.AppSettledReasonSettled
 			settled.Message = settledMessageSettled
 		}
-	case engineCond == nil:
+	case !desiredRunning:
+		// Engine is disabled; kubernetes context cleanup is async and
+		// does not block settling. A stopped VM is settled regardless.
+		settled.Status = metav1.ConditionTrue
+		settled.Reason = v1alpha1.AppSettledReasonSettled
+		settled.Message = settledMessageSettled
+	case engineEnabled && engineCond == nil:
 		settled.Status = metav1.ConditionFalse
 		settled.Reason = v1alpha1.AppSettledReasonWaitingForEngine
 		settled.Message = settledMessageWaitingForEngine
-	case engineCond.ObservedGeneration < app.Generation:
+	case engineEnabled && engineCond.ObservedGeneration < app.Generation:
 		settled.Status = metav1.ConditionFalse
 		settled.Reason = v1alpha1.AppSettledReasonEngineStale
 		settled.Message = settledMessageEngineStale
-	case engineCond.Status != metav1.ConditionTrue:
+	case engineEnabled && engineCond.Status != metav1.ConditionTrue:
 		settled.Status = metav1.ConditionFalse
 		settled.Reason = engineCond.Reason
 		settled.Message = engineCond.Message
+	case kubernetesEnabled && app.Spec.Kubernetes.Enabled && kubeCond == nil:
+		settled.Status = metav1.ConditionFalse
+		settled.Reason = v1alpha1.AppSettledReasonWaitingForKubernetes
+		settled.Message = settledMessageWaitingForKubernetes
+	case kubernetesEnabled && app.Spec.Kubernetes.Enabled && kubeCond.ObservedGeneration < app.Generation:
+		settled.Status = metav1.ConditionFalse
+		settled.Reason = v1alpha1.AppSettledReasonKubernetesStale
+		settled.Message = settledMessageKubernetesStale
+	case kubernetesEnabled && app.Spec.Kubernetes.Enabled && kubeCond.Status != metav1.ConditionTrue:
+		settled.Status = metav1.ConditionFalse
+		settled.Reason = kubeCond.Reason
+		settled.Message = kubeCond.Message
 	default:
 		settled.Status = metav1.ConditionTrue
 		settled.Reason = v1alpha1.AppSettledReasonSettled

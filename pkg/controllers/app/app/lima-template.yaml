@@ -11,6 +11,9 @@ containerd:
   system: false
   user: false
 portForwards:
+- guestPort: 6443
+  hostIP: 127.0.0.1
+  hostPort: 6443
 - guestIPMustBeZero: true
   guestPortRange:
   - 1
@@ -87,7 +90,7 @@ provision:
     systemctl start --no-block rancher-desktop.target
 
 probes:
-- description: Update kube config on the host
+- description: Write k3s kubeconfig to instance config path
   script: |
     #!/bin/bash
 
@@ -103,21 +106,11 @@ probes:
     for _ in $(seq 300); do
         if [[ -e $K3S_YAML ]]; then
             sleep 1
-            # Rename the default context/user/cluster to "rancher-desktop".
-            KUBECONFIG_LOCAL="$HOME/.kube/config"
-            mkdir -p "$(dirname "$KUBECONFIG_LOCAL")"
-            sudo sed 's/: default$/: rancher-desktop/g' "$K3S_YAML" >"$KUBECONFIG_LOCAL"
-            # Merge into the host kubeconfig.
-            KUBECONFIG_MERGED=$HOME/kubeconfig
-            KUBECONFIG_HOST="$PARAM_HOST_HOME_GUEST/.kube/config"
-            export KUBECONFIG="$KUBECONFIG_HOST:$KUBECONFIG_LOCAL"
-            kubectl config view --merge --flatten >"$KUBECONFIG_MERGED" || break
-            # Only overwrite if the merged config has at least as many contexts.
-            HOST_CONFIGS=$(KUBECONFIG=$KUBECONFIG_HOST kubectl config get-contexts -o name | wc -l)
-            MERGED_CONFIGS=$(KUBECONFIG=$KUBECONFIG_MERGED kubectl config get-contexts -o name | wc -l)
-            if [[ "$HOST_CONFIGS" -le "$MERGED_CONFIGS" ]]; then
-                cp "$KUBECONFIG_MERGED" "$KUBECONFIG_HOST"
-            fi
+            # Copy the raw k3s kubeconfig to the host instance config path.
+            # The kubernetes controller on the host reads this file to probe
+            # the API server and manage the user's ~/.kube/config context.
+            mkdir -p "$(dirname "$PARAM_HOST_INSTANCE_CONFIG")"
+            sudo cp "$K3S_YAML" "$PARAM_HOST_INSTANCE_CONFIG"
             exit 0
         fi
         sleep 1
