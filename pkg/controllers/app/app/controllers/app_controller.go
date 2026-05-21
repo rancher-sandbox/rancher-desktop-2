@@ -138,6 +138,13 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	log.V(1).Info("reconcile entered",
+		"specRunning", app.Spec.Running,
+		"generation", app.Generation,
+		"resourceVersion", app.ResourceVersion,
+		"beingDeleted", app.DeletionTimestamp != nil,
+	)
+
 	// Handle deletion, delete owned resources.
 	if base.IsBeingDeleted(&app) {
 		log.Info("App resource is being deleted, performing cleanup")
