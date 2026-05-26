@@ -55,6 +55,7 @@ RDD includes controllers for multiple API groups. Each group can be separately v
 
 Provides basic infrastructure services. Examples include:
 
+* [embedded resources](embed.md) allow controllers to embed binary data in the `rdd` binary and share it via an `embed://` URL scheme
 * [resource APIs](api_resource.md) for downloading, caching and locating files
 * [url monitoring APIs](api_url_monitor.md) periodically check for new versions
 * [diagnostics APIs](api_diagnostic.md) can raise warnings and errors from any component
