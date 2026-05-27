@@ -62,7 +62,9 @@ provision:
     if [[ $PARAM_KUBERNETES_ENABLED == "true" ]]; then
         export INSTALL_K3S_VERSION="v${PARAM_KUBERNETES_VERSION}+k3s1"
         INSTALLED_VERSION=""
-        [[ -x /usr/local/bin/k3s ]] && INSTALLED_VERSION=$(/usr/local/bin/k3s --version | awk '{print $3; exit}')
+        # awk must read to EOF; `{print; exit}` closes the pipe while k3s
+        # is still writing, and the SIGPIPE propagates via pipefail + errexit.
+        [[ -x /usr/local/bin/k3s ]] && INSTALLED_VERSION=$(/usr/local/bin/k3s --version | awk 'NR==1{print $3}')
         if [[ $INSTALL_K3S_VERSION != "${INSTALLED_VERSION}" ]]; then
             # Don't enable k3s at install time; add it as a want of rancher-desktop.target instead.
             export INSTALL_K3S_SKIP_ENABLE=true

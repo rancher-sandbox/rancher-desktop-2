@@ -18,6 +18,13 @@
 
 set -o errexit -o nounset -o pipefail
 
+# The rdd ctl probes in dump_api_state auto-start the service when bats
+# stopped it. Each start rotates rdd.stderr.log; without RDD_KEEP_LOGS,
+# rotation prunes the oldest numbered files, and a failure in the first
+# .bats file of a suite loses its log forever. bats itself sets this in
+# bats/helpers/defaults.bash, but that scope ends when bats exits.
+export RDD_KEEP_LOGS=1
+
 timeout_seconds=$1
 shift
 
