@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -147,18 +148,28 @@ func TestWatchReturnsOnCtxCancel(t *testing.T) {
 // TestWatchPropagatesTailError forces the stdout tail to die with a
 // fatal error and asserts that Watch surfaces that error to the
 // caller, instead of returning nil when the Lines channel closes.
-// The setup uses a path whose parent is a regular file, so
-// os.OpenFile returns ENOTDIR — a non-IsNotExist error that
-// tail.reopen() wraps and uses to kill the tomb.
+// The trigger differs by OS: POSIX uses a regular file as an
+// intermediate path component (ENOTDIR); Windows uses a reserved
+// character ('?') in a path component (ERROR_INVALID_NAME). Both are
+// non-IsNotExist errors; tail.reopen wraps them and kills the tomb.
+// On Windows, '?' is unambiguously rejected — unlike ':', which the
+// NTFS alternate-data-stream syntax can coerce into a path-not-found
+// that matches IsNotExist.
 func TestWatchPropagatesTailError(t *testing.T) {
 	dir := t.TempDir()
-	intermediate := filepath.Join(dir, "not-a-dir")
-	err := os.WriteFile(intermediate, []byte("x"), 0o644)
-	assert.NilError(t, err)
-	stdoutPath := filepath.Join(intermediate, "ha.stdout.log")
+
+	var stdoutPath string
+	if runtime.GOOS == "windows" {
+		stdoutPath = filepath.Join(dir, "bad?dir", "ha.stdout.log")
+	} else {
+		intermediate := filepath.Join(dir, "not-a-dir")
+		err := os.WriteFile(intermediate, []byte("x"), 0o644)
+		assert.NilError(t, err)
+		stdoutPath = filepath.Join(intermediate, "ha.stdout.log")
+	}
 
 	stderrPath := filepath.Join(dir, "ha.stderr.log")
-	_, err = os.Create(stderrPath)
+	_, err := os.Create(stderrPath)
 	assert.NilError(t, err)
 
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
