@@ -40,6 +40,21 @@ const (
 	kubeProbeRequeue = 5 * time.Second
 )
 
+func (r probeResult) String() string {
+	switch r {
+	case probeHealthy:
+		return "Healthy"
+	case probeUnreachable:
+		return "Unreachable"
+	case probeUnhealthy:
+		return "Unhealthy"
+	case probeAmbiguous:
+		return "Ambiguous"
+	default:
+		return fmt.Sprintf("probeResult(%d)", int(r))
+	}
+}
+
 // KubernetesReconciler watches the App resource and manages the
 // rancher-desktop-{instance} context in ~/.kube/config.
 type KubernetesReconciler struct {
