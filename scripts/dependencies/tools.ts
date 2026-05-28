@@ -1,24 +1,30 @@
-import fs from 'fs';
-import os from 'os';
 import path from 'path';
 
+import { defined } from '@/pkg/rancher-desktop/utils/typeUtils';
 import {
   DownloadContext,
-  findChecksum,
-  getPublishedReleaseTagNames,
+  downloadAndHash,
+  fetchUpstreamChecksums,
   GitHubDependency,
   GlobalDependency,
+  lookupChecksum,
+  Sha256Checksum,
 } from '@/scripts/lib/dependencies';
 import {
-  download,
   downloadTarGZ,
 } from '@/scripts/lib/download';
-import { simpleSpawn } from '@/scripts/simple_process';
 
 function exeName(context: DownloadContext, name: string) {
   const onWindows = context.platform === 'win32';
 
   return `${ name }${ onWindows ? '.exe' : '' }`;
+}
+
+export function cartesian<A extends string, B extends string>(
+  as: readonly A[],
+  bs: readonly B[],
+): [A, B][] {
+  return as.flatMap(a => bs.map<[A, B]>(b => [a, b]));
 }
 
 export class GoLangCILint extends GlobalDependency(GitHubDependency) {
@@ -31,6 +37,10 @@ export class GoLangCILint extends GlobalDependency(GitHubDependency) {
     // use `go run` with the appropriate package.
     return Promise.resolve();
   }
+
+  getChecksums(version: string): Promise<Record<string, Sha256Checksum>> {
+    return Promise.resolve({});
+  }
 }
 
 export class CheckSpelling extends GlobalDependency(GitHubDependency) {
@@ -42,6 +52,10 @@ export class CheckSpelling extends GlobalDependency(GitHubDependency) {
     // We don't download anything there; `scripts/spelling.sh` does the cloning.
     return Promise.resolve();
   }
+
+  getChecksums(version: string): Promise<Record<string, Sha256Checksum>> {
+    return Promise.resolve({});
+  }
 }
 
 export class Steve extends GlobalDependency(GitHubDependency) {
@@ -51,84 +65,32 @@ export class Steve extends GlobalDependency(GitHubDependency) {
   readonly releaseFilter = 'published-pre';
 
   async download(context: DownloadContext): Promise<void> {
-    const steveURLBase = `https://github.com/${ this.githubOwner }/${ this.githubRepo }/releases/download/v${ context.versions.steve }`;
+    const steveURLBase = `https://github.com/${ this.githubOwner }/${ this.githubRepo }/releases/download/v${ context.dependencies.steve.version }`;
     const arch = context.isM1 ? 'arm64' : 'amd64';
-    const steveExecutable = `steve-${ context.goPlatform }-${ arch }`;
-    const steveURL = `${ steveURLBase }/${ steveExecutable }.tar.gz`;
+    const archiveName = `steve-${ context.goPlatform }-${ arch }.tar.gz`;
+    const steveURL = `${ steveURLBase }/${ archiveName }`;
     const stevePath = path.join(context.internalDir, exeName(context, 'steve'));
-    const steveSHA = await findChecksum(`${ steveURL }.sha512sum`, `${ steveExecutable }.tar.gz`);
+    const expectedChecksum = lookupChecksum(context, this.name, archiveName);
 
-    await downloadTarGZ(
-      steveURL,
-      stevePath,
-      {
-        expectedChecksum:  steveSHA,
-        checksumAlgorithm: 'sha512',
-      });
+    await downloadTarGZ(steveURL, stevePath, { expectedChecksum });
   }
-}
 
-export class RancherDashboard extends GlobalDependency(GitHubDependency) {
-  readonly name = 'rancherDashboard';
-  readonly githubOwner = 'rancher-sandbox';
-  readonly githubRepo = 'rancher-desktop-dashboard';
-  readonly releaseFilter = 'custom';
+  async getChecksums(version: string): Promise<Record<string, Sha256Checksum>> {
+    const steveURLBase = `https://github.com/${ this.githubOwner }/${ this.githubRepo }/releases/download/v${ version }`;
+    const upstream = await fetchUpstreamChecksums(`${ steveURLBase }/steve.sha512sum`, 'sha512');
+    const archiveMatch = /^steve-(linux|darwin|windows)-(amd64|arm64)\.tar\.gz$/;
 
-  async download(context: DownloadContext): Promise<void> {
-    const baseURL = `https://github.com/rancher-sandbox/${ this.githubRepo }/releases/download/desktop-v${ context.versions.rancherDashboard }`;
-    const executableName = 'rancher-dashboard-desktop-embed';
-    const url = `${ baseURL }/${ executableName }.tar.gz`;
-    const destPath = path.join(context.resourcesDir, 'rancher-dashboard.tgz');
-    const expectedChecksum = await findChecksum(`${ url }.sha512sum`, `${ executableName }.tar.gz`);
-    const rancherDashboardDir = path.join(context.resourcesDir, 'rancher-dashboard');
-
-    if (fs.existsSync(rancherDashboardDir)) {
-      console.log(`${ rancherDashboardDir } already exists, not re-downloading.`);
-
-      return;
-    }
-
-    await download(
-      url,
-      destPath,
-      {
-        expectedChecksum,
-        checksumAlgorithm: 'sha512',
-        access:            fs.constants.W_OK,
-      });
-
-    await fs.promises.mkdir(rancherDashboardDir, { recursive: true });
-
-    const args = ['tar', '-xf', destPath];
-
-    if (os.platform().startsWith('win')) {
-      // On Windows, force use the bundled bsdtar.
-      // We may find GNU tar on the path, which looks at the Windows-style path
-      // and considers C:\Temp to be a reference to a remote host named `C`.
-      const systemRoot = process.env.SystemRoot;
-
-      if (!systemRoot) {
-        throw new Error('Could not find system root');
+    return Object.fromEntries((await Promise.all(Object.keys(upstream).map(async(archiveName) => {
+      if (!archiveMatch.test(archiveName)) {
+        return;
       }
-      args[0] = path.join(systemRoot, 'system32', 'tar.exe');
-    }
 
-    console.log('Extracting rancher dashboard...');
-    await simpleSpawn(args[0], args.slice(1), {
-      cwd:   rancherDashboardDir,
-      stdio: ['ignore', 'inherit', 'inherit'],
-    });
+      const url = `${ steveURLBase }/${ archiveName }`;
+      const checksum = await downloadAndHash(url, {
+        verify: { algorithm: 'sha512', expected: upstream[archiveName] },
+      });
 
-    await fs.promises.rm(destPath, { recursive: true, maxRetries: 10 });
-  }
-
-  async getAvailableVersions(): Promise<string[]> {
-    const tagNames = await getPublishedReleaseTagNames(this.githubOwner, this.githubRepo, 'published');
-
-    return tagNames.map((tagName: string) => tagName.replace(/^desktop-v/, ''));
-  }
-
-  versionToTagName(version: string): string {
-    return `desktop-v${ version }`;
+      return [archiveName, checksum] as const;
+    }))).filter(defined));
   }
 }

@@ -290,4 +290,23 @@ func TestParse(t *testing.T) {
 			assert.Equal(t, []string{"subcommand", "--foo", "FOO"}, result.args)
 		}
 	})
+	t.Run("compose down volumes flag is boolean", func(t *testing.T) {
+		t.Parallel()
+		for _, flag := range []string{"--volumes", "-v"} {
+			t.Run(flag, func(t *testing.T) {
+				t.Parallel()
+				result, err := commands[""].parse([]string{"compose", "down", flag})
+				if assert.NoError(t, err) {
+					assert.Equal(t, []string{"compose", "down", flag}, result.args)
+				}
+			})
+		}
+		t.Run("--volumes=false", func(t *testing.T) {
+			t.Parallel()
+			result, err := commands[""].parse([]string{"compose", "down", "--volumes=false"})
+			if assert.NoError(t, err) {
+				assert.Equal(t, []string{"compose", "down", "--volumes=false"}, result.args)
+			}
+		})
+	})
 }

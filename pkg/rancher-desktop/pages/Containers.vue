@@ -144,7 +144,7 @@ import { IoRancherdesktopContainersV1alpha1Container as Container } from '@rdd-c
 
 interface Action {
   label:       string;
-  action?:     string;
+  action:      string;
   enabled:     boolean;
   bulkable:    boolean;
   bulkAction?: string;

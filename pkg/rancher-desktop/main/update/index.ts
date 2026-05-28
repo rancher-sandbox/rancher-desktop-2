@@ -8,10 +8,9 @@ import timers from 'timers';
 
 import { CustomPublishOptions } from 'builder-util-runtime';
 import Electron from 'electron';
-import {
-  AppImageUpdater, MacUpdater, AppUpdater, ProgressInfo, UpdateInfo,
-} from 'electron-updater';
+import { AppImageUpdater } from 'electron-updater/out/AppImageUpdater';
 import { ElectronAppAdapter } from 'electron-updater/out/ElectronAppAdapter';
+import { MacUpdater } from 'electron-updater/out/MacUpdater';
 import yaml from 'yaml';
 
 import LonghornProvider, { hasQueuedUpdate, LonghornUpdateInfo, setHasQueuedUpdate } from './LonghornProvider';
@@ -21,6 +20,8 @@ import { Settings } from '@pkg/config/settings';
 import mainEvent from '@pkg/main/mainEvents';
 import Logging from '@pkg/utils/logging';
 import * as window from '@pkg/window';
+
+import type { AppUpdater, ProgressInfo, UpdateInfo } from 'electron-updater';
 
 const console = Logging.update;
 
@@ -280,22 +281,32 @@ async function doInitialUpdateCheck(doInstall = false): Promise<boolean> {
  */
 async function triggerUpdateCheck() {
   if (state !== State.DOWNLOADING) {
-    const result = await autoUpdater.checkForUpdates();
+    try {
+      const result = await autoUpdater.checkForUpdates();
 
-    if (!result) {
-      // App update is disabled (likely because the app is not packaged).
-      return;
+      if (!result) {
+        // App update is disabled.
+        return;
+      }
+
+      if (!isLonghornUpdateInfo(result.updateInfo)) {
+        throw new Error('result.updateInfo is not of type LonghornUpdateInfo');
+      }
+      const updateInfo = result.updateInfo;
+      const givenTimeDelta = (updateInfo.nextUpdateTime || 0) - Date.now();
+
+      // Enforce at least one minute between checks, even if the server is reporting
+      // bad times.
+      updateInterval = Math.max(givenTimeDelta, 60_000);
+      console.log(`Update check complete; next check at ${ new Date(Date.now() + updateInterval).toISOString() }`);
+    } catch (ex) {
+      // Without catching here, a transient failure (network blip, malformed
+      // server response, missing release asset) would skip the timer rearm
+      // below and silently stop all future checks until the app restarts.
+      // Retry in 10 minutes to recover within a normal session.
+      console.error('Error checking for updates; will retry in 10 minutes:', ex);
+      updateInterval = 10 * 60_000;
     }
-
-    if (!isLonghornUpdateInfo(result.updateInfo)) {
-      throw new Error('result.updateInfo is not of type LonghornUpdateInfo');
-    }
-    const updateInfo = result.updateInfo;
-    const givenTimeDelta = (updateInfo.nextUpdateTime || 0) - Date.now();
-
-    // Enforce at least one minute between checks, even if the server is reporting
-    // bad times.
-    updateInterval = Math.max(givenTimeDelta, 60_000);
   }
 
   // regardless of whether we actually made the check, schedule the next check.

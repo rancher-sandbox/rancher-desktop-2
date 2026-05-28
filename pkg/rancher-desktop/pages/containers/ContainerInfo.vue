@@ -21,6 +21,12 @@
         pty process across tab switches).
       -->
       <tab
+        label="Info"
+        name="tab-info"
+        :weight="2"
+        @active="activeTab = 'tab-info'"
+      />
+      <tab
         label="Logs"
         name="tab-logs"
         :weight="1"
@@ -94,6 +100,11 @@
         </li>
       </template>
       <div class="tab-content">
+        <container-inspect
+          v-if="containerId && activeTab === 'tab-info'"
+          :container-id="containerId"
+          :namespace="namespace"
+        />
         <container-logs
           v-if="containerId && activeTab === 'tab-logs'"
           ref="containerLogs"
@@ -123,6 +134,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute } from 'vue-router';
 import { useStore } from 'vuex';
 
+import ContainerInspect from '@pkg/components/ContainerInspect.vue';
 import ContainerLogs from '@pkg/components/ContainerLogs.vue';
 import ContainerShell from '@pkg/components/ContainerShell.vue';
 import RdTabbed from '@pkg/components/Tabbed/RdTabbed.vue';
@@ -139,7 +151,7 @@ const searchInput = ref<HTMLInputElement | null>(null);
 
 // Reactive data
 const searchTerm = ref('');
-const activeTab = ref<'tab-logs' | 'tab-shell'>('tab-logs');
+const activeTab = ref<'tab-info' | 'tab-logs' | 'tab-shell'>('tab-info');
 const shellEverActivated = ref(false);
 
 // Vuex integration

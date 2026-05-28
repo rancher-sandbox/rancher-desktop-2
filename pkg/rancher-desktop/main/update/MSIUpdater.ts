@@ -2,8 +2,8 @@ import { spawn } from 'child_process';
 import path from 'path';
 
 import { AllPublishOptions, newError } from 'builder-util-runtime';
-import { NsisUpdater } from 'electron-updater';
 import { InstallOptions } from 'electron-updater/out/BaseUpdater';
+import { NsisUpdater } from 'electron-updater/out/NsisUpdater';
 import { ElectronHttpExecutor } from 'electron-updater/out/electronHttpExecutor';
 import { findFile } from 'electron-updater/out/providers/Provider';
 import { verifySignature } from 'electron-updater/out/windowsExecutableCodeSignatureVerifier';

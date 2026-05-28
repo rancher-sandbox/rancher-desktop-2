@@ -1,16 +1,17 @@
 <script lang="ts">
+import { mapTypedGetters, mapTypedState } from '@pkg/entry/store';
 import { defineComponent } from 'vue';
-import { mapGetters } from 'vuex';
 
 export default defineComponent({
   name:     'dashboard-open',
   computed: {
-    ...mapGetters('preferences', ['getPreferences']),
+    ...mapTypedGetters('rdd', ['app', 'status']),
+    ...mapTypedState('steve', ['port']),
     kubernetesEnabled(): boolean {
-      return this.getPreferences.kubernetes.enabled;
+      return !!this.app?.spec?.kubernetes?.enabled;
     },
-    kubernetesStarted(): boolean {
-      return false;
+    dashboardReady(): boolean {
+      return this.status('KubernetesReady') && this.port > 0;
     },
   },
   methods: {
@@ -24,7 +25,7 @@ export default defineComponent({
 <template>
   <button
     v-if="kubernetesEnabled"
-    :disabled="!kubernetesStarted"
+    :disabled="!dashboardReady"
     class="btn role-secondary btn-icon-text"
     @click="openDashboard"
   >

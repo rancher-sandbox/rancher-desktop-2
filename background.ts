@@ -18,6 +18,8 @@ import { protocolsRegistered, setupProtocolHandlers } from '@pkg/utils/protocols
 import getWSLVersion from '@pkg/utils/wslVersion';
 import * as window from '@pkg/window';
 import '@pkg/main/rdd-ctl';
+import { Steve } from '@pkg/backend/steve';
+import { closeDashboard, openDashboard } from '@pkg/window/dashboard';
 
 // https://www.electronjs.org/docs/latest/breaking-changes#changed-gtk-4-is-default-when-running-gnome
 if (process.platform === 'linux') {
@@ -224,6 +226,14 @@ Electron.app.on('activate', async() => {
   window.openMain();
 });
 
+ipcMainProxy.on('dashboard-open', () => {
+  openDashboard();
+});
+
+ipcMainProxy.on('dashboard-close', () => {
+  closeDashboard();
+});
+
 mainEvents.on('dialog-info', (args) => {
   window.getWindow(args.dialog)?.webContents.send('dialog/info', args);
 });
@@ -234,6 +244,19 @@ ipcMainProxy.on('dialog/error', (event, args) => {
 
 ipcMainProxy.on('dialog/close', (_event, args) => {
   window.getWindow(args.dialog)?.webContents.send('dialog/close', args);
+});
+
+// Start and stop Steve as needed
+ipcMainProxy.on('backend/app-status-changed', (_event, statusConditions) => {
+  const [status,] = statusConditions.KubernetesReady ?? [];
+
+  if (status) {
+    Steve.getInstance().start().catch((err) => {
+      console.error('Failed to start Steve:', err);
+    });
+  } else {
+    Steve.getInstance().stop();
+  }
 });
 
 ipcMainProxy.handle('versions/macOs', () => {

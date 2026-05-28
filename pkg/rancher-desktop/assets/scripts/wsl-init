@@ -47,5 +47,44 @@ if [ -f /var/lib/resolv.conf ]; then
     ln -s -f /var/lib/resolv.conf /etc/resolv.conf
 fi
 
+# Block modules that enable known exploit paths:
+#   esp4/esp6  — dirtyfrag (CVE-2026-43284) XFRM ESP page-cache write primitive;
+#                also blocks Copy_Fail2 (xfrm ESP-in-UDP MSG_SPLICE_PAGES variant)
+#                and its esp6_input IPv6 counterpart
+#   rxrpc      — dirtyfrag (CVE-2026-43500) AF_RXRPC path via pcbc(fcrypt)
+#   algif_aead — copy.fail (CVE-2026-31431) AF_ALG AEAD in-place page-cache write
+#
+# Without these modules the exploits cannot obtain a page-cache write primitive,
+# protecting k3s pods and unprivileged VM processes that are not covered by the
+# container seccomp profile.
+#
+# None of these modules serve a purpose inside the Rancher Desktop VM:
+#   esp4/esp6  implement IPsec ESP, used for site-to-site VPN gateways
+#              (e.g. strongSwan) — the RD VM is not one.
+#   rxrpc      implements the RxRPC protocol, used almost exclusively by
+#              AFS (Andrew File System) — not present in any RD workload.
+#   algif_aead exposes AEAD crypto to userspace via AF_ALG sockets, used
+#              by some crypto libraries to offload to hardware accelerators.
+#              The VM has no hardware crypto, so OpenSSL and friends fall
+#              back to their software implementations transparently.
+#
+# User impact: in-VM use of IPsec ESP (strongSwan, libreswan), AFS/kAFS, and
+# AF_ALG AEAD will fail.
+#
+# WSL2 mounts the kernel modules via a single overlayfs shared by every
+# distro through mount-namespace propagation, so the rm -f below applies
+# machine-wide.  The overlay's upperdir and workdir are in a tmpfs mount,
+# so whiteouts vanish on VM shutdown and wsl-init re-applies them on every
+# boot.
+rm -f \
+    /lib/modules/*/kernel/net/ipv4/esp4.ko \
+    /lib/modules/*/kernel/net/ipv4/esp4.ko.xz \
+    /lib/modules/*/kernel/net/ipv6/esp6.ko \
+    /lib/modules/*/kernel/net/ipv6/esp6.ko.xz \
+    /lib/modules/*/kernel/net/rxrpc/rxrpc.ko \
+    /lib/modules/*/kernel/net/rxrpc/rxrpc.ko.xz \
+    /lib/modules/*/kernel/crypto/algif_aead.ko \
+    /lib/modules/*/kernel/crypto/algif_aead.ko.xz
+
 # Run init (which never exits).
 exec /sbin/init

@@ -15,6 +15,13 @@ export interface IpcMainEvents {
   'factory-reset':         (keepSystemImages: boolean) => void;
   'update-network-status': (status: boolean) => void;
 
+  // #region backend
+  /** The app status has changed.  The input is the status conditions on the app. */
+  'backend/app-status-changed': (status: Record<string, readonly [boolean | undefined, string]>) => void;
+  /** Trigger the corresponding IPC renderer event. */
+  'backend/steve-fetch-port': () => void;
+  // #endregion
+
   // #region main/update
   'update-state': () => void;
   // Quit and apply the update.
@@ -115,6 +122,8 @@ export interface IpcRendererEvents {
   'update-state':              (state: import('@pkg/main/update').UpdateState) => void;
   'always-debugging':          (status: boolean) => void;
   'is-debugging':              (status: boolean) => void;
+  /** The steve port may have changed. */
+  'backend/steve-port':                (port: number) => void;
   'kubernetes-errors-details': (
     titlePart: string,
     mainMessage: string,

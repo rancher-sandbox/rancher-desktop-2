@@ -15,7 +15,7 @@ import {
   AfterPackContext, Arch, build, CliOptions, Configuration, LinuxTargetSpecificOptions,
 } from 'electron-builder';
 import _ from 'lodash';
-import plist from 'plist';
+import * as plist from 'plist';
 import yaml from 'yaml';
 
 import buildUtils from './lib/build-utils';
@@ -173,6 +173,12 @@ class Builder {
       }
       config[key] = items.concat(overrideItems);
       delete section[key];
+    }
+
+    _.set(config, 'extraMetadata.version', version);
+
+    if (electronPlatform === 'mac') {
+      _.set(config, 'dmg.title', `Install Rancher Desktop ${ version }-${ buildUtils.arch }`);
     }
 
     await fs.promises.writeFile(configPath, yaml.stringify(config), 'utf-8');

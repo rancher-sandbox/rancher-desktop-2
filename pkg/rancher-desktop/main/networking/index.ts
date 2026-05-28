@@ -18,17 +18,6 @@ import { KubeConfig } from '@rdd-client';
 
 const console = Logging.networking;
 
-let stevePort = 0;
-
-/**
- * Update the Steve HTTPS port used by the certificate-error handler.
- * Call this before each Steve start so that dynamic port changes are
- * reflected in the allowed-URL list.
- */
-export function setSteveCertPort(port: number) {
-  stevePort = port;
-}
-
 export default async function setupNetworking() {
   const agentOptions = { ...https.globalAgent.options };
 

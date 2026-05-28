@@ -251,6 +251,7 @@ func parseArgs() (*parsedArgs, error) {
 		_ = cleanupParseArgs()
 		return nil, err
 	}
+	result.args = injectSeccompOpt(result.args)
 	return result, nil
 }
 
@@ -337,6 +338,7 @@ func init() {
 	registerArgHandler("builder build", "--file", argHandlers.filePathArgHandler)
 	registerArgHandler("builder build", "-f", argHandlers.filePathArgHandler)
 	registerArgHandler("builder build", "--iidfile", argHandlers.outputPathArgHandler)
+	registerArgHandler("builder build", "--source-policy-file", argHandlers.filePathArgHandler)
 	registerArgHandler("builder debug", "--file", argHandlers.filePathArgHandler)
 	registerArgHandler("builder debug", "-f", argHandlers.filePathArgHandler)
 	registerArgHandler("checkpoint create", "--checkpoint-dir", argHandlers.filePathArgHandler)
@@ -346,6 +348,10 @@ func init() {
 	registerArgHandler("compose", "-f", argHandlers.filePathArgHandler)
 	registerArgHandler("compose", "--project-directory", argHandlers.filePathArgHandler)
 	registerArgHandler("compose", "--env-file", argHandlers.filePathArgHandler)
+	// nerdctl's help text renders these with a metavar because the
+	// description quotes the "volumes" Compose section, but they are booleans.
+	registerArgHandler("compose down", "--volumes", nil)
+	registerArgHandler("compose down", "-v", nil)
 	registerArgHandler("compose run", "--volume", argHandlers.volumeArgHandler)
 	registerArgHandler("compose run", "-v", argHandlers.volumeArgHandler)
 	registerArgHandler("container create", "--cidfile", argHandlers.outputPathArgHandler)

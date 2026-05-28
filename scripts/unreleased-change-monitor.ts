@@ -14,7 +14,6 @@ type DependencyState = { dependency: GitHubDependency } & HasUnreleasedChangesRe
 
 const dependencies: GitHubDependency[] = [
   new tools.Steve(),
-  new tools.RancherDashboard(),
 ];
 
 type Issue = Awaited<ReturnType<Octokit['rest']['search']['issuesAndPullRequests']>>['data']['items'][0];

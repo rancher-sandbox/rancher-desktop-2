@@ -89,8 +89,7 @@ func watchServices(ctx context.Context, client *kubernetes.Clientset) (<-chan ev
 			if errors.As(err, &statusError) {
 				log.Debugw("kubernetes: got status error", log.Fields{
 					"status": statusError.Status(),
-					//nolint:govet // .DebugError() returns a format string plus fields.
-					"debug": fmt.Sprintf(statusError.DebugError()),
+					"debug":  statusDebugString(statusError),
 				})
 			}
 			log.Errorw("kubernetes: unexpected error watching", log.Fields{
@@ -120,6 +119,11 @@ func watchServices(ctx context.Context, client *kubernetes.Clientset) (<-chan ev
 	}()
 
 	return eventCh, errorCh, nil
+}
+
+func statusDebugString(err *apierrors.StatusError) string {
+	format, args := err.DebugError()
+	return fmt.Sprintf(format, args...)
 }
 
 // handleUpdate examines the old and new services, calculating the difference

@@ -89,6 +89,7 @@ export default {
     },
     vulnerabilities() {
       const results = JSON.parse(this.jsonOutput)?.Results;
+      const seenIds = new Set();
 
       // TODO: rancher-sandbox/rancher-desktop#2007
       return results
@@ -96,8 +97,16 @@ export default {
           return [...prev, ...curr?.Vulnerabilities || []];
         }, [])
         ?.map(({ PkgName, VulnerabilityID, ...rest }) => {
+          const baseId = `${ PkgName }-${ VulnerabilityID }`;
+          let id = baseId;
+
+          for (let suffix = 1; seenIds.has(id); suffix++) {
+            id = `${ baseId }-${ suffix }`;
+          }
+          seenIds.add(id);
+
           return {
-            id: `${ PkgName }-${ VulnerabilityID }`,
+            id,
             PkgName,
             VulnerabilityID,
             ...rest,

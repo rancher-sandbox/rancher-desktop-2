@@ -13,6 +13,7 @@ import * as RDD from '../store/rdd';
 import * as RDDConnection from '../store/rddConnection';
 import * as ResourceFetch from '../store/resource-fetch';
 import * as Snapshots from '../store/snapshots';
+import * as Steve from '../store/steve';
 
 const modules = {
   'action-menu':       ActionMenu,
@@ -28,6 +29,7 @@ const modules = {
   'rdd-connection':    RDDConnection,
   'resource-fetch':    ResourceFetch,
   snapshots:           Snapshots,
+  steve:               Steve,
 };
 
 export type Modules = typeof modules;
