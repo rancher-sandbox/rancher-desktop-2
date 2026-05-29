@@ -215,7 +215,13 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		existingInst, err := store.Inspect(ctx, limaVM.Name)
 		if err == nil && existingInst != nil {
 			logger.Info("Deleting leftover Lima instance", "instance", limaVM.Name)
-			if err := limainstance.Delete(ctx, existingInst, true); err != nil {
+			forceStopForDeletion(ctx, logger, existingInst)
+			// Use a timeout because Lima's WSL2 driver calls wsl.exe --unregister
+			// which can hang indefinitely if the WSL subsystem is degraded.
+			deleteCtx, deleteCancel := context.WithTimeout(ctx, time.Minute)
+			err := limainstance.Delete(deleteCtx, existingInst, true)
+			deleteCancel()
+			if err != nil {
 				logger.Error(err, "Failed to delete leftover Lima instance")
 				return ctrl.Result{}, err
 			}
@@ -507,11 +513,23 @@ func (r *LimaVMReconciler) shutdownAllHostagents() {
 		return
 	}
 
-	// Send graceful shutdown signal to all hostagents in parallel.
+	// Send graceful shutdown signal to all hostagents in parallel. Skip any whose
+	// process has already been reaped: once cmd.Wait() closes procExited it has
+	// released the OS process handle, freeing the PID for reuse. On Windows a
+	// CTRL_BREAK to a recycled PID escapes to the console and kills the service
+	// and terminal. While procExited is open the handle is normally still held,
+	// so the PID is still ours; cmd.Wait() releases it just before closing the
+	// channel, leaving a brief window.
 	for _, state := range states {
-		if state.cmd != nil && state.cmd.Process != nil {
-			_ = process.Interrupt(state.cmd.Process.Pid)
+		if state.cmd == nil || state.cmd.Process == nil {
+			continue
 		}
+		select {
+		case <-state.procExited:
+			continue
+		default:
+		}
+		_ = process.Interrupt(state.cmd.Process.Pid)
 	}
 
 	// Wait for each hostagent process to exit. The watcher goroutine may finish

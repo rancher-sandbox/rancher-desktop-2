@@ -27,6 +27,16 @@ func Interrupt(pid int) error {
 	return unix.Kill(pid, unix.SIGINT)
 }
 
+// IsOurProcess reports whether pid is a live process running this program's own
+// executable. On Unix it is always true: PIDs are not recycled within a
+// daemon's lifetime the way they are on Windows, and Interrupt (SIGINT) to a
+// stale PID is a harmless no-op, so callers need no identity guard. The
+// parameters exist only for signature parity with the Windows build, where the
+// check defends GenerateConsoleCtrlEvent against PID reuse.
+func IsOurProcess(_ int, _ ...string) bool {
+	return true
+}
+
 // Kill sends SIGTERM to the process with the given PID.
 func Kill(pid int) error {
 	return unix.Kill(pid, unix.SIGTERM)

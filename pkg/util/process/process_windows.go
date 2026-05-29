@@ -8,9 +8,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
+	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
@@ -31,6 +35,126 @@ func SetGroup(cmd *exec.Cmd) {
 // at the process group (requires CREATE_NEW_PROCESS_GROUP via SetGroup).
 func Interrupt(pid int) error {
 	return windows.GenerateConsoleCtrlEvent(windows.CTRL_BREAK_EVENT, uint32(pid))
+}
+
+// IsOurProcess reports whether pid is a live process running this program's own
+// executable with a command line that contains every string in cmdlineSubstrings.
+//
+// It guards graceful shutdown via Interrupt against PID reuse. Windows recycles
+// PIDs aggressively, and GenerateConsoleCtrlEvent(CTRL_BREAK) delivered to a
+// recycled PID can reach unrelated processes that share the console — including
+// the rdd service and the controlling terminal — rather than the intended
+// target. Callers confirm identity here before signalling; on a mismatch they
+// fall back to KillTree, which terminates a single PID and cannot escape to the
+// console.
+//
+// It returns false (never an error) whenever identity cannot be positively
+// confirmed — the process is gone, inaccessible, or no longer ours — so callers
+// treat "unknown" as "not ours" and never signal it.
+//
+// Each substring is matched with strings.Contains, not as a whole argument, so a
+// discriminator must be specific enough that it cannot appear in an unrelated
+// process's command line. An instance name that is a prefix of another (e.g.
+// "vm" and "vm2") matches both; pass a name distinct enough to avoid that.
+//
+// With no substrings the image-path match alone decides the result, which a
+// recycled PID running any other rdd process would satisfy; production callers
+// should always pass a discriminator.
+func IsOurProcess(pid int, cmdlineSubstrings ...string) bool {
+	self, err := os.Executable()
+	if err != nil {
+		return false
+	}
+	handle, err := windows.OpenProcess(
+		windows.PROCESS_QUERY_LIMITED_INFORMATION|windows.PROCESS_VM_READ, false, uint32(pid))
+	if err != nil {
+		return false
+	}
+	defer func() { _ = windows.CloseHandle(handle) }()
+
+	image, err := processImagePath(handle)
+	if err != nil || !strings.EqualFold(filepath.Clean(image), filepath.Clean(self)) {
+		return false
+	}
+	cmdline, err := processCommandLine(handle)
+	if err != nil {
+		return false
+	}
+	for _, s := range cmdlineSubstrings {
+		if !strings.Contains(cmdline, s) {
+			return false
+		}
+	}
+	return true
+}
+
+// processImagePath returns the full path to the executable backing the process.
+// QueryFullProcessImageName does not report the size it needs on failure, so on
+// ERROR_INSUFFICIENT_BUFFER this doubles the buffer and retries, up to the
+// Windows extended-path ceiling of 32767 characters.
+func processImagePath(handle windows.Handle) (string, error) {
+	for bufSize := 1024; bufSize <= 32768; bufSize *= 2 {
+		buf := make([]uint16, bufSize)
+		size := uint32(len(buf))
+		err := windows.QueryFullProcessImageName(handle, 0, &buf[0], &size)
+		if err == nil {
+			return windows.UTF16ToString(buf[:size]), nil
+		}
+		if !errors.Is(err, windows.ERROR_INSUFFICIENT_BUFFER) {
+			return "", err
+		}
+	}
+	return "", windows.ERROR_INSUFFICIENT_BUFFER
+}
+
+// processCommandLine reads the target process's command line out of its PEB.
+// Windows exposes no API for another process's command line, so we follow the
+// documented PEB -> RTL_USER_PROCESS_PARAMETERS -> CommandLine chain via
+// ReadProcessMemory. The handle must carry PROCESS_VM_READ.
+func processCommandLine(handle windows.Handle) (string, error) {
+	var pbi windows.PROCESS_BASIC_INFORMATION
+	var retLen uint32
+	if err := windows.NtQueryInformationProcess(handle, windows.ProcessBasicInformation,
+		unsafe.Pointer(&pbi), uint32(unsafe.Sizeof(pbi)), &retLen); err != nil {
+		return "", err
+	}
+
+	var peb windows.PEB
+	if err := readProcessMemory(handle, uintptr(unsafe.Pointer(pbi.PebBaseAddress)),
+		unsafe.Pointer(&peb), unsafe.Sizeof(peb)); err != nil {
+		return "", err
+	}
+
+	var params windows.RTL_USER_PROCESS_PARAMETERS
+	if err := readProcessMemory(handle, uintptr(unsafe.Pointer(peb.ProcessParameters)),
+		unsafe.Pointer(&params), unsafe.Sizeof(params)); err != nil {
+		return "", err
+	}
+
+	length := params.CommandLine.Length
+	if length == 0 || params.CommandLine.Buffer == nil {
+		return "", nil
+	}
+	// NTUnicodeString.Length counts bytes; the buffer holds UTF-16 code units.
+	buf := make([]uint16, length/2)
+	if err := readProcessMemory(handle, uintptr(unsafe.Pointer(params.CommandLine.Buffer)),
+		unsafe.Pointer(&buf[0]), uintptr(length)); err != nil {
+		return "", err
+	}
+	return windows.UTF16ToString(buf), nil
+}
+
+// readProcessMemory copies size bytes at addr in the target process into dest,
+// erroring unless the full range was read.
+func readProcessMemory(handle windows.Handle, addr uintptr, dest unsafe.Pointer, size uintptr) error {
+	var read uintptr
+	if err := windows.ReadProcessMemory(handle, addr, (*byte)(dest), size, &read); err != nil {
+		return err
+	}
+	if read != size {
+		return fmt.Errorf("short read at %#x: got %d of %d bytes", addr, read, size)
+	}
+	return nil
 }
 
 // Kill terminates the process with the given PID.
