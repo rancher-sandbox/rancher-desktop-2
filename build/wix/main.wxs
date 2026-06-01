@@ -127,7 +127,7 @@
 
 
     <!-- Add Admin install registry element -->
-    <Component Id="AdminInstallRegistry" Directory="APPLICATIONFOLDER" Guid="752E8274-9706-4B97-8533-1E7C5080320A">
+    <Component Id="AdminInstallRegistry" Directory="APPLICATIONFOLDER" Guid="825E1B53-D47A-4630-BDD8-61071DA1245A">
       <Condition>
       <![CDATA[MSIINSTALLPERUSER <> 1]]>
       </Condition>
@@ -142,7 +142,7 @@
     </Component>
 
     <!-- Add FirewallException element -->
-    <Component Id="AdminInstallFirewall" Directory="APPLICATIONFOLDER" Guid="B03D3C75-F835-47A9-8224-1D1238B4F74F" KeyPath="yes">
+    <Component Id="AdminInstallFirewall" Directory="APPLICATIONFOLDER" Guid="DC2F0D13-709C-4E73-9D35-2AB5FABD989F" KeyPath="yes">
       <Condition>
       <![CDATA[MSIINSTALLPERUSER <> 1]]>
       </Condition>
