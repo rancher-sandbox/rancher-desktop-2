@@ -9,7 +9,7 @@ import Electron from 'electron';
 import getLinuxCertificates from './linux-ca';
 import getMacCertificates from './mac-ca';
 import ElectronProxyAgent from './proxy';
-import { handleCertificateError, verifyCertificate } from './verify-certificates';
+import { cleanupCert, handleCertificateError, verifyCertificate } from './verify-certificates';
 import getWinCertificates from './win-ca';
 
 import mainEvents from '@pkg/main/mainEvents';
@@ -48,11 +48,12 @@ export default async function setupNetworking() {
     Buffer.from(kubeConfig.getCurrentCluster()?.caData ?? '', 'base64')
       .toString('utf-8')
       .split(/(?=-----BEGIN CERTIFICATE-----)/g)
-      .filter(x => x.trim());
+      .map(cleanupCert)
+      .filter(x => x);
 
   // Set up certificate handling for specific hosts; we ignore the certificate
   // completely on these, but limit them to specific ports.
-  Electron.app.on('certificate-error', handleCertificateError);
+  Electron.app.on('certificate-error', handleCertificateError.bind(null, kubeCerts));
   // Set up certificate handling for system certificates, as well as handling
   // custom certificate authorities for RDD.
   Electron.session.defaultSession.setCertificateVerifyProc(

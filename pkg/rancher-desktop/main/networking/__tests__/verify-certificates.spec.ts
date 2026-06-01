@@ -123,7 +123,7 @@ describe('handleCertificateError', () => {
         } as unknown as Electron.Event;
         const webContents: Electron.WebContents = {} as unknown as Electron.WebContents;
         const error = '(unused error message)';
-        const certificate: Electron.Certificate = {} as unknown as Electron.Certificate;
+        const certificate: Electron.Certificate = { data: '' } as unknown as Electron.Certificate;
         const { handleCertificateError } = await import('../verify-certificates');
 
         process.env.NODE_ENV = env;
@@ -132,7 +132,7 @@ describe('handleCertificateError', () => {
         } else {
           delete process.env.RD_ENV_PLUGINS_DEV;
         }
-        handleCertificateError(event, webContents, `${ protocol }://${ host }/`, error, certificate, callback);
+        handleCertificateError([], event, webContents, `${ protocol }://${ host }/`, error, certificate, callback);
         expect(callback).toHaveBeenCalledWith(expected);
         if (expected) {
           expect(event.preventDefault).toHaveBeenCalled();
@@ -140,5 +140,21 @@ describe('handleCertificateError', () => {
           expect(event.preventDefault).not.toHaveBeenCalled();
         }
       });
+  });
+
+  it('should accept control plane certificates', async() => {
+    const rddCert = 'HELLO\nWORLD';
+    const callback = jest.fn();
+    const event: Electron.Event = {
+      preventDefault: jest.fn(),
+    } as unknown as Electron.Event;
+    const webContents: Electron.WebContents = {} as unknown as Electron.WebContents;
+    const error = 'net::ERR_CERT_AUTHORITY_INVALID';
+    const certificate: Electron.Certificate = { data: `\r\nHELLO\rWORLD   ` } as unknown as Electron.Certificate;
+    const { handleCertificateError } = await import('../verify-certificates');
+
+    handleCertificateError([rddCert], event, webContents, 'https://example.test/', error, certificate, callback);
+    expect(callback).toHaveBeenCalledWith(true);
+    expect(event.preventDefault).toHaveBeenCalled();
   });
 });
