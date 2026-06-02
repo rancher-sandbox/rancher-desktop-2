@@ -209,6 +209,11 @@ export function clearLoggingDirectory(): void {
     if (entry.isFile() && entry.name.endsWith('.log')) {
       const topic = path.basename(entry.name, '.log');
 
+      if (['rdd.stdout', 'rdd.stderr'].includes(topic)) {
+        // Avoid removing RDD logs, in case we're connecting to an existing one.
+        continue;
+      }
+
       if (!logs.has(topic)) {
         const fullPath = path.join(paths.log_dir, entry.name);
 
