@@ -1,5 +1,5 @@
 /*
-Copyright © 2023 SUSE LLC
+Copyright © 2026 SUSE LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	wslutils "github.com/rancher-sandbox/rancher-desktop/src/go/wsl-helper/pkg/wsl-utils"
+	wslutils "github.com/rancher-sandbox/rancher-desktop/src/go/wix-helper/pkg/wsl-utils"
 )
 
 const (

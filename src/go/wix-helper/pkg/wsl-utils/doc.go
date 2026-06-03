@@ -1,5 +1,5 @@
 /*
-Copyright © 2023 SUSE LLC
+Copyright © 2026 SUSE LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,6 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package main implements a Windows Installer custom action DLL.  That is, it
-// exports functions using CGO that will be called by Windows Installer.
-package main
+// Package wslutils retrieves information about WSL.
+package wslutils

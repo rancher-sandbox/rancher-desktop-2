@@ -12,5 +12,6 @@ use (
 	./src/go/rdctl
 	./src/go/spin-stub
 	./src/go/startup-profile
+	./src/go/wix-helper
 	./src/go/wsl-helper
 )

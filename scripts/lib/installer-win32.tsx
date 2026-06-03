@@ -50,8 +50,8 @@ function getAppVersion(appDir: string): string {
 export async function buildCustomAction(): Promise<string> {
   const output = path.join(buildUtils.distDir, 'wix-custom-action.dll');
 
-  await buildUtils.spawn('go', 'build', '-o', output, '-buildmode=c-shared', './wix', {
-    cwd: path.join(buildUtils.rootDir, 'src', 'go', 'wsl-helper'),
+  await buildUtils.spawn('go', 'build', '-o', output, '-buildmode=c-shared', {
+    cwd: path.join(buildUtils.rootDir, 'src', 'go', 'wix-helper'),
     env: { ...process.env, GOOS: 'windows' },
   });
 
