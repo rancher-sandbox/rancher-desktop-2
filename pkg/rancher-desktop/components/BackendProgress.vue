@@ -4,127 +4,66 @@
 
 <template>
   <div
-    v-if="progressBusy"
+    v-if="!settled"
     class="progress"
   >
     <label
       class="details"
-      :title="progressDetails"
-    >{{ progressDetails }}</label>
+      :title="description"
+    >{{ description }}</label>
     <RdProgress
       class="progress-bar"
-      :indeterminate="progressIndeterminate"
-      :value="progress.current"
-      :maximum="progress.max"
+      :indeterminate="true"
     />
-    <label
-      class="duration"
-      :title="progressDuration"
-    >{{ progressDuration }}</label>
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useStore } from 'vuex';
 
 import RdProgress from '@pkg/components/RdProgress.vue';
-import { mapTypedGetters } from '@pkg/entry/store';
 
-export default defineComponent({
-  name:       'backend-progress',
-  components: { RdProgress },
-  data() {
-    return {
-      /** Current Kubernetes backend action progress. */
-      progress: { current: 1, max: 1 } as {
-        /** The current progress, from 0 to max. */
-        readonly current:         number;
-        /** Maximum possible progress; if less than zero, the progress is indeterminate. */
-        readonly max:             number;
-        /** Description of current action. */
-        readonly description?:    string;
-        /** Time since the description became valid. */
-        readonly transitionTime?: Date;
-      },
-      progressInterval: undefined as ReturnType<typeof setInterval> | undefined,
-      progressDuration: '',
-    };
-  },
+defineOptions({ name: 'backend-progress' });
 
-  computed: {
-    ...mapTypedGetters('rdd', ['settled']),
-    progressDetails(): string {
-      return this.progress.description || '';
-    },
-    progressIndeterminate(): boolean {
-      return !this.settled;
-    },
-    progressBusy(): boolean {
-      return this.progressIndeterminate || this.progress.current < this.progress.max;
-    },
-  },
+const store = useStore();
 
-  mounted() {
-    /*
-    ipcRenderer.on('k8s-progress', (event, progress) => {
-      this.progress = progress;
-      if (this.progress.transitionTime) {
-        if (!this.progressInterval) {
-          const start = this.progress.transitionTime.valueOf();
+/** Whether the backend is settled. */
+const settled = computed(() => store.getters['rdd/settled']);
+const app = computed(() => store.getters['rdd/app']);
+const conditions = computed(() => app.value?.status?.conditions ?? []);
+/** Conditions where the status is not True. */
+const pending = computed(() => conditions.value.filter(c => c.status !== 'True'));
+/** The newest transition time of the pending conditions. */
+const newestTransitionTime = computed(() => {
+  // This uses a `Date` instead of `.valueOf()`, so that when debugging we can
+  // read the date easier.
+  return pending.value.reduce((latest, c) => {
+    return latest.valueOf() > c.lastTransitionTime.valueOf() ? latest : c.lastTransitionTime;
+  }, new Date(0));
+});
+/** Conditions where the status is not True, only if the transition time is the latest. */
+const latestTransitions = computed(() => {
+  return pending.value.filter(c => {
+    return c.lastTransitionTime.valueOf() === newestTransitionTime.value.valueOf();
+  });
+});
+const selectedTransition = computed(() => {
+  // If there are multiple conditions with the same transition time, hard-code
+  // the preference order.
+  const order = ['Created', 'Running', 'ContainerEngineReady', 'KubernetesReady', 'Settled'];
+  const preferredType = order.find(t => latestTransitions.value.some(c => c.type === t));
+  const preferred = preferredType ? latestTransitions.value.find(c => c.type === preferredType) : undefined;
 
-          this.progressInterval = setInterval(() => {
-            this.progressDuration = this.describeElapsed(start);
-          }, 500);
-        }
-      } else if (this.progressInterval) {
-        clearInterval(this.progressInterval);
-        this.progressInterval = undefined;
-        this.progressDuration = '';
-      }
-    });
+  return preferred ?? latestTransitions.value[0];
+});
 
-    ipcRenderer.invoke('k8s-progress').then((progress) => {
-      this.progress = progress;
-    });
-    */
-  },
+const description = computed(() => {
+  const transition = selectedTransition.value;
+  // If the app doesn't exist yet (e.g. because we're still starting the RDD
+  // service), print a fallback message.
 
-  methods: {
-    /** Return a string describing the elapsed time or progress. */
-    describeElapsed(since: number): string {
-      if (this.progress.max > 0) {
-        // If we have numbers, give a description about that.
-        const units = ['', 'K', 'M', 'G', 'T'];
-        const scales = [2 ** 0, 2 ** 10, 2 ** 20, 2 ** 30, 2 ** 40];
-        const remaining = this.progress.max - this.progress.current;
-
-        const unitIndex = scales.findLastIndex((scale) => remaining * 2 >= scale);
-        const fraction = remaining / scales[unitIndex];
-        // If the fraction is 0.5...0.9999 display it as single significant figure.
-        const display = fraction > 1 ? Math.round(fraction) : Math.round(fraction * 10) / 10;
-        return `${ display }${ units[unitIndex] } left`;
-      }
-      if (!since) {
-        return '';
-      }
-      // We have a starting time; describe how much time has elapsed since.
-      // Start from the smallest unit, and modify `remaining` to be the next
-      // unit up at every iteration.
-      let remaining = Math.floor((Date.now() - since) / 1000); // Elapsed time, in seconds.
-      const scales: [number, string][] = [[60, 's'], [60, 'm'], [24, 'h'], [Number.POSITIVE_INFINITY, 'd']];
-      let label = '';
-
-      for (const [scale, unit] of scales) {
-        if (remaining % scale > 0) {
-          // Add the part, but only if it's non-zero.
-          label = `${ remaining % scale }${ unit }${ label }`;
-        }
-        remaining = Math.floor(remaining / scale);
-      }
-
-      return label;
-    },
-  },
+  return transition?.message || transition?.reason || 'Starting control plane';
 });
 </script>
 
@@ -146,10 +85,6 @@ export default defineComponent({
 
     .progress-bar {
       max-width: 12rem;
-    }
-
-    .duration {
-      padding-left: 0.25rem;
     }
   }
 </style>
