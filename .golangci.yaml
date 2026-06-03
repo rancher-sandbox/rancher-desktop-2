@@ -102,26 +102,10 @@ linters:
           - gocritic
           - gosec
         path: _test\.go
-      - # Exclude ST1005 when it encounters errors starting with proper noun
-        linters:
-          - staticcheck
-        path: src/go/wsl-helper/cmd/kubeconfig.go
-        text: 'ST1005:'
-        source: errors.New\("Windows
-      - # Exclude the FIXME comments from upstream
-        linters:
-          - gocritic
-        path: src/go/wsl-helper/pkg/dockerproxy/platform/vsock_linux\.go
-        text: todoCommentWithoutDetail
       - # Ignore errors from syscall
         linters:
           - dogsled
         source: ^\s*_, _, _ = .*\.Call\(
-      - # This seems inconsistent across platforms
-        path: src/go/nerdctl-stub/main_shared.go
-        linters: [ unparam ]
-        text: \bresult\b.*\bis always nil\b
-        source: func mountArgProcessor
 
 formatters:
   enable:
@@ -134,4 +118,4 @@ formatters:
       sections:
       - standard
       - default
-      - prefix(github.com/rancher-sandbox/rancher-desktop) # localmodule for go.work
+      - prefix(github.com/rancher-sandbox/rancher-desktop)

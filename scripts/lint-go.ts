@@ -118,7 +118,7 @@ async function processLinkedModules(dir: string, fix: boolean): Promise<boolean>
 
 async function syncModules(fix: boolean): Promise<boolean> {
   const modFiles = await listFiles('**/go.mod');
-  const files = ['go.work', ...modFiles, ...await listFiles('**/go.sum')];
+  const files = [...modFiles, ...await listFiles('**/go.sum')];
   const getChanges = async() => {
     const { stdout } = await spawnFile('git', ['status', '--porcelain=1', '--', ...files], { stdio: 'pipe' });
 
@@ -178,17 +178,22 @@ async function runGoLangCILint(platform: SupportedPlatform, ...args: string[]): 
   }
   commandLine.push(
     `github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v${ dependencyVersions['golangci-lint'] }`,
+    '--color=always',
     ...args,
-    ...(await getModules()).map(m => `${ m }/...`));
+    './...');
 
-  try {
-    console.log(commandLine.join(' '));
-    await spawnFile(commandLine[0], commandLine.slice(1), { stdio: 'inherit' });
+  let result = true;
 
-    return true;
-  } catch (ex) {
-    return false;
+  for (const module of await getModules()) {
+    console.log(`[${ module }] ${ commandLine.join(' ') }`);
+    try {
+      await spawnFile(commandLine[0], commandLine.slice(1), { stdio: 'inherit', cwd: module });
+    } catch (ex) {
+      result = false;
+    }
   }
+
+  return result;
 }
 
 function getGoLangCISupportedPlatforms(): SupportedPlatform[] {
@@ -203,12 +208,12 @@ function getGoLangCISupportedPlatforms(): SupportedPlatform[] {
 }
 
 function goLangCIFormat(fix: boolean): Promise<boolean> {
-  const args = ['fmt', '--verbose'];
+  const args = ['fmt'];
 
   if (!fix) {
     // When not fixing, provide `--diff`; this causes the process to exit with
     // and error when a fix is required.
-    args.push('--diff');
+    args.push('--diff-colored');
   }
 
   // We don't need to run fmt for all platforms, since it seems to format files
@@ -217,10 +222,12 @@ function goLangCIFormat(fix: boolean): Promise<boolean> {
 }
 
 async function goLangCILint(fix: boolean): Promise<boolean> {
-  const args = ['run', '--timeout=10m', '--allow-serial-runners', '--verbose'];
+  const args = ['run', '--timeout=10m'];
 
   if (fix) {
-    args.push('--fix');
+    args.push('--fix', '--allow-serial-runners');
+  } else {
+    args.push('--allow-parallel-runners');
   }
 
   for (const platform of getGoLangCISupportedPlatforms()) {

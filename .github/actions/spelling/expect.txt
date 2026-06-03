@@ -164,7 +164,7 @@ DNAT
 dnsmasq
 doclink
 donotuse
-dport
+dports
 dri
 Duex
 dustin
