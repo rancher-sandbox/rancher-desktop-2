@@ -169,9 +169,13 @@ func main() {
 	)
 	if err := cli.RunNoErrOutput(cmd); err != nil {
 		// *cliexit.Error lets a subcommand opt into a specific exit code; everything else gets exit 1.
+		// A nil inner Err means the subcommand has already written its own output (e.g. kuberlr.Exec
+		// propagating a kubectl child's exit code), so skip the redundant log line.
 		var exitErr *cliexit.Error
 		if errors.As(err, &exitErr) {
-			logrus.Error(err)
+			if exitErr.Err != nil {
+				logrus.Error(err)
+			}
 			os.Exit(exitErr.Code)
 		}
 		logrus.Fatal(err)

@@ -13,6 +13,8 @@ These variables control RDD behavior. Set them before running `rdd` commands.
 | `RDD_KEEP_LOGS` | Preserves logs for post-mortem debugging. See [Log Preservation](#log-preservation) for details. | unset |
 | `RDD_LOG_LEVEL` | Sets the log level (`fatal`, `error`, `warn`, `info`, `debug`, `trace`). Overridden by `--log-level` flag. When unset, defaults to `debug` in developer mode, `warn` otherwise. | unset |
 | `RDD_LOG_TITLE` | When set, writes this string as the first line of each new log file. Useful for identifying log files from specific test runs or sessions. | unset |
+| `RDD_CACHE_DIR` | Overrides the rdd-wide cache root. The kubectl resolver appends `kubectl/<os>-<arch>/` inside it. | `os.UserCacheDir()`/`rancher-desktop` (e.g. `~/Library/Caches/rancher-desktop` on macOS) |
+| `RDD_KUBECTL_MIRROR` | Overrides the Kubernetes release mirror used to download version-matched kubectl binaries. | `https://dl.k8s.io` |
 
 ### BATS Test Variables
 
@@ -24,9 +26,17 @@ These variables configure the BATS test framework. They have no effect on `rdd` 
 | `RDD_NAMESPACE` | Default Kubernetes namespace for BATS controller tests. | `rdd-bats` |
 | `RDD_VM_TYPE` | Lima VM type for tests that boot a VM (`qemu` or `vz`). Useful for reproducing QEMU-specific failures on macOS. | Lima's default (`vz` on macOS, `qemu` on Linux) |
 
+### Internal Variables
+
+`rdd` sets these variables itself; users should leave them alone. They appear here so a developer reading a process tree or strace output can identify them.
+
+| Variable | Description |
+| --- | --- |
+| `RDD_KUBECTL_RESOLVED` | Recursion guard for the kubectl version resolver. `kuberlr.Exec` sets it on the kubectl child process so a downloaded kubectl that re-execs `rdd` through a shim cannot recurse back into version resolution. `rdd ctl` achieves the same skip via the in-process `kuberlr.SkipResolver()` helper, not this env var. |
+
 ## Path Variables
 
-`rdd svc paths --output=shell` exports these variables. They reflect the paths RDD uses for the current instance; setting them has no effect on RDD's behavior.
+`rdd svc paths --output=shell` exports these variables. Most are informational; `RDD_CACHE_DIR` is also honored as the cache-root override (see Configuration Variables above).
 
 ```shell
 source <(rdd svc paths --output=shell)
@@ -35,9 +45,12 @@ source <(rdd svc paths --output=shell)
 | Variable | Description | Example (macOS, instance `2`) |
 | --- | --- | --- |
 | `RDD_ARGS_FILE` | Saved startup arguments | `~/Library/Application Support/rancher-desktop-2/args.json` |
+| `RDD_CACHE_DIR` | rdd-wide cache root (shared across instances) | `~/Library/Caches/rancher-desktop` |
 | `RDD_DIR` | Service instance directory | `~/Library/Application Support/rancher-desktop-2` |
 | `RDD_CONFIG` | RDD control plane config file | `~/Library/Application Support/rancher-desktop-2/config.yaml` |
+| `RDD_DOCKER_SOCKET` | Host-side Docker socket | `~/.rd2/docker.sock` |
 | `RDD_K3S_CONFIG` | Mirror of the in-VM k3s kubeconfig | `~/Library/Application Support/rancher-desktop-2/k3s.yaml` |
+| `RDD_KUBECTL_CACHE` | Cache directory for downloaded kubectl binaries (shared across instances) | `~/Library/Caches/rancher-desktop/kubectl/darwin-arm64` |
 | `RDD_LIMA_HOME` | Lima home directory | `~/.rd2/lima` |
 | `RDD_LOG_DIR` | Log directory | `~/Library/Logs/rancher-desktop-2` |
 | `RDD_PID_FILE` | Service PID file | `~/Library/Application Support/rancher-desktop-2/rdd.pid` |

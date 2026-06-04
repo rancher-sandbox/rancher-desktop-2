@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	// Import to initialize client auth plugins.
@@ -17,6 +18,7 @@ import (
 	"k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/kuberlr"
 )
 
 func newCtlCommand() *cobra.Command {
@@ -40,6 +42,10 @@ func ctlAction(cmd *cobra.Command, args []string) error {
 	if err := os.Setenv("KUBECONFIG", instance.Config()); err != nil {
 		return fmt.Errorf("failed to set KUBECONFIG: %w", err)
 	}
+	// rdd ctl always targets the embedded apiserver. Embedded apiserver
+	// and embedded kubectl share a k8s.io/kubernetes module entry, so
+	// the version probe would always fall through. Skip it.
+	kuberlr.SkipResolver()
 	return kubectlAction(cmd, args)
 }
 
@@ -54,7 +60,23 @@ func newKubectlCommand() *cobra.Command {
 	return command
 }
 
-func kubectlAction(*cobra.Command, []string) error {
+func kubectlAction(cmd *cobra.Command, args []string) error {
+	path, err := kuberlr.Resolve(cmd.Context(), args)
+	if err != nil {
+		// A download or sha-mismatch failure surfaces here. We refuse
+		// to silently fall back to the embedded kubectl — running a
+		// version-mismatched binary against the user's cluster would
+		// hide the failure behind weird kubectl errors. Apiserver-probe
+		// failures (unreachable cluster, missing kubeconfig) do not
+		// reach this branch: serverVersion converts them to ok=false
+		// with a nil error, so Resolve returns "" and the embedded
+		// kubectl handles client-only commands.
+		return fmt.Errorf("resolving kubectl version: %w", err)
+	}
+	if path != "" {
+		logrus.WithField("path", path).Debug("using cached kubectl")
+		return kuberlr.Exec(cmd.Context(), path, args)
+	}
 	os.Args = os.Args[1:]
 	command := kubectlcmd.NewDefaultKubectlCommand()
 	if err := cli.RunNoErrOutput(command); err != nil {

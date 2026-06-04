@@ -96,11 +96,26 @@ sudo_needs_password() {
 # Cross-platform process management.
 # MSYS2's kill cannot reach Win32 processes, so use taskkill.exe on Windows.
 
+# Translate an MSYS PID to its Win32 PID. taskkill and tasklist filter
+# on the Win32 PID, but $! in MSYS bash returns the MSYS PID, and the
+# two differ for native Win32 children. /proc/<pid>/winpid holds the
+# mapping; outside MSYS the PID is already a Win32 PID.
+winpid() {
+    local pid=$1
+    if is_msys && [[ -r /proc/${pid}/winpid ]]; then
+        cat "/proc/${pid}/winpid"
+    else
+        printf '%s' "${pid}"
+    fi
+}
+
 # Check if a process is alive. Returns 0 if alive, non-zero otherwise.
 assert_process_alive() {
-    local pid=$1
+    local pid wpid
+    pid=$1
     if is_windows; then
-        MSYS_NO_PATHCONV=1 tasklist.exe /FI "PID eq ${pid}" /NH 2>/dev/null | grep -qw "${pid}"
+        wpid=$(winpid "${pid}")
+        MSYS_NO_PATHCONV=1 tasklist.exe /FI "PID eq ${wpid}" /NH 2>/dev/null | grep -qw "${wpid}"
     else
         kill -0 "${pid}" 2>/dev/null
     fi
@@ -108,9 +123,11 @@ assert_process_alive() {
 
 # Send SIGKILL (or TerminateProcess on Windows) to a process.
 process_kill() {
-    local pid=$1
+    local pid wpid
+    pid=$1
     if is_windows; then
-        MSYS_NO_PATHCONV=1 taskkill.exe /PID "${pid}" /F >/dev/null 2>&1
+        wpid=$(winpid "${pid}")
+        MSYS_NO_PATHCONV=1 taskkill.exe /PID "${wpid}" /F >/dev/null 2>&1
     else
         kill -9 "${pid}"
     fi

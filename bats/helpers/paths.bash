@@ -6,6 +6,21 @@ inside_repo_clone() {
     [[ -d "${PATH_REPO_ROOT}/pkg/rancher-desktop-daemon" ]]
 }
 
+# winpath converts a POSIX path to its Windows-native equivalent
+# (/tmp/x -> C:\msys64\tmp\x on MSYS, /mnt/c/tmp/x -> C:\tmp\x on WSL).
+# Use it for env vars and args that reach a native Windows binary
+# without traversing the rdd() function's conversions. Returns its
+# input unchanged on Linux and macOS.
+winpath() {
+    if is_msys; then
+        cygpath -w "$1"
+    elif is_windows && using_windows_exe; then
+        wslpath -w "$1"
+    else
+        printf '%s' "$1"
+    fi
+}
+
 # Convert 'export KEY="C:\win\path"' to POSIX paths (WSL or MSYS2).
 win_to_posix_exports() {
     tr -d "\r" | while IFS= read -r line; do

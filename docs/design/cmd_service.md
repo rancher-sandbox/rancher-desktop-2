@@ -12,7 +12,7 @@ This service directory contains the following files:
 
 | File | Description |
 | --- | --- |
-| `config.json` | service config settings (written by `rdd service create` or `rdd service start`)
+| `config.yaml` | service config settings (written by `rdd service create` or `rdd service start`)
 | `rdd.pid`     | pid of the control plane process (normally a background daemon) |
 | `rdd.sqlite3` | control plane data store |
 
@@ -38,7 +38,7 @@ It runs in a background process, which is started on demand by `rdd service serv
 
 Creates the service without starting it. This will rarely be used; the `rdd service start` command will call it automatically when the service does not yet exist.
 
-Creates the service directory with the `rdd.sqlite3` data store. Stores the configuration settings in the `config.json` file.
+Creates the service directory with the `rdd.sqlite3` data store. Stores the configuration settings in the `config.yaml` file.
 
 Configuration options (incomplete):
 
@@ -75,16 +75,16 @@ Additional configuration for individual controllers:
 
 Backgrounds itself (fork && exec) unless invoked with `--background=false` for easier debugging.
 
-Saves its own PID into `rdd.pid` and then starts the apiserver and the controller-manager using the configuration found in `config.json`.
+Saves its own PID into `rdd.pid` and then starts the apiserver and the controller-manager using the configuration found in `config.yaml`.
 
-Once the apiserver is running the config data will be copied into the `config` map in the `rdd-system` namespace. No controller should access `config.json` directly.
+Once the apiserver is running the config data will be copied into the `config` map in the `rdd-system` namespace. No controller should access `config.yaml` directly.
 
 
 ### `rdd service start`
 
 Starts the service. Calls `rdd service create` if the service does not yet exist.
 
-Takes all the same options as `rdd service create` and updates `config.json` with latest settings.
+Takes all the same options as `rdd service create` and updates `config.yaml` with latest settings.
 
 Runs `rdd service serve` to actually start the control plane in the background
 
@@ -148,8 +148,12 @@ Prints instance directory and file paths. Accepts an optional key argument to pr
 | `lima_home` | Lima home directory (`$short_dir/lima`) |
 | `tls_dir` | TLS certificate directory |
 | `config` | RDD control plane config file path |
+| `k3s_config` | Mirror of the in-VM k3s kubeconfig |
 | `pid_file` | PID file path |
 | `args_file` | Saved arguments file path |
+| `docker_socket` | Host-side Docker socket |
+| `cache_dir` | rdd-wide cache root (shared across instances) |
+| `kubectl_cache` | Cache directory for downloaded kubectl binaries (shared across instances) |
 
 Output formats (`--output`, `-o`):
 
@@ -165,14 +169,18 @@ Examples:
 
 ```console
 $ rdd svc paths
-args_file  /path/to/rancher-desktop-default/rdd.args
-config     /path/to/rancher-desktop-default/config.json
-dir        /path/to/rancher-desktop-default
-lima_home  /path/to/.rd2/lima
-log_dir    /path/to/rancher-desktop-default/log
-pid_file   /path/to/rancher-desktop-default/rdd.pid
-short_dir  /path/to/.rd2
-tls_dir    /path/to/rancher-desktop-default/tls
+args_file      /path/to/rancher-desktop-default/args.json
+cache_dir      /path/to/Caches/rancher-desktop
+config         /path/to/rancher-desktop-default/config.yaml
+dir            /path/to/rancher-desktop-default
+docker_socket  /path/to/.rd2/docker.sock
+k3s_config     /path/to/rancher-desktop-default/k3s.yaml
+kubectl_cache  /path/to/Caches/rancher-desktop/kubectl/darwin-arm64
+lima_home      /path/to/.rd2/lima
+log_dir        /path/to/rancher-desktop-default/log
+pid_file       /path/to/rancher-desktop-default/rdd.pid
+short_dir      /path/to/.rd2
+tls_dir        /path/to/rancher-desktop-default/tls
 
 $ rdd svc paths log_dir
 /path/to/rancher-desktop-default/log
