@@ -40,9 +40,8 @@ export class Wix extends GlobalDependency(GitHubDependency) {
       throw new Error(`Could not parse WiX version ${ context.dependencies.wix.version }`);
     }
 
-    const hostDir = path.join(context.resourcesDir, 'host');
-    const wixDir = path.join(hostDir, 'wix');
-    const archivePath = path.join(hostDir, `${ tagName }.zip`);
+    const wixDir = path.join(context.hostDir, 'wix');
+    const archivePath = path.join(context.hostDir, `${ tagName }.zip`);
     // The archive name never includes the patch version.
     const archiveName = `wix${ version.major }${ version.minor }-binaries.zip`;
     const url = `https://github.com/wixtoolset/wix3/releases/download/${ tagName }/${ archiveName }`;

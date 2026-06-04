@@ -1,11 +1,7 @@
-import childProcess from 'child_process';
-import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
 import { Electron } from '@/scripts/dependencies/electron';
-import * as goUtils from '@/scripts/dependencies/go-source';
-import { SudoPrompt } from '@/scripts/dependencies/sudo-prompt';
 import * as tools from '@/scripts/dependencies/tools';
 import { Wix } from '@/scripts/dependencies/wix';
 import {
@@ -30,15 +26,19 @@ const InstallTimeout = 10 * 60 * 1_000; // Ten minutes.
 // Dependencies that should be installed into places that users touch
 // (so users' WSL distros and hosts as of the time of writing).
 const userTouchedDependencies: Dependency[] = [
+  new tools.Helm(),
+  new tools.DockerCLI(),
+  new tools.DockerBuildx(),
+  new tools.DockerCompose(),
+  new tools.DockerProvidedCredHelpers(),
+  new tools.ECRCredHelper(),
 ];
 
 // Dependencies that are specific to unix hosts.
 const unixDependencies: Dependency[] = [];
 
 // Dependencies that are specific to macOS hosts.
-const macOSDependencies = [
-  new SudoPrompt(),
-];
+const macOSDependencies: Dependency[] = [];
 
 // Dependencies that are specific to windows hosts.
 const windowsDependencies = [
@@ -178,10 +178,10 @@ async function runScripts(): Promise<void> {
   await downloadDependencies(dependencies);
 }
 
-async function buildDownloadContextFor(rawPlatform: DependencyPlatform, manifest: DependencyManifest): Promise<DownloadContext> {
+function buildDownloadContextFor(rawPlatform: DependencyPlatform, manifest: DependencyManifest): Promise<DownloadContext> {
   const platform = rawPlatform === 'wsl' ? 'linux' : rawPlatform;
   const resourcesDir = path.join(process.cwd(), 'resources');
-  const downloadContext: DownloadContext = {
+  return Promise.resolve({
     dependencies:       manifest,
     dependencyPlatform: rawPlatform,
     platform,
@@ -189,15 +189,10 @@ async function buildDownloadContextFor(rawPlatform: DependencyPlatform, manifest
     isM1:               !!process.env.M1,
     resourcesDir,
     binDir:             path.join(resourcesDir, platform, 'bin'),
-    internalDir:        path.join(resourcesDir, platform, 'internal'),
+    internalDir:        path.join(resourcesDir, 'internal'),
     dockerPluginsDir:   path.join(resourcesDir, platform, 'docker-cli-plugins'),
-  };
-
-  const dirsToCreate = ['binDir', 'internalDir', 'dockerPluginsDir'] as const;
-
-  await Promise.all(dirsToCreate.map(d => fs.promises.mkdir(downloadContext[d], { recursive: true })));
-
-  return downloadContext;
+    hostDir:            path.join(resourcesDir, 'host'),
+  });
 }
 
 // The main purpose of this setTimeout is to keep the script waiting until the main async function finishes

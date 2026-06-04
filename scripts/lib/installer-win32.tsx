@@ -83,7 +83,7 @@ export default async function buildInstaller(workDir: string, appDir: string, ou
   console.log('Writing out WiX definition...');
   await fs.promises.writeFile(path.join(workDir, 'project.wxs'), output);
   console.log('Compiling WiX...');
-  const iconPath = path.join(appDir, 'resources', 'resources', 'icons', 'icon.ico');
+  const iconPath = path.join(appDir, 'resources', 'icons', 'icon.ico');
   const inputs = [
     path.join(workDir, 'project.wxs'),
     path.join(process.cwd(), 'build', 'wix', 'dialogs.wxs'),

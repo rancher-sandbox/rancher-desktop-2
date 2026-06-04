@@ -39,11 +39,17 @@ interface RDDPaths {
  */
 interface RDAPaths {
   /** RDA: path to the RDD executable. */
-  readonly rdd:       string;
+  readonly rdd:              string;
   /** RDA: resources directory. */
-  readonly resources: string;
+  readonly resources:        string;
+  /** RDA: user-facing executables directory. */
+  readonly binDir:           string;
+  /** RDA: internal executables directory. */
+  readonly internalDir:      string;
+  /** RDA: Docker CLI plugins directory. */
+  readonly dockerPluginsDir: string;
   /** RDA: cache directory. */
-  readonly cache:     string;
+  readonly cache:            string;
 }
 
 export interface Paths extends RDDPaths, RDAPaths { }
@@ -64,7 +70,7 @@ export function getRDDPath(useCached = true): string {
   cachedRDDPath = (() => {
     if (electron.app?.isPackaged) {
       const packagedPath = path.join(
-        process.resourcesPath, 'resources', process.platform, 'bin', exeName);
+        process.resourcesPath, process.platform, 'bin', exeName);
       try {
         fs.accessSync(packagedPath, fs.constants.X_OK);
         return packagedPath;
@@ -88,7 +94,7 @@ export function getRDDPath(useCached = true): string {
 }
 
 type PlatformSpecificPaths = Pick<RDAPaths, 'cache'>;
-type PlatformAgnosticPaths = Pick<RDAPaths, 'resources'>;
+type PlatformAgnosticPaths = Pick<RDAPaths, 'resources' | 'binDir' | 'internalDir' | 'dockerPluginsDir'>;
 
 /**
  * TEST_PLATFORM is a special platform name for testing.
@@ -141,15 +147,21 @@ function getPlatformSpecificPaths(rdd: RDDPaths, platform: supportedPlatforms): 
 const platformAgnosticPaths: PlatformAgnosticPaths = {
   get resources() {
     if (electron.app?.isPackaged) {
-      if (process.resourcesPath) {
-        return path.join(process.resourcesPath, 'resources');
-      }
-      return undefined as any;
+      return process.resourcesPath;
     }
     // In `yarn dev`, `process.resourcesPath` is
     // `.../Electron.app/Contents/Resources` (and other similar paths on other
     // platforms); we need to use the project directory instead.
     return path.join(process.cwd(), 'resources');
+  },
+  get binDir() {
+    return path.join(this.resources, process.platform, 'bin');
+  },
+  get internalDir() {
+    return path.join(this.resources, 'internal');
+  },
+  get dockerPluginsDir() {
+    return path.join(this.resources, process.platform, 'docker-cli-plugins');
   },
 };
 
@@ -161,8 +173,9 @@ const platformAgnosticPaths: PlatformAgnosticPaths = {
  * callbacks exist); if the platform is unsupported, throws an error.
  */
 function getPlatformSpecificFallbacks(platform: supportedPlatforms): Partial<Record<keyof Paths, () => string>> {
+  type FallbackType = Partial<Record<keyof Paths, () => string>> & { dir: () => string };
   // For some of the paths, we just tack the property name to the `dir` path.
-  const getters: { dir: () => string } & Partial<Record<keyof Paths, () => string>> = ({
+  const getters = ({
     darwin: {
       dir() {
         return path.join(os.homedir(), 'Library', 'Application Support', 'rancher-desktop');
@@ -192,7 +205,7 @@ function getPlatformSpecificFallbacks(platform: supportedPlatforms): Partial<Rec
         return path.join(os.tmpdir(), 'rancher-desktop');
       },
     },
-  } satisfies Record<supportedPlatforms, Partial<Record<keyof Paths, () => string>>>)[platform];
+  } satisfies Record<supportedPlatforms, FallbackType>)[platform];
 
   if (!getters) {
     throw new UnsupportedPlatformError(platform);

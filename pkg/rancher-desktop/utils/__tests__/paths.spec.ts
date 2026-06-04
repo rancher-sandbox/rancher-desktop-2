@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { jest } from '@jest/globals';
+import pick from 'lodash/pick';
 
 import mockModules from '@pkg/utils/testUtils/mockModules';
 
@@ -33,7 +34,7 @@ describe('getRDDPath', () => {
   let resourcesPath: string, packagedPath: string, relativePath: string, environmentPath: string;
   beforeAll(async() => {
     resourcesPath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'r-d-a-paths-'));
-    packagedPath = path.join(resourcesPath, 'resources', process.platform, 'bin', exeName);
+    packagedPath = path.join(resourcesPath, process.platform, 'bin', exeName);
     relativePath = path.join(process.cwd(), 'resources', process.platform, 'bin', exeName);
     environmentPath = path.join(resourcesPath, exeName);
   });
@@ -98,9 +99,12 @@ describe('getPaths', () => {
   };
   const expected: Paths = {
     ...rddPaths,
-    rdd:       'rdd',
-    resources: path.join(process.cwd(), 'resources'),
-    cache:     path.join(rddPaths.dir, 'cache'),
+    rdd:              'rdd',
+    resources:        path.join(process.cwd(), 'resources'),
+    binDir:           path.join(process.cwd(), 'resources', process.platform, 'bin'),
+    internalDir:      path.join(process.cwd(), 'resources', 'internal'),
+    dockerPluginsDir: path.join(process.cwd(), 'resources', process.platform, 'docker-cli-plugins'),
+    cache:            path.join(rddPaths.dir, 'cache'),
   };
   beforeEach(() => {
     // The tests run under Node.JS, so `process.resourcesPath` is not set.
@@ -136,8 +140,7 @@ describe('getPaths', () => {
         dir:       path.join(os.tmpdir(), 'rancher-desktop'),
         cache:     path.join(os.tmpdir(), 'rancher-desktop', 'cache'),
         log_dir:   path.join(os.tmpdir(), 'rancher-desktop', 'log_dir'),
-        resources: expected.resources,
-        rdd:       expected.rdd,
+        ...pick(expected, 'resources', 'binDir', 'internalDir', 'dockerPluginsDir', 'rdd'),
       };
       const actual = getPaths(expected.rdd, TEST_PLATFORM as any);
       for (const untypedKey of Object.keys(expected)) {

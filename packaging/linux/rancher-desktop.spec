@@ -163,7 +163,7 @@ Rancher Desktop is an open-source project to bring Kubernetes and container mana
 
 %build
 # Generate icons
-icon="resources/resources/icons/logo-square-512.png"
+icon="resources/icons/logo-square-512.png"
 for size in 512x512 256x256 128x128 96x96 64x64 48x48 32x32 24x24 16x16; do
   mkdir "share/icons/hicolor/${size}/apps" -p
   convert -resize "${size}" "${icon}" "share/icons/hicolor/${size}/apps/%{name}.png"
@@ -171,13 +171,8 @@ done
 
 # Desktop integration files
 mkdir -p share/applications share/metainfo
-mv resources/resources/linux/rancher-desktop.desktop share/applications/rancher-desktop.desktop
-mv resources/resources/linux/rancher-desktop.appdata.xml share/metainfo/rancher-desktop.appdata.xml
-
-# Remove qemu binaries included in lima tarball
-rm -v resources/resources/linux/lima/bin/qemu-*
-rm -rvf resources/resources/linux/lima/lib
-rm -rvf resources/resources/linux/lima/share/qemu
+mv resources/linux/rancher-desktop.desktop share/applications/rancher-desktop.desktop
+mv resources/linux/rancher-desktop.appdata.xml share/metainfo/rancher-desktop.appdata.xml
 
 %install
 mkdir -p "%{buildroot}%{_prefix}/bin" "%{buildroot}/opt/%{name}"

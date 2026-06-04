@@ -7,15 +7,12 @@
 /e2e/reports/
 /go.work.sum
 /node_modules/
-/resources/cert-manager*
 /resources/darwin/
 /resources/host/
 /resources/icons/icon.ico
-/resources/linux/*
-!/resources/linux/rancher-desktop.desktop
+/resources/internal/
+/resources/linux/
 /resources/preload.js*
-/resources/rdx-proxy.tar
-/resources/spin-operator*
 /resources/win32/
 /screenshots/output/
 /e2e/e2e/test-results/.last-run.json

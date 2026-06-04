@@ -40,7 +40,7 @@ modules:
 
             zypak-wrapper /app/lib/io.rancherdesktop.app2/rancher-desktop "$@"
     build-commands:
-      # Bundle electron build after yarn build -- --linux dir 
+      # Bundle electron build after yarn build -- --linux dir
       - mkdir -p /app/lib/io.rancherdesktop.app2
       - unzip rancher-desktop.zip -d /app/lib/io.rancherdesktop.app2
       # Remove in app qemu binaries
@@ -50,14 +50,14 @@ modules:
         rm -rf /app/share/metainfo /app/share/icons /app/share/applications
         mkdir -p /app/share/metainfo /app/share/applications
 
-        icon="/app/lib/io.rancherdesktop.app2/resources/resources/icons/logo-square-512.png"
+        icon="/app/lib/io.rancherdesktop.app2/resources/icons/logo-square-512.png"
         for size in 512x512 256x256 128x128 96x96 64x64 48x48 32x32 24x24 16x16; do
           mkdir "/app/share/icons/hicolor/${size}/apps" -p
           ffmpeg -i "${icon}" -vf scale="${size}" "/app/share/icons/hicolor/${size}/apps/io.rancherdesktop.app2.png"
         done
 
-        mv /app/lib/io.rancherdesktop.app2/resources/resources/linux/rancher-desktop.desktop /app/share/applications
-        mv /app/lib/io.rancherdesktop.app2/resources/resources/linux/rancher-desktop.appdata.xml /app/share/metainfo
+        mv /app/lib/io.rancherdesktop.app2/resources/linux/rancher-desktop.desktop /app/share/applications
+        mv /app/lib/io.rancherdesktop.app2/resources/linux/rancher-desktop.appdata.xml /app/share/metainfo
       # Install app wrapper
       - install -Dm755 -t /app/bin/ electron-wrapper
     modules:

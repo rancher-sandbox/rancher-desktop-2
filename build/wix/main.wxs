@@ -88,16 +88,16 @@
       />
       <Environment Id="PathWindowsUserBin" Name="PATH"
         Action="set" Part="last" System="no" Permanent="no"
-        Value="[APPLICATIONFOLDER]resources\resources\win32\bin\" />
+        Value="[APPLICATIONFOLDER]resources\win32\bin\" />
       <Environment Id="PathWindowsUserDockerCLIPlugins" Name="PATH"
         Action="set" Part="last" System="no" Permanent="no"
-        Value="[APPLICATIONFOLDER]resources\resources\win32\docker-cli-plugins\" />
+        Value="[APPLICATIONFOLDER]resources\win32\docker-cli-plugins\" />
       <Environment Id="PathLinuxUserBin" Name="PATH"
         Action="set" Part="last" System="no" Permanent="no"
-        Value="[APPLICATIONFOLDER]resources\resources\linux\bin\" />
+        Value="[APPLICATIONFOLDER]resources\linux\bin\" />
       <Environment Id="PathLinuxUserDockerCLIPlugins" Name="PATH"
         Action="set" Part="last" System="no" Permanent="no"
-        Value="[APPLICATIONFOLDER]resources\resources\linux\docker-cli-plugins\" />
+        Value="[APPLICATIONFOLDER]resources\linux\docker-cli-plugins\" />
     </Component>
     <Component Id="PathSystem" Directory="APPLICATIONFOLDER">
       <Condition>
@@ -113,16 +113,16 @@
       />
       <Environment Id="PathWindowsSystemBin" Name="PATH"
         Action="set" Part="last" System="yes" Permanent="no"
-        Value="[APPLICATIONFOLDER]resources\resources\win32\bin\" />
+        Value="[APPLICATIONFOLDER]resources\win32\bin\" />
       <Environment Id="PathWindowsSystemDockerCLIPlugins" Name="PATH"
         Action="set" Part="last" System="yes" Permanent="no"
-        Value="[APPLICATIONFOLDER]resources\resources\win32\docker-cli-plugins\" />
+        Value="[APPLICATIONFOLDER]resources\win32\docker-cli-plugins\" />
       <Environment Id="PathLinuxSystemBin" Name="PATH"
         Action="set" Part="last" System="yes" Permanent="no"
-        Value="[APPLICATIONFOLDER]resources\resources\linux\bin\" />
+        Value="[APPLICATIONFOLDER]resources\linux\bin\" />
       <Environment Id="PathLinuxSystemDockerCLIPlugins" Name="PATH"
         Action="set" Part="last" System="yes" Permanent="no"
-        Value="[APPLICATIONFOLDER]resources\resources\linux\docker-cli-plugins\" />
+        Value="[APPLICATIONFOLDER]resources\linux\docker-cli-plugins\" />
     </Component>
 
 
@@ -150,7 +150,7 @@
         Id="HostSwitchFirewallPrivateException"
         Name="$(var.appName) Networking Private Exception"
         Description="$(var.appName) host-switch.exe profile exception for private networks"
-        Program="[APPLICATIONFOLDER]resources\resources\win32\internal\host-switch.exe"
+        Program="[APPLICATIONFOLDER]resources\win32\internal\host-switch.exe"
         Profile="private"
         Scope="any"
         Protocol="tcp" />
@@ -158,7 +158,7 @@
         Id="HostSwitchFirewallDomainException"
         Name="$(var.appName) Networking Domain Exception"
         Description="$(var.appName) host-switch.exe profile exception for domain networks"
-        Program="[APPLICATIONFOLDER]resources\resources\win32\internal\host-switch.exe"
+        Program="[APPLICATIONFOLDER]resources\win32\internal\host-switch.exe"
         Profile="domain"
         Scope="any"
         Protocol="tcp" />

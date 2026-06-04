@@ -6,19 +6,9 @@
 #
 # Each entry pairs a version with a checksums map of upstream artifact
 # filenames; install-time downloads verify against the stored sha256.
-lima:
-  version: 2.1.2.rd0
-  checksums:
-    lima.macos-15.amd64.tar.gz: sha256:8f372b3200543bd427cd9baaa98f493fe05dbd57a8225e7a5429835449ed69d6
-    lima.macos-15.arm64.tar.gz: sha256:3919fb49813d4c4c1f9b9a55b4c9bf0a8a24afe210a5e771933bed49865fe032
-    lima.linux.amd64.tar.gz: sha256:5de228ce3d53a75500eecc64876c6135bc8e17a84cf2fd3bb9101778c0068bac
-    lima.linux.arm64.tar.gz: sha256:d0d161c07db61c5286193613ba3590afd65b25460f1109992aa1ebfc3764da43
-qemu:
-  version: 9.2.0.rd2
-  checksums:
-    qemu-9.2.0.rd2-darwin-x86_64.tar.gz: sha256:c25f85aa32993b1974705a21515890a66a72f773d2f1a01758c207d827ace47d
-    qemu-9.2.0.rd2-darwin-aarch64.tar.gz: sha256:1e65ce4c9c15da404732b446d434f05b373438d9a9ebf01a6082b3634cb0b3b1
-    qemu-9.2.0.rd2-linux-x86_64.tar.gz: sha256:03c39317c9c87118853e4261d0fd082a724ef9617196b2921519a4e4794e9e8d
+check-spelling:
+  version: 0.0.26
+  checksums: {}
 electron:
   version: 42.1.0
   checksums:
@@ -28,40 +18,6 @@ electron:
     electron-v42.1.0-linux-arm64.zip: sha256:1e700f7f3daef794cc45235e51c1172664aed49a4e7737b8896ddc398bff4d7d
     electron-v42.1.0-win32-x64.zip: sha256:0b03582d0a68dce8473fcc090114dabef7eaafd52b6d8cd2c85b000358c6af31
     electron-v42.1.0-win32-arm64.zip: sha256:78a6bc7d1648383d72a79c95748e6bbc0faae412f11f29b987ee9deda605535e
-socketVMNet:
-  version: 1.2.2
-  checksums:
-    socket_vmnet-1.2.2-x86_64.tar.gz: sha256:2968a82c97e692c2d36f87230152e8018e00589c1b598e8257775adfe83800a1
-    socket_vmnet-1.2.2-arm64.tar.gz: sha256:c7bf62308fbcfdc29bdfb8373c9b1951f7ac2396446e4390919796a94972e6dc
-alpineLimaISO:
-  version:
-    isoVersion: 0.2.47.rd5
-    alpineVersion: 3.23.0
-  checksums:
-    alpine-lima-rd-3.23.0-x86_64.iso: sha256:e1a6a14e601ccfa19200aecf5daae7c908f9074f3c0bc919bd77d6f60b8b64cf
-    alpine-lima-rd-3.23.0-aarch64.iso: sha256:2f71a1f08c3b26a90165a1e73e7a6726f3b142bdd81450781336e7269d81fd80
-WSLDistro:
-  version: "0.96"
-  checksums:
-    distro-0.96.tar: sha256:b1c1728fd75154e62b4bd9ce871afe750c2731e106c40a20a2d899dcf22a9270
-kuberlr:
-  version: 0.6.1
-  checksums:
-    kuberlr_0.6.1_linux_amd64.tar.gz: sha256:10874d9097c6c2657a0e06395fc321daa0060f18581a1de6ea6526625e2f124f
-    kuberlr_0.6.1_linux_arm64.tar.gz: sha256:504b4fa17c7aecc91525f76b59d5806351ed17fb19d985564a3dc826e71ac103
-    kuberlr_0.6.1_darwin_amd64.tar.gz: sha256:cf2ba65e2f0bfd13f96187654aab03f7e240d871a222f248078eba94b275bf5e
-    kuberlr_0.6.1_darwin_arm64.tar.gz: sha256:a02f536019efd8096b2145d3d5a7762f2a8f14d7a6abfbac503e35e24293bac9
-    kuberlr_0.6.1_windows_amd64.zip: sha256:553b729efa0ab06405a64a8bb2972d53d8c60112189a01f75cd6ddbe7d0534eb
-    kuberlr_0.6.1_windows_arm64.zip: sha256:0342ba794de2b93b2e0ad6ff3559addfff1b9f77902f5f4bc8a1f4dde3fb4fac
-helm:
-  version: 4.2.0
-  checksums:
-    helm-v4.2.0-linux-amd64.tar.gz: sha256:97dbeb971be4ac4b27e3839976d9564c0fb35c6f3b1da89dd1e292d236af4096
-    helm-v4.2.0-linux-arm64.tar.gz: sha256:1f8de130dfbd04de64978e7b852a7a547be1404956a366608276d2520b678670
-    helm-v4.2.0-darwin-amd64.tar.gz: sha256:1376ea697140e4db316736e760d5a47d12afc1524dce704476ef06fd7fdeddc6
-    helm-v4.2.0-darwin-arm64.tar.gz: sha256:f13f959015447b6bc309f9fd506509926543988a39035c088b52522ec95e2acb
-    helm-v4.2.0-windows-amd64.tar.gz: sha256:34bf9659f8f04f3841a60131183b8e2acc44e260db4c93b889ff09718cacca6f
-    helm-v4.2.0-windows-arm64.tar.gz: sha256:41b8c33f7bb5ed094412b50702e70014633383e2cc32efd60239afbfe9fdbc19
 dockerCLI:
   version: 29.5.2
   checksums:
@@ -91,22 +47,6 @@ dockerCompose:
     docker-compose-darwin-aarch64: sha256:4cad7fc67dd089a598a15598ad38d04e6f23bf299846d26b2c572f1f96a7c49f
     docker-compose-windows-x86_64.exe: sha256:e1a8faff28c7433635201a2222171b727f33ecdb0ed367e54d162d00432f39aa
     docker-compose-windows-aarch64.exe: sha256:11992bc5de81d7df994bdf58a4eead433f1c287c15965056a3b372ae38888aaf
-golangci-lint:
-  version: 2.12.2
-  checksums: {}
-trivy:
-  version: 0.70.0
-  checksums:
-    trivy_0.70.0_Linux-64bit.tar.gz: sha256:8b4376d5d6befe5c24d503f10ff136d9e0c49f9127a4279fd110b727929a5aa9
-    trivy_0.70.0_Linux-ARM64.tar.gz: sha256:2f6bb988b553a1bbac6bdd1ce890f5e412439564e17522b88a4541b4f364fc8d
-steve:
-  version: 0.1.0-beta9.2
-  checksums:
-    steve-darwin-amd64.tar.gz: sha256:0886c0bf0823f1c0893d7d05fd3a34b4bea4a7999c8d66a7241549cadecea676
-    steve-darwin-arm64.tar.gz: sha256:901f858c27f96481fad3f3fcc734080a1861838005963a9913a68dbefc2792b9
-    steve-linux-amd64.tar.gz: sha256:31d68b0c92b688984dc0db270c17b87164c07626c0b69f92f0b2f7f31017d3de
-    steve-linux-arm64.tar.gz: sha256:f976de1c9c63a1732c0e7f0365c228747e669a62ad9a4fa7ae98dc2277919970
-    steve-windows-amd64.tar.gz: sha256:a70a9bfecb43abd94350eb8919a5d86425632393c2d04f15b8bafcdf158da39d
 dockerProvidedCredentialHelpers:
   version: 0.9.7
   checksums:
@@ -127,46 +67,27 @@ ECRCredentialHelper:
     darwin-arm64/docker-credential-ecr-login: sha256:aa9e902a4dd80aa34ac0f753f6ab4723050b9d9846b07237ea56c5f814b9f457
     windows-amd64/docker-credential-ecr-login.exe: sha256:1545d0c797ad7d539f0b85ef6c8702193a93764d537b01f93b55cefae994c9e1
     windows-arm64/docker-credential-ecr-login.exe: sha256:42bbcac22405c1a98ae211555918dc37f8e0e9c458a93f4026cf102aa1011256
-mobyOpenAPISpec:
-  version:
-    apiVersion: "1.54"
-    commit: 5c80a6e8264b09b309ccaf48ac08eef68ec4ccb6
+golangci-lint:
+  version: 2.12.2
+  checksums: {}
+helm:
+  version: 4.2.0
   checksums:
-    v1.54.yaml: sha256:bf64312d8f900bf35a2319a5d617505ba56d662e92a5a67cb62da7653c55f388
+    helm-v4.2.0-linux-amd64.tar.gz: sha256:97dbeb971be4ac4b27e3839976d9564c0fb35c6f3b1da89dd1e292d236af4096
+    helm-v4.2.0-linux-arm64.tar.gz: sha256:1f8de130dfbd04de64978e7b852a7a547be1404956a366608276d2520b678670
+    helm-v4.2.0-darwin-amd64.tar.gz: sha256:1376ea697140e4db316736e760d5a47d12afc1524dce704476ef06fd7fdeddc6
+    helm-v4.2.0-darwin-arm64.tar.gz: sha256:f13f959015447b6bc309f9fd506509926543988a39035c088b52522ec95e2acb
+    helm-v4.2.0-windows-amd64.tar.gz: sha256:34bf9659f8f04f3841a60131183b8e2acc44e260db4c93b889ff09718cacca6f
+    helm-v4.2.0-windows-arm64.tar.gz: sha256:41b8c33f7bb5ed094412b50702e70014633383e2cc32efd60239afbfe9fdbc19
+steve:
+  version: 0.1.0-beta9.2
+  checksums:
+    steve-darwin-amd64.tar.gz: sha256:0886c0bf0823f1c0893d7d05fd3a34b4bea4a7999c8d66a7241549cadecea676
+    steve-darwin-arm64.tar.gz: sha256:901f858c27f96481fad3f3fcc734080a1861838005963a9913a68dbefc2792b9
+    steve-linux-amd64.tar.gz: sha256:31d68b0c92b688984dc0db270c17b87164c07626c0b69f92f0b2f7f31017d3de
+    steve-linux-arm64.tar.gz: sha256:f976de1c9c63a1732c0e7f0365c228747e669a62ad9a4fa7ae98dc2277919970
+    steve-windows-amd64.tar.gz: sha256:a70a9bfecb43abd94350eb8919a5d86425632393c2d04f15b8bafcdf158da39d
 wix:
   version: v3.14.1
   checksums:
     wix314-binaries.zip: sha256:6ac824e1642d6f7277d0ed7ea09411a508f6116ba6fae0aa5f2c7daa2ff43d31
-moproxy:
-  version: 0.5.1
-  checksums:
-    moproxy_0.5.1_linux_x86_64_musl.bin.xz: sha256:c44eb985e60859e56a21a780550b96975431b1334232927b4056f508ab47219b
-spinShim:
-  version: 0.24.0
-  checksums:
-    containerd-shim-spin-v2-linux-x86_64.tar.gz: sha256:558b4e92fb0b39d3e54d8a172cf83fe3b529d541bbec6ef540550c2c514fe131
-    containerd-shim-spin-v2-linux-aarch64.tar.gz: sha256:9cb14eda7899289d0b8085b8266f77afe27c0ebbd65f745c5291ff28cf538c47
-spinOperator:
-  version: 0.6.1
-  checksums:
-    spin-operator.crds.yaml: sha256:146fbc3ea2cd9089999c25e38e0aa6779485e788fdd7a2c775287df4360edfc9
-    spin-operator-0.6.1.tgz: sha256:640fcbf0da182ab0482228aa33872a06adec1d3849bea234ae8f725d1de60ff5
-certManager:
-  version: 1.20.1
-  checksums:
-    cert-manager.crds.yaml: sha256:3f5ce03fa880d072ba10c804d43afd4eaa9c7688506e29762c4e1a98ec095b83
-    cert-manager-v1.20.1.tgz: sha256:9ce75dbd0f8c46b4c60cc8294a1668607e49122937f9c283fc27d615c00d0733
-spinCLI:
-  version: 4.0.0
-  checksums:
-    spin-v4.0.0-macos-amd64.tar.gz: sha256:b9040c3d792d183314545366797b0ca90f2a944fdbdfa7344bb31d8935cc99b8
-    spin-v4.0.0-macos-aarch64.tar.gz: sha256:d86152aa0cba1f3de1f17c48f13f53679e0d9aa07dcaeb04ffcdfa08637d0a10
-    spin-v4.0.0-static-linux-amd64.tar.gz: sha256:9b445e0f3a02f89a22f41d5dcdee42c057746f5b10128481f3e6a55e08987bb2
-    spin-v4.0.0-static-linux-aarch64.tar.gz: sha256:f2b4a493878cf58497f40c8d1bb224f5397228fc818297dfaa4417bf1c64506c
-    spin-v4.0.0-windows-amd64.zip: sha256:3004a04231035dc993e5ae89b27c6f8348e4cb5be257919b347fc159ca9a1956
-spinKubePlugin:
-  version: 0.4.0
-  checksums: {}
-check-spelling:
-  version: 0.0.26
-  checksums: {}

@@ -337,7 +337,7 @@ function MacOpen(instance, end) {
   if (Node.electron.app?.isPackaged) {
     basePath = process.resourcesPath;
   } else {
-    basePath = process.cwd();
+    basePath = Node.path.join(process.cwd(), 'resources');
   }
 
   // We must set the cwd so that the AppleScript can find the sudo-prompt-command script.
@@ -347,12 +347,12 @@ function MacOpen(instance, end) {
   };
 
   if (Node.process.env.RD_SUDO_PROMPT_OSASCRIPT) {
-    const script = Node.path.join(basePath, 'resources', 'darwin', 'internal', 'Rancher Desktop.app', 'Contents', 'Resources', 'Scripts', 'main.scpt');
+    const script = Node.path.join(basePath, 'darwin', 'internal', 'Rancher Desktop.app', 'Contents', 'Resources', 'Scripts', 'main.scpt');
 
     Node.child.exec(`/usr/bin/osascript "${ EscapeDoubleQuotes(Node.path.normalize(script)) }"`, options, end);
   } else {
     // We must run the binary directly so that the cwd will apply.
-    const binary = Node.path.join(basePath, 'resources', 'darwin', 'internal', 'Rancher Desktop.app', 'Contents', 'MacOS', 'applet');
+    const binary = Node.path.join(basePath, 'darwin', 'internal', 'Rancher Desktop.app', 'Contents', 'MacOS', 'applet');
 
     Node.child.exec(`"${ EscapeDoubleQuotes(Node.path.normalize(binary)) }"`, options, end);
   }

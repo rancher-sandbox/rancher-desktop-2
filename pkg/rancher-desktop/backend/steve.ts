@@ -84,7 +84,7 @@ export class Steve {
     }
 
     const osSpecificName = /^win/i.test(os.platform()) ? 'steve.exe' : 'steve';
-    const stevePath = path.join(paths.resources, os.platform(), 'internal', osSpecificName);
+    const stevePath = path.join(paths.internalDir, osSpecificName);
     const childProcess = spawn(stevePath, ['--context', 'rancher-desktop-2'],
       { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
     this.process = childProcess;

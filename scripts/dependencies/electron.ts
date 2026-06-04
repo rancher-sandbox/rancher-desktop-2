@@ -35,7 +35,7 @@ export class Electron extends GlobalDependency(VersionedDependency) {
     const baseURL = this.getBaseURL(version);
     const archiveName = `electron-v${ version }-${ context.platform }-${ arch }.zip`;
     const url = `${ baseURL }${ archiveName }`;
-    const archivePath = path.join(context.resourcesDir, 'host', archiveName);
+    const archivePath = path.join(context.hostDir, archiveName);
     const outPath = path.join(process.cwd(), 'node_modules', 'electron', 'dist');
     const { default: upstreamChecksums } = await import('electron/checksums.json');
     const expectedChecksum = upstreamChecksums[archiveName as keyof typeof upstreamChecksums];

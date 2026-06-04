@@ -74,7 +74,7 @@ class Builder {
     };
     const helper = new LinuxTargetHelper(context.packager);
     const leaf = `${ context.packager.executableName }.desktop`;
-    const destination = path.join(context.appOutDir, `resources/resources/linux/${ leaf }`);
+    const destination = path.join(context.appOutDir, `resources/linux/${ leaf }`);
 
     await helper.writeDesktopEntry(options, context.packager.executableName, destination);
   }

@@ -7,9 +7,15 @@ import { Wix } from '@/scripts/dependencies/wix';
 import { VersionedDependency } from '@/scripts/lib/dependencies';
 
 export const globalDependencies: VersionedDependency[] = [
-  new tools.GoLangCILint(),
   new tools.CheckSpelling(),
+  new Electron(),
+  new tools.DockerCLI(),
+  new tools.DockerBuildx(),
+  new tools.DockerCompose(),
+  new tools.DockerProvidedCredHelpers(),
+  new tools.ECRCredHelper(),
+  new tools.GoLangCILint(),
+  new tools.Helm(),
   new tools.Steve(),
   new Wix(),
-  new Electron(),
 ];

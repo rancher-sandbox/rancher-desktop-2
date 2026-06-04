@@ -28,53 +28,24 @@ export interface DownloadContext {
   internalDir:        string;
   // dockerPluginsDir is for docker CLI plugins.
   dockerPluginsDir:   string;
+  // hostDir is a directory for things that are not shipped.
+  hostDir:            string;
 }
 
-export interface AlpineLimaISOVersion {
-  // The version of the ISO build
-  isoVersion:    string;
-  // The version of Alpine Linux that the ISO is built on
-  alpineVersion: string
-}
-
-export interface MobyOpenAPISpecVersion {
-  // The Docker API version, e.g. "1.54", which selects the
-  // `api/docs/v${apiVersion}.yaml` file to read.
-  apiVersion: string;
-  // The Moby commit the spec is fetched from.  rddepman resolves the latest
-  // commit that touched `api/docs/v${apiVersion}.yaml` at bump time and pins
-  // it here so the source URL is immutable for install-time verification.
-  commit:     string;
-}
-
-export type Version = string | AlpineLimaISOVersion | MobyOpenAPISpecVersion;
+export type Version = string;
 
 export interface DependencyVersions {
-  lima:                            string;
-  qemu:                            string;
-  socketVMNet:                     string;
-  alpineLimaISO:                   AlpineLimaISOVersion;
-  WSLDistro:                       string;
-  kuberlr:                         string;
-  helm:                            string;
+  'check-spelling':                string;
   dockerCLI:                       string;
   dockerBuildx:                    string;
   dockerCompose:                   string;
-  electron:                        string;
-  'golangci-lint':                 string;
-  trivy:                           string;
-  steve:                           string;
   dockerProvidedCredentialHelpers: string;
   ECRCredentialHelper:             string;
-  mobyOpenAPISpec:                 MobyOpenAPISpecVersion;
+  electron:                        string;
+  'golangci-lint':                 string;
+  helm:                            string;
+  steve:                           string;
   wix:                             string;
-  moproxy:                         string;
-  spinShim:                        string;
-  certManager:                     string;
-  spinOperator:                    string;
-  spinCLI:                         string;
-  spinKubePlugin:                  string;
-  'check-spelling':                string;
 }
 
 export const DEP_VERSIONS_PATH = 'pkg/rancher-desktop/assets/dependencies.yaml';
@@ -475,14 +446,7 @@ export abstract class VersionedDependency implements Dependency {
 
   /** Format the version as a string for display. */
   static versionString(v: Version): string {
-    if (typeof v === 'string') {
-      return v;
-    }
-    if ('isoVersion' in v) {
-      return v.isoVersion;
-    }
-
-    return v.apiVersion;
+    return v;
   }
 }
 
