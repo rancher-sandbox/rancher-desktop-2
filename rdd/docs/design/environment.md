@@ -14,6 +14,8 @@ These variables control RDD behavior. Set them before running `rdd` commands.
 | `RDD_LOG_DIR` | Override the logging directory; usually used for tests. | unset |
 | `RDD_LOG_LEVEL` | Sets the log level (`fatal`, `error`, `warn`, `info`, `debug`, `trace`). Overridden by `--log-level` flag. When unset, defaults to `debug` in developer mode, `warn` otherwise. | unset |
 | `RDD_LOG_TITLE` | When set, writes this string as the first line of each new log file. Useful for identifying log files from specific test runs or sessions. | unset |
+| `RDD_CACHE_DIR` | Overrides the rdd-wide cache root. The kubectl resolver appends `kubectl/<os>-<arch>/` inside it. | `os.UserCacheDir()`/`rancher-desktop` (e.g. `~/Library/Caches/rancher-desktop` on macOS) |
+| `RDD_KUBECTL_MIRROR` | Overrides the Kubernetes release mirror for kubectl downloads. Must serve both the release binaries and the `stable-<major>.<minor>.txt` version markers (see [Version selection](cmd_other.md#version-selection)). | `https://dl.k8s.io` |
 | `RDD_TRACE_PACKETS` | Adds `--trace-packets` to the guest vm-switch network setup, logging every packet sent or received. Requires `RDD_KEEP_LOGS`, and affects throughput and timing, so use it only when diagnosing network failures. | unset |
 | `RDD_VM_CPUS` | Overrides the app VM's CPU count (the Lima template default is 2). Intended for CI, where runner sizing differs from user machines. A set-but-invalid value is an error, not a fallback. To be replaced by an App spec property. | unset |
 
@@ -29,9 +31,17 @@ These variables configure the BATS test framework. They have no effect on `rdd` 
 | `RDD_CONTAINER_ENGINE` | Container engine the docker test suite drives (`moby` or `containerd`). | `moby` |
 | `RDD_KEEP_RUNNING` | Keeps the control plane running between test files instead of stopping it in `teardown_file`, so a VM-booting suite boots once per run. | unset |
 
+### Internal Variables
+
+`rdd` sets these variables itself; users should leave them alone. They appear here so a developer reading a process tree or strace output can identify them.
+
+| Variable | Description |
+| --- | --- |
+| `RDD_KUBECTL_RESOLVED` | Recursion guard for the kubectl version resolver. `kuberlr.Exec` sets it on the kubectl child process so a downloaded kubectl that re-execs `rdd` through a shim cannot recurse back into version resolution. `rdd ctl` achieves the same skip via the in-process `kuberlr.SkipResolver()` helper, not this env var. |
+
 ## Path Variables
 
-`rdd svc paths --output=shell` exports these variables. They reflect the paths RDD uses for the current instance; setting them has no effect on RDD's behavior, other than `RDD_LOG_DIR` as listed above.
+`rdd svc paths --output=shell` exports these variables. They reflect the paths RDD uses for the current instance; setting them has no effect on RDD's behavior, other than `RDD_LOG_DIR` and `RDD_CACHE_DIR` as listed above.
 
 ```shell
 source <(rdd svc paths --output=shell)
@@ -40,9 +50,12 @@ source <(rdd svc paths --output=shell)
 | Variable | Description | Example (macOS, instance `2`) |
 | --- | --- | --- |
 | `RDD_ARGS_FILE` | Saved startup arguments | `~/Library/Application Support/rancher-desktop-2/args.json` |
+| `RDD_CACHE_DIR` | rdd-wide cache root (shared across instances) | `~/Library/Caches/rancher-desktop` |
 | `RDD_DIR` | Service instance directory | `~/Library/Application Support/rancher-desktop-2` |
 | `RDD_CONFIG` | RDD control plane config file | `~/Library/Application Support/rancher-desktop-2/config.yaml` |
+| `RDD_DOCKER_SOCKET` | Host-side Docker socket | `~/.rd2/docker.sock` |
 | `RDD_K3S_CONFIG` | Mirror of the in-VM k3s kubeconfig | `~/Library/Application Support/rancher-desktop-2/k3s.yaml` |
+| `RDD_KUBECTL_CACHE` | Cache directory for downloaded kubectl binaries (shared across instances) | `~/Library/Caches/rancher-desktop/kubectl/darwin-arm64` |
 | `RDD_LIMA_HOME` | Lima home directory | `~/.rd2/lima` |
 | `RDD_LOG_DIR` | Log directory | `~/Library/Logs/rancher-desktop-2` |
 | `RDD_PID_FILE` | Service PID file | `~/Library/Application Support/rancher-desktop-2/rdd.pid` |

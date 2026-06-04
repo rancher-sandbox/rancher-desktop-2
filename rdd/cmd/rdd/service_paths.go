@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/kuberlr"
 )
 
 func instancePaths() map[string]string {
@@ -29,6 +30,8 @@ func instancePaths() map[string]string {
 		"pid_file":      instance.PIDFile(),
 		"args_file":     instance.ArgsFile(),
 		"docker_socket": instance.DockerSocket(),
+		"cache_dir":     kuberlr.CacheRoot(),
+		"kubectl_cache": kuberlr.CacheDir(),
 	}
 }
 

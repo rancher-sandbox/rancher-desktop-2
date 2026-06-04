@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	// Import to initialize client auth plugins.
@@ -17,6 +18,7 @@ import (
 	"k8s.io/kubectl/pkg/cmd/util"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/kuberlr"
 )
 
 func newCtlCommand() *cobra.Command {
@@ -40,6 +42,9 @@ func ctlAction(cmd *cobra.Command, args []string) error {
 	if err := os.Setenv("KUBECONFIG", instance.Config()); err != nil {
 		return fmt.Errorf("failed to set KUBECONFIG: %w", err)
 	}
+	// Always targets the embedded apiserver, version-matched to the
+	// embedded kubectl by construction (see SkipResolver).
+	kuberlr.SkipResolver()
 	return kubectlAction(cmd, args)
 }
 
@@ -54,7 +59,18 @@ func newKubectlCommand() *cobra.Command {
 	return command
 }
 
-func kubectlAction(*cobra.Command, []string) error {
+func kubectlAction(cmd *cobra.Command, args []string) error {
+	path, err := kuberlr.Resolve(cmd.Context(), args)
+	if err != nil {
+		// Falling back here would hide a download/sha-mismatch error
+		// behind confusing kubectl errors; probe failures return "" from
+		// Resolve instead and never reach this branch.
+		return fmt.Errorf("resolving kubectl version: %w", err)
+	}
+	if path != "" {
+		logrus.WithField("path", path).Debug("using cached kubectl")
+		return kuberlr.Exec(cmd.Context(), path, args)
+	}
 	os.Args = os.Args[1:]
 	command := kubectlcmd.NewDefaultKubectlCommand()
 	if err := cli.RunNoErrOutput(command); err != nil {
