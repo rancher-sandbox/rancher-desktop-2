@@ -575,27 +575,25 @@ func (r *LimaVMReconciler) shutdownAllHostagents() {
 		// start` mistakes for an orphan. Use a fresh context because the manager
 		// context is already cancelled. stopInstanceForcibly removes the PID/socket/tmp
 		// files and terminates the distro; it is a no-op when the hostagent already
-		// cleaned up after itself.
+		// cleaned up after itself. The loop runs on every platform; off Windows the
+		// hostagent self-terminates and distro termination is a no-op, so the
+		// reclaim finds nothing to do.
 		logger := ctrl.Log.WithName("shutdownAllHostagents")
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		if inst, err := store.Inspect(cleanupCtx, name); err == nil && inst != nil {
 			// A force-killed hostagent leaves its PID file behind, and on Windows
-			// that PID can already be recycled by the time we taskkill. Clear
-			// HostAgentPID unless it is still our hostagent, as the other force-stop
-			// paths do, so taskkill cannot reach an unrelated process. On the timeout
-			// branch the hostagent is still running and still ours, so IsOurProcess
-			// keeps the PID for stopInstanceForcibly to terminate.
-			if inst.HostAgentPID > 0 && !process.IsOurProcess(inst.HostAgentPID, "hostagent", hostAgentPIDFile(inst)) {
-				inst.HostAgentPID = 0
-			}
+			// that PID can already be recycled by the time we taskkill;
+			// stopInstanceForcibly screens it. On the timeout branch the hostagent
+			// is still running and still ours, so the PID is kept and terminated.
 			stopInstanceForcibly(cleanupCtx, logger, inst)
 		}
 		cancel()
 
-		// Wait briefly for the process to exit after a forced kill. Without a
-		// timeout, cmd.Wait can block indefinitely if a child process survives
-		// KillTree and holds an inherited pipe. Returns at once when the process
-		// already exited.
+		// Wait briefly for the process to exit after a forced kill. This returns
+		// at once when the watcher has already reaped the hostagent (closing
+		// procExited); the timeout only bounds shutdown if reaping stalls. The
+		// hostagent's stdio are plain log files, not pipes, so cmd.Wait runs no
+		// I/O-copy goroutine that could keep it blocked.
 		waitCtx, waitCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		select {
 		case <-state.procExited:

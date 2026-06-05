@@ -43,6 +43,13 @@ func IsOurProcess(_ int, _ ...string) bool {
 	return true
 }
 
+// IsOurProcessWithArg is the whole-argument counterpart of IsOurProcess. On
+// Unix it is the same deliberate no-op, returning true for signature parity
+// with the Windows build.
+func IsOurProcessWithArg(_ int, _ string) bool {
+	return true
+}
+
 // Kill sends SIGTERM to the process with the given PID.
 func Kill(pid int) error {
 	return unix.Kill(pid, unix.SIGTERM)

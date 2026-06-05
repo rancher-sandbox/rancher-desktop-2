@@ -192,25 +192,15 @@ func (r *LimaVMReconciler) handleWatchedState(ctx context.Context, limaVM *v1alp
 		if inst == nil {
 			return ctrl.Result{}, errors.New("instance not found")
 		}
-		// The VM driver (e.g., QEMU) may outlive the hostagent. Force-stop
-		// the instance so the next hostagent can start with a clean slate.
-		//
-		// On Windows the on-disk HostAgentPID may have been recycled to an
-		// unrelated process after the hostagent exited, so clear it unless
-		// IsOurProcess confirms it is still ours; the force path's taskkill
-		// would otherwise reach whatever now holds it. DriverPID is taskkilled
-		// without that check — IsOurProcess matches the rdd image, not the
-		// qemu/wsl driver — so a recycled DriverPID would be killed here.
-		// handleDeletion zeroes DriverPID on Windows; a restart cannot, because
-		// the orphaned driver must die. Job Objects, not PID files, are the
-		// proper fix.
+		// The VM driver (e.g., QEMU) may outlive the hostagent. Force-stop the
+		// instance so the next hostagent can start with a clean slate.
+		// stopInstanceForcibly screens the on-disk HostAgentPID; the DriverPID it
+		// cannot screen is still killed, so handleDeletion zeroes DriverPID on
+		// Windows while a restart cannot — the orphaned driver must die. Job
+		// Objects, not PID files, are the proper fix.
 		if inst.Status == limatype.StatusRunning || inst.Status == limatype.StatusBroken {
 			logger.Info("Force-stopping orphaned VM driver", "status", inst.Status)
-			forceInst := *inst
-			if inst.HostAgentPID > 0 && !process.IsOurProcess(inst.HostAgentPID, "hostagent", hostAgentPIDFile(inst)) {
-				forceInst.HostAgentPID = 0
-			}
-			stopInstanceForcibly(ctx, logger, &forceInst)
+			stopInstanceForcibly(ctx, logger, inst)
 		}
 		return r.startInstance(ctx, limaVM, inst)
 
@@ -540,14 +530,9 @@ func (r *LimaVMReconciler) shutdownHostagent(ctx context.Context, name string, i
 		// forceStop runs after signalHostagent declines (no watcher, or the
 		// process was already reaped) or after a signalled hostagent ignores the
 		// graceful timeout. In the reaped case the stored HostAgentPID may already
-		// be recycled on Windows, so confirm identity before taskkill, as the
-		// other force-stop paths do. DriverPID is not verifiable here —
-		// IsOurProcess matches only the rdd image — so it is taskkilled unchecked.
-		safeInst := *forceInst
-		if safeInst.HostAgentPID > 0 && !process.IsOurProcess(safeInst.HostAgentPID, "hostagent", hostAgentPIDFile(&safeInst)) {
-			safeInst.HostAgentPID = 0
-		}
-		stopInstanceForcibly(forceCtx, logger, &safeInst)
+		// be recycled on Windows; stopInstanceForcibly screens it before the
+		// taskkill.
+		stopInstanceForcibly(forceCtx, logger, forceInst)
 	}
 
 	// After forced termination, wait briefly for the process to exit.
@@ -588,17 +573,11 @@ func (r *LimaVMReconciler) killOrphanedHostagent(ctx context.Context, inst *lima
 	// to become stopped. The hostagent's own shutdown sequence handles driver
 	// termination, WSL2 distro cleanup, and tmp file removal.
 	//
-	// HostAgentPID comes from on-disk state written by a previous service, so
-	// on Windows it may have been recycled to an unrelated process. IsOurProcess
-	// confirms it is still our hostagent before signalling, and again before the
-	// forced stop below, because the PID can be recycled during the graceful
-	// wait; the force path would otherwise taskkill whatever now holds the
-	// recycled PID. DriverPID is taskkilled without that check — IsOurProcess
-	// matches the rdd image, not the qemu/wsl driver — so a recycled DriverPID
-	// would be killed here. handleDeletion zeroes DriverPID on Windows; a restart
-	// cannot, because the orphaned driver must die. Job Objects, not PID files,
-	// are the proper fix.
-	forceInst := *inst
+	// HostAgentPID comes from on-disk state written by a previous service, so on
+	// Windows it may name a recycled process. Signal it only when IsOurProcess
+	// confirms it is still our hostagent; stopInstanceForcibly re-screens before
+	// the forced stop below, because the PID can be recycled during the graceful
+	// wait.
 	if inst.HostAgentPID > 0 && process.IsOurProcess(inst.HostAgentPID, "hostagent", hostAgentPIDFile(inst)) {
 		if err := process.Interrupt(inst.HostAgentPID); err != nil {
 			logger.V(1).Info("Could not signal orphaned hostagent", "pid", inst.HostAgentPID, "error", err)
@@ -613,12 +592,7 @@ func (r *LimaVMReconciler) killOrphanedHostagent(ctx context.Context, inst *lima
 		}
 	}
 
-	// Re-verify before the forced stop: the PID checked above may have been
-	// recycled during the graceful wait, as the other force-stop paths guard.
-	if forceInst.HostAgentPID > 0 && !process.IsOurProcess(forceInst.HostAgentPID, "hostagent", hostAgentPIDFile(&forceInst)) {
-		forceInst.HostAgentPID = 0
-	}
-	stopInstanceForcibly(ctx, logger, &forceInst)
+	stopInstanceForcibly(ctx, logger, inst)
 	return nil
 }
 
@@ -652,6 +626,19 @@ func hostAgentPIDFile(inst *limatype.Instance) string {
 	return filepath.Join(inst.Dir, filenames.HostAgentPID)
 }
 
+// clearRecycledHostAgentPID zeroes inst.HostAgentPID unless it still names our
+// live hostagent, so a force-stop's taskkill cannot reach an unrelated process
+// that recycled the PID. The stored PID comes from on-disk state a previous
+// service wrote, which Windows may have reassigned after the hostagent exited;
+// on other platforms IsOurProcess is a no-op, so the PID is kept. DriverPID is
+// not screened here — IsOurProcess matches the rdd image, not the qemu/wsl
+// driver — so a recycled DriverPID is still taskkilled by the caller.
+func clearRecycledHostAgentPID(inst *limatype.Instance) {
+	if inst.HostAgentPID > 0 && !process.IsOurProcess(inst.HostAgentPID, "hostagent", hostAgentPIDFile(inst)) {
+		inst.HostAgentPID = 0
+	}
+}
+
 // forceStopForDeletion stops a Lima instance in preparation for a forced Delete
 // and, on Windows, clears its on-disk PIDs so Lima's Delete → StopForcibly
 // cannot send CTRL_BREAK to a process that recycled a stale PID.
@@ -670,16 +657,11 @@ func hostAgentPIDFile(inst *limatype.Instance) string {
 func forceStopForDeletion(ctx context.Context, logger logr.Logger, inst *limatype.Instance) {
 	if inst.Status == limatype.StatusRunning {
 		// A StatusRunning WSL2 distro derives its status from wsl --list, not
-		// from HostAgentPID, so that PID may have been recycled on Windows.
-		// Clear it unless it is still ours, as the other force-stop paths do, so
-		// taskkill cannot reach an unrelated process. For QEMU/VZ, Lima reports
-		// StatusRunning only after the hostagent socket answers, so the PID is
-		// genuine and IsOurProcess confirms it.
-		safeInst := *inst
-		if safeInst.HostAgentPID > 0 && !process.IsOurProcess(safeInst.HostAgentPID, "hostagent", hostAgentPIDFile(&safeInst)) {
-			safeInst.HostAgentPID = 0
-		}
-		stopInstanceForcibly(ctx, logger, &safeInst)
+		// from HostAgentPID, so that PID may have been recycled on Windows;
+		// stopInstanceForcibly screens it before taskkill. For QEMU/VZ, Lima
+		// reports StatusRunning only after the hostagent socket answers, so the
+		// PID is genuine and IsOurProcess confirms it.
+		stopInstanceForcibly(ctx, logger, inst)
 	} else if inst.VMType == limatype.WSL2 {
 		// A "stopped" WSL2 distro can retain kernel state that deadlocks
 		// wsl.exe --unregister. Terminate it without PID-based killing, since
@@ -703,7 +685,15 @@ func forceStopForDeletion(ctx context.Context, logger logr.Logger, inst *limatyp
 //
 // On WSL2, also terminates the distro because the keepAlive process
 // (nohup sleep) would keep it running after the hostagent is killed.
+//
+// It screens HostAgentPID with clearRecycledHostAgentPID before killing, so a
+// recycled PID is never taskkilled. The screen runs on a copy, leaving the
+// caller's instance unchanged.
 func stopInstanceForcibly(ctx context.Context, logger logr.Logger, inst *limatype.Instance) {
+	safeInst := *inst
+	clearRecycledHostAgentPID(&safeInst)
+	inst = &safeInst
+
 	allKilled := true
 	for _, pid := range []int{inst.DriverPID, inst.HostAgentPID} {
 		if pid > 0 {

@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -59,25 +60,12 @@ func Interrupt(pid int) error {
 //
 // With no substrings the image-path match alone decides the result, which a
 // recycled PID running any other rdd process would satisfy; production callers
-// should always pass a discriminator.
+// should always pass a discriminator. To match a short token that could also
+// appear inside the image path, use IsOurProcessWithArg, which compares whole
+// arguments instead of substrings.
 func IsOurProcess(pid int, cmdlineSubstrings ...string) bool {
-	self, err := os.Executable()
-	if err != nil {
-		return false
-	}
-	handle, err := windows.OpenProcess(
-		windows.PROCESS_QUERY_LIMITED_INFORMATION|windows.PROCESS_VM_READ, false, uint32(pid))
-	if err != nil {
-		return false
-	}
-	defer func() { _ = windows.CloseHandle(handle) }()
-
-	image, err := processImagePath(handle)
-	if err != nil || !samePath(image, self) {
-		return false
-	}
-	cmdline, err := processCommandLine(handle)
-	if err != nil {
+	cmdline, ok := ourProcessCommandLine(pid)
+	if !ok {
 		return false
 	}
 	for _, s := range cmdlineSubstrings {
@@ -86,6 +74,64 @@ func IsOurProcess(pid int, cmdlineSubstrings ...string) bool {
 		}
 	}
 	return true
+}
+
+// IsOurProcessWithArg reports whether pid is a live process running this
+// program's own executable with arg as one of its command-line arguments
+// (argv[1:], excluding the executable path). Unlike IsOurProcess, which matches
+// a raw substring of the whole command line, this matches a complete argument,
+// so a short token such as a subcommand name cannot be satisfied by an
+// unrelated process whose image path merely contains that text.
+//
+// It shares IsOurProcess's identity guarantees and failure semantics: it
+// returns false (never an error) whenever identity cannot be positively
+// confirmed, so callers treat "unknown" as "not ours". On non-Windows it is a
+// no-op that returns true, like IsOurProcess.
+func IsOurProcessWithArg(pid int, arg string) bool {
+	cmdline, ok := ourProcessCommandLine(pid)
+	if !ok {
+		return false
+	}
+	return commandLineHasArg(cmdline, arg)
+}
+
+// commandLineHasArg reports whether arg appears as a complete argument in
+// commandLine, ignoring argv[0] (the executable path). It parses the command
+// line with the same rules Windows uses (CommandLineToArgvW, via
+// DecomposeCommandLine), so a quoted path containing spaces stays a single
+// argument and a token that is only a substring of argv[0] is not matched.
+func commandLineHasArg(commandLine, arg string) bool {
+	args, err := windows.DecomposeCommandLine(commandLine)
+	if err != nil || len(args) < 2 {
+		return false
+	}
+	return slices.Contains(args[1:], arg)
+}
+
+// ourProcessCommandLine returns pid's command line when pid is a live process
+// running this program's own executable, and false otherwise. It centralises
+// the OpenProcess and image-path comparison that the identity checks share.
+func ourProcessCommandLine(pid int) (string, bool) {
+	self, err := os.Executable()
+	if err != nil {
+		return "", false
+	}
+	handle, err := windows.OpenProcess(
+		windows.PROCESS_QUERY_LIMITED_INFORMATION|windows.PROCESS_VM_READ, false, uint32(pid))
+	if err != nil {
+		return "", false
+	}
+	defer func() { _ = windows.CloseHandle(handle) }()
+
+	image, err := processImagePath(handle)
+	if err != nil || !samePath(image, self) {
+		return "", false
+	}
+	cmdline, err := processCommandLine(handle)
+	if err != nil {
+		return "", false
+	}
+	return cmdline, true
 }
 
 // samePath reports whether image and self name the same on-disk executable.

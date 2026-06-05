@@ -53,6 +53,50 @@ func TestIsOurProcess(t *testing.T) {
 		"a nonexistent PID should not match")
 }
 
+// TestCommandLineHasArg confirms whole-argument matching: a token is matched
+// only as a complete argument in argv[1:], never as a substring of argv[0] or
+// of another argument. This is the property that keeps the service-PID guard
+// from accepting an unrelated rdd process whose image path contains "serve".
+func TestCommandLineHasArg(t *testing.T) {
+	assert.Assert(t, commandLineHasArg(`C:\rdd.exe service serve --secure-port 6443`, "serve"),
+		"the canonical self-spawn carries serve as an argument")
+	assert.Assert(t, commandLineHasArg(`C:\rdd.exe svc serve`, "serve"),
+		"the svc alias also carries serve as an argument")
+	assert.Assert(t, commandLineHasArg(`"C:\Program Files\rdd\rdd.exe" service serve`, "serve"),
+		"a quoted image path with spaces stays a single argv[0]")
+	// argv[0] containing the token as a substring must not match.
+	assert.Assert(t, !commandLineHasArg(`C:\observer\rdd.exe ctl get`, "serve"),
+		"serve inside the image path is not an argument")
+	assert.Assert(t, !commandLineHasArg(`C:\webserver\rdd.exe ctl`, "serve"),
+		"serve inside the image path is not an argument")
+	// Another rdd subcommand is not the control plane.
+	assert.Assert(t, !commandLineHasArg(`C:\rdd.exe hostagent --pidfile C:\x\ha.pid vm`, "serve"),
+		"the hostagent subcommand is not serve")
+	// argv[0] alone, with no arguments, never matches.
+	assert.Assert(t, !commandLineHasArg(`C:\rdd.exe`, "serve"),
+		"a bare image path has no arguments to match")
+}
+
+// TestIsOurProcessWithArg confirms the whole-argument identity check: the argv0
+// base name is a substring of the command line but not an argument, so it must
+// not match — the behaviour that distinguishes IsOurProcessWithArg from
+// IsOurProcess and closes the image-path over-match.
+func TestIsOurProcessWithArg(t *testing.T) {
+	pid := os.Getpid()
+	base := filepath.Base(os.Args[0])
+
+	assert.Assert(t, !IsOurProcessWithArg(pid, base),
+		"the argv0 base %q is part of argv0, not an argument", base)
+	assert.Assert(t, !IsOurProcessWithArg(pid, "arg-that-cannot-appear-9c1f"),
+		"an argument absent from the command line should not match")
+	assert.Assert(t, !IsOurProcessWithArg(0xFFFFFFF0, "serve"),
+		"a nonexistent PID should not match")
+	if len(os.Args) > 1 {
+		assert.Assert(t, IsOurProcessWithArg(pid, os.Args[1]),
+			"the running process should match its own argument %q", os.Args[1])
+	}
+}
+
 // TestIsOurProcessRejectsForeignExecutable confirms the image-path check: a live
 // process running a different executable is not ours, even when a requested
 // substring appears in its command line. This is the branch that defends against
