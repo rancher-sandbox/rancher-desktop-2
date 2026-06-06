@@ -21,6 +21,7 @@ import (
 	"github.com/lima-vm/lima/v2/pkg/limatype/filenames"
 	"github.com/lima-vm/lima/v2/pkg/store"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,6 +33,11 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/logfile"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/process"
 )
+
+// hostSwitchRetryInterval is the minimum time between restarts of a host-switch
+// that exited unexpectedly, and the delay before handleWatchedState re-checks
+// afterward.
+const hostSwitchRetryInterval = 15 * time.Second
 
 func (r *LimaVMReconciler) handleDeletion(ctx context.Context, limaVM *v1alpha1.LimaVM) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
@@ -176,6 +182,20 @@ func (r *LimaVMReconciler) handleWatchedState(ctx context.Context, limaVM *v1alp
 				logger.Error(err, "Failed to update running condition")
 				return ctrl.Result{}, err
 			}
+		}
+		// The host-switch (WSL2 only) can die while the hostagent keeps running,
+		// silently cutting the guest's DHCP/DNS/NAT. Restart a failed bridge and
+		// re-check on a backoff. Both calls are no-ops on other platforms and
+		// when the bridge is healthy.
+		if !r.hostSwitchHealthy(limaVM.Name) {
+			if r.restartHostSwitch(ctx, limaVM.Name) {
+				logger.Info("Restarted host-switch after unexpected exit", "instance", limaVM.Name)
+				if r.Recorder != nil {
+					r.Recorder.Eventf(limaVM, nil, corev1.EventTypeWarning, "HostSwitchRestarted", "Recovering",
+						"host-switch network exited unexpectedly; restarted it")
+				}
+			}
+			return ctrl.Result{RequeueAfter: hostSwitchRetryInterval}, nil
 		}
 		return ctrl.Result{}, nil
 
@@ -413,7 +433,7 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 	// Start the host-switch virtual network for WSL2 instances. This must
 	// happen before the hostagent starts, because the guest's
 	// network-setup.service performs a vsock handshake during early boot.
-	r.startHostSwitch(ctx, limaVM.Name, inst)
+	r.startHostSwitch(ctx, limaVM.Name, limaVM.Namespace, inst)
 
 	// SetGroup makes the hostagent a new process-group leader (pgid == pid
 	// on Unix), which lets bats-with-timeout.sh attribute leaked qemu

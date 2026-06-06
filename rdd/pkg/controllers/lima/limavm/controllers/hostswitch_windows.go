@@ -18,6 +18,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Microsoft/go-winio"
@@ -51,6 +52,18 @@ func (p *hostSwitchPlatform) initHostSwitch() {
 type hostSwitchState struct {
 	cancel context.CancelFunc
 	done   chan struct{}
+
+	// namespace of the owning LimaVM, captured so the goroutine can enqueue a
+	// reconcile when it exits unexpectedly.
+	namespace string
+
+	// failed is set when the goroutine exits on error rather than cancellation.
+	// The reconciler reads it via hostSwitchHealthy and restarts a failed bridge.
+	failed atomic.Bool
+
+	// lastRestart records when this bridge was last (re)started, so the reconciler
+	// can rate-limit recovery restarts to one per hostSwitchRetryInterval.
+	lastRestart time.Time
 }
 
 // Virtual network configuration for the host-switch. These values are a
@@ -121,25 +134,76 @@ const (
 // startHostSwitch launches the host-switch goroutine for a WSL2 instance.
 // It must be called before the hostagent starts, because the guest's
 // network-setup.service performs a vsock handshake during early boot.
-func (r *LimaVMReconciler) startHostSwitch(ctx context.Context, name string, inst *limatype.Instance) {
+func (r *LimaVMReconciler) startHostSwitch(ctx context.Context, name, namespace string, inst *limatype.Instance) {
 	if inst.VMType != limatype.WSL2 {
 		return
 	}
 
 	r.stopHostSwitch(name)
 
+	state := &hostSwitchState{namespace: namespace}
+	r.hostSwitchMu.Lock()
+	r.hostSwitchStates[name] = state
+	r.hostSwitchMu.Unlock()
+
+	r.launchHostSwitch(ctx, name, state)
+}
+
+// launchHostSwitch starts the host-switch goroutine for an existing state entry
+// and records the (re)start time. The caller holds no lock.
+func (r *LimaVMReconciler) launchHostSwitch(ctx context.Context, name string, state *hostSwitchState) {
 	hsCtx, hsCancel := context.WithCancel(ctx)
 	done := make(chan struct{})
 
 	r.hostSwitchMu.Lock()
-	r.hostSwitchStates[name] = &hostSwitchState{
-		cancel: hsCancel,
-		done:   done,
-	}
+	state.cancel = hsCancel
+	state.done = done
+	state.failed.Store(false)
+	state.lastRestart = time.Now()
 	r.hostSwitchMu.Unlock()
 
 	logger := logr.FromContextOrDiscard(ctx).WithValues("instance", name, "component", "host-switch")
-	go r.runHostSwitch(hsCtx, logger, done)
+	go r.runHostSwitch(hsCtx, logger, name, state, done)
+}
+
+// restartHostSwitch relaunches a host-switch that exited unexpectedly while its
+// VM keeps running. Restarts are rate-limited to one per
+// hostSwitchRetryInterval. It returns true when it relaunches the bridge, false
+// when none is tracked or the retry interval has not elapsed.
+//
+// Per-object reconciles are serialized, so no concurrent stopHostSwitch removes
+// the entry between the unlock and launchHostSwitch.
+func (r *LimaVMReconciler) restartHostSwitch(ctx context.Context, name string) bool {
+	r.hostSwitchMu.Lock()
+	state, ok := r.hostSwitchStates[name]
+	if !ok || time.Since(state.lastRestart) < hostSwitchRetryInterval {
+		r.hostSwitchMu.Unlock()
+		return false
+	}
+	oldCancel, oldDone := state.cancel, state.done
+	r.hostSwitchMu.Unlock()
+
+	// Stop the dead goroutine before relaunching, mirroring stopHostSwitch's
+	// cancel-then-wait outside the lock.
+	if oldCancel != nil {
+		oldCancel()
+	}
+	if oldDone != nil {
+		<-oldDone
+	}
+
+	r.launchHostSwitch(ctx, name, state)
+	return true
+}
+
+// hostSwitchHealthy reports whether the host-switch for an instance is alive. A
+// missing entry counts as healthy: non-WSL2 instances never start a bridge, and
+// a stopping VM has had its entry removed.
+func (r *LimaVMReconciler) hostSwitchHealthy(name string) bool {
+	r.hostSwitchMu.Lock()
+	state, ok := r.hostSwitchStates[name]
+	r.hostSwitchMu.Unlock()
+	return !ok || !state.failed.Load()
 }
 
 // stopHostSwitch cancels the host-switch goroutine and waits for it to exit.
@@ -162,12 +226,10 @@ func (r *LimaVMReconciler) stopHostSwitch(name string) {
 // creates a gvisor-tap-vsock virtual network, and relays Ethernet frames
 // between the host and the WSL2 VM until the context is cancelled.
 //
-// If the goroutine exits due to an error (not context cancellation), the
-// controller is not notified: the guest loses DHCP/DNS/NAT and must be
-// restarted manually. Integrating host-switch health into the controller's
-// state machine (enqueue a reconcile on unexpected exit) would allow
-// automatic recovery but requires non-trivial plumbing.
-func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger, done chan struct{}) {
+// On an unexpected exit (an error rather than cancellation) the guest loses
+// DHCP/DNS/NAT, so the goroutine marks the bridge failed and enqueues a
+// reconcile; handleWatchedState then restarts it via restartHostSwitch.
+func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger, name string, state *hostSwitchState, done chan struct{}) {
 	defer close(done)
 
 	subnet, err := validateSubnet(defaultSubnet)
@@ -205,6 +267,10 @@ func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger
 	mux.Handle("/services/forwarder/expose", vn.Mux())
 	mux.Handle("/services/forwarder/unexpose", vn.Mux())
 
+	// Capture the parent context before errgroup shadows it: after g.Wait() the
+	// errgroup's derived ctx is always cancelled, so only the parent reveals
+	// whether this exit was a clean shutdown or an unexpected failure.
+	parentCtx := ctx
 	g, ctx := errgroup.WithContext(ctx)
 
 	// Start the host-side socket bridge now that we have the VM GUID.
@@ -308,9 +374,17 @@ func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger
 
 	logger.Info("Host-switch running", "subnet", subnet.SubnetCIDR, "gateway", subnet.GatewayIP)
 
-	if err := g.Wait(); err != nil {
-		logger.Error(err, "Host-switch exited with error")
-	} else {
+	switch err := g.Wait(); {
+	case parentCtx.Err() != nil:
+		// Cancelled by stopHostSwitch or restartHostSwitch: a clean shutdown.
+		logger.Info("Host-switch stopped")
+	case err != nil:
+		// The bridge died on its own; the guest has no DHCP/DNS/NAT until it is
+		// restarted. Flag it and wake the reconciler to recover.
+		logger.Error(err, "Host-switch exited unexpectedly; guest networking is down until it is restarted")
+		state.failed.Store(true)
+		r.enqueueReconcile(name, state.namespace)
+	default:
 		logger.Info("Host-switch stopped")
 	}
 }
@@ -506,6 +580,7 @@ func getVMGUID(ctx context.Context, logger logr.Logger) (hvsock.GUID, error) {
 
 	// Immediate first scan, then rescan on each tick.
 	scanRegistry()
+	ticks := 0
 	for {
 		select {
 		case vmGUID := <-found:
@@ -513,6 +588,13 @@ func getVMGUID(ctx context.Context, logger logr.Logger) (hvsock.GUID, error) {
 		case <-ctx.Done():
 			return hvsock.GUIDZero, fmt.Errorf("VM GUID discovery timed out: %w", ctx.Err())
 		case <-ticker.C:
+			ticks++
+			// The dial failures inside attemptHandshake are V(1); without this
+			// a bridge stuck waiting for the VM is silent at default verbosity.
+			if ticks%30 == 0 {
+				logger.Info("Still waiting for the WSL2 VM to answer the vsock handshake",
+					"elapsed", (time.Duration(ticks) * time.Second).String())
+			}
 			scanRegistry()
 		}
 	}

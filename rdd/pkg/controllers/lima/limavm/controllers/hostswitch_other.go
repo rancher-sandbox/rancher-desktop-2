@@ -22,7 +22,14 @@ func (hostSwitchPlatform) initHostSwitch() {}
 // startHostSwitch is a no-op on non-Windows platforms. The host-switch virtual
 // network is only needed for WSL2 instances, which require AF_VSOCK to bridge
 // networking between the Hyper-V VM and the Windows host.
-func (r *LimaVMReconciler) startHostSwitch(_ context.Context, _ string, _ *limatype.Instance) {}
+func (r *LimaVMReconciler) startHostSwitch(_ context.Context, _, _ string, _ *limatype.Instance) {}
 
 // stopHostSwitch is a no-op on non-Windows platforms.
 func (r *LimaVMReconciler) stopHostSwitch(_ string) {}
+
+// hostSwitchHealthy is a no-op on non-Windows platforms; there is no bridge to
+// monitor, so the instance is always healthy.
+func (r *LimaVMReconciler) hostSwitchHealthy(_ string) bool { return true }
+
+// restartHostSwitch is a no-op on non-Windows platforms.
+func (r *LimaVMReconciler) restartHostSwitch(_ context.Context, _ string) bool { return false }
