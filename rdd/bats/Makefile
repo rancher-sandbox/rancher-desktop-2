@@ -81,13 +81,25 @@ bats-containers: check-bats build-rdd build-mock-controller
 	RDD_INSTANCE=bats-containers-controller $(BATS) tests/34-containers-controllers/
 .PHONY: bats-containers
 
+# Run docker engine command tests against the moby engine. RDD_KEEP_RUNNING
+# keeps the VM up between files so it boots once for the whole suite.
+bats-docker: check-bats build-rdd
+	RDD_INSTANCE=bats-docker RDD_CONTAINER_ENGINE=moby RDD_KEEP_RUNNING=1 $(BATS) tests/40-docker/
+.PHONY: bats-docker
+
+# Run the same suite against containerd/nerdctl. The nerdctl engine path is not
+# wired yet; this target exists so the tests are ready when it lands.
+bats-nerdctl: check-bats build-rdd
+	RDD_INSTANCE=bats-nerdctl RDD_CONTAINER_ENGINE=containerd RDD_KEEP_RUNNING=1 $(BATS) tests/40-docker/
+.PHONY: bats-nerdctl
+
 # Run all controller tests.
 BATS_CONTROLLERS_TARGETS := bats-builtin bats-rdd bats-app bats-lima bats-containers
 bats-controllers: $(BATS_CONTROLLERS_TARGETS)
 .PHONY: bats-controllers
 
 # Run all BATS tests.
-bats-all: $(filter-out $(BATS_EXCLUDES),bats-helpers bats-cli bats-service $(BATS_CONTROLLERS_TARGETS))
+bats-all: $(filter-out $(BATS_EXCLUDES),bats-helpers bats-cli bats-service bats-docker $(BATS_CONTROLLERS_TARGETS))
 .PHONY: bats-all
 
 # Run specific BATS test file
