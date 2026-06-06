@@ -200,13 +200,24 @@ func (r *LimaVMReconciler) waitForProcessExit(ctx context.Context, name string) 
 // signalHostagent sends a graceful shutdown signal to the hostagent process.
 // Uses process.Interrupt which sends SIGINT on Unix and CTRL_BREAK on Windows
 // (targeted at the hostagent's process group, not the parent).
-// Returns false if no watcher exists or the signal could not be delivered.
+// Returns false if no watcher exists, the process has already been reaped (its
+// PID may be reused on Windows), or the signal could not be delivered.
 func (r *LimaVMReconciler) signalHostagent(name string) bool {
 	r.instanceStatesMu.RLock()
 	state, ok := r.instanceStates[name]
 	r.instanceStatesMu.RUnlock()
 	if !ok || state.cmd == nil || state.cmd.Process == nil {
 		return false
+	}
+	// Once procExited is closed, cmd.Wait() has released the OS process handle
+	// and the PID may be reused; signalling it could deliver CTRL_BREAK to an
+	// unrelated console process on Windows. While it is open the handle is
+	// normally still held; cmd.Wait() releases it just before closing the
+	// channel, leaving a brief window.
+	select {
+	case <-state.procExited:
+		return false
+	default:
 	}
 	return process.Interrupt(state.cmd.Process.Pid) == nil
 }

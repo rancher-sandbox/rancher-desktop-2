@@ -216,7 +216,13 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		existingInst, err := store.Inspect(ctx, limaVM.Name)
 		if err == nil && existingInst != nil {
 			logger.Info("Deleting leftover Lima instance", "instance", limaVM.Name)
-			if err := limainstance.Delete(ctx, existingInst, true); err != nil {
+			forceStopForDeletion(ctx, logger, existingInst)
+			// Use a timeout because Lima's WSL2 driver calls wsl.exe --unregister
+			// which can hang indefinitely if the WSL subsystem is degraded.
+			deleteCtx, deleteCancel := context.WithTimeout(ctx, time.Minute)
+			err := limainstance.Delete(deleteCtx, existingInst, true)
+			deleteCancel()
+			if err != nil {
 				logger.Error(err, "Failed to delete leftover Lima instance")
 				return ctrl.Result{}, err
 			}
@@ -518,8 +524,9 @@ func (r *LimaVMReconciler) waitForShutdown(ctx context.Context) error {
 }
 
 // shutdownAllHostagents terminates all running hostagents during graceful shutdown.
-// It sends a graceful shutdown signal to each hostagent, waits for exit, and falls
-// back to process termination after a timeout.
+// It signals each hostagent, waits for it to exit (or time out), then reclaims any
+// resources left behind — always, because a force-killed hostagent skips its own
+// teardown (the usual case on Windows).
 func (r *LimaVMReconciler) shutdownAllHostagents() {
 	r.instanceStatesMu.RLock()
 	states := maps.Clone(r.instanceStates)
@@ -529,11 +536,23 @@ func (r *LimaVMReconciler) shutdownAllHostagents() {
 		return
 	}
 
-	// Send graceful shutdown signal to all hostagents in parallel.
+	// Send graceful shutdown signal to all hostagents in parallel. Skip any whose
+	// process has already been reaped: once cmd.Wait() closes procExited it has
+	// released the OS process handle, freeing the PID for reuse. On Windows a
+	// CTRL_BREAK to a recycled PID escapes to the console and kills the service
+	// and terminal. While procExited is open the handle is normally still held,
+	// so the PID is still ours; cmd.Wait() releases it just before closing the
+	// channel, leaving a brief window.
 	for _, state := range states {
-		if state.cmd != nil && state.cmd.Process != nil {
-			_ = process.Interrupt(state.cmd.Process.Pid)
+		if state.cmd == nil || state.cmd.Process == nil {
+			continue
 		}
+		select {
+		case <-state.procExited:
+			continue
+		default:
+		}
+		_ = process.Interrupt(state.cmd.Process.Pid)
 	}
 
 	// Wait for each hostagent process to exit. The watcher goroutine may finish
@@ -542,35 +561,47 @@ func (r *LimaVMReconciler) shutdownAllHostagents() {
 	// TODO: Wait on all hostagents in parallel instead of sequentially; with the
 	// current loop, the total wait is N × gracefulShutdownTimeout in the worst case.
 	for name, state := range states {
-		graceful := true
+		// Give the hostagent a chance to exit on its own after the signal above.
 		select {
 		case <-state.procExited:
 		case <-time.After(gracefulShutdownTimeout):
-			graceful = false
 		}
-		if !graceful {
-			// Manager context is cancelled; use a fresh context for cleanup.
-			// Inspect before killing so PIDs are still valid (not yet recycled
-			// to unrelated processes). stopInstanceForcibly kills the process
-			// tree and cleans up PID/socket/tmp files in one pass.
-			logger := ctrl.Log.WithName("shutdownAllHostagents")
-			cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			inst, err := store.Inspect(cleanupCtx, name)
-			if err == nil && inst != nil {
-				stopInstanceForcibly(cleanupCtx, logger, inst)
-			}
-			cancel()
-			// Wait briefly for the process to exit after forced kill.
-			// Without a timeout, cmd.Wait can block indefinitely if a
-			// child process survives KillTree and holds an inherited pipe.
-			waitCtx, waitCancel := context.WithTimeout(context.Background(), 10*time.Second)
-			select {
-			case <-state.procExited:
-			case <-waitCtx.Done():
-				logger.Info("Timed out waiting for hostagent to exit after forced kill", "instance", name)
-			}
-			waitCancel()
+
+		// Always reclaim the instance's resources, even when procExited closed
+		// promptly. On Windows the hostagent is force-killed by exec.CommandContext
+		// when the manager context is cancelled: procExited then closes right away,
+		// so the exit *looks* graceful, but the hostagent never ran its own teardown
+		// and left its PID file and WSL2 distro behind — which the next `rdd svc
+		// start` mistakes for an orphan. Use a fresh context because the manager
+		// context is already cancelled. stopInstanceForcibly removes the PID/socket/tmp
+		// files and terminates the distro; it is a no-op when the hostagent already
+		// cleaned up after itself. The loop runs on every platform; off Windows the
+		// hostagent self-terminates and distro termination is a no-op, so the
+		// reclaim finds nothing to do.
+		logger := ctrl.Log.WithName("shutdownAllHostagents")
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		if inst, err := store.Inspect(cleanupCtx, name); err == nil && inst != nil {
+			// A force-killed hostagent leaves its PID file behind, and on Windows
+			// that PID can already be recycled by the time we taskkill;
+			// stopInstanceForcibly screens it. On the timeout branch the hostagent
+			// is still running and still ours, so the PID is kept and terminated.
+			stopInstanceForcibly(cleanupCtx, logger, inst)
 		}
+		cancel()
+
+		// Wait briefly for the process to exit after a forced kill. This returns
+		// at once when the watcher has already reaped the hostagent (closing
+		// procExited); the timeout only bounds shutdown if reaping stalls. The
+		// hostagent's stdio are plain log files, not pipes, so cmd.Wait runs no
+		// I/O-copy goroutine that could keep it blocked.
+		waitCtx, waitCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		select {
+		case <-state.procExited:
+		case <-waitCtx.Done():
+			logger.Info("Timed out waiting for hostagent to exit after forced kill", "instance", name)
+		}
+		waitCancel()
+
 		state.cancel()
 		r.instanceStatesMu.Lock()
 		delete(r.instanceStates, name)

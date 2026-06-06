@@ -47,34 +47,7 @@ func (r *LimaVMReconciler) handleDeletion(ctx context.Context, limaVM *v1alpha1.
 		logger.Error(err, "Failed to inspect Lima instance for deletion")
 	}
 	if existingInst != nil {
-		// Only use PID-based force-stop for Running instances. Broken
-		// instances may have stale PID files pointing to recycled processes
-		// on Windows (Lima's ReadPIDFile treats any live PID as valid).
-		// Not tested: simulating stale PID files requires Windows-specific
-		// PID file manipulation that BATS cannot easily reproduce.
-		if existingInst.Status == limatype.StatusRunning {
-			stopInstanceForcibly(ctx, logger, existingInst)
-		} else if existingInst.VMType == limatype.WSL2 {
-			// A "stopped" WSL2 distro can retain kernel state that deadlocks
-			// wsl.exe --unregister. Terminate it without PID-based killing,
-			// since the PIDs may have been recycled on Windows.
-			terminateWSL2Distro(ctx, logger, existingInst.Name)
-		}
-		if runtime.GOOS == "windows" {
-			// Clear PIDs so Lima's Delete → StopForcibly does not kill
-			// unrelated processes if the PIDs were recycled. Windows recycles
-			// PIDs aggressively, and Lima's ReadPIDFile treats any live PID
-			// as valid. On Unix, PID recycling is rare (wraps around 32768+),
-			// so we let Lima's Delete clean up any surviving driver processes.
-			//
-			// This disables Lima's internal kill retry even if stopInstanceForcibly
-			// failed above. That is intentional: a failed kill means KillTree
-			// could not reach the process (access denied, already reaped), and
-			// the PID may already be recycled. Retrying with a stale PID is
-			// worse than letting Delete proceed without a kill.
-			existingInst.DriverPID = 0
-			existingInst.HostAgentPID = 0
-		}
+		forceStopForDeletion(ctx, logger, existingInst)
 		preserveInstanceLogs(ctx, existingInst)
 		logger.Info("Deleting Lima instance", "instance", limaVM.Name)
 		// Use a timeout because Lima's WSL2 driver calls wsl.exe --unregister
@@ -219,18 +192,12 @@ func (r *LimaVMReconciler) handleWatchedState(ctx context.Context, limaVM *v1alp
 		if inst == nil {
 			return ctrl.Result{}, errors.New("instance not found")
 		}
-		// The VM driver (e.g., QEMU) may outlive the hostagent. Force-stop
-		// the instance so the next hostagent can start with a clean slate.
-		//
-		// On Windows, StatusBroken instances may have stale PID files whose
-		// PIDs were recycled to unrelated processes. stopInstanceForcibly
-		// uses taskkill, which kills by PID without verifying the process
-		// identity. The deletion path (handleDeletion) guards against this
-		// by skipping PID-based kills for StatusBroken, but this path does
-		// not — the self-healing restart that follows limits the blast
-		// radius. The proper fix is to validate process identity (e.g.,
-		// check executable name) before killing, or use Windows Job Objects
-		// to track child processes without relying on PID files.
+		// The VM driver (e.g., QEMU) may outlive the hostagent. Force-stop the
+		// instance so the next hostagent can start with a clean slate.
+		// stopInstanceForcibly screens the on-disk HostAgentPID; the DriverPID it
+		// cannot screen is still killed, so handleDeletion zeroes DriverPID on
+		// Windows while a restart cannot — the orphaned driver must die. Job
+		// Objects, not PID files, are the proper fix.
 		if inst.Status == limatype.StatusRunning || inst.Status == limatype.StatusBroken {
 			logger.Info("Force-stopping orphaned VM driver", "status", inst.Status)
 			stopInstanceForcibly(ctx, logger, inst)
@@ -295,7 +262,8 @@ func (r *LimaVMReconciler) handleUnwatchedState(ctx context.Context, limaVM *v1a
 	case limatype.StatusRunning, limatype.StatusBroken:
 		// Orphaned hostagent from before controller restart. Kill it so the
 		// next reconcile can start with a watcher.
-		// Same PID recycling caveat as handleWatchedState (see comment above).
+		// killOrphanedHostagent guards the recycled HostAgentPID before signalling
+		// or taskkill, as handleWatchedState does.
 		logger.Info("Found orphaned hostagent, killing it", "status", inst.Status)
 		if err := r.killOrphanedHostagent(ctx, inst); err != nil {
 			logger.Error(err, "Failed to kill orphaned hostagent")
@@ -559,6 +527,11 @@ func (r *LimaVMReconciler) shutdownHostagent(ctx context.Context, name string, i
 				return
 			}
 		}
+		// forceStop runs after signalHostagent declines (no watcher, or the
+		// process was already reaped) or after a signalled hostagent ignores the
+		// graceful timeout. In the reaped case the stored HostAgentPID may already
+		// be recycled on Windows; stopInstanceForcibly screens it before the
+		// taskkill.
 		stopInstanceForcibly(forceCtx, logger, forceInst)
 	}
 
@@ -599,7 +572,13 @@ func (r *LimaVMReconciler) killOrphanedHostagent(ctx context.Context, inst *lima
 	// Try graceful shutdown: signal the hostagent and wait for the instance
 	// to become stopped. The hostagent's own shutdown sequence handles driver
 	// termination, WSL2 distro cleanup, and tmp file removal.
-	if inst.HostAgentPID > 0 {
+	//
+	// HostAgentPID comes from on-disk state written by a previous service, so on
+	// Windows it may name a recycled process. Signal it only when IsOurProcess
+	// confirms it is still our hostagent; stopInstanceForcibly re-screens before
+	// the forced stop below, because the PID can be recycled during the graceful
+	// wait.
+	if inst.HostAgentPID > 0 && process.IsOurProcess(inst.HostAgentPID, "hostagent", hostAgentPIDFile(inst)) {
 		if err := process.Interrupt(inst.HostAgentPID); err != nil {
 			logger.V(1).Info("Could not signal orphaned hostagent", "pid", inst.HostAgentPID, "error", err)
 		} else {
@@ -638,6 +617,66 @@ func waitForInstanceStopped(ctx context.Context, name string) bool {
 	}
 }
 
+// hostAgentPIDFile returns the --pidfile path passed when starting inst's
+// hostagent. It is an unambiguous per-instance discriminator for
+// process.IsOurProcess: an instance name alone can be a prefix of another
+// (e.g. "vm" and "vm2"), but the pidfile path is bounded by the instance
+// directory, so it cannot match a sibling instance's command line.
+func hostAgentPIDFile(inst *limatype.Instance) string {
+	return filepath.Join(inst.Dir, filenames.HostAgentPID)
+}
+
+// clearRecycledHostAgentPID zeroes inst.HostAgentPID unless it still names our
+// live hostagent, so a force-stop's taskkill cannot reach an unrelated process
+// that recycled the PID. The stored PID comes from on-disk state a previous
+// service wrote, which Windows may have reassigned after the hostagent exited;
+// on other platforms IsOurProcess is a no-op, so the PID is kept. DriverPID is
+// not screened here — IsOurProcess matches the rdd image, not the qemu/wsl
+// driver — so a recycled DriverPID is still taskkilled by the caller.
+//
+// TODO: track the hostagent and driver in a Windows Job Object so termination
+// no longer trusts a stored DriverPID that the OS may have recycled.
+func clearRecycledHostAgentPID(inst *limatype.Instance) {
+	if inst.HostAgentPID > 0 && !process.IsOurProcess(inst.HostAgentPID, "hostagent", hostAgentPIDFile(inst)) {
+		inst.HostAgentPID = 0
+	}
+}
+
+// forceStopForDeletion stops a Lima instance in preparation for a forced Delete
+// and, on Windows, clears its on-disk PIDs so Lima's Delete → StopForcibly
+// cannot send CTRL_BREAK to a process that recycled a stale PID.
+//
+// Only Running instances are force-stopped by PID. Broken instances may have
+// stale PID files pointing to recycled processes on Windows (Lima's ReadPIDFile
+// treats any live PID as valid). Not tested: simulating stale PID files requires
+// Windows-specific PID file manipulation that BATS cannot easily reproduce.
+//
+// Clearing the PIDs on Windows disables Lima's internal kill retry even if
+// stopInstanceForcibly failed above. That is intentional: a failed kill means
+// KillTree could not reach the process (access denied, already reaped), and the
+// PID may already be recycled. Retrying with a stale PID is worse than letting
+// Delete proceed without a kill. On Unix, PID recycling is rare (wraps around
+// 32768+), so Lima's Delete may clean up any surviving driver processes.
+func forceStopForDeletion(ctx context.Context, logger logr.Logger, inst *limatype.Instance) {
+	if inst.Status == limatype.StatusRunning {
+		// A StatusRunning WSL2 distro derives its status from wsl --list, not
+		// from HostAgentPID, so that PID may have been recycled on Windows;
+		// stopInstanceForcibly screens it before taskkill. For QEMU/VZ, Lima
+		// reports StatusRunning only after the hostagent socket answers, so the
+		// PID is genuine and IsOurProcess confirms it.
+		stopInstanceForcibly(ctx, logger, inst)
+	} else if inst.VMType == limatype.WSL2 {
+		// A "stopped" WSL2 distro can retain kernel state that deadlocks
+		// wsl.exe --unregister. Terminate it without PID-based killing, since
+		// the PIDs may have been recycled on Windows.
+		terminateWSL2Distro(ctx, logger, inst.Name)
+	}
+	if runtime.GOOS == "windows" {
+		inst.DriverPID = 0
+		inst.HostAgentPID = 0
+	}
+}
+
 // stopInstanceForcibly terminates the hostagent and driver processes and their
 // descendants. This replaces limainstance.StopForcibly because Lima's SysKill
 // on Windows uses GenerateConsoleCtrlEvent(CTRL_BREAK) which targets the entire
@@ -649,7 +688,15 @@ func waitForInstanceStopped(ctx context.Context, name string) bool {
 //
 // On WSL2, also terminates the distro because the keepAlive process
 // (nohup sleep) would keep it running after the hostagent is killed.
+//
+// It screens HostAgentPID with clearRecycledHostAgentPID before killing, so a
+// recycled PID is never taskkilled. The screen runs on a copy, leaving the
+// caller's instance unchanged.
 func stopInstanceForcibly(ctx context.Context, logger logr.Logger, inst *limatype.Instance) {
+	safeInst := *inst
+	clearRecycledHostAgentPID(&safeInst)
+	inst = &safeInst
+
 	allKilled := true
 	for _, pid := range []int{inst.DriverPID, inst.HostAgentPID} {
 		if pid > 0 {
@@ -740,13 +787,15 @@ func unregisterWSL2Distro(ctx context.Context, logger logr.Logger, instName stri
 
 // removeStaleInstance removes a stale Lima instance directory left behind by
 // a previous service run whose cleanup failed. On Windows, the WSL2 distro is
-// unregistered first (removing its ext4.vhdx and releasing any file locks)
-// before the remaining Lima metadata directory is deleted. On non-Windows the
-// directory is removed directly.
+// terminated and then unregistered (removing its ext4.vhdx and releasing any
+// file locks) before the remaining Lima metadata directory is deleted; the WSL2
+// calls are no-ops on other platforms, where the directory is removed directly.
 func removeStaleInstance(ctx context.Context, logger logr.Logger, instName, instanceDir string) error {
-	if runtime.GOOS == "windows" {
-		unregisterWSL2Distro(ctx, logger, instName)
-	}
+	// Terminate the distro before unregistering it: wsl.exe --unregister can
+	// deadlock on a distro that still holds kernel state, the same hazard
+	// forceStopForDeletion guards against. Both calls are no-ops off Windows.
+	terminateWSL2Distro(ctx, logger, instName)
+	unregisterWSL2Distro(ctx, logger, instName)
 	return os.RemoveAll(instanceDir)
 }
 

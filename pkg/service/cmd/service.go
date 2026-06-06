@@ -137,7 +137,10 @@ func Exists() bool {
 // PIDNotFound indicates no running service process was found.
 const PIDNotFound = 0
 
-// PID returns the process ID of the running service, or PIDNotFound if it is not running.
+// PID returns the process ID of the running service, or PIDNotFound if it is
+// not running. On Windows it walks the candidate process's PEB to read its
+// command line (see process.IsOurProcessWithArg), so callers that poll it in a
+// tight loop pay a cross-process read each call.
 func PID() int {
 	pidStr, err := os.ReadFile(instance.PIDFile())
 	if err != nil {
@@ -145,15 +148,41 @@ func PID() int {
 	}
 	pid, err := strconv.Atoi(string(pidStr))
 	if err == nil {
-		var process *os.Process
-		process, err = os.FindProcess(pid)
+		var proc *os.Process
+		proc, err = os.FindProcess(pid)
 		if err == nil {
 			// on non-Windows, FindProcess may return without the process being
 			// alive; on Windows, the result encapsulates a valid handle.
 			if runtime.GOOS != "windows" {
-				err = process.Signal(syscall.Signal(0))
+				err = proc.Signal(syscall.Signal(0))
 			}
-			_ = process.Release()
+			_ = proc.Release()
+		}
+		// On Windows, FindProcess succeeds for any live PID, including one the
+		// OS recycled after a crash left our PID file behind. Confirm the PID
+		// still runs our control plane, so a recycled PID reads as not-running.
+		// IsOurProcessWithArg is a no-op (true) on other platforms.
+		//
+		// Match "serve" as a whole command-line argument, not a substring: the
+		// daemon runs as `service serve` (the canonical self-spawn) or `svc serve`
+		// (the alias), so "serve" is always an argument and no other rdd subcommand
+		// is. Whole-argument matching ignores argv[0], so an install path that
+		// happens to contain "serve" cannot make an unrelated rdd process — a CLI
+		// command or a hostagent — read as the control plane.
+		//
+		// "serve" carries no instance name, so this confirms the PID runs a
+		// control plane, not specifically this instance's. A PID recycled to a
+		// *different* instance's control plane would pass. That needs concurrent
+		// instances (dev/test only); a lone instance never recycles a PID into
+		// another control plane.
+		//
+		// IsOurProcessWithArg returns false for any state it cannot confirm — a
+		// denied OpenProcess or a short PEB read on a live control plane included.
+		// Such a false negative reads as not-running and removes the PID file
+		// below; we accept that as the cost of the guard, which needs only the low
+		// query rights a same-user process always grants.
+		if err == nil && !process.IsOurProcessWithArg(pid, "serve") {
+			err = fmt.Errorf("pid %d is not our control plane", pid)
 		}
 	}
 	if err != nil {
@@ -434,11 +463,17 @@ func Wait(ctx context.Context) error {
 // blocks until the process exits, ctx is cancelled, or timeout elapses; pass
 // timeout 0 to wait indefinitely (bounded only by ctx).
 func StopWithWait(ctx context.Context, wait bool, timeout time.Duration) error {
-	if !Running() {
+	// Read the PID once and reject PIDNotFound before signalling. A second PID()
+	// call (the old Running()-then-PID() pattern) can return PIDNotFound when the
+	// daemon exits, a concurrent stop removes the file, or the identity check
+	// transiently fails between the two reads; signalling 0 then broadcasts —
+	// GenerateConsoleCtrlEvent(CTRL_BREAK, 0) reaches every process sharing the
+	// console on Windows, and kill(0) the caller's whole process group on Unix.
+	pid := PID()
+	if pid == PIDNotFound {
 		return fmt.Errorf("%q control plane is not running", instance.Name())
 	}
 
-	pid := PID()
 	// Try graceful shutdown first. On Unix, Kill already sends SIGTERM which
 	// triggers the Go signal handler. On Windows, Kill uses TerminateProcess
 	// which bypasses all handlers, so we send Interrupt (CTRL_BREAK_EVENT)

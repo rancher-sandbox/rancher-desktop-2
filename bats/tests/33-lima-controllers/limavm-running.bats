@@ -58,9 +58,17 @@ assert_stdout_logs_contain() {
     assert_output --partial "${expected}"
 }
 
-lima_instance_running() {
+assert_instance_running() {
     local name=$1
     assert_file_exists "${RDD_LIMA_HOME}/${name}/ha.pid"
+}
+
+# Asserts the instance's WSL2 distro is still running. WSL_UTF8 makes
+# wsl.exe emit UTF-8 instead of its default UTF-16.
+assert_distro_running() {
+    local name=$1
+    run -0 env MSYS_NO_PATHCONV=1 WSL_UTF8=1 wsl.exe --list --running
+    assert_output --partial "lima-${name}"
 }
 
 get_restart_count() {
@@ -128,7 +136,7 @@ editor_cmd() {
 }
 
 @test "verify hostagent PID file exists" {
-    lima_instance_running "${VM_NAME}"
+    assert_instance_running "${VM_NAME}"
 }
 
 @test "logs shows hostagent stderr" {
@@ -187,7 +195,7 @@ EOF
 }
 
 @test "verify hostagent PID file is removed" {
-    try --max 30 --delay 1 --until-fail -- lima_instance_running "${VM_NAME}"
+    try --max 30 --delay 1 --until-fail -- assert_instance_running "${VM_NAME}"
 }
 
 # Crash recovery tests
@@ -331,6 +339,23 @@ EOF
     assert_process_alive "${ha_pid}"
 
     rdd svc stop
+
+    # Graceful shutdown must reclaim the hostagent's PID file even when the
+    # hostagent was force-killed rather than self-stopping (the usual case on
+    # Windows, where exec.CommandContext terminates it when the manager context
+    # is cancelled). A leftover PID file makes the next "rdd svc start" mistake
+    # it for an orphan. This assertion is cross-platform: it fails on Windows
+    # before the shutdownAllHostagents cleanup fix.
+    try --max 30 --delay 1 --until-fail -- assert_instance_running "${VM_NAME}"
+
+    # On Windows the hostagent runs inside a WSL2 distro that a force-kill leaves
+    # running — the keepAlive process (nohup sleep) outlives the hostagent — so
+    # graceful shutdown must terminate the distro explicitly. Gate on is_windows,
+    # not is_msys: rdd drives WSL2 distros both from MSYS2 and from a Linux build
+    # running inside a WSL2 distro (both report OS=windows).
+    if is_windows; then
+        try --max 30 --delay 1 --until-fail -- assert_distro_running "${VM_NAME}"
+    fi
 
     # On Windows, child process handles (wsl.exe) keep the hostagent PID visible
     # in the process table long after termination. The next test ("restart service
