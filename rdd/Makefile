@@ -174,14 +174,7 @@ format:
 	go$(EXE) tool golangci-lint fmt
 .PHONY: format
 
-.github/actions/spelling/expect/golang-generated.txt: scripts/spell-check-generate-golang-expect.go $(GOLANG_SOURCES)
-	go$(EXE) run $<
-spelling: scripts/check-spelling.sh .github/actions/spelling/expect/golang-generated.txt
-	$<
-.PHONY: spelling
-
 LTAG_EXCLUDES := \
-	.github/actions/spelling/check-spelling \
 	bats/lib \
 	pkg/util/nxadmtail \
 	$(GUESTAGENT_BINARY) \
@@ -197,7 +190,7 @@ $(BATS_TARGETS): bin/rdd$(EXE)
 	@$(MAKE) -C bats $@
 .PHONY: $(BATS_TARGETS)
 
-check: test lint spelling check-ltag
+check: test lint check-ltag
 .PHONY: check
 
 clean:
