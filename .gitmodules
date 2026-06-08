@@ -1,17 +1,17 @@
 [submodule "bats/lib/bats-core"]
-	path = bats/lib/bats-core
+	path = rdd/bats/lib/bats-core
 	url = https://github.com/bats-core/bats-core.git
 	branch = master
 [submodule "bats/lib/bats-file"]
-	path = bats/lib/bats-file
+	path = rdd/bats/lib/bats-file
 	url = https://github.com/bats-core/bats-file.git
 	branch = master
 [submodule "bats/lib/bats-assert"]
-	path = bats/lib/bats-assert
+	path = rdd/bats/lib/bats-assert
 	url = https://github.com/bats-core/bats-assert.git
 	branch = master
 [submodule "bats/lib/bats-support"]
-	path = bats/lib/bats-support
+	path = rdd/bats/lib/bats-support
 	url = https://github.com/bats-core/bats-support.git
 	branch = master
 [submodule "tools/check-spelling"]

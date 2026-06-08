@@ -7,7 +7,7 @@ updates:
   cooldown:
     default-days: 7
 - package-ecosystem: gomod
-  directory: /
+  directory: /rdd
   schedule:
     interval: daily
   cooldown:

@@ -3,7 +3,7 @@ on:
   pull_request:
     types: [ opened, reopened, synchronize ]
     paths:
-    - 'go.mod'
+    - 'rdd/go.mod'
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,6 +19,9 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rdd
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
@@ -26,7 +29,7 @@ jobs:
     - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
       with:
         cache: false
-        go-version-file: go.mod
+        go-version-file: rdd/go.mod
     - run: go run scripts/go-module-k8s-bump/main.go
     - run: go mod tidy
     - name: Check for changes
@@ -62,6 +65,9 @@ jobs:
       contents: read
       id-token: write # Required for ./.github/actions/get-token
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rdd
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - # Get a GitHub token that can write to the repository, and will trigger CI

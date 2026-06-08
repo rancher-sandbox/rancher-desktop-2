@@ -29,8 +29,9 @@ import (
 const (
 	// The name of the main Kubernetes package.
 	anchorPackage = "k8s.io/kubernetes"
-	// Path to dependabot configuration.
-	dependabotConfigPath = ".github/dependabot.yml"
+	// Path to dependabot configuration. The script runs from rdd/, so reach
+	// up to the repository-root .github/.
+	dependabotConfigPath = "../.github/dependabot.yml"
 )
 
 // Run the command, setting up stdout/stderr.
