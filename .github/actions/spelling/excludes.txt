@@ -33,6 +33,7 @@
 \.git-blame-ignore-revs$
 \.gitattributes$
 \.gitkeep$
+^\.gitmodules$
 \.graffle$
 \.gz$
 \.icns$

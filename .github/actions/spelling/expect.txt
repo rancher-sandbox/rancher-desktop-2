@@ -82,7 +82,7 @@ cacerts
 camelpunch
 CAPI
 capslock
-caroot
+CAROOT
 catalogtemplate
 cbr
 CCE
@@ -264,7 +264,7 @@ heketi
 helmcharts
 hfs
 hkcu
-hklm
+HKLM
 HMR
 hocs
 horizontalpodautoscaler
