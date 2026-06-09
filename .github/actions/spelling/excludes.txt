@@ -29,6 +29,7 @@
 # Other front end files
 ^\Qpkg/rancher-desktop/assets/styles/fonts/_dots.scss\E$
 ^\Qpkg/rancher-desktop/assets/styles/fonts/_zerowidthspace.scss\E$
+^\Qpkg/rancher-desktop/assets/styles/themes/_suse.scss\E$
 ^\Qpkg/rancher-desktop/utils/processOutputInterpreters/__tests__/assets/build.txt\E$
 ^\Qpkg/rancher-desktop/utils/processOutputInterpreters/__tests__/assets/pull03.txt\E$
 ^\Qpkg/rancher-desktop/utils/processOutputInterpreters/__tests__/assets/push.txt\E$
