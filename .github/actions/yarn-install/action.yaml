@@ -1,0 +1,49 @@
+name: Yarn Install
+description: >-
+  This is a composite action that does everything needed to do `yarn install`.
+
+runs:
+  using: composite
+  steps:
+  # In case we're running on a self-hosted runner without `yarn` installed,
+  # set up NodeJS, enable `yarn`, and then handle the caching.
+  - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+    with:
+      node-version-file: package.json
+  - run: corepack enable yarn
+    shell: bash
+  - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+    with:
+      node-version-file: package.json
+      cache: yarn
+
+  - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+    with:
+      go-version-file: rdd/go.mod
+      cache-dependency-path: src/go/**/go.sum
+
+  - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+    with:
+      python-version: '3.x'
+  - run: pip install setuptools
+    shell: bash
+
+  - name: Install Windows dependencies
+    if: runner.os == 'Windows'
+    shell: powershell
+    run: .\scripts\windows-setup.ps1 -SkipVisualStudio -SkipTools
+
+  - name: Flag build for M1
+    if: runner.os == 'macOS' && runner.arch == 'ARM64'
+    run: echo "M1=1" >> "${GITHUB_ENV}"
+    shell: bash
+
+  - run: yarn install --immutable
+    shell: bash
+
+  - name: Fix electron sandbox
+    if: runner.os == 'Linux'
+    shell: bash
+    run: |
+      sudo chown root node_modules/electron/dist/chrome-sandbox
+      sudo chmod 04755 node_modules/electron/dist/chrome-sandbox

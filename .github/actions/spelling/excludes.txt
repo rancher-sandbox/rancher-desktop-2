@@ -1,15 +1,47 @@
 # Perl regular expressions for paths that are to be ignored.  This file must not
 # contain any blank lines, or all files will be excluded.
+# Binary files
+[^/]\.png$
+# Global files
 (?:^|/)\.gitmodules$
 (?:^|/)go\.mod$
 (?:^|/)go\.sum$
 # configuration for check-spelling itself
 ^\.github/actions/spelling/
+^\Q.github/workflows/spelling.yml\E$
 # dependabot configuration has lots of URLs and other non-spell-checkable things.
 ^\.github/dependabot\.yml$
+# Other CI
+^\Q.golangci.yaml\E$
 # Exclude test data
 /testdata/
+/test-data/
+# Exclude vendored files
+/vendor/
+^node_modules/
 # Exclude generated CRD files
-^pkg/controllers/.*/crd\.yaml$
-# Exclude generated applyconfiguration files
-^pkg/apis/[^/]+/[^/]+/applyconfiguration/
+^rdd/pkg/controllers/.*/crd\.yaml$
+# Generated files
+^rdd/pkg/apis/[^/]+/[^/]+/applyconfiguration/
+^dist/
+^\Qpkg/rancher-desktop/assets/extension-data.yaml\E$
+^pkg/rdd-client/gen/
+# Other front end files
+^\Qpkg/rancher-desktop/assets/styles/fonts/_dots.scss\E$
+^\Qpkg/rancher-desktop/assets/styles/fonts/_zerowidthspace.scss\E$
+^\Qpkg/rancher-desktop/utils/processOutputInterpreters/__tests__/assets/build.txt\E$
+^\Qpkg/rancher-desktop/utils/processOutputInterpreters/__tests__/assets/pull03.txt\E$
+^\Qpkg/rancher-desktop/utils/processOutputInterpreters/__tests__/assets/push.txt\E$
+^pkg/rancher-desktop/assets/scripts/logrotate-k3s$
+^pkg/rancher-desktop/assets/scripts/logrotate-lima-guestagent$
+^pkg/rancher-desktop/assets/fonts/
+^pkg/rancher-desktop/utils/__tests__/assets/safeRename/safeRename\.tar$
+^yarn\.lock$
+# Vendored from moby/profiles
+^\Qpkg/rancher-desktop/assets/scripts/seccomp.json\E$
+^pkg/rancher-desktop/sudo-prompt/
+^pkg/rancher-desktop/utils/processOutputInterpreters/__tests__/assets/trivy-image-postgres
+ignore$
+/translations/(?!en)
+# Mostly image names
+^\Qscripts/assets/extension-data.yaml\E$

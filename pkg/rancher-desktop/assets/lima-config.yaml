@@ -1,0 +1,240 @@
+# Default Lima configuration; parts will be overridden in code.
+
+# Rancher Desktop ships with a patched QEMU that supports the Apple M4 CPU
+# So override Lima 1.0.3 falling back to cortex-a72.
+vmOpts:
+  qemu:
+    cpuType:
+      aarch64: host
+
+ssh:
+  loadDotSSHPubKeys: false
+firmware:
+  legacyBIOS: false
+containerd:
+  system: false
+  user: false
+# Provisioning scripts run on every boot, not just initial VM provisioning.
+provision:
+- # When the ISO image is updated, only preserve selected data from /etc but otherwise use the new files.
+  # Update files in /usr/local on the data volume from the new versions on the ISO.
+  mode: system
+  script: |
+    #!/bin/sh
+    set -o errexit -o nounset -o xtrace
+    mkdir -p /bootfs
+    mount --bind / /bootfs
+    # /bootfs/etc is empty on first boot because it has been moved to /mnt/data/etc by lima
+    if [ -f /bootfs/etc/os-release ]; then
+      # Alpine ships /etc/os-release as a symlink to ../usr/lib/os-release; lima's
+      # first-boot `mv /etc /mnt/data/` preserves that symlink in /mnt/data/etc.
+      # Symlinks always resolve to the current ISO's /usr/lib/os-release on the root
+      # tmpfs, so `diff -q` against /bootfs/etc/os-release matches while
+      # /etc/os-release is a symlink; the destructive migration below cannot fire in
+      # that state. Pre-1.22 RD never dereferenced; from 1.22 onward we dereference
+      # once so that future content checks compare regular files, and the destructive
+      # migration fires only on a real ISO content change.
+      #
+      # Reachable states once /bootfs/etc has ISO content:
+      #   /etc/os-release  | matches ISO  | how it arose                           | action
+      #   ---              | ---          | ---                                    | ---
+      #   symlink          | yes          | fresh VM 2nd boot, or pre-1.22 upgrade | dereference only
+      #   regular file     | yes          | RD >= 1.22 steady state                | no-op
+      #   regular file     | no           | real ISO content change                | full migration
+      if [ -L /etc/os-release ]; then
+        # Using a temp file just in case dereferencing a symlink onto itself has a race condition.
+        cp -L /etc/os-release /etc/os-release.tmp
+        mv /etc/os-release.tmp /etc/os-release
+      fi
+      if ! diff -q /etc/os-release /bootfs/etc/os-release; then
+        # When we are upgrading from an ISO we will install new packages during boot.
+        # But Lima will restore the old /etc/apk/world file and run `apk fix --no-network`
+        # to restore packages from cache that were installed manually. This will however
+        # uninstall all packages again that were not previously installed because they are
+        # not listed in the old world file. We need to install them once more from the
+        # boot media to update the world file.
+        # We are not bothering with uninstalling packages that are not part of the new release.
+        apk add --no-network --keys-dir /bootfs/etc/apk/keys --repositories-file /bootfs/etc/apk/repositories \
+          $(cat /bootfs/etc/apk/world)
+
+        # `apk add` above wrote the merged world (ISO packages + any user-installed ones)
+        # to /etc/apk/world. Copy it to /bootfs/etc so it survives the destructive mv below
+        # and lands in the new /etc/apk/world.
+        cp /etc/apk/world /bootfs/etc/apk/world
+
+        # Same pattern for /etc/apk/repositories: append entries unique to the persistent
+        # file so user-added repositories survive the destructive mv below. Busybox grep
+        # requires short flags here: -v (invert), -x (whole-line), -F (literal patterns),
+        # -f FILE (patterns from file). Exits 1 on empty output; tolerate it.
+        grep -vxFf /bootfs/etc/apk/repositories /etc/apk/repositories >> /bootfs/etc/apk/repositories || true
+
+        cp /etc/machine-id /bootfs/etc
+        cp /etc/ssh/ssh_host* /bootfs/etc/ssh/
+        mkdir -p /etc/docker /etc/rancher
+        cp -pr /etc/docker /bootfs/etc
+        cp -pr /etc/rancher /bootfs/etc
+
+        rm -rf /mnt/data/etc.prev
+        mkdir /mnt/data/etc.prev
+        mv /etc/* /mnt/data/etc.prev
+        cp -L /bootfs/etc/os-release /tmp/os-release
+        mv /bootfs/etc/* /etc
+        mv /tmp/os-release /etc
+
+        # install updated files from /usr/local, e.g. nerdctl, buildkit, cni plugins
+        cp -pr /bootfs/usr/local /usr
+
+        # Keep the lima-init.log around for debugging    
+        cp /var/log/lima-init.log /mnt/data/lima-init-upgrade.log
+
+        # lima has applied changes while the "old" /etc was in place; restart to apply them to the updated one.
+        reboot
+      fi
+    fi
+    umount /bootfs
+    rmdir /bootfs
+- # make sure we booted with the right cgroup mode; k3s versions before 1.20.4 only support cgroup v1
+  mode: system
+  script: |
+    #!/bin/sh
+    set -o errexit -o nounset -o xtrace
+    RC_CGROUP_MODE=unified
+    if ! grep -q -E "^#?rc_cgroup_mode=\"$RC_CGROUP_MODE\"" /etc/rc.conf; then
+      sed -i -E "s/^#?rc_cgroup_mode=\".*\"/rc_cgroup_mode=\"$RC_CGROUP_MODE\"/" /etc/rc.conf
+      # avoid reboot loop if sed failed for any reason
+      if grep -q -E "^rc_cgroup_mode=\"$RC_CGROUP_MODE\"" /etc/rc.conf; then
+        reboot
+      fi
+    fi
+- # return unused space from the data volume back to the host
+  mode: system
+  script: |
+    #!/bin/sh
+    set -o errexit -o nounset -o xtrace
+    fstrim /mnt/data
+- # allow more than 10 sessions over the master control path
+  mode: system
+  script: |
+    #!/bin/sh
+    set -o errexit -o nounset -o xtrace
+    sed -i -E 's/^#?MaxSessions +[0-9]+/MaxSessions 25/g' /etc/ssh/sshd_config
+    rc-service --ifstarted sshd reload
+- # Persist /root directory on data volume
+  mode: system
+  script: |
+    #!/bin/sh
+    set -o errexit -o nounset -o xtrace
+    if ! [ -d /mnt/data/root ]; then
+      mkdir -p /root
+      mv /root /mnt/data/root
+    fi
+    mkdir -p /root
+    mount --bind /mnt/data/root /root
+- # Create /etc/docker/certs.d symlink
+  mode: system
+  script: |
+    #!/bin/sh
+    set -o errexit -o nounset -o xtrace
+    mkdir -p /etc/docker
+
+    # Delete certs.d if it is a symlink (from previous boot).
+    [ -L /etc/docker/certs.d ] && rm /etc/docker/certs.d
+
+    # Create symlink if certs.d doesn't exist (user may have created a regular directory).
+    if [ ! -e /etc/docker/certs.d ]; then
+      # We don't know if the host is Linux or macOS, so we take a guess based on which mountpoint exists.
+      if [ -d "/Users/{{.User}}" ]; then
+        ln -s "/Users/{{.User}}/.docker/certs.d" /etc/docker
+      elif [ -d "/home/{{.User}}" ]; then
+        ln -s "/home/{{.User}}/.docker/certs.d" /etc/docker
+      fi
+    fi
+- # Make sure hostname doesn't change during upgrade from earlier versions
+  mode: system
+  script: |
+    #!/bin/sh
+    hostname lima-rancher-desktop
+- # Clean up filesystems
+  mode: system
+  script: |
+    #!/bin/sh
+    set -o errexit -o nounset -o xtrace
+    # During boot is the only safe time to delete old k3s versions.
+    rm -rf /var/lib/rancher/k3s/data
+    # Delete all tmp files older than 3 days.
+    find /tmp -depth -mtime +3 -delete
+- # Make mount-points shared.
+  mode: system
+  script: |
+    #!/bin/sh
+    set -o errexit -o nounset -o xtrace
+    for dir in / /etc /tmp /var/lib; do
+      mount --make-shared "${dir}"
+    done
+- # This sets up cron (used for logrotate)
+  mode: system
+  script: |
+    #!/bin/sh
+    # Move logrotate to hourly, because busybox crond only handles time jumps up
+    # to one hour; this ensures that if the machine is suspended over long
+    # periods, things will still happen often enough.  This is idempotent.
+    mv -n /etc/periodic/daily/logrotate /etc/periodic/hourly/
+    rc-update add crond default
+    rc-service crond start
+- # Ensure the user is in the docker group to access the docker socket
+  mode: system
+  script: |
+    set -o errexit -o nounset -o xtrace
+    usermod --append --groups docker "{{.User}}"
+- # Install mkcert and prepare default/fallback cert for localhost
+  mode: system
+  script: |
+    export CAROOT=/run/mkcert
+    mkdir -p $CAROOT
+    cd $CAROOT
+    # Remove old mkcert certificates
+    rm -f /usr/local/share/ca-certificates/mkcert_development_CA_*.crt
+    mkcert -install
+    mkcert localhost
+    chown -R nobody:nobody $CAROOT
+- # Configure HTTPS_PROXY to OpenResty
+  mode: system
+  script: |
+    set -o errexit -o nounset -o xtrace
+
+    # openresty is backgrounding itself (and writes its own pid file)
+    sed -i 's/^command_background/#command_background/' /etc/init.d/rd-openresty
+
+    # configure proxy only when allowed-images exists
+    allowed_images_conf=/usr/local/openresty/nginx/conf/allowed-images.conf
+    # Remove the reference to an obsolete image conf filename
+    obsolete_image_allow_list_conf=/usr/local/openresty/nginx/conf/image-allow-list.conf
+    setproxy="[ -f $allowed_images_conf ] && supervise_daemon_args=\"-e HTTPS_PROXY=http://127.0.0.1:3128 \${supervise_daemon_args:-}\" || true"
+    for svc in containerd docker; do
+      sed -i "\#-f $allowed_images_conf#d" /etc/init.d/$svc
+      sed -i "\#-f $obsolete_image_allow_list_conf#d" /etc/init.d/$svc
+      echo "$setproxy" >> /etc/init.d/$svc
+    done
+
+    # Make sure openresty log directory exists
+    install -d -m755 /var/log/openresty
+- # mount bpffs to allow containers to leverage bpf, and make both bpffs and
+  # cgroupfs shared mounts so the pods can mount them correctly
+  mode: system
+  script: |
+    #!/bin/sh
+    set -o errexit
+
+    mount bpffs -t bpf /sys/fs/bpf
+    mount --make-shared /sys/fs/bpf
+    mount --make-shared /sys/fs/cgroup
+- # we run trivy as root now; remove any cached databases installed into the user directory by previous version
+  # trivy.db is 600M and trivy-java.db is 1.1G
+  mode: user
+  script: |
+    rm -rf "${HOME}/.cache/trivy"
+portForwards:
+- guestPortRange: [1, 65535]
+  guestIPMustBeZero: true
+  hostIP: "0.0.0.0"
+  proto: any

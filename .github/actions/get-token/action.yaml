@@ -19,7 +19,7 @@ runs:
   - id: vault
     name: Read vault secrets
     if: github.repository_owner == 'rancher-sandbox'
-    uses: rancher-eio/read-vault-secrets@main
+    uses: rancher-eio/read-vault-secrets@7282bf97898cd1c16c89f837e0bb442e6d384c89 # main
     with:
       secrets: |
         github/token/${{ github.repository_owner }}--rancher-desktop-daemon--pull_requests--write token | GH_TOKEN

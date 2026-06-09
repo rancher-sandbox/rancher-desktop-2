@@ -1,0 +1,16 @@
+# This file describes the code signing configuration for Windows.
+
+# The key is a directory name, relative to the unpacked zip file.
+# The value is an array of files in that directory to sign, or an explicit
+# negation (prefixed with "!").  Any files not listed is an error.
+.:
+- Rancher Desktop.exe
+- wix-custom-action.dll
+- '!dxcompiler.dll'     # spellcheck-ignore-line
+- '!ffmpeg.dll'
+- '!libEGL.dll'         # spellcheck-ignore-line
+- '!libGLESv2.dll'      # spellcheck-ignore-line
+- '!vk_swiftshader.dll' # spellcheck-ignore-line
+- '!vulkan-1.dll'       # spellcheck-ignore-line
+resources/internal:
+- steve.exe

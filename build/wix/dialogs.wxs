@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <!-- Let the dialogs know we support both per-user and per-machine -->
+    <WixVariable Id="WixUISupportPerUser" Value="1" Overridable="yes" />
+    <WixVariable Id="WixUISupportPerMachine" Value="1" Overridable="yes" />
+
+    <UI Id="WixUI_RD">
+
+      <TextStyle Id="WixUI_Font_Normal" FaceName="Segoe UI" Size="8" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="Segoe UI" Size="12" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="Segoe UI" Size="9" Bold="yes" />
+      <TextStyle Id="WixUI_Font_Emphasized" FaceName="Segoe UI" Size="8" Bold="yes" />
+
+      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+      <Property Id="WixUI_Mode" Value="RD" />
+      <Property Id="ALLUSERS" Secure="yes" Value="2" />
+      <!-- MSIINSTALLPERUSER will get modified when the user advances from InstallScopeDlg -->
+      <Property Id="MSIINSTALLPERUSER" Secure="yes" Value="0" />
+
+      <Error Id="100">!(loc.Error_WSLNotInstalled)</Error>
+
+      <DialogRef Id="ErrorDlg" />
+      <DialogRef Id="FatalError" />
+      <DialogRef Id="FilesInUse" />
+      <DialogRef Id="MsiRMFilesInUse" />
+      <DialogRef Id="PrepareDlg" />
+      <DialogRef Id="ResumeDlg" />
+      <DialogRef Id="UserExit" />
+      <DialogRef Id="RDWelcomeDlg" />
+      <UIRef Id="WixUI_ErrorProgressText" />
+
+      <Publish Dialog="ExitDialog"
+         Control="Finish"
+         Event="DoAction"
+         Value="LaunchApplication"
+      >WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">1</Publish>
+
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
+
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
+
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">1</Publish>
+    </UI>
+
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Run $(var.appName)" />
+    <Property Id="WixShellExecTarget" Value="[#mainExecutable]" />
+    <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
+    <InstallUISequence>
+      <Show Dialog="MaintenanceWelcomeDlg" Before="RDWelcomeDlg">Installed AND NOT RESUME AND NOT Preselected AND NOT PATCH</Show>
+    </InstallUISequence>
+
+    <UIRef Id="WixUI_Common" />
+  </Fragment>
+</Wix>

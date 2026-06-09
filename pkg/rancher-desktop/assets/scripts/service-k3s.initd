@@ -1,0 +1,81 @@
+#!/sbin/openrc-run
+
+# This script is used to manage k3s via OpenRC.
+
+# shellcheck shell=ksh
+
+# shellcheck disable=SC2163
+if [ -f /etc/environment ]; then
+    while read -r line; do
+        # pam_env implementation:
+        # - '#' is treated the same as newline; terminates value
+        # - skip leading tabs and spaces
+        # - skip leading "export " prefix (only single space)
+        # - skip leading quote ('\'' or '"') on the value side
+        # - skip trailing quote only if leading quote has been skipped;
+        #   quotes don't need to match; trailing quote may be omitted
+        line="$(echo "$line" | sed -E "s/^[ \\t]*(export )?//; s/#.*//; s/(^[^=]+=)[\"'](.*[^\"'])?[\"']?$/\1\2/")"
+        if [ -n "$line" ]; then
+          export "$line"
+        fi
+    done </etc/environment
+fi
+
+# ENGINE configuration variable is either "moby" or "containerd"
+ENGINE="${ENGINE:-containerd}"
+USE_CRI_DOCKERD="${USE_CRI_DOCKERD:-false}"
+
+depend() {
+  if [ "${USE_CRI_DOCKERD}" == "true" ]; then
+      need cri-dockerd
+  fi
+  after network-online
+  want cgroups
+}
+
+start_pre() {
+  rm -f /tmp/k3s.*
+  checkpath --file --mode 0644 --owner root "${output_log_unquoted}" "${error_log_unquoted}"
+  ARCH=amd64
+  if [ "$(uname -m)" = "aarch64" ]; then
+    ARCH=arm64
+  fi
+  IMAGEPATH="/var/lib/rancher/k3s/agent/images/k3s-airgap-images-${ARCH}"
+  if [ "${ENGINE}" == "moby" ]; then
+    if [ -f ${IMAGEPATH}.tar.zst ]; then
+      zstd -f -c -d ${IMAGEPATH}.tar.zst | docker load
+    elif [ -f ${IMAGEPATH}.tar ]; then
+      docker load --input ${IMAGEPATH}.tar
+    fi
+  else
+    if [ -f ${IMAGEPATH}.tar.zst ]; then
+      nerdctl --namespace k8s.io load ${ALLPLATFORMS} --input ${IMAGEPATH}.tar.zst
+    elif [ -f ${IMAGEPATH}.tar ]; then
+      nerdctl --namespace k8s.io load ${ALLPLATFORMS} --input ${IMAGEPATH}.tar
+    fi
+  fi
+}
+
+supervisor=supervise-daemon
+name=k3s
+command=/usr/local/bin/k3s
+command_args="server --https-listen-port ${PORT} ${ADDITIONAL_ARGS:-}"
+if [ "${ENGINE}" == "moby" ]; then
+  if [ "${USE_CRI_DOCKERD}" == "true" ]; then
+    command_args="${command_args} --container-runtime-endpoint /run/cri-dockerd.sock"
+  else
+    command_args="${command_args} --docker"
+  fi
+elif [ "${ENGINE}" == "containerd" ]; then
+  command_args="${command_args} --container-runtime-endpoint /run/k3s/containerd/containerd.sock"
+fi
+command_args="${command_args} ${K3S_EXEC:-}"
+K3S_LOGFILE="${K3S_LOGFILE:-${LOG_DIR:-/var/log}/${RC_SVCNAME}.log}"
+output_log_unquoted="${K3S_OUTFILE:-${K3S_LOGFILE}}"
+output_log="'${output_log_unquoted}'"
+error_log_unquoted="${K3S_ERRFILE:-${K3S_LOGFILE}}"
+error_log="'${error_log_unquoted}'"
+
+pidfile="/var/run/k3s.pid"
+respawn_delay=5
+respawn_max=0

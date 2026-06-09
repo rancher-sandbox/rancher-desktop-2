@@ -1,0 +1,63 @@
+# copyright needs to stay in sync with message in About panel in background.ts
+copyright: Copyright © 2021-2026 SUSE LLC
+productName: Rancher Desktop 2
+icon: ./resources/icons/logo-square-512.png
+appId: io.rancherdesktop.app2
+asar: true
+asarUnpack:
+- '**/*.node'
+electronLanguages: [ en-US ]
+extraResources:
+- from: resources/
+  filter:
+  - '!host/**'
+  - '!**/*.unsigned'
+  - '!**/*.tar.gz'
+  - '!**/*.tgz'
+  - '!**/*.xz'
+  - '!**/*.zip'
+files:
+- dist/app/**/*
+- '!**/node_modules/*/prebuilds/!(${platform}*)/*.node'
+mac:
+  darkModeSupport: true
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  icon: ./resources/icons/mac-icon.png
+  target: [ dmg, zip ]
+  identity: ~ # We sign in a separate step
+  extraFiles:
+  - { from: dist/signing-config-mac.yaml, to: build/signing-config-mac.yaml }
+  - { from: dist/electron-builder.yaml, to: electron-builder.yml }
+dmg:
+  # title is set programmatically in scripts/package.ts so we can include the
+  # architecture (electron-builder's title macros don't expose ${arch}).
+  background: build/background.png
+  window:
+    width: 540
+    height: 380
+  contents:
+  - { x: 140, y: 200, type: file }
+  - { x: 400, y: 200, type: link, path: /Applications }
+  iconSize: 100
+  iconTextSize: 14
+win:
+  target: [ zip ]
+  signtoolOptions:
+    signingHashAlgorithms: [ sha256 ] # We only support Windows 10 + WSL2
+  requestedExecutionLevel: asInvoker # The _app_ doesn't need privileges
+  extraFiles:
+  - build/wix/*
+  - build/license.rtf
+  - { from: dist/signing-config-win.yaml, to: build/signing-config-win.yaml }
+  - { from: dist/wix-custom-action.dll, to: wix-custom-action.dll }
+  - { from: dist/electron-builder.yaml, to: electron-builder.yml }
+linux:
+  category: Utility
+  executableName: rancher-desktop
+  artifactName: ${name}-${version}-linux.zip
+  target: [ zip ]
+publish:
+  provider: custom
+  upgradeServer: https://desktop.version.rancher.io/v1/checkupgrade
+  vPrefixedTagName: true

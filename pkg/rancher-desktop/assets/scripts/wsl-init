@@ -1,0 +1,90 @@
+#!/bin/sh
+
+# This script is used to launch (busybox) init on WSL2 through network-setup process.
+# The network-setup process starts the vm-switch and unshare as its sub processes. this
+# is necessary since we need to do some mount namespace, since we store the data on the
+# WSL shared mount (/mnt/wsl/rancher/desktop/) and that can have issues with
+# lingering tmpfs mounts after we exit.  This means we need to run this script
+# under unshare (to get a private mount namespace), and then we can mark various
+# mount points as shared (for buildkit).  Kubelet will internally do some
+# tmpfs mounts for volumes (secrets, etc.), which will stay private and go away
+# once k3s exits, so that we can delete the data as necessary.
+
+set -o errexit -o nounset -o xtrace
+
+NETWORK_SETUP_LOG="${LOG_DIR}/network-setup.log"
+VM_SWITCH_LOG="${LOG_DIR}/vm-switch.log"
+
+
+if [ $$ -ne "1" ]; then
+    # This is not running as PID 1; this means that this is a normal invocation
+    # from WSL.
+    exec /usr/local/bin/network-setup --logfile "$NETWORK_SETUP_LOG" \
+    --vm-switch-path /usr/local/bin/vm-switch --vm-switch-logfile \
+    "$VM_SWITCH_LOG" ${RD_DEBUG:+-debug} --unshare-arg "${0}"
+fi
+
+# Mark directories that we will need to bind mount as shared mounts.
+(
+    IFS=:
+    for dir in / ${DISTRO_DATA_DIRS}; do
+        mount --make-shared "${dir}"
+    done
+)
+
+# Mount bpffs to allow containers to leverage bpf, and make both bpffs and
+# cgroupfs shared mounts so the pods can mount them correctly.
+mount bpffs -t bpf /sys/fs/bpf
+mount --make-shared /sys/fs/bpf
+mount --make-shared /sys/fs/cgroup
+
+# Mount binfmt_misc to allow nerdctl to see which qemu-* handlers have been loaded.
+# It will display a warning for foreign platforms if their handler seems missing.
+mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
+mount --make-shared /proc/sys/fs/binfmt_misc
+
+if [ -f /var/lib/resolv.conf ]; then
+    ln -s -f /var/lib/resolv.conf /etc/resolv.conf
+fi
+
+# Block modules that enable known exploit paths:
+#   esp4/esp6  — dirtyfrag (CVE-2026-43284) XFRM ESP page-cache write primitive;
+#                also blocks Copy_Fail2 (xfrm ESP-in-UDP MSG_SPLICE_PAGES variant)
+#                and its esp6_input IPv6 counterpart
+#   rxrpc      — dirtyfrag (CVE-2026-43500) AF_RXRPC path via pcbc(fcrypt)
+#   algif_aead — copy.fail (CVE-2026-31431) AF_ALG AEAD in-place page-cache write
+#
+# Without these modules the exploits cannot obtain a page-cache write primitive,
+# protecting k3s pods and unprivileged VM processes that are not covered by the
+# container seccomp profile.
+#
+# None of these modules serve a purpose inside the Rancher Desktop VM:
+#   esp4/esp6  implement IPsec ESP, used for site-to-site VPN gateways
+#              (e.g. strongSwan) — the RD VM is not one.
+#   rxrpc      implements the RxRPC protocol, used almost exclusively by
+#              AFS (Andrew File System) — not present in any RD workload.
+#   algif_aead exposes AEAD crypto to userspace via AF_ALG sockets, used
+#              by some crypto libraries to offload to hardware accelerators.
+#              The VM has no hardware crypto, so OpenSSL and friends fall
+#              back to their software implementations transparently.
+#
+# User impact: in-VM use of IPsec ESP (strongSwan, libreswan), AFS/kAFS, and
+# AF_ALG AEAD will fail.
+#
+# WSL2 mounts the kernel modules via a single overlayfs shared by every
+# distro through mount-namespace propagation, so the rm -f below applies
+# machine-wide.  The overlay's upperdir and workdir are in a tmpfs mount,
+# so whiteouts vanish on VM shutdown and wsl-init re-applies them on every
+# boot.
+rm -f \
+    /lib/modules/*/kernel/net/ipv4/esp4.ko \
+    /lib/modules/*/kernel/net/ipv4/esp4.ko.xz \
+    /lib/modules/*/kernel/net/ipv6/esp6.ko \
+    /lib/modules/*/kernel/net/ipv6/esp6.ko.xz \
+    /lib/modules/*/kernel/net/rxrpc/rxrpc.ko \
+    /lib/modules/*/kernel/net/rxrpc/rxrpc.ko.xz \
+    /lib/modules/*/kernel/crypto/algif_aead.ko \
+    /lib/modules/*/kernel/crypto/algif_aead.ko.xz
+
+# Run init (which never exits).
+exec /sbin/init

@@ -1,0 +1,226 @@
+.v-popper__popper.v-popper--theme-tooltip {
+  $triangle-size: 8px;
+  $triangle-inner-size: $triangle-size - 1px;
+  $center: calc(50% - #{$triangle-size});
+
+  display: block !important;
+  z-index: z-index('tooltip');
+  max-width: 50vw;
+
+  .v-popper__inner {
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    border-radius: var(--border-radius);
+    padding: 8px;
+  }
+
+  .v-popper__arrow-container {
+    border: 0 solid transparent;
+    z-index: 1;
+    position: absolute;
+    width: $triangle-size;
+    height: $triangle-size;
+
+    .v-popper__arrow-outer {
+      border-radius: 0;
+      border: $triangle-size solid transparent;
+      width: 0;
+      height: 0;
+      box-sizing: content-box;
+      margin-left: -2px;
+    }
+    .v-popper__arrow-inner {
+      border: $triangle-inner-size solid transparent;
+      border-radius: 0;
+      width: 0;
+      height: 0;
+      box-sizing: content-box;
+      margin-left: -1px;
+    }
+  }
+
+  :is(&[data-popper-placement^="top"], &[data-popper-placement^="bottom"]) {
+    .v-popper__arrow-inner {
+      margin-top: -$triangle-size;
+    }
+  }
+
+  :is(&[data-popper-placement^="left"], &[data-popper-placement^="right"]) {
+    .v-popper__arrow-inner {
+      margin-top: calc(-2 * $triangle-size);
+    }
+  }
+
+  &[data-popper-placement^="top"] {
+    .v-popper__wrapper {
+      margin-bottom: $triangle-size;
+    }
+    .v-popper__arrow-container > * {
+      border-top-color: var(--tooltip-bg);
+      border-bottom-width: 0;
+    }
+  }
+
+  &[data-popper-placement^="bottom"] {
+    .v-popper__inner {
+      margin-top: $triangle-size;
+    }
+    .v-popper__arrow-container {
+      top: 0;
+      & > * {
+        border-bottom-color: var(--tooltip-bg);
+        border-top-width: 0;
+      }
+    }
+  }
+
+  &[data-popper-placement^="right"] {
+    .v-popper__inner {
+      margin-left: calc(#{$triangle-size} - 2px);
+    }
+    .v-popper__arrow-container > * {
+      border-right-color: var(--tooltip-bg);
+      border-left-width: 0;
+    }
+  }
+
+  &[data-popper-placement^="left"] {
+    .v-popper__inner {
+      margin-right: $triangle-size;
+    }
+    .v-popper__arrow-container > * {
+      border-left-color: var(--tooltip-bg);
+      border-right-width: 0;
+    }
+  }
+
+  &.tooltip-warning {
+    .v-popper__inner {
+      background: var(--tooltip-bg-warning);
+      color: var(--tooltip-text-warning);
+    }
+
+    &[data-popper-placement^="top"] {
+      .v-popper__arrow-container {
+        .v-popper__arrow-outer {
+          border-top-color: var(--tooltip-bg-warning);
+        }
+      }
+    }
+
+
+    &[data-popper-placement^="bottom"] {
+      .v-popper__arrow-container {
+        .v-popper__arrow-outer {
+          border-bottom-color: var(--body-bg);
+        }
+      }
+    }
+
+    &[data-popper-placement^="right"] {
+      .v-popper__arrow-container {
+        .v-popper__arrow-outer {
+          border-right-color: var(--tooltip-bg-warning);
+        }
+      }
+    }
+
+    &[data-popper-placement^="left"] {
+      .v-popper__arrow-container {
+        .v-popper__arrow-outer {
+          border-left-color: var(--tooltip-bg-warning);
+        }
+      }
+    }
+  }
+}
+
+.v-popper__popper {
+  $color: var(--popover-bg);
+  top: 0;
+  left: 0;
+  border-radius: var(--border-radius-lg);
+
+  &:focus {
+    outline: none;
+  }
+
+  .v-popper__inner {
+    background: $color;
+    color: var(--popover-text);
+    padding: 0;
+    border-radius: var(--border-radius-lg);
+    overflow: hidden; /* for border-radius */
+    border: 1px solid var(--dropdown-border);
+
+    li {
+      padding: 10px;
+      &:not(.divider):hover {
+        background-color: var(--dropdown-hover-bg);
+        color: var(--dropdown-hover-text);
+        cursor: pointer;
+      }
+    }
+
+    a {
+      color: var(--popover-text);
+    }
+
+    .resize-observer, .resize-observer object {
+      position: absolute;
+    }
+  }
+
+  .v-popper__arrow-container {
+    border-color: transparent;
+    .v-popper__arrow-outer {
+      border-color: transparent;
+    }
+  }
+}
+
+.v-popper__popper.v-popper--theme-dropdown {
+  z-index: z-index('tooltip');
+
+  &.containerLogsDropdown, &.fleet-summary-tooltip{
+    .v-popper__arrow-container {
+      display: none;
+    }
+  }
+}
+
+.v-popper {
+  display: inline;
+}
+
+.v-popper__popper.v-popper--theme-tooltip,
+.v-popper {
+  &[aria-hidden='true'] {
+    // This removes it from the layout of ButtonDropDown (so it doesn't render huge for SSR) but
+    // still allows it to maintain its dimensions for v-tooltip to calculate the appropriate position.
+    position: absolute;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity .15s, visibility .15s;
+  }
+
+  &[aria-hidden='false'] {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity .15s;
+  }
+}
+
+//icon tooltip
+.icon-info.v-popper--has-tooltip {
+  font-size: 14px;
+}
+
+.tooltip-footer {
+  top: 0;
+  font-size: 12px;
+
+  .v-popper__inner {
+    font-size: 12px;
+  }
+}

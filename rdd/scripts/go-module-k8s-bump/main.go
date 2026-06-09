@@ -159,6 +159,7 @@ func checkDependabotConfig(modules map[string]bool) error {
 	var config struct {
 		Updates []struct {
 			PackageEcosystem string `json:"package-ecosystem"`
+			Directory        string `json:"directory"`
 			Ignore           []struct {
 				DependencyName string `json:"dependency-name"`
 			}
@@ -169,6 +170,9 @@ func checkDependabotConfig(modules map[string]bool) error {
 	}
 	for _, updates := range config.Updates {
 		if updates.PackageEcosystem != "gomod" {
+			continue
+		}
+		if updates.Directory != "/rdd" {
 			continue
 		}
 		found := make(map[string]bool)

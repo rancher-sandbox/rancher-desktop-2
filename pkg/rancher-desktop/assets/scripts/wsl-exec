@@ -1,0 +1,43 @@
+#!/bin/ash
+
+# wsl-exec is used to execute user-issued shell commands from
+# rdctl shell ... in a correct namespace. If the experimental
+# rancher desktop networking is enabled all the resulting
+# shell from rdctl shell will be executed in the new namespace
+# associated with the rd networking; otherwise, it will be executed
+# in the default namespace.
+
+set -o errexit -o nounset
+
+# We may have WSLENV set to override PATH; however, that causes the default entries to be missing.
+str="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:"
+while [ -n "$str" ]; do
+  dir=${str%%:*}
+  if ! [[ ":${PATH}:" =~ :${dir}: ]]; then
+    export PATH="${PATH%:}:${dir}"
+  fi
+  str=${str#*:}
+done
+
+pid="$(cat /run/wsl-init.pid)"
+
+if [ -z "${pid}" ]; then
+    echo "Could not find wsl-init process" >&2
+    exit 1
+fi
+
+# If the pid is _not_ /sbin/init, find the child that is.
+command="$(ps -o pid,args | awk "\$1 == $pid { print \$2 }")"
+if [ "$command" != "/sbin/init" ]; then
+  newpid="$(ps -o pid,ppid,args | awk "\$2 == $pid && \$3 == \"/sbin/init\" { print \$1 }")"
+  if [ -n "${newpid}" ]; then
+    pid="${newpid}"
+  fi
+fi
+
+if [ $# -eq 0 ]; then
+  set -- /bin/sh
+fi
+# If -w$PWD is specified on the first nsenter, then `wsl-exec pwd`
+# fails with "pwd: getcwd: No such file or directory"
+exec /usr/bin/nsenter -n -p -m -t "${pid}" /usr/bin/nsenter "-w${PWD}" "$@"

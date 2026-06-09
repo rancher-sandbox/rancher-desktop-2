@@ -1,0 +1,79 @@
+# This is a reusable workflow to determine if the current change requires an E2E
+# run.  This is required because using [paths-ignored] directly means the whole
+# workflow is skipped, but that means that it doesn't count as having run a
+# required workflow.
+
+# Usage:
+#   jobs:
+#     check-paths:
+#        uses: ./.github/workflows/actions/paths-ignore.yaml
+#     do_thing:
+#        if: jobs.check-paths.outputs.should-run == 'true'
+#        # Unfortunately, a string comparison is required.
+
+name: Check for ignored paths
+
+on:
+  workflow_call:
+    inputs:
+      paths-ignore-globs:
+        description: >
+          Paths to ignore.  Should glob patterns (as a git pathspec glob), one
+          per line.  See
+          https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-glob
+        type: string
+        default: |
+          .github/actions/spelling/**
+          docs/**
+          **.md
+    outputs:
+      should-run:
+        description: Whether other steps should run.
+        value: ${{ jobs.check.outputs.should-run }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set baseline result
+      run: echo "SHOULD_RUN=true" >> "$GITHUB_ENV"
+    - name: Determine paths to ignore
+      if: github.event_name == 'pull_request'
+      run: |
+        PATHS_IGNORE="PATHS_IGNORE="
+        while read -r line; do
+          if [[ -n $line ]]; then
+            PATHS_IGNORE="${PATHS_IGNORE} :!/${line}"
+          fi
+        done <<< "$INPUT"
+        echo "$PATHS_IGNORE"
+        echo "$PATHS_IGNORE" >> "$GITHUB_ENV"
+      env:
+        INPUT: ${{ inputs.paths-ignore-globs }}
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      if: github.event_name == 'pull_request'
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Check for differences
+      if: github.event_name == 'pull_request'
+      run: |
+        MERGE_BASE=$(git merge-base $BASE $HEAD)
+        diff="$(git diff --name-only $MERGE_BASE $HEAD -- $PATHS_IGNORE)"
+        if [[ -z "$diff" ]]; then
+          echo "No modified files found."
+          echo "SHOULD_RUN=false" >> "$GITHUB_ENV"
+        else
+          printf "Modified files:\n%s\n" "$diff"
+        fi
+      env:
+        BASE: ${{ github.event.pull_request.base.sha }}
+        HEAD: ${{ github.event.pull_request.head.sha }}
+    - name: Set final output
+      id: result
+      run: echo "should-run=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
+    outputs:
+      should-run: ${{ steps.result.outputs.should-run }}

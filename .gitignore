@@ -1,1 +1,17 @@
+*.exe
+/coverage/
+/dist/
+/e2e/reports/
 /.github/actions/spelling/expect/golang-generated.txt
+/go.work.sum
+/node_modules/
+/resources/darwin/
+/resources/host/
+/resources/icons/icon.ico
+/resources/internal/
+/resources/linux/
+/resources/preload.js*
+/resources/win32/
+/screenshots/output/
+/e2e/e2e/test-results/.last-run.json
+/.yarn/

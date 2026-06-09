@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "target": "ES2018",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": [
+      "ESNext",
+      "ESNext.AsyncIterable",
+      "DOM",
+      "DOM.Iterable",
+    ],
+    "esModuleInterop": true,
+    "allowJs": true,
+    "sourceMap": true,
+    "strict": true,
+    "noEmit": false,
+    "experimentalDecorators": true,
+    "paths": {
+      "@pkg/*": [
+        "./*"
+      ],
+      "@rdd-client": [
+        "../rdd-client/index"
+      ],
+    },
+    "typeRoots": [
+      "../../node_modules",
+      "../../node_modules/@types",
+    ],
+    "types": [
+      "@types/node",
+      "@types/jest"
+    ]
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "babel.config.js"
+  ],
+  "include": [
+    "**/*",
+    "**/*.ts",
+    "**/*.d.ts",
+    "**/*.tsx",
+    "**/*.vue"
+  ]
+}

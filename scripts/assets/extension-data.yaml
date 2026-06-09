@@ -1,0 +1,30 @@
+# This file contains the extension versions we list in the marketplace.
+# This is processed by `yarn generate:extension-data` to produce
+# pkg/rancher-desktop/assets/extension-data.yaml
+
+# Each top level key is the extension image + version.
+# They may have properties; the current known properties are:
+# - `containerd_compatible`: defaults to true.
+# - `logo`: Overrides the logo URL.
+# - `github_repo`: GitHub repository, used for version updates.
+
+rancher/application-collection-extension:0.5.3:
+  github_repo: rancherlabs/application-collection-extension
+ghcr.io/rancher-sandbox/rancher-desktop-rdx-ai-workbench:0.2.0:
+  github_repo: rancher-sandbox/rancher-desktop-rdx-ai-workbench
+splatform/epinio-docker-desktop:0.1.3:
+  github_repo: epinio/extension-docker-desktop
+julianb90/tachometer:0.1.1: {}
+docker/logs-explorer-extension:0.2.5: {}
+prakhar1989/dive-in:0.0.8:
+  containerd_compatible: false
+joycelin79/newman-extension:0.0.7: {}
+docker/resource-usage-extension:1.0.3: {}
+anchore/docker-desktop-extension:0.5.1:
+  containerd_compatible: false
+ignatandrei/blockly-automation:0.0.7: {}
+docker/disk-usage-extension:0.2.8:
+  containerd_compatible: false
+harpooncorp/harpoon-ext:0.0.6: {}
+vklokun/docker-desktop-extension:0.1.1: {}
+caretdev/intersystems-extension:0.1.7: {}

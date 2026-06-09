@@ -1,0 +1,41 @@
+{
+  "name": "@rancher/rdd-client",
+  "version": "0.0.1-abe85a06c949d9af27a6242790f3821516f964fa9df4c83ed3b232f39ae53226",
+  "description": "OpenAPI client for @rancher/rdd-client",
+  "author": "OpenAPI-Generator Contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GIT_USER_ID/GIT_REPO_ID.git"
+  },
+  "keywords": [
+    "fetch",
+    "typescript",
+    "openapi-client",
+    "openapi-generator"
+  ],
+  "license": "Unlicense",
+  "main": "./dist/index.js",
+  "type": "module",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "typings": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "whatwg-fetch": "^3.0.0",
+    "es6-promise": "^4.2.4"
+  },
+  "devDependencies": {
+    "typescript": "^4.0"
+  }
+}

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  - Main WiX source for the Rancher Desktop Installer
+  -
+  - This file is a Mustache template that is rendered via installer-win32.ts.
+  -->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+  xmlns:fire="http://schemas.microsoft.com/wix/FirewallExtension">
+  <Product
+    Id="*"
+    Name="$(var.appName)"
+    UpgradeCode="{37829D57-C0BA-4A9C-B354-05168523D013}"
+    Version="{{appVersion}}"
+    Language="1033"
+    Codepage="65001"
+    Manufacturer="SUSE">
+    <Package Compressed="yes" InstallerVersion="500" />
+    <!-- As of Windows 10/11, msiexec.exe is manifested for Windows 8.1 -->
+    <Condition Message="Windows 10 and above is required">
+      <![CDATA[ Installed OR VersionNT >= 603 ]]>
+    </Condition>
+    <MajorUpgrade
+      AllowSameVersionUpgrades="yes"
+      DowngradeErrorMessage='A newer version of [ProductName] is already installed.'
+      Schedule="afterInstallInitialize" />
+    <MediaTemplate CompressionLevel="high" EmbedCab="yes" />
+    <UIRef Id="WixUI_RD" />
+
+    <Property Id="ApplicationFolderName" Value="$(var.appName)" />
+    <Icon Id="RancherDesktopIcon.ico" SourceFile="$(var.iconPath)" />
+    <Property Id="ARPPRODUCTICON" Value="RancherDesktopIcon.ico" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPURLINFOABOUT" Value="https://rancherdesktop.io/" />
+
+    <DirectoryRef Id="TARGETDIR" />
+
+    <SetProperty Id="ALLUSERS" Sequence="both" After="ValidateProductID" Value="1">
+      NOT WSLINSTALLED AND NOT Installed
+    </SetProperty>
+    <SetProperty Id="MSIINSTALLPERUSER" Sequence="first" After="ValidateProductID" Value="0">
+      (NOT WSLINSTALLED OR NOT MSIINSTALLPERUSER) AND NOT Installed
+    </SetProperty>
+
+    <!-- Custom action to detect if WSL is installed -->
+    <Binary Id="CustomActionBinary" SourceFile="wix-custom-action.dll" />
+    <CustomAction Id="DetectWSL" BinaryKey="CustomActionBinary" DllEntry="DetectWSL"
+      Execute="immediate" Return="check" />
+    <!-- Custom action to update WSL -->
+    <CustomAction Id="UpdateWSL" BinaryKey="CustomActionBinary" DllEntry="UpdateWSL"
+      Execute="deferred" Return="check" Impersonate="yes" />
+    <!-- Custom action to raise an error because WSL was not installed -->
+    <CustomAction Id="ErrorWSLNotInstalled" Error="100" />
+
+    <InstallUISequence>
+      <!--
+        - DetectWSL may set the WSLINSTALLED and WSLKERNELOUTDATED properties
+        - depending on the state of the system.
+        -->
+      <Custom Action="DetectWSL" After="AppSearch">
+        NOT WSLINSTALLED <!-- Skip search if user overrides -->
+      </Custom>
+      <Custom Action="ErrorWSLNotInstalled" After="RDWelcomeDlg">
+        NOT WSLINSTALLED AND NOT Installed
+      </Custom>
+    </InstallUISequence>
+    <InstallExecuteSequence>
+      <Custom Action="DetectWSL" After="AppSearch">
+        NOT WSLINSTALLED <!-- Skip search if user overrides -->
+      </Custom>
+      <Custom Action="ErrorWSLNotInstalled" After="LaunchConditions">
+        NOT WSLINSTALLED AND NOT Installed
+      </Custom>
+      <Custom Action="UpdateWSL" After="InstallFiles">
+        WSLINSTALLED AND WSLKERNELOUTDATED
+      </Custom>
+    </InstallExecuteSequence>
+
+    <!-- Setting the PATH variable -->
+    <Component Id="PathUser" Directory="APPLICATIONFOLDER">
+      <Condition>MSIINSTALLPERUSER = 1</Condition>
+      <RegistryValue
+        Root="HKCU"
+        Key="SOFTWARE\SUSE\$(var.appName)"
+        Name="EnvironmentVariablesSet"
+        Value="yes"
+        Type="string"
+        KeyPath="yes"
+      />
+      <Environment Id="PathWindowsUserBin" Name="PATH"
+        Action="set" Part="last" System="no" Permanent="no"
+        Value="[APPLICATIONFOLDER]resources\win32\bin\" />
+      <Environment Id="PathWindowsUserDockerCLIPlugins" Name="PATH"
+        Action="set" Part="last" System="no" Permanent="no"
+        Value="[APPLICATIONFOLDER]resources\win32\docker-cli-plugins\" />
+      <Environment Id="PathLinuxUserBin" Name="PATH"
+        Action="set" Part="last" System="no" Permanent="no"
+        Value="[APPLICATIONFOLDER]resources\linux\bin\" />
+      <Environment Id="PathLinuxUserDockerCLIPlugins" Name="PATH"
+        Action="set" Part="last" System="no" Permanent="no"
+        Value="[APPLICATIONFOLDER]resources\linux\docker-cli-plugins\" />
+    </Component>
+    <Component Id="PathSystem" Directory="APPLICATIONFOLDER">
+      <Condition>
+        <![CDATA[MSIINSTALLPERUSER <> 1]]>
+      </Condition>
+      <RegistryValue
+        Root="HKLM"
+        Key="SOFTWARE\SUSE\$(var.appName)"
+        Name="EnvironmentVariablesSet"
+        Value="yes"
+        Type="string"
+        KeyPath="yes"
+      />
+      <Environment Id="PathWindowsSystemBin" Name="PATH"
+        Action="set" Part="last" System="yes" Permanent="no"
+        Value="[APPLICATIONFOLDER]resources\win32\bin\" />
+      <Environment Id="PathWindowsSystemDockerCLIPlugins" Name="PATH"
+        Action="set" Part="last" System="yes" Permanent="no"
+        Value="[APPLICATIONFOLDER]resources\win32\docker-cli-plugins\" />
+      <Environment Id="PathLinuxSystemBin" Name="PATH"
+        Action="set" Part="last" System="yes" Permanent="no"
+        Value="[APPLICATIONFOLDER]resources\linux\bin\" />
+      <Environment Id="PathLinuxSystemDockerCLIPlugins" Name="PATH"
+        Action="set" Part="last" System="yes" Permanent="no"
+        Value="[APPLICATIONFOLDER]resources\linux\docker-cli-plugins\" />
+    </Component>
+
+
+    <!-- Add Admin install registry element -->
+    <Component Id="AdminInstallRegistry" Directory="APPLICATIONFOLDER" Guid="825E1B53-D47A-4630-BDD8-61071DA1245A">
+      <Condition>
+      <![CDATA[MSIINSTALLPERUSER <> 1]]>
+      </Condition>
+      <RegistryValue
+        Root="HKLM"
+        Key='SOFTWARE\SUSE\$(var.appName)'
+        Name="AdminInstall"
+        Value="true"
+        Type="string"
+        KeyPath="yes"
+      />
+    </Component>
+
+    <!-- If required, run the app after install (for updates) -->
+    <Property Id="RDRUNAFTERINSTALL" Secure="yes" />
+    <CustomAction
+      Id="RunApplication"
+      FileKey="mainExecutable"
+      ExeCommand=""
+      Execute="commit"
+      Impersonate="yes"
+      Return="asyncNoWait"
+    />
+    <InstallExecuteSequence>
+      <Custom Action="RunApplication" Before="InstallFinalize">
+        RDRUNAFTERINSTALL
+      </Custom>
+    </InstallExecuteSequence>
+
+    <Feature Id="ProductFeature" Absent="disallow">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentRef Id="PathUser" />
+      <ComponentRef Id="PathSystem" />
+      <ComponentRef Id="AdminInstallRegistry" />
+    </Feature>
+  </Product>
+  {{ &fileList }}
+</Wix>

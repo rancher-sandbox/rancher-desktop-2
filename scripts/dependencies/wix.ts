@@ -1,0 +1,88 @@
+import fs from 'fs';
+import path from 'path';
+
+import semver from 'semver';
+
+import {
+  DownloadContext,
+  downloadAndHash,
+  getOctokit,
+  GitHubDependency,
+  GlobalDependency,
+  lookupChecksum,
+  Sha256Checksum,
+} from '../lib/dependencies';
+import { download } from '../lib/download';
+
+import { simpleSpawn } from '@/scripts/simple_process';
+
+/**
+ * Wix downloads the latest build of WiX3.
+ */
+export class Wix extends GlobalDependency(GitHubDependency) {
+  readonly name = 'wix';
+
+  // Wix4 is packaged really oddly (involves NuGet), and while there's a sketchy
+  // build in https://github.com/electron-userland/electron-builder-binaries, it's rather
+  // outdated (and has since-fixed bugs).
+  readonly githubOwner = 'wixtoolset';
+  readonly githubRepo = 'wix3';
+  readonly releaseFilter = 'custom';
+
+  async download(context: DownloadContext): Promise<void> {
+    // WiX doesn't publish upstream checksum files; we rely on the digest
+    // recorded in dependencies.yaml at bump time.
+
+    const tagName = this.versionToTagName(context.dependencies.wix.version);
+    const version = semver.parse(context.dependencies.wix.version);
+
+    if (!version) {
+      throw new Error(`Could not parse WiX version ${ context.dependencies.wix.version }`);
+    }
+
+    const wixDir = path.join(context.hostDir, 'wix');
+    const archivePath = path.join(context.hostDir, `${ tagName }.zip`);
+    // The archive name never includes the patch version.
+    const archiveName = `wix${ version.major }${ version.minor }-binaries.zip`;
+    const url = `https://github.com/wixtoolset/wix3/releases/download/${ tagName }/${ archiveName }`;
+
+    await fs.promises.mkdir(wixDir, { recursive: true });
+    await download(url, archivePath, { expectedChecksum: lookupChecksum(context, this.name, archiveName) });
+    await simpleSpawn('unzip', ['-q', '-o', archivePath, '-d', wixDir], { cwd: wixDir });
+  }
+
+  async getChecksums(version: string): Promise<Record<string, Sha256Checksum>> {
+    const tagName = this.versionToTagName(version);
+    const parsed = semver.parse(version);
+
+    if (!parsed) {
+      throw new Error(`Could not parse WiX version ${ version }`);
+    }
+
+    const archiveName = `wix${ parsed.major }${ parsed.minor }-binaries.zip`;
+    const url = `https://github.com/${ this.githubOwner }/${ this.githubRepo }/releases/download/${ tagName }/${ archiveName }`;
+
+    return { [archiveName]: await downloadAndHash(url) };
+  }
+
+  versionToTagName(versionString: string): string {
+    const version = semver.parse(versionString);
+
+    if (!version) {
+      throw new Error(`Could not parse WiX version ${ versionString }`);
+    }
+
+    return `wix${ version.major }${ version.minor }${ version.patch || '' }rtm`;
+  }
+
+  async getAvailableVersions(): Promise<string[]> {
+    // WiX tag names are `wix${ major }${ minor }${ patch if not zero }rtm` with
+    // no separation between fields; so we have to dig the version number out
+    // of the release title instead.
+    const { data: releases } = await getOctokit().rest.repos.listReleases({ owner: this.githubOwner, repo: this.githubRepo });
+    const publishedReleases = releases.filter(release => release.published_at);
+    const versions = publishedReleases.map(r => (/^WiX Toolset (v\d+\.\d+\.\d+)/.exec(r.name ?? '') ?? [])[1]);
+
+    return versions.filter(version => version);
+  }
+}

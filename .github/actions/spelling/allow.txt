@@ -1,9 +1,13 @@
 cooldown #https://en.wiktionary.org/wiki/cooldown#English
+emoji #https://en.wiktionary.org/wiki/emoji#English
 passthrough #https://en.wiktionary.org/wiki/passthrough
 passthroughs #https://en.wiktionary.org/wiki/passthrough
+passwordless #https://en.wiktionary.org/wiki/passwordless#English
+rewatch # https://en.wiktionary.org/wiki/rewatch
 routable #https://en.wiktionary.org/wiki/routable#English
 standalone #https://en.wiktionary.org/wiki/standalone#English
 startable #https://en.wiktionary.org/wiki/startable
 unmarshal #https://en.wiktionary.org/wiki/unmarshal#English
 versioned #https://en.wiktionary.org/wiki/versioned#English
 whitespaces #https://en.wiktionary.org/wiki/whitespaces#English
+workarounds #https://en.wiktionary.org/wiki/workaround#Noun

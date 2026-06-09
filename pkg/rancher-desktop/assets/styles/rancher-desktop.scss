@@ -1,0 +1,48 @@
+/** Rancher Desktop specific styles */
+body {
+  background-color: var(--body-bg);
+  color: var(--body-text);
+  font-size: 14px;
+}
+
+.labeled-input {
+    margin-bottom: 1em;
+}
+label > button:first-child:not(.btn-sm) {
+    margin-right: 1em;
+}
+
+.locked-radio .radio-container span.radio-custom {
+  &[aria-checked="true"] {
+    opacity: 1;
+  }
+
+  &:not([aria-checked="true"]) {
+    opacity: 1;
+    background-color: var(--radio-locked-bg);
+    box-shadow: var(--radio-locked-shadow);
+  }
+}
+
+@media screen and (prefers-color-scheme: dark) {
+    option {
+        background-color: var(--input-bg);
+    }
+}
+
+:is(.btn, button, [class*='btn-']):not([class*='role-']):not([class*=bg-primary]) {
+  /* buttons should have one of the role- classes:
+   * .role-primary, .role-secondary, .role-tertiary, .role-multi-action, etc.
+   */
+  outline: 10px dashed red !important;
+}
+
+.btn-icon-text {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+:root {
+  --preferences-content-padding: 0.75rem;
+}

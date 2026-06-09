@@ -19,5 +19,31 @@ spelling: scripts/check-spelling.sh .github/actions/spelling/expect/golang-gener
 	$<
 .PHONY: spelling
 
+test-wix-helper:
+	( cd src/go/wix-helper && go$(EXE) test ./... )
+.PHONY: test-wix-helper
+
+lint: lint-rdd lint-bats lint-startup-profile lint-wix-helper
+.PHONY: lint
+
+lint-go: lint-rdd lint-startup-profile lint-wix-helper
+.PHONY: lint-go
+
+lint-rdd:
+	$(MAKE) -C rdd lint-rdd
+.PHONY: lint-rdd
+
+lint-bats:
+	$(MAKE) -C rdd lint-bats
+.PHONY: lint-bats
+
+lint-startup-profile:
+	( cd src/go/startup-profile && go$(EXE) tool golangci-lint run )
+.PHONY: lint-startup-profile
+
+lint-wix-helper:
+	( cd src/go/wix-helper && go$(EXE) tool golangci-lint run )
+.PHONY: lint-wix-helper
+
 check: spelling
 .PHONY: check

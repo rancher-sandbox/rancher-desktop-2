@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <UI>
+      <Dialog Id="RDVerifyReadyDlg" Title="!(loc.VerifyReadyDlg_Title)"
+        Width="370" Height="270" TrackDiskSpace="yes">
+        <Control Id="InstallTitle" Type="Text" NoPrefix="yes"
+          X="15" Y="15" Width="300" Height="15" Transparent="yes"
+          Text="!(loc.VerifyReadyDlgInstallTitle)" />
+        <Control Id="BannerBitmap" Type="Bitmap"
+          X="0" Y="0" Width="370" Height="44"
+          Text="!(loc.VerifyReadyDlgBannerBitmap)" />
+        <Control Id="BannerLine" Type="Line"
+          X="0" Y="44" Width="370" Height="0" />
+
+        <Control Id="InstallText" Type="Text"
+          X="25" Y="70" Width="320" Height="80" NoPrefix="yes"
+          Text="!(loc.VerifyReadyDlgInstallText)" />
+
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Back" Type="PushButton" X="156" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)">
+          <Publish Order="1" Event="NewDialog" Value="RDInstallScopeDlg" />
+        </Control>
+
+        <Control Id="Install" Type="PushButton" ElevationShield="yes"
+          X="212" Y="243" Width="80" Height="17"
+          Default="yes" Hidden="yes"
+          Text="!(loc.VerifyReadyDlgInstall)">
+          <Condition Action="show">
+            <![CDATA[ MSIINSTALLPERUSER <> 1]]>
+          </Condition>
+          <Publish Order="1" Property="MSIINSTALLPERUSER" Value="{}">1</Publish>
+          <Publish Order="2" Property="ALLUSERS" Value="1">1</Publish>
+          <Publish Order="3" Event="EndDialog" Value="Return">
+            <![CDATA[OutOfDiskSpace <> 1]]>
+          </Publish>
+          <Publish Order="4" Event="SpawnDialog" Value="OutOfRbDiskDlg">OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND (PROMPTROLLBACKCOST="P" OR NOT PROMPTROLLBACKCOST)</Publish>
+          <Publish Order="5" Event="EndDialog" Value="Return">OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND PROMPTROLLBACKCOST="D"</Publish>
+          <Publish Order="6" Event="EnableRollback" Value="False">OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND PROMPTROLLBACKCOST="D"</Publish>
+          <Publish Order="7" Event="SpawnDialog" Value="OutOfDiskDlg">(OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 1) OR (OutOfDiskSpace = 1 AND PROMPTROLLBACKCOST="F")</Publish>
+        </Control>
+        <Control Id="InstallNoShield" Type="PushButton" ElevationShield="no"
+          X="212" Y="243" Width="80" Height="17"
+          Default="yes" Hidden="yes"
+          Text="!(loc.VerifyReadyDlgInstall)">
+          <Condition Action="show">MSIINSTALLPERUSER = 1</Condition>
+          <Publish Order="1" Property="ALLUSERS" Value="{}">1</Publish>
+          <!--
+            - When running with full UI, the installer initially assumes we're
+            - going to install per-machine. This means that when we looked for
+            - older products to upgrade from (by matching UpgradeCode), per-user
+            - installs were ignored. Now that we have confirmed we're about to
+            - install per-user, re-do FindRelatedProducts so that we can find
+            - any existing installs we need to upgrade from.
+           -->
+          <Publish Order="2" Event="DoAction" Value="FindRelatedProducts">1</Publish>
+          <Publish Order="3" Event="EndDialog" Value="Return">
+            <![CDATA[OutOfDiskSpace <> 1]]>
+          </Publish>
+          <Publish Order="4" Event="SpawnDialog" Value="OutOfRbDiskDlg">OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND (PROMPTROLLBACKCOST="P" OR NOT PROMPTROLLBACKCOST)</Publish>
+          <Publish Order="5" Event="EndDialog" Value="Return">OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND PROMPTROLLBACKCOST="D"</Publish>
+          <Publish Order="6" Event="EnableRollback" Value="False">OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 0 AND PROMPTROLLBACKCOST="D"</Publish>
+          <Publish Order="7" Event="SpawnDialog" Value="OutOfDiskDlg">(OutOfDiskSpace = 1 AND OutOfNoRbDiskSpace = 1) OR (OutOfDiskSpace = 1 AND PROMPTROLLBACKCOST="F")</Publish>
+        </Control>
+
+        <Control Id="Cancel" Type="PushButton" Cancel="yes"
+          X="304" Y="243" Width="56" Height="17" Text="!(loc.WixUICancel)">
+          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+        </Control>
+      </Dialog>
+    </UI>
+  </Fragment>
+</Wix>

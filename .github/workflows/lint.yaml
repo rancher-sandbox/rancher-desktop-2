@@ -70,8 +70,8 @@ jobs:
         cache-dependency-path: rdd/go.sum
     - run: make lint-rdd
       working-directory: rdd
-  test:
-    name: Unit tests
+  test-rdd:
+    name: RDD Unit tests
     needs: get-pr-number
     strategy:
       matrix:
@@ -88,6 +88,30 @@ jobs:
         cache-dependency-path: rdd/go.sum
     - run: make test
       working-directory: rdd
+  test-jest:
+    name: Jest Tests
+    needs: get-pr-number
+    runs-on: ubuntu-latest
+    if: ${{ ! needs.get-pr-number.outputs.number }}
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/yarn-install
+    - run: yarn test:unit:jest
+  test-wix-helper:
+    name: Wix Helper Tests
+    needs: get-pr-number
+    runs-on: windows-latest
+    if: ${{ ! needs.get-pr-number.outputs.number }}
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+    - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+      with:
+        go-version-file: src/go/wix-helper/go.mod
+    - run: make test-wix-helper
   lint-bats:
     name: Lint BATS
     needs: get-pr-number
@@ -103,6 +127,66 @@ jobs:
         go-version-file: rdd/go.mod
     - run: make lint-bats
       working-directory: rdd
+  lint-startup-profile:
+    name: Lint Startup Profile
+    needs: get-pr-number
+    strategy:
+      matrix:
+        runs-on: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.runs-on }}
+    if: ${{ ! needs.get-pr-number.outputs.number }}
+    steps:
+    - name: "Windows: Set up line endings"
+      if: runner.os == 'Windows'
+      run: |
+        git config --global --replace-all core.autocrlf false # spellchecker:ignore
+        git config --global --replace-all core.eol lf # spellchecker:ignore
+        git config --global --replace-all core.longpath true #spellchecker:ignore
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+    - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+      with:
+        go-version-file: src/go/startup-profile/go.mod
+    - run: make lint-startup-profile
+  lint-wix-helper:
+    name: Lint Wix Helper
+    needs: get-pr-number
+    runs-on: windows-latest
+    if: ${{ ! needs.get-pr-number.outputs.number }}
+    steps:
+    - name: "Windows: Set up line endings"
+      run: |
+        git config --global --replace-all core.autocrlf false # spellchecker:ignore
+        git config --global --replace-all core.eol lf # spellchecker:ignore
+        git config --global --replace-all core.longpath true #spellchecker:ignore
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+    - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+      with:
+        go-version-file: src/go/wix-helper/go.mod
+    - run: make lint-wix-helper
+  lint-typescript:
+    name: Lint TypeScript
+    needs: get-pr-number
+    strategy:
+      matrix:
+        runs-on: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.runs-on }}
+    if: ${{ ! needs.get-pr-number.outputs.number }}
+    steps:
+    - name: "Windows: Set up line endings"
+      if: runner.os == 'Windows'
+      run: |
+        git config --global --replace-all core.autocrlf false # spellchecker:ignore
+        git config --global --replace-all core.eol lf # spellchecker:ignore
+        git config --global --replace-all core.longpath true #spellchecker:ignore
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/yarn-install
+    - run: yarn lint:typescript:nofix
   spelling:
     name: Check Spelling
     needs: get-pr-number
@@ -141,3 +225,16 @@ jobs:
         go-version-file: rdd/go.mod
     - run: make check-ltag
       working-directory: rdd
+  license-check:
+    name: Check licenses
+    needs: get-pr-number
+    runs-on: ubuntu-latest
+    if: ${{ ! needs.get-pr-number.outputs.number }}
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/yarn-install
+    - run: yarn license-check
+    - run: ./scripts/go-license-check.sh
+      shell: bash

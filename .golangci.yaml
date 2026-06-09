@@ -1,0 +1,121 @@
+version: "2"
+linters:
+  enable:
+    - bodyclose
+    - copyloopvar
+    - dogsled
+    - dupl
+    - errcheck
+    - goconst
+    - gocritic
+    - goprintffuncname
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - mnd
+    - nakedret
+    - noctx
+    - nolintlint
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+  settings:
+    dupl:
+      threshold: 100
+    goconst:
+      min-len: 2
+      min-occurrences: 3
+      # Skip values that read better as literals than as named constants:
+      # "error" is the conventional log-field key, "--" is the POSIX
+      # end-of-options marker, "eth0" shares a platform-interface table
+      # with other literal names, and "--address" is a wsl.exe / nerdctl
+      # flag inlined in command-line slices.
+      ignore-string-values: ^(error|--|eth0|--address)$
+    gocritic:
+      disabled-checks:
+        - dupImport # https://github.com/go-critic/go-critic/issues/845
+        - ifElseChain
+        - unnamedResult
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+    gosec:
+      excludes:
+        # Taint analysis rules (G7xx) produce only false positives in this codebase
+        - G702 # command injection via taint analysis - stub binaries forwarding args
+        - G703 # path traversal via taint analysis - os.CreateTemp paths
+        - G704 # SSRF via taint analysis - hardcoded URLs
+        - G705 # XSS via taint analysis - stdout writes
+        - G706 # log injection via taint analysis - internal log calls
+
+        # G115 flags every int↔uintptr cast on file descriptors (os.NewFile,
+        # syscall.Shutdown, IoctlFileClone). File descriptors are always
+        # non-negative and these casts are idiomatic Go.
+        - G115 # integer overflow conversion
+        # G117 matches exported struct fields named "Password" etc. The
+        # ConnectionInfo.Password field in rdctl/pkg/config is intentional.
+        - G117 # exported field matches secret pattern
+      config:
+        G306: "0644"
+    mnd:
+      # don't include the "operation" and "assign"
+      checks:
+        - argument
+        - case
+        - condition
+        - return
+      ignored-numbers:
+        - "0"
+        - "1"
+        - "2"
+        - "3"
+      ignored-functions:
+        - ^make$
+        - ^net\.IPv4$
+        - ^os\.FileMode$
+        - ^os\.Mkdir(?:All)?$
+        - ^os\.(?:Open|Write)File$
+        - ^strings\.SplitN$
+        - ^tabwriter\.NewWriter$
+        - ^utils\.GetParentDir$
+    nolintlint:
+      allow-unused: false # report any unused nolint directives
+      require-explanation: true
+      require-specific: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - errcheck
+          - goconst
+          - gocritic
+          - gosec
+        path: _test\.go
+      - # Ignore errors from syscall
+        linters:
+          - dogsled
+        source: ^\s*_, _, _ = .*\.Call\(
+
+formatters:
+  enable:
+    - gofmt
+    - gci
+  exclusions:
+    generated: lax
+  settings:
+    gci:
+      sections:
+      - standard
+      - default
+      - prefix(github.com/rancher-sandbox/rancher-desktop)

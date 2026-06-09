@@ -1,0 +1,256 @@
+<template>
+  <div
+    class="wrapper"
+    :class="{
+      blur,
+    }"
+  >
+    <rd-nav
+      class="nav"
+      :items="routes"
+      :extensions="installedExtensions"
+      @open-dashboard="openDashboard"
+      @open-preferences="openPreferences"
+    />
+    <the-title ref="title" />
+    <main
+      ref="body"
+      class="body"
+    >
+      <RouterView />
+    </main>
+    <!-- The extension area is used for sizing the extension view. -->
+    <div
+      id="extension-spacer"
+      class="extension"
+    />
+    <status-bar class="status-bar" />
+    <!-- The ActionMenu is used by SortableTable for per-row actions. -->
+    <ActionMenu data-testid="actionmenu" />
+  </div>
+</template>
+
+<script>
+import packageJson from '@/package.json' with { type: 'json' };
+import ActionMenu from '@pkg/components/ActionMenu.vue';
+import Nav from '@pkg/components/Nav.vue';
+import StatusBar from '@pkg/components/StatusBar.vue';
+import TheTitle from '@pkg/components/TheTitle.vue';
+import { mapTypedActions, mapTypedGetters, mapTypedState } from '@pkg/entry/store';
+import initExtensions from '@pkg/preload/extensions';
+import { ipcRenderer } from '@pkg/utils/ipcRenderer';
+import { mainRoutes } from '@pkg/window/constants';
+
+export default {
+  name:       'App',
+  components: {
+    StatusBar,
+    ActionMenu,
+    rdNav: Nav,
+    TheTitle,
+  },
+
+  data() {
+    return { blur: false };
+  },
+
+  computed: {
+    routes() {
+      const badges = {
+        '/Diagnostics': this.diagnosticsCount,
+        '/Extensions':  this.extensionUpgradeCount,
+      };
+
+      return mainRoutes.map((route) => {
+        if (route.route in badges) {
+          return { ...route, error: badges[route.route] };
+        }
+
+        return route;
+      });
+    },
+    paths() {
+      return mainRoutes.map(r => r.route);
+    },
+    /** @returns {number} The number of diagnostics errors. */
+    diagnosticsCount() {
+      return this.diagnostics.filter(diagnostic => !diagnostic.mute).length;
+    },
+    /** @returns {number} The number of extensions with upgrade available. */
+    extensionUpgradeCount() {
+      return this.installedExtensions.filter(ext => ext.canUpgrade).length;
+    },
+    ...mapTypedState('diagnostics', ['diagnostics']),
+    ...mapTypedGetters('extensions', ['installedExtensions']),
+  },
+
+  beforeMount() {
+    // The window title isn't set correctly in E2E; as a workaround, force set
+    // it here again.
+    document.title ||= this.t('app.name', { productName: packageJson.productName });
+
+    this.fetch().catch(ex => console.error(ex));
+
+    initExtensions();
+    ipcRenderer.on('window/blur', (event, blur) => {
+      this.blur = blur;
+    });
+    ipcRenderer.on('backend-locked', (_event, action) => {
+      ipcRenderer.send('preferences-close');
+      this.showCreatingSnapshotDialog(action);
+    });
+    ipcRenderer.on('backend-unlocked', () => {
+      ipcRenderer.send('dialog/close', { dialog: 'SnapshotsDialog', snapshotEventType: 'backend-lock' });
+    });
+
+    ipcRenderer.send('backend-state-check');
+
+    this.watchResources(['apps']).then(() => {
+      return this.ensureAppStarted();
+    }).catch(error => {
+      console.error(error);
+      this.$store.commit('rdd/SET_ERROR', error);
+    });
+
+    ipcRenderer.on('route', (event, args) => {
+      this.goToRoute(args);
+    });
+    ipcRenderer.on('extensions/changed', () => {
+      this.$store.dispatch('extensions/fetch');
+    });
+    this.$store.dispatch('extensions/fetch');
+
+    ipcRenderer.on('preferences/changed', () => {
+      this.$store.dispatch('preferences/fetchPreferences');
+    });
+
+    ipcRenderer.on('extensions/getContentArea', () => {
+      /** @type {DOMRect} */
+      const titleRect = this.$refs.title.$el.getBoundingClientRect();
+      /** @type {DOMRect} */
+      const bodyRect = this.$refs.body.getBoundingClientRect();
+      const payload = {
+        top:    titleRect.top,
+        right:  titleRect.right,
+        bottom: bodyRect.bottom,
+        left:   titleRect.left,
+      };
+
+      ipcRenderer.send('ok:extensions/getContentArea', payload);
+    });
+  },
+
+  mounted() {
+    this.$store.dispatch('i18n/init').catch(ex => console.error(ex));
+  },
+
+  beforeUnmount() {
+    ipcRenderer.off('extensions/getContentArea');
+    ipcRenderer.removeAllListeners('backend-locked');
+    ipcRenderer.removeAllListeners('backend-unlocked');
+    ipcRenderer.removeAllListeners('window/blur');
+
+    this.unwatchResources(['apps']).catch(ex => console.error(ex));
+  },
+
+  methods: {
+    ...mapTypedActions('rdd-connection', ['fetchConfig']),
+    ...mapTypedActions('rdd', ['ensureAppStarted', 'watchResources', 'unwatchResources']),
+    async fetch() {
+      await this.fetchConfig();
+    },
+
+    openDashboard() {
+      ipcRenderer.send('dashboard-open');
+    },
+    openPreferences() {
+      ipcRenderer.send('preferences-open');
+    },
+    goToRoute(args) {
+      const { path, direction } = args;
+
+      if (path) {
+        this.$router.push({ path });
+
+        return;
+      }
+
+      if (direction) {
+        const dir = (direction === 'forward' ? 1 : -1);
+        const idx = (this.paths.length + this.paths.indexOf(this.$router.currentRoute.path) + dir) % this.paths.length;
+
+        this.$router.push({ path: this.paths[idx] });
+      }
+    },
+    showCreatingSnapshotDialog(action) {
+      ipcRenderer.invoke(
+        'show-snapshots-blocking-dialog',
+        {
+          window: {
+            buttons:  [],
+            cancelId: 1,
+          },
+          format: {
+            header:            action || this.t('snapshots.dialog.generic.header', {}, true),
+            /** TODO: put here operation type information from 'state' */
+            message:           this.t('snapshots.dialog.generic.message', {}, true),
+            showProgressBar:   true,
+            snapshotEventType: 'backend-lock',
+          },
+        },
+      );
+    },
+  },
+};
+</script>
+
+<style lang="scss" src="@pkg/assets/styles/app.scss"></style>
+<style lang="scss" scoped>
+.wrapper {
+  display: grid;
+  grid-template:
+    "nav        title"
+    "nav        body"    1fr
+    "status-bar status-bar"
+    / var(--nav-width) 1fr;
+  background-color: var(--body-bg);
+  width: 100vw;
+  height: 100vh;
+
+  &.blur {
+   opacity: 0.2;
+  }
+
+  .header {
+    grid-area: header;
+    border-bottom: var(--header-border-size) solid var(--header-border);
+  }
+
+  .nav {
+    grid-area: nav;
+    border-right: var(--nav-border-size) solid var(--nav-border);
+  }
+
+  .title {
+    grid-area: title;
+  }
+
+  .body {
+    grid-area: body;
+    display: flex;
+    flex-direction: column;
+    padding: 0 20px 20px 20px;
+    overflow: auto;
+  }
+
+  .extension {
+    grid-area: title / title / body / body;
+    z-index: -1000;
+  }
+
+  .status-bar {
+    grid-area: status-bar;
+    border-top: var(--nav-border-size) solid var(--nav-border);
+  }
+}
+</style>

@@ -1,0 +1,167 @@
+import { createStore, mapActions, mapGetters, mapMutations, mapState, ModuleTree, Plugin } from 'vuex';
+
+import * as ActionMenu from '../store/action-menu';
+import * as ContainerEngine from '../store/container-engine';
+import * as Diagnostics from '../store/diagnostics';
+import * as Extensions from '../store/extensions';
+import * as I18n from '../store/i18n';
+import * as ImageManager from '../store/imageManager';
+import * as Page from '../store/page';
+import * as Preferences from '../store/preferences';
+import * as Prefs from '../store/prefs';
+import * as RDD from '../store/rdd';
+import * as RDDConnection from '../store/rddConnection';
+import * as ResourceFetch from '../store/resource-fetch';
+import * as Snapshots from '../store/snapshots';
+import * as Steve from '../store/steve';
+
+const modules = {
+  'action-menu':       ActionMenu,
+  'container-engine':  ContainerEngine,
+  diagnostics:         Diagnostics,
+  extensions:          Extensions,
+  i18n:                I18n,
+  imageManager:        ImageManager,
+  page:                Page,
+  preferences:         Preferences,
+  prefs:               Prefs,
+  rdd:                 RDD,
+  'rdd-connection':    RDDConnection,
+  'resource-fetch':    ResourceFetch,
+  snapshots:           Snapshots,
+  steve:               Steve,
+};
+
+export type Modules = typeof modules;
+
+export type RootState = {
+  [K in keyof Modules]: ReturnType<Modules[K]['state']>;
+};
+export type RootGetters = {
+  [K in keyof Modules]: Modules[K] extends { getters: any } ? {
+    [key in keyof Modules[K]['getters']]: ReturnType<Modules[K]['getters'][key]>;
+  } : never;
+};
+
+export default createStore<any>({
+  modules: Object.fromEntries(Object.entries(modules).map(([k, v]) => [k, { namespaced: true, ...v }])),
+  plugins: Object.values(modules).flatMap<Plugin<RootState>>(v => 'plugins' in v ? v.plugins : []),
+});
+
+/**
+ * mapTypedGetters is a wrapper around mapGetters that is aware of the types of
+ * the Vuex stores we have availabile, and returns the correctly typed values.
+ * @see https://vuex.vuejs.org/guide/getters.html#the-mapgetters-helper
+ */
+// mapTypedGetters('namespace', ['getter', 'getter'])
+export function mapTypedGetters
+<
+  N extends keyof Modules,
+  M extends Modules[N] extends { getters: any } ? Modules[N]['getters'] : never,
+  K extends keyof M,
+>(namespace: N, keys: K[]): { [key in K]: () => ReturnType<M[key]> };
+// mapTypedGetters('namespace', {name: newName, name: newName})
+export function mapTypedGetters
+<
+  N extends keyof Modules,
+  M extends Modules[N] extends { getters: any } ? Modules[N]['getters'] : never,
+  K extends keyof M,
+  G extends Record<string, K>,
+>(namespace: N, mappings: G): { [key in keyof G]: () => ReturnType<M[G[key]]> };
+// Actual implementation defers to mapGetters.
+export function mapTypedGetters(namespace: string, arg: any) {
+  return mapGetters(namespace, arg);
+}
+
+/**
+ * mapTypedState is a wrapper around mapState that is aware of the types of the
+ * Vuex stores we have available, and returns the correctly typed values.
+ * @see https://vuex.vuejs.org/guide/state.html#the-mapstate-helper
+ */
+// mapTypedState('namespace', ['state', 'state'])
+export function mapTypedState
+<
+  N extends keyof Modules,
+  S extends ReturnType<Modules[N]['state']>,
+  K extends keyof S,
+>(namespace: N, keys: K[]): { [key in K]: () => S[key] };
+// mapTypedState('namespace', {key: 'name', key: (state) => (state.key)})
+export function mapTypedState
+<
+  N extends keyof Modules,
+  S extends ReturnType<Modules[N]['state']>,
+  K extends keyof S,
+  G extends Record<string, K | ((state: S) => any)>,
+>(namespace: N, mappings: G): {
+  [key in keyof G]:
+  G[key] extends K ? () => S[G[key]] :
+    G[key] extends (state: S) => any ? () => ReturnType<G[key]> :
+      never;
+};
+// Actual implementation defers to mapState
+export function mapTypedState(namespace: string, arg: any) {
+  return mapState(namespace, arg);
+}
+
+/**
+ * mapTypedMutations is a wrapper around mapMutations that is aware of the types
+ * of the Vuex stores we have available, and returns the correctly typed values.
+ * @see https://vuex.vuejs.org/guide/mutations.html#committing-mutations-in-components
+ */
+// mapTypedMutations('namespace', ['mutation', 'mutation'])
+export function mapTypedMutations
+<
+  N extends keyof Modules,
+  M extends Modules[N] extends { mutations: any } ? Modules[N]['mutations'] : never,
+  K extends keyof M,
+>(namespace: N, keys: K[]): {
+  [key in K]: Parameters<M[key]>[1] extends undefined ?
+    () => ReturnType<M[key]> :
+    (payload: Parameters<M[key]>[1]) => ReturnType<M[key]>;
+};
+// mapTypedMutations('namespace', {key: 'name', key: (state) => (state.key)})
+export function mapTypedMutations
+<
+  N extends keyof Modules,
+  M extends Modules[N] extends { mutations: any } ? Modules[N]['mutations'] : never,
+  K extends keyof M,
+  G extends Record<string, K>,
+>(namespace: N, mappings: G): {
+  [key in keyof G]: Parameters<M[G[key]]>[1] extends undefined ?
+    () => ReturnType<M[G[key]]> :
+    (payload: Parameters<M[G[key]]>[1]) => ReturnType<M[G[key]]>;
+};
+// Actual implementation defers to mapMutations
+export function mapTypedMutations(namespace: string, arg: any) {
+  return mapMutations(namespace, arg);
+}
+
+/**
+ * mapTypedActions is a wrapper around mapActions that is aware of the types
+ * of the Vuex stores we have available, and returns the correctly typed values.
+ * @see https://vuex.vuejs.org/guide/actions.html#dispatching-actions-in-components
+ */
+export function mapTypedActions
+<
+  N extends keyof Modules,
+  M extends Modules[N] extends { actions: any } ? Modules[N]['actions'] : never,
+  K extends keyof M,
+>(namespace: N, keys: K[]): {
+  [key in K]: Parameters<M[key]> extends [state: any]
+    ? () => Promise<Awaited<ReturnType<M[key]>>> // no arguments
+    : (payload: Parameters<M[key]>[1]) => Promise<Awaited<ReturnType<M[key]>>>
+};
+export function mapTypedActions
+<
+  N extends keyof Modules,
+  M extends Modules[N] extends { actions: any } ? Modules[N]['actions'] : never,
+  K extends keyof M,
+  G extends Record<string, K>,
+>(namespace: N, mappings: G): {
+  [key in keyof G]: Parameters<M[G[key]]> extends [state: any]
+    ? () => Promise<Awaited<ReturnType<M[G[key]]>>> // no arguments
+    : (payload: Parameters<M[G[key]]>[1]) => Promise<Awaited<ReturnType<M[G[key]]>>>;
+};
+export function mapTypedActions(namespace: string, arg: any) {
+  return mapActions(namespace, arg) as any;
+}

@@ -1,0 +1,28 @@
+# Path to socket_vmnet executable. Because socket_vmnet is invoked via sudo, it
+# must be installed where only root can modify/replace it. This means also none
+# of the parent directories should be writable by the user.
+#
+# The varRun directory also must not be writable by the user because it will
+# include the socket_vmnet pid file. socket_vmnet will be terminated via
+# sudo, so replacing the pid file would allow killing of arbitrary privileged
+# processes. varRun however MUST be writable by the daemon user.
+#
+# None of the paths segments may be symlinks, which is why it has to be /private/var
+# instead of /var etc.
+paths:
+  socketVMNet: /opt/rancher-desktop/bin/socket_vmnet
+  varRun: /private/var/run
+  sudoers: /private/etc/sudoers.d/zzzzz-rancher-desktop-lima
+group: everyone
+networks:
+  rancher-desktop-shared:
+    mode: shared
+    gateway: 192.168.205.1
+    dhcpEnd: 192.168.205.254
+    netmask: 255.255.255.0
+  host:
+    mode: host
+    gateway: 192.168.206.1
+    dhcpEnd: 192.168.206.254
+    netmask: 255.255.255.0
+  # We will add bridged-en0 etc. networks, one for each host interface.
