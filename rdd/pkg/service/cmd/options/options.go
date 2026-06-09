@@ -86,6 +86,9 @@ func NewOptions(ctx context.Context, rootDir string) *Options {
 
 	// Disable apiserver identity leases because this is a single-instance control plane.
 	_ = utilfeature.DefaultMutableFeatureGate.OverrideDefault(genericfeatures.APIServerIdentity, false)
+	// UnknownVersionInteroperabilityProxy proxies between mixed-version apiservers and
+	// depends on APIServerIdentity; neither applies to a single-instance control plane.
+	_ = utilfeature.DefaultMutableFeatureGate.OverrideDefault(genericfeatures.UnknownVersionInteroperabilityProxy, false)
 
 	factory := func(factory informers.SharedInformerFactory) serviceaccount.ServiceAccountTokenGetter {
 		return tokengetter.NewGetterFromClient(factory.Core().V1().Secrets().Lister(), factory.Core().V1().ServiceAccounts().Lister())
