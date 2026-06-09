@@ -44,6 +44,15 @@ provision:
     KUBERNETES_ENABLED={{.Param.KUBERNETES_ENABLED}}
     KUBERNETES_VERSION={{.Param.KUBERNETES_VERSION}}
     KUBERNETES_PORT={{.Param.KUBERNETES_PORT}}
+# Redirect vm-switch's log to a host-mounted file (under the service log dir) so
+# it survives VM teardown and is collected with the other instance logs. The
+# distro's network-setup.service defaults VM_SWITCH_LOG to an in-guest path; this
+# drop-in overrides it and is written before systemd loads the unit.
+- mode: data
+  path: /etc/systemd/system/network-setup.service.d/log-path.conf
+  content: |
+    [Service]
+    Environment=VM_SWITCH_LOG={{printf "%q" .Param.VM_SWITCH_LOG}}
 - mode: system
   script: |
     #!/bin/bash
