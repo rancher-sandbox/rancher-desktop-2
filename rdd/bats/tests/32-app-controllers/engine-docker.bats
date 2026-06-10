@@ -101,6 +101,29 @@ do_websocket() { # endpoint
     assert_output
 }
 
+# Assert that exactly one Image mirror exists for the given image ID and
+# that its RepoTag is <expected-tag> (empty = the dangling mirror). All
+# mirrors of an image share status.id, so a check right after an untag or
+# tag races the engine controller's pruning of the stale mirror — calls
+# to `assert_single_mirror` should be wrapped in a `try`.
+assert_single_mirror() { # <image-id> <expected-tag>
+    local image_id=$1 expected=$2
+    # Every matching mirror reports the same status.id, so the joined list
+    # equals the bare image ID exactly when one mirror exists.
+    run -0 rdd ctl get image --namespace="${RDD_NAMESPACE}" \
+        --field-selector "status.id=${image_id}" \
+        -o jsonpath='{.items[*].status.id}'
+    assert_output "${image_id}"
+    run -0 rdd ctl get image --namespace="${RDD_NAMESPACE}" \
+        --field-selector "status.id=${image_id}" \
+        -o jsonpath='{.items[0].status.repoTag}'
+    if [[ -n ${expected} ]]; then
+        assert_output "${expected}"
+    else
+        refute_output
+    fi
+}
+
 @test "tagging a dangling image removes the dangling mirror" {
     # Create a dangling image by pinning it via a running container and
     # then removing its only tag with --force. Docker keeps the image
@@ -123,15 +146,10 @@ do_websocket() { # endpoint
     docker image rm --force alpine:latest
 
     # The dangling mirror has no RepoTag — query by status.id instead.
-    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" image \
-        --field-selector "status.id=${alpine_id}" --timeout=30s
-
-    # Sanity check: exactly one mirror exists for this image and it has
-    # no RepoTag (the dangling mirror).
-    run -0 rdd ctl get image --namespace="${RDD_NAMESPACE}" \
-        --field-selector "status.id=${alpine_id}" \
-        -o jsonpath='{.items[*].status.repoTag}'
-    refute_output
+    # A --for=create wait on status.id is satisfied by the still-tagged
+    # alpine:latest mirror (same image ID), so it cannot gate on the
+    # untag reconciliation; poll until only the dangling mirror remains.
+    try --max 30 --delay 1 assert_single_mirror "${alpine_id}" ""
 
     # Re-tag the image with a fresh alias. ActionTag routes through
     # reconcileImageByID, which creates a new tagged mirror and prunes
@@ -141,11 +159,9 @@ do_websocket() { # endpoint
         --field-selector "status.repoTag=dangling-tag-test:v1" --timeout=30s
 
     # The dangling mirror must be gone: the only mirror for this image
-    # is the new tagged one.
-    run -0 rdd ctl get image --namespace="${RDD_NAMESPACE}" \
-        --field-selector "status.id=${alpine_id}" \
-        -o jsonpath='{.items[*].status.repoTag}'
-    assert_output "dangling-tag-test:v1"
+    # is the new tagged one. Pruning follows the tagged-mirror creation
+    # asynchronously, so poll here too.
+    try --max 30 --delay 1 assert_single_mirror "${alpine_id}" "dangling-tag-test:v1"
 
     # Cleanup.
     docker rm --force dangling-pin
