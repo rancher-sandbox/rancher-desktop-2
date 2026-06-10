@@ -8,7 +8,9 @@ entitlements:
 
   # Entitlement overrides.  This is a list of overrides, each with a "paths"
   # key describing which paths to override, and an "entitlements" key for the
-  # overriding entitlements.
+  # overriding entitlements.  The "entitlements" key can be either a list of
+  # entitlements, or missing to use entitlements already in the file.  App
+  # bundles (directories) do not support the latter.
   overrides:
   - paths:
     - '' # This is the main application
@@ -24,6 +26,8 @@ entitlements:
     entitlements:
     - com.apple.security.cs.allow-unsigned-executable-memory
     - com.apple.security.cs.disable-library-validation
+  - paths:
+    - Contents/Resources/darwin/bin/rdd
 
 # List of launch constraints.
 # This is similar to entitlements, but has no default: it's just a list of

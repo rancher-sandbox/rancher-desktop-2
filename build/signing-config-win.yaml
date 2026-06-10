@@ -14,3 +14,12 @@
 - '!vulkan-1.dll'       # spellcheck-ignore-line
 resources/internal:
 - steve.exe
+resources/win32/bin:
+- docker-credential-ecr-login.exe
+- docker-credential-wincred.exe
+- docker.exe
+- helm.exe
+- rdd.exe
+resources/win32/docker-cli-plugins:
+- docker-buildx.exe
+- docker-compose.exe

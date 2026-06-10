@@ -22,8 +22,9 @@ interface SigningConfig {
   entitlements: {
     default:   string[];
     overrides: {
-      paths:        string[];
-      entitlements: string[];
+      paths:         string[];
+      // Entitlements; if missing, use the existing entitlements.
+      entitlements?: string[];
     }[];
   }
   constraints: {
@@ -83,7 +84,23 @@ export async function sign(workDir: string): Promise<string[]> {
 
     if (entitlementsOverride) {
       entitlementName = fileHash;
-      entitlements = entitlementsOverride.entitlements;
+      if (Array.isArray(entitlementsOverride.entitlements)) {
+        entitlements = entitlementsOverride.entitlements;
+      } else {
+        // Use existing entitlements
+        const { stdout } = await spawnFile(
+          'codesign', ['--display', '--entitlements', '-', '--xml', filePath], { stdio: ['ignore', 'pipe', 'inherit'] });
+        const xml = stdout.split(/\r?\n/).find(line => line.startsWith('<?xml'));
+        if (!xml) {
+          throw new Error(`Could not read existing entitlements from ${ relPath }`);
+        }
+        const parsed = plist.parse(xml);
+        if (parsed && [null, Object.prototype].includes(Object.getPrototypeOf(parsed))) {
+          entitlements = Object.keys(parsed);
+        } else {
+          throw new Error(`Could not parse existing entitlements from ${ relPath }: got ${ JSON.stringify(parsed) }`);
+        }
+      }
     }
     const entitlementFile = path.join(plistsDir, `${ entitlementName }-entitlement.plist`);
 
@@ -188,7 +205,11 @@ export async function sign(workDir: string): Promise<string[]> {
     return spawnFile('codesign', ['--sign', certFingerprint, '--timestamp', f], { stdio: 'inherit' });
   }));
 
-  return Object.values([dmgRenamedFile, zipFile]);
+  const rddSource = path.join(appDir, 'Contents/Resources/darwin/bin/rdd');
+  const rddTarget = path.join(process.cwd(), 'dist', `rdd.${ config.extraMetadata.version }.${ process.platform }.${ productArch }`);
+  await fs.promises.copyFile(rddSource, rddTarget, fs.constants.COPYFILE_FICLONE);
+
+  return [dmgRenamedFile, zipFile, rddTarget];
 }
 
 /**
