@@ -77,8 +77,9 @@ export function getRDDPath(useCached = true): string {
       } catch { /* ignore */ }
     }
 
+    // For unpackaged builds, look into the RDD directory.
     const relativePath = path.join(
-      process.cwd(), 'resources', process.platform, 'bin', exeName);
+      process.cwd(), 'rdd', 'bin', exeName);
     try {
       fs.accessSync(relativePath, fs.constants.X_OK);
       return relativePath;

@@ -33,6 +33,11 @@ runs:
     shell: powershell
     run: .\scripts\windows-setup.ps1 -SkipVisualStudio -SkipTools
 
+  - name: Build RDD
+    shell: bash
+    run: make build-rdd
+    working-directory: rdd
+
   - run: yarn install --immutable
     shell: bash
 

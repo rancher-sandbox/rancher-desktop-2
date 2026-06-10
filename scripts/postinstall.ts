@@ -2,6 +2,7 @@ import os from 'os';
 import path from 'path';
 
 import { Electron } from '@/scripts/dependencies/electron';
+import { RDD } from '@/scripts/dependencies/rdd';
 import * as tools from '@/scripts/dependencies/tools';
 import { Wix } from '@/scripts/dependencies/wix';
 import buildUtils from '@/scripts/lib/build-utils';
@@ -56,6 +57,7 @@ const vmDependencies: Dependency[] = [];
 const hostDependencies = [
   new tools.Steve(),
   new Electron(),
+  new RDD(),
 ];
 
 async function downloadDependencies(items: DependencyWithContext[]): Promise<void> {

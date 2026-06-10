@@ -35,7 +35,7 @@ describe('getRDDPath', () => {
   beforeAll(async() => {
     resourcesPath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'r-d-a-paths-'));
     packagedPath = path.join(resourcesPath, process.platform, 'bin', exeName);
-    relativePath = path.join(process.cwd(), 'resources', process.platform, 'bin', exeName);
+    relativePath = path.join(process.cwd(), 'rdd', 'bin', exeName);
     environmentPath = path.join(resourcesPath, exeName);
   });
   afterAll(async() => {
@@ -63,6 +63,7 @@ describe('getRDDPath', () => {
   describe('when not packaged', () => {
     beforeEach(() => {
       jest.replaceProperty(modules.electron.app, 'isPackaged', false);
+      modules.fs.accessSync.mockClear();
     });
     it('should return relative path if it exists', () => {
       const actual = getRDDPath(false);

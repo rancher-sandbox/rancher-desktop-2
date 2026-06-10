@@ -16,6 +16,11 @@ extraResources:
   - '!**/*.tgz'
   - '!**/*.xz'
   - '!**/*.zip'
+- from: rdd/bin
+  to: ${platform}/bin/
+  filter:
+  - rdd
+  - rdd.exe
 files:
 - dist/app/**/*
 - '!**/node_modules/*/prebuilds/!(${platform}*)/*.node'
