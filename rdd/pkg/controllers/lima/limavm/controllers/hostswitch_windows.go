@@ -7,12 +7,15 @@
 package controllers
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"sync"
 	"time"
 
@@ -175,6 +178,7 @@ func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger
 		logger.Error(err, "Failed to create virtual network")
 		return
 	}
+	defer unexposeAllForwards(logger, vn)
 
 	// Set up the API listener before starting errgroup goroutines so a
 	// failure here does not leak goroutines.
@@ -286,6 +290,62 @@ func newVirtualNetworkConfig(subnet hostSwitchSubnet) types.Configuration {
 		},
 		GatewayVirtualIPs: []string{subnet.StaticDNSHost},
 	}
+}
+
+// unexposeAllForwards closes every host listener the forwarder API opened on
+// this virtual network. gvisor-tap-vsock never closes these listeners when the
+// network is torn down, and the host-switch runs in the long-lived controller,
+// so a port still exposed at teardown keeps its host port bound after the VM
+// is gone: the next boot cannot re-expose it (EADDRINUSE), and connections
+// route into the dead network with no guest attached ("no route to host")
+// until rdd exits.
+func unexposeAllForwards(logger logr.Logger, vn *virtualnetwork.VirtualNetwork) {
+	var forwards []struct {
+		Local    string `json:"local"`
+		Protocol string `json:"protocol"`
+	}
+	all, err := requestVN(vn, http.MethodGet, "/services/forwarder/all", nil)
+	if err != nil {
+		logger.Error(err, "Failed to list exposed forwards for teardown")
+		return
+	}
+	if err := json.Unmarshal(all.Body.Bytes(), &forwards); err != nil {
+		logger.Error(err, "Failed to list exposed forwards for teardown")
+		return
+	}
+	for _, fwd := range forwards {
+		body, err := json.Marshal(fwd)
+		if err != nil {
+			logger.Error(err, "Failed to marshal forward for teardown",
+				"local", fwd.Local, "protocol", fwd.Protocol)
+			continue
+		}
+		rec, err := requestVN(vn, http.MethodPost, "/services/forwarder/unexpose", body)
+		if err != nil {
+			logger.Error(err, "Failed to unexpose forward at teardown",
+				"local", fwd.Local, "protocol", fwd.Protocol)
+			continue
+		}
+		logger.Info("Unexposed forward at teardown",
+			"local", fwd.Local, "protocol", fwd.Protocol, "status", rec.Code)
+	}
+}
+
+// requestVN performs an in-process request against the virtual network's
+// services mux and returns the response recorder. The mux serves the forwarder
+// API under /services/forwarder/. A nil body sends an empty request.
+func requestVN(vn *virtualnetwork.VirtualNetwork, method, path string, body []byte) (*httptest.ResponseRecorder, error) {
+	var r io.Reader = http.NoBody
+	if body != nil {
+		r = bytes.NewReader(body)
+	}
+	req, err := http.NewRequestWithContext(context.Background(), method, path, r)
+	if err != nil {
+		return nil, err
+	}
+	rec := httptest.NewRecorder()
+	vn.ServicesMux().ServeHTTP(rec, req)
+	return rec, nil
 }
 
 // --- Vsock handshake ---
