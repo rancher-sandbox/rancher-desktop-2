@@ -161,11 +161,28 @@ func applySpecToTemplate(baseTemplate string, spec v1alpha1.AppSpec, kubernetesP
 		fmt.Sprintf("  HOST_HOME_GUEST: %q", toLinuxPath(hostHome)),
 		fmt.Sprintf("  HOST_INSTANCE_CONFIG: %q", toLinuxPath(instance.K3sConfig())),
 		fmt.Sprintf("  VM_SWITCH_LOG: %q", toLinuxPath(filepath.Join(instance.LogDir(), "vm-switch.log"))),
+		fmt.Sprintf("  NETWORK_SETUP_EXTRA_ARGS: %q", networkSetupExtraArgs()),
 		fmt.Sprintf("  KUBERNETES_ENABLED: %v", spec.Kubernetes.Enabled),
 		fmt.Sprintf("  KUBERNETES_VERSION: %s", spec.Kubernetes.Version),
 		fmt.Sprintf("  KUBERNETES_PORT: %d", kubernetesPort),
 		"",
 	}, "\n"), nil
+}
+
+// networkSetupExtraArgs returns the diagnostic vm-switch logging flags under
+// RDD_KEEP_LOGS, empty otherwise. --trace-packets is gated separately behind
+// RDD_TRACE_PACKETS because it captures every packet sent or received, decodes
+// it, and writes it to the log. This significantly affects throughput and
+// timing, which in turn can change the failures it is meant to capture.
+func networkSetupExtraArgs() string {
+	if os.Getenv("RDD_KEEP_LOGS") == "" {
+		return ""
+	}
+	args := "--vm-switch-logfile-append"
+	if os.Getenv("RDD_TRACE_PACKETS") != "" {
+		args += " --trace-packets"
+	}
+	return args
 }
 
 // toLinuxPath converts a host path to a Linux-accessible path inside a Lima VM.

@@ -53,6 +53,13 @@ provision:
   content: |
     [Service]
     Environment=VM_SWITCH_LOG={{printf "%q" .Param.VM_SWITCH_LOG}}
+# Diagnostic vm-switch logging flags from networkSetupExtraArgs(); empty
+# (the distro default) outside RDD_KEEP_LOGS.
+- mode: data
+  path: /etc/systemd/system/network-setup.service.d/extra-args.conf
+  content: |
+    [Service]
+    Environment=NETWORK_SETUP_EXTRA_ARGS={{printf "%q" .Param.NETWORK_SETUP_EXTRA_ARGS}}
 - mode: system
   script: |
     #!/bin/bash

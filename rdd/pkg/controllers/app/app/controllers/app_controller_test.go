@@ -5,10 +5,13 @@
 package controllers
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"os"
 	"strings"
 	"testing"
+	"text/template"
 
 	"gotest.tools/v3/assert"
 
@@ -18,6 +21,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/yaml"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
 	limav1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
@@ -606,4 +610,72 @@ func Test_Reconcile_clearsKubernetesPortOnDisable(t *testing.T) {
 	assert.NilError(t, c.Get(context.Background(), client.ObjectKey{Name: appName}, result))
 	assert.Equal(t, result.Status.KubernetesPort, 0,
 		"expected Status.KubernetesPort to be cleared when Kubernetes is disabled")
+}
+
+func Test_networkSetupExtraArgs(t *testing.T) {
+	t.Run("unset RDD_KEEP_LOGS yields no extra args", func(t *testing.T) {
+		t.Setenv("RDD_KEEP_LOGS", "")
+		t.Setenv("RDD_TRACE_PACKETS", "")
+		assert.Equal(t, networkSetupExtraArgs(), "")
+	})
+	t.Run("RDD_KEEP_LOGS without tracing yields append only", func(t *testing.T) {
+		t.Setenv("RDD_KEEP_LOGS", "1")
+		t.Setenv("RDD_TRACE_PACKETS", "")
+		assert.Equal(t, networkSetupExtraArgs(), "--vm-switch-logfile-append")
+	})
+	t.Run("RDD_TRACE_PACKETS adds the trace flag", func(t *testing.T) {
+		t.Setenv("RDD_KEEP_LOGS", "1")
+		t.Setenv("RDD_TRACE_PACKETS", "1")
+		assert.Equal(t, networkSetupExtraArgs(), "--vm-switch-logfile-append --trace-packets")
+	})
+}
+
+// renderProvisionContent mirrors Lima's executeGuestTemplate: it runs the guest
+// template engine over a provision file's content with the given Param map, the
+// only datum the network-setup drop-in references.
+func renderProvisionContent(t *testing.T, content string, param map[string]string) string {
+	t.Helper()
+	tmpl, err := template.New("").Parse(content)
+	assert.NilError(t, err)
+	var out bytes.Buffer
+	assert.NilError(t, tmpl.Execute(&out, map[string]any{"Param": param}))
+	return out.String()
+}
+
+func Test_limaTemplate_networkSetupExtraArgsDropin(t *testing.T) {
+	t.Parallel()
+
+	data, err := os.ReadFile("../lima-template.yaml")
+	assert.NilError(t, err)
+
+	var doc struct {
+		Provision []struct {
+			Path    string `json:"path"`
+			Content string `json:"content"`
+		} `json:"provision"`
+	}
+	assert.NilError(t, yaml.Unmarshal(data, &doc))
+
+	const dropinPath = "/etc/systemd/system/network-setup.service.d/extra-args.conf"
+	var content string
+	for _, p := range doc.Provision {
+		if p.Path == dropinPath {
+			content = p.Content
+			break
+		}
+	}
+	assert.Assert(t, content != "", "no provision entry writes %s", dropinPath)
+
+	// Empty param renders the distro's own default (an empty value).
+	blank := renderProvisionContent(t, content, map[string]string{"NETWORK_SETUP_EXTRA_ARGS": ""})
+	assert.Assert(t, strings.Contains(blank, `Environment=NETWORK_SETUP_EXTRA_ARGS=""`),
+		"got:\n%s", blank)
+
+	// Quoted as a whole so the space stays one env var; the unit's unquoted
+	// $NETWORK_SETUP_EXTRA_ARGS splits it back into args.
+	got := renderProvisionContent(t, content,
+		map[string]string{"NETWORK_SETUP_EXTRA_ARGS": "--vm-switch-logfile-append --trace-packets"})
+	assert.Assert(t, strings.Contains(got,
+		`Environment=NETWORK_SETUP_EXTRA_ARGS="--vm-switch-logfile-append --trace-packets"`),
+		"got:\n%s", got)
 }

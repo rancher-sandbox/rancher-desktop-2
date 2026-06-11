@@ -14,6 +14,7 @@ These variables control RDD behavior. Set them before running `rdd` commands.
 | `RDD_LOG_DIR` | Override the logging directory; usually used for tests. | unset |
 | `RDD_LOG_LEVEL` | Sets the log level (`fatal`, `error`, `warn`, `info`, `debug`, `trace`). Overridden by `--log-level` flag. When unset, defaults to `debug` in developer mode, `warn` otherwise. | unset |
 | `RDD_LOG_TITLE` | When set, writes this string as the first line of each new log file. Useful for identifying log files from specific test runs or sessions. | unset |
+| `RDD_TRACE_PACKETS` | Adds `--trace-packets` to the guest vm-switch network setup, logging every packet sent or received. Requires `RDD_KEEP_LOGS`, and affects throughput and timing, so use it only when diagnosing network failures. | unset |
 | `RDD_VM_CPUS` | Overrides the app VM's CPU count (the Lima template default is 2). Intended for CI, where runner sizing differs from user machines. A set-but-invalid value is an error, not a fallback. To be replaced by an App spec property. | unset |
 
 ### BATS Test Variables
