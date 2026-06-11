@@ -16,6 +16,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"time"
 
@@ -96,6 +97,16 @@ const (
 	vsockHandshakePort = 6669
 	vsockListenPort    = 6656
 	handshakeTimeout   = 5 * time.Minute
+
+	// relayMinDuration is how long a vsock data connection must last before we
+	// treat it as a real relay. A connection that closes sooner likely carried
+	// no frames; the byte counters in the diagnostics show whether traffic
+	// actually flowed.
+	relayMinDuration = 5 * time.Second
+	// relayDropWarnThreshold is the number of consecutive short-lived
+	// connections that escalates the quiet per-drop logging to a single error
+	// carrying the diagnostics.
+	relayDropWarnThreshold = 3
 
 	// signaturePhrase identifies our distro among all running Hyper-V VMs.
 	// This value is a protocol contract with the guest-side network-setup
@@ -210,6 +221,7 @@ func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger
 
 	// Accept vsock connections and feed them into the virtual network.
 	g.Go(func() error {
+		var immediateDrops int
 		for {
 			conn, err := ln.Accept()
 			if err != nil {
@@ -221,10 +233,32 @@ func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger
 			// AcceptStdio blocks until the connection closes. This is
 			// intentional: each VM runs a single vm-switch process, so
 			// reconnections are serial (old connection EOF, then new accept).
-			if err := vn.AcceptStdio(ctx, conn); err != nil {
-				logger.Error(err, "Failed to accept connection into virtual network")
-			} else {
-				logger.Info("Accepted vsock connection")
+			start := time.Now()
+			err = vn.AcceptStdio(ctx, conn)
+			elapsed := time.Since(start)
+			switch {
+			case err == nil:
+				immediateDrops = 0
+				logger.Info("Accepted vsock connection", "duration", elapsed.String())
+			case elapsed < relayMinDuration:
+				// A data connection that closes within relayMinDuration likely
+				// relayed no frames. One short drop is routine churn, so log it
+				// quietly; a run of them while the handshake keeps succeeding is
+				// a dead data plane behind a live bridge, so escalate once with
+				// the diagnostics attached.
+				immediateDrops++
+				logger.V(1).Info("Vsock data connection closed soon after opening",
+					"duration", elapsed.String(), "consecutiveDrops", immediateDrops)
+				if immediateDrops == relayDropWarnThreshold {
+					// Duration is only a heuristic; the byte counters are the
+					// evidence of whether any frames actually flowed.
+					logger.Error(err, "Vsock data plane appears stalled: connections keep closing within seconds; if no frames are relaying the guest has no DHCP/DNS/NAT. Check the guest vm-switch",
+						append([]any{"duration", elapsed.String(), "port", vsockListenPort},
+							vnDiagnostics(vn)...)...)
+				}
+			default:
+				immediateDrops = 0
+				logger.Error(err, "Failed to accept connection into virtual network", "duration", elapsed.String())
 			}
 		}
 	})
@@ -251,6 +285,26 @@ func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger
 		}
 		return nil
 	})
+
+	// Snapshot the CAM table and stack counters once a minute so a diagnostic
+	// run (CI logs at trace) records the host-to-guest delivery state without a
+	// debugger. The output is V(1) and vnDiagnostics queries the network on each
+	// tick, so spawn the goroutine only when V(1) is enabled rather than ticking
+	// and discarding the result.
+	if vl := logger.V(1); vl.Enabled() {
+		g.Go(func() error {
+			ticker := time.NewTicker(time.Minute)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return nil
+				case <-ticker.C:
+					vl.Info("Virtual network diagnostics", vnDiagnostics(vn)...)
+				}
+			}
+		})
+	}
 
 	logger.Info("Host-switch running", "subnet", subnet.SubnetCIDR, "gateway", subnet.GatewayIP)
 
@@ -346,6 +400,36 @@ func requestVN(vn *virtualnetwork.VirtualNetwork, method, path string, body []by
 	rec := httptest.NewRecorder()
 	vn.ServicesMux().ServeHTTP(rec, req)
 	return rec, nil
+}
+
+// vnDiagnostics snapshots the host-to-guest delivery state from the stock /cam
+// and /stats endpoints: the switch CAM table, ARP counters, and switch byte
+// counters (a post-DHCP egress wedge freezes bytesReceived while the relay
+// stays up). Returned as logr key-value pairs.
+func vnDiagnostics(vn *virtualnetwork.VirtualNetwork) []any {
+	var stats struct {
+		ARP           map[string]any `json:"ARP"`
+		BytesSent     uint64         `json:"BytesSent"`
+		BytesReceived uint64         `json:"BytesReceived"`
+	}
+	arp := "unavailable"
+	if rec, err := requestVN(vn, http.MethodGet, "/stats", nil); err == nil {
+		if err := json.Unmarshal(rec.Body.Bytes(), &stats); err == nil {
+			if b, err := json.Marshal(stats.ARP); err == nil {
+				arp = string(b)
+			}
+		}
+	}
+	var cam string
+	if rec, err := requestVN(vn, http.MethodGet, "/cam", nil); err == nil {
+		cam = strings.TrimSpace(rec.Body.String())
+	}
+	return []any{
+		"cam", cam,
+		"bytesSent", stats.BytesSent,
+		"bytesReceived", stats.BytesReceived,
+		"arp", arp,
+	}
 }
 
 // --- Vsock handshake ---
