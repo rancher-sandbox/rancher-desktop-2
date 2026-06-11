@@ -46,7 +46,11 @@ BuildRequires:  ImageMagick
 
 %if 0%{?debian}
 Requires: qemu-utils
+%ifarch aarch64
+Requires: qemu-system-arm
+%else
 Requires: qemu-system-x86
+%endif
 Requires: pass
 Requires: openssh-client
 # To enumerate system certificates
@@ -65,7 +69,6 @@ Requires: libgbm1
 Requires: libgcc1
 Requires: libgdk-pixbuf-2.0-0
 Requires: libglib2.0-0
-Requires: libglib2.0-dev
 Requires: libgtk-3-0
 Requires: libnspr4
 Requires: libnss3
@@ -178,6 +181,7 @@ mv resources/linux/rancher-desktop.appdata.xml share/metainfo/rancher-desktop.ap
 mkdir -p "%{buildroot}%{_prefix}/bin" "%{buildroot}/opt/%{name}"
 
 cp -ra ./share "%{buildroot}%{_prefix}"
+rm -rf ./share
 cp -ra ./* "%{buildroot}/opt/%{name}"
 
 # Link to the binary
@@ -192,6 +196,7 @@ true
 %defattr(-,root,root,-)
 %dir /opt/%{name}
 /opt/%{name}*
+%exclude /opt/%{name}/chrome-sandbox
 %attr(4755,root,root) /opt/%{name}/chrome-sandbox
 %{_bindir}/rancher-desktop
 %{_prefix}/share/applications/rancher-desktop.desktop
