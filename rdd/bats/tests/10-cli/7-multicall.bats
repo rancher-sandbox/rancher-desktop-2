@@ -16,8 +16,8 @@ link_rdd_as() { # <name>
 
 @test 'a kubectl symlink runs the embedded kubectl' {
     link_rdd_as "kubectl${EXE}"
-    run -0 "${BATS_TEST_TMPDIR}/kubectl${EXE}" version --client
-    assert_line --partial "Client Version"
+    run -0 "${BATS_TEST_TMPDIR}/kubectl${EXE}" --help
+    assert_line --partial 'kubectl controls the Kubernetes cluster manager.'
 }
 
 @test 'a yq symlink runs the embedded yq' {
@@ -35,7 +35,6 @@ link_rdd_as() { # <name>
 
 @test 'an unrecognized name runs rdd normally' {
     link_rdd_as "notacommand${EXE}"
-    run -0 "${BATS_TEST_TMPDIR}/notacommand${EXE}" version
-    # Matches a git version tag or a commit hash, like 1-version.bats.
-    assert_output --regexp '^(v[0-9]+\.[0-9]+\.[0-9]+|[a-f0-9]{7,})'
+    run -0 "${BATS_TEST_TMPDIR}/notacommand${EXE}" --help
+    assert_line --partial 'RDD manages the Rancher Desktop 2 background services.'
 }

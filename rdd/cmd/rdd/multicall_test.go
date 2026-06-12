@@ -18,6 +18,7 @@ func TestMultiCallArgs(t *testing.T) {
 	}{
 		{"rdd runs normally", []string{"rdd", "start"}, []string{"rdd", "start"}},
 		{"rdd.exe runs normally", []string{"rdd.exe", "start"}, []string{"rdd.exe", "start"}},
+		{"rdd with a multi-call subcommand", []string{"rdd", "kubectl", "cluster-info"}, []string{"rdd", "kubectl", "cluster-info"}},
 		{"kubectl symlink", []string{"kubectl", "get", "pods"}, []string{"kubectl", "kubectl", "get", "pods"}},
 		{"kubectl with path", []string{"/usr/local/bin/kubectl", "get"}, []string{"/usr/local/bin/kubectl", "kubectl", "get"}},
 		{"kubectl.exe", []string{"kubectl.exe", "version"}, []string{"kubectl.exe", "kubectl", "version"}},
