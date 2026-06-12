@@ -13,6 +13,7 @@ These variables control RDD behavior. Set them before running `rdd` commands.
 | `RDD_KEEP_LOGS` | Preserves logs for post-mortem debugging. See [Log Preservation](#log-preservation) for details. | unset |
 | `RDD_LOG_LEVEL` | Sets the log level (`fatal`, `error`, `warn`, `info`, `debug`, `trace`). Overridden by `--log-level` flag. When unset, defaults to `debug` in developer mode, `warn` otherwise. | unset |
 | `RDD_LOG_TITLE` | When set, writes this string as the first line of each new log file. Useful for identifying log files from specific test runs or sessions. | unset |
+| `RDD_VM_TELEMETRY` | When set, the app VM runs a telemetry sampler that logs substrate probes (load, PSI, CPU split, per-process top, single-thread speed, disk latency) to the serial console every 15s. CI enables it so artifacts and support bundles carry measurements; analyze captures with `scripts/probe-analyze.go`. | unset |
 
 ### BATS Test Variables
 

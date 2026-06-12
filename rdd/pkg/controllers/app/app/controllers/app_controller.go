@@ -112,6 +112,11 @@ func (r *AppReconciler) kubernetesEnabled(ctx context.Context) bool {
 	return slices.Contains(enabled, v1alpha1.KubernetesControllerName)
 }
 
+// vmTelemetryEnv enables the guest telemetry sampler in the Lima template.
+// CI sets it so the guest logs substrate probes to the serial console;
+// user VMs keep the sampler off.
+const vmTelemetryEnv = "RDD_VM_TELEMETRY"
+
 func applySpecToTemplate(baseTemplate string, spec v1alpha1.AppSpec, kubernetesPort int) (string, error) {
 	hostHome, err := os.UserHomeDir()
 	if err != nil {
@@ -127,6 +132,7 @@ func applySpecToTemplate(baseTemplate string, spec v1alpha1.AppSpec, kubernetesP
 		fmt.Sprintf("  KUBERNETES_ENABLED: %v", spec.Kubernetes.Enabled),
 		fmt.Sprintf("  KUBERNETES_VERSION: %s", spec.Kubernetes.Version),
 		fmt.Sprintf("  KUBERNETES_PORT: %d", kubernetesPort),
+		fmt.Sprintf("  VM_TELEMETRY: %v", os.Getenv(vmTelemetryEnv) != ""),
 		"",
 	}, "\n"), nil
 }

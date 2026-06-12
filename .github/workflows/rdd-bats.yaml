@@ -206,6 +206,14 @@ jobs:
         output-dir: rdd/rdd-logs/_diag
       continue-on-error: true
 
+    - name: "macOS: start host telemetry sampler"
+      if: needs.check-paths.outputs.should-run && runner.os == 'macOS'
+      uses: ./.github/actions/macos-telemetry-sampler
+      with:
+        command: start
+        output-dir: rdd/rdd-logs/_diag
+      continue-on-error: true
+
     - name: Configure BATS targets
       if: needs.check-paths.outputs.should-run
       shell: bash
@@ -231,6 +239,17 @@ jobs:
       env:
         RDD_TRACE: true
         RDD_LOG_LEVEL: trace
+        # Run the in-guest telemetry sampler on every platform; the serial
+        # console captures it under QEMU and VZ (WSL2 capture is a follow-up).
+        RDD_VM_TELEMETRY: "1"
+
+    - name: "macOS: stop host telemetry sampler"
+      if: always() && needs.check-paths.outputs.should-run && runner.os == 'macOS'
+      uses: ./.github/actions/macos-telemetry-sampler
+      with:
+        command: stop
+        output-dir: rdd/rdd-logs/_diag
+      continue-on-error: true
 
     - name: "Windows: stop typeperf sampler"
       if: always() && needs.check-paths.outputs.should-run && runner.os == 'Windows'

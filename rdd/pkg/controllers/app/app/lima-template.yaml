@@ -44,6 +44,65 @@ provision:
     KUBERNETES_ENABLED={{.Param.KUBERNETES_ENABLED}}
     KUBERNETES_VERSION={{.Param.KUBERNETES_VERSION}}
     KUBERNETES_PORT={{.Param.KUBERNETES_PORT}}
+# Substrate telemetry sampler, enabled host-side via RDD_VM_TELEMETRY (CI
+# sets it; user VMs skip the block). Every 15s it logs scheduling and I/O
+# health to the serial console, so CI artifacts and support bundles carry
+# measurements of the guest substrate: load, PSI when the kernel offers it,
+# raw /proc/stat for user/system/iowait deltas, a busybox-top process
+# listing (second iteration — the first has no deltas), a single-threaded
+# hash as the vCPU-count-independent speed probe, and disk-latency probes
+# when the VM has a virtio disk (WSL2 has none). Runs before the main
+# provision script to cover the k3s install phase. Analyze captures with
+# scripts/probe-analyze.go.
+- mode: system
+  script: |
+    #!/bin/bash
+
+    [[ ${PARAM_VM_TELEMETRY:-false} == "true" ]] || exit 0
+
+    (
+        exec >/dev/console 2>&1
+        echo "PROBE start kernel=$(uname -r)"
+        blocks_4k=0
+        if [[ -b /dev/vda ]]; then
+            blocks_4k=$(($(blockdev --getsz /dev/vda) / 8))
+        fi
+        # Fixed blob for the single-thread probe; after the first pass it
+        # reads from the page cache, so the hash time measures one core's
+        # effective speed (host core speed + steal) independent of the
+        # vCPU count.
+        dd if=/dev/zero of=/var/tmp/.probe-blob bs=1M count=64 status=none
+        while true; do
+            echo "PROBE tick $(date -u +%H:%M:%S) load $(cat /proc/loadavg)"
+            for f in io cpu memory; do
+                if [[ -r /proc/pressure/$f ]]; then
+                    echo "PROBE psi-$f $(tr '\n' ';' </proc/pressure/$f)"
+                else
+                    echo "PROBE psi-$f absent"
+                fi
+            done
+            echo "PROBE cpustat $(head -1 /proc/stat)"
+            if command -v busybox >/dev/null; then
+                busybox top -b -n 2 -d 1 2>/dev/null | awk '/^Mem:/{i++} i==2' \
+                    | head -22 | sed 's/^/PROBE ptop /'
+            fi
+            t0=$(date +%s%N)
+            sha256sum /var/tmp/.probe-blob >/dev/null 2>&1 || true
+            echo "PROBE st-hash-ms $((($(date +%s%N) - t0) / 1000000))"
+            t0=$(date +%s%N)
+            dd if=/dev/zero of=/var/tmp/.probe bs=4096 count=8 conv=fsync status=none || true
+            echo "PROBE syncwrite-us $((($(date +%s%N) - t0) / 1000))"
+            if ((blocks_4k > 16)); then
+                echo "PROBE diskstats $(grep ' vda ' /proc/diskstats || true)"
+                t0=$(date +%s%N)
+                dd if=/dev/vda of=/dev/null bs=4096 count=16 iflag=direct \
+                    skip=$((RANDOM % (blocks_4k - 16))) status=none || true
+                echo "PROBE directread-us $((($(date +%s%N) - t0) / 1000))"
+            fi
+            sleep 15
+        done
+    ) &
+    disown
 - mode: system
   script: |
     #!/bin/bash

@@ -1,0 +1,46 @@
+name: macOS Telemetry Sampler
+description: >-
+  Low-overhead host sampling on macOS runners. Every ~15s capture a
+  timestamp, iostat disk throughput, a two-sample top (per-process %CPU
+  needs the second sample), a ps listing, and vm_stat counters. The log
+  attributes runner-side CPU and disk pressure when a Lima VM misbehaves.
+
+inputs:
+  command:
+    description: '"start" to launch the sampler, "stop" to terminate it.'
+    required: true
+  output-dir:
+    description: Directory for host-probe.log and the sampler pid file.
+    required: true
+
+runs:
+  using: composite
+  steps:
+  - name: Start sampler
+    if: runner.os == 'macOS' && inputs.command == 'start'
+    shell: bash
+    run: |
+      mkdir -p "${{ inputs.output-dir }}"
+      nohup bash -c 'while true; do
+          date -u +%FT%TZ
+          iostat -d -w 1 -c 2
+          top -l 2 -n 8 -stats pid,command,cpu,state -o cpu | tail -n 20
+          ps -Ao pid,pcpu,state,comm -r | head -n 12
+          vm_stat | head -n 8
+          sleep 15
+      done' >> "${{ inputs.output-dir }}/host-probe.log" 2>&1 &
+      echo $! > "${{ inputs.output-dir }}/host-probe.pid"
+      echo "host sampler started, pid=$(cat "${{ inputs.output-dir }}/host-probe.pid")"
+
+  - name: Stop sampler
+    if: runner.os == 'macOS' && inputs.command == 'stop'
+    shell: bash
+    run: |
+      pidfile="${{ inputs.output-dir }}/host-probe.pid"
+      if [[ -f "${pidfile}" ]]; then
+        kill "$(cat "${pidfile}")" 2>/dev/null || true
+        rm -f "${pidfile}"
+      fi
+      if [[ -f "${{ inputs.output-dir }}/host-probe.log" ]]; then
+        wc -l "${{ inputs.output-dir }}/host-probe.log"
+      fi

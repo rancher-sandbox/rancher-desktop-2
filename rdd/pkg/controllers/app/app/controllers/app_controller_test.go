@@ -454,6 +454,23 @@ func Test_applySpecToTemplate(t *testing.T) {
 	}
 }
 
+// Test_applySpecToTemplate_VMTelemetry is not parallel: t.Setenv forbids it.
+func Test_applySpecToTemplate_VMTelemetry(t *testing.T) {
+	spec := v1alpha1.AppSpec{Kubernetes: v1alpha1.KubernetesSpec{Enabled: false}}
+
+	t.Setenv(vmTelemetryEnv, "")
+	got, err := applySpecToTemplate("", spec, 0)
+	assert.NilError(t, err)
+	assert.Assert(t, strings.Contains(got, "  VM_TELEMETRY: false"),
+		"unset env must disable the sampler, got:\n%s", got)
+
+	t.Setenv(vmTelemetryEnv, "1")
+	got, err = applySpecToTemplate("", spec, 0)
+	assert.NilError(t, err)
+	assert.Assert(t, strings.Contains(got, "  VM_TELEMETRY: true"),
+		"set env must enable the sampler, got:\n%s", got)
+}
+
 // newTestScheme returns a scheme with all types the AppReconciler touches.
 func newTestScheme(t *testing.T) *k8sruntime.Scheme {
 	t.Helper()
