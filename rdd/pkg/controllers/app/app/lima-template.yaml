@@ -47,19 +47,21 @@ provision:
 # Redirect vm-switch's log to a host-mounted file (under the service log dir) so
 # it survives VM teardown and is collected with the other instance logs. The
 # distro's network-setup.service defaults VM_SWITCH_LOG to an in-guest path; this
-# drop-in overrides it and is written before systemd loads the unit.
+# drop-in overrides it. The unit runs only under WSL (ConditionVirtualization=wsl);
+# elsewhere this file is unused. Quote the whole assignment per systemd.exec so a
+# path with spaces stays one env var; quoting only the value would not.
 - mode: data
   path: /etc/systemd/system/network-setup.service.d/log-path.conf
   content: |
     [Service]
-    Environment=VM_SWITCH_LOG={{printf "%q" .Param.VM_SWITCH_LOG}}
+    Environment="VM_SWITCH_LOG={{.Param.VM_SWITCH_LOG}}"
 # Diagnostic vm-switch logging flags from networkSetupExtraArgs(); empty
-# (the distro default) outside RDD_KEEP_LOGS.
+# (the distro default) when RDD_KEEP_LOGS is not set.
 - mode: data
   path: /etc/systemd/system/network-setup.service.d/extra-args.conf
   content: |
     [Service]
-    Environment=NETWORK_SETUP_EXTRA_ARGS={{printf "%q" .Param.NETWORK_SETUP_EXTRA_ARGS}}
+    Environment="NETWORK_SETUP_EXTRA_ARGS={{.Param.NETWORK_SETUP_EXTRA_ARGS}}"
 # Stream guest journals and lima-init.log (which die with the VM) to the host
 # log dir so CI artifacts carry them. Empty GUEST_LOG_DIR (no RDD_KEEP_LOGS)
 # makes this a no-op. The capture units are transient, restarted each boot.

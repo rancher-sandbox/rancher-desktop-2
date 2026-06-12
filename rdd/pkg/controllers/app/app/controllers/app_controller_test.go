@@ -619,6 +619,11 @@ func Test_networkSetupExtraArgs(t *testing.T) {
 		t.Setenv("RDD_TRACE_PACKETS", "")
 		assert.Equal(t, networkSetupExtraArgs(), "")
 	})
+	t.Run("RDD_TRACE_PACKETS without RDD_KEEP_LOGS yields no extra args", func(t *testing.T) {
+		t.Setenv("RDD_KEEP_LOGS", "")
+		t.Setenv("RDD_TRACE_PACKETS", "1")
+		assert.Equal(t, networkSetupExtraArgs(), "")
+	})
 	t.Run("RDD_KEEP_LOGS without tracing yields append only", func(t *testing.T) {
 		t.Setenv("RDD_KEEP_LOGS", "1")
 		t.Setenv("RDD_TRACE_PACKETS", "")
@@ -680,14 +685,15 @@ func Test_limaTemplate_networkSetupExtraArgsDropin(t *testing.T) {
 
 	// Empty param renders the distro's own default (an empty value).
 	blank := renderProvisionContent(t, content, map[string]string{"NETWORK_SETUP_EXTRA_ARGS": ""})
-	assert.Assert(t, strings.Contains(blank, `Environment=NETWORK_SETUP_EXTRA_ARGS=""`),
+	assert.Assert(t, strings.Contains(blank, `Environment="NETWORK_SETUP_EXTRA_ARGS="`),
 		"got:\n%s", blank)
 
-	// Quoted as a whole so the space stays one env var; the unit's unquoted
-	// $NETWORK_SETUP_EXTRA_ARGS splits it back into args.
+	// The value is a single env var. network-setup.service's ExecStart references
+	// it unbraced as $NETWORK_SETUP_EXTRA_ARGS, which systemd word-splits into
+	// separate arguments; braced ${...} would pass it as one argument.
 	got := renderProvisionContent(t, content,
 		map[string]string{"NETWORK_SETUP_EXTRA_ARGS": "--vm-switch-logfile-append --trace-packets"})
 	assert.Assert(t, strings.Contains(got,
-		`Environment=NETWORK_SETUP_EXTRA_ARGS="--vm-switch-logfile-append --trace-packets"`),
+		`Environment="NETWORK_SETUP_EXTRA_ARGS=--vm-switch-logfile-append --trace-packets"`),
 		"got:\n%s", got)
 }
