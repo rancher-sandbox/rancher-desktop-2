@@ -80,5 +80,5 @@ type ConfigMapReplicaSetList struct {
 // init registers the ConfigMapReplicaSet and ConfigMapReplicaSetList types
 // with the scheme builder, making them available to the Kubernetes API machinery.
 func init() {
-	SchemeBuilder.Register(&ConfigMapReplicaSet{}, &ConfigMapReplicaSetList{})
+	registerTypes(&ConfigMapReplicaSet{}, &ConfigMapReplicaSetList{})
 }

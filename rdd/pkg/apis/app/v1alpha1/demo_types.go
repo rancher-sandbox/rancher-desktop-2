@@ -74,7 +74,7 @@ type DemoList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&Demo{}, &DemoList{})
+	registerTypes(&Demo{}, &DemoList{})
 }
 
 // GetResourceNamespace implements the base.ResourceNamespace interface.

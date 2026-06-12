@@ -128,5 +128,5 @@ type LimaVMList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&LimaVM{}, &LimaVMList{})
+	registerTypes(&LimaVM{}, &LimaVMList{})
 }

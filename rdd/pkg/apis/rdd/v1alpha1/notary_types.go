@@ -52,5 +52,5 @@ type NotaryList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&Notary{}, &NotaryList{})
+	registerTypes(&Notary{}, &NotaryList{})
 }

@@ -34,7 +34,7 @@ type ContainerNamespaceList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(
+	registerTypes(
 		&ContainerNamespace{}, &ContainerNamespaceList{},
 	)
 }

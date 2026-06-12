@@ -273,7 +273,7 @@ type ImageScanRequestList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(
+	registerTypes(
 		&Image{}, &ImageList{},
 		&ImagePullRequest{}, &ImagePullRequestList{},
 		&ImagePushRequest{}, &ImagePushRequestList{},

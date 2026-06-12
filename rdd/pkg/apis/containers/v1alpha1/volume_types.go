@@ -146,7 +146,7 @@ type VolumeCreateRequestList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(
+	registerTypes(
 		&Volume{}, &VolumeList{},
 		&VolumeCreateRequest{}, &VolumeCreateRequestList{},
 	)

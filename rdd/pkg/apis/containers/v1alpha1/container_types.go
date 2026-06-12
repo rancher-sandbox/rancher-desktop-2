@@ -355,7 +355,7 @@ type ContainerCreateRequestList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(
+	registerTypes(
 		&Container{}, &ContainerList{},
 		&ContainerCreateRequest{}, &ContainerCreateRequestList{},
 	)

@@ -10,6 +10,8 @@
 package tokengetter
 
 import (
+	"context"
+
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1listers "k8s.io/client-go/listers/core/v1"
@@ -29,18 +31,18 @@ func NewGetterFromClient(secretLister v1listers.SecretLister, serviceAccountList
 	return clientGetter{secretLister, serviceAccountLister}
 }
 
-func (c clientGetter) GetServiceAccount(namespace, name string) (*v1.ServiceAccount, error) {
+func (c clientGetter) GetServiceAccount(_ context.Context, namespace, name string) (*v1.ServiceAccount, error) {
 	return c.serviceAccountLister.ServiceAccounts(namespace).Get(name)
 }
 
-func (c clientGetter) GetPod(_, name string) (*v1.Pod, error) {
+func (c clientGetter) GetPod(_ context.Context, _, name string) (*v1.Pod, error) {
 	return nil, apierrors.NewNotFound(v1.Resource("pods"), name)
 }
 
-func (c clientGetter) GetSecret(namespace, name string) (*v1.Secret, error) {
+func (c clientGetter) GetSecret(_ context.Context, namespace, name string) (*v1.Secret, error) {
 	return c.secretLister.Secrets(namespace).Get(name)
 }
 
-func (c clientGetter) GetNode(name string) (*v1.Node, error) {
+func (c clientGetter) GetNode(_ context.Context, name string) (*v1.Node, error) {
 	return nil, apierrors.NewNotFound(v1.Resource("nodes"), name)
 }

@@ -78,6 +78,7 @@ updates:
   - { dependency-name: k8s.io/controller-manager }
   - { dependency-name: k8s.io/cri-api }
   - { dependency-name: k8s.io/cri-client }
+  - { dependency-name: k8s.io/cri-streaming }
   - { dependency-name: k8s.io/csi-translation-lib }
   - { dependency-name: k8s.io/dynamic-resource-allocation }
   - { dependency-name: k8s.io/endpointslice }
@@ -95,6 +96,7 @@ updates:
   - { dependency-name: k8s.io/sample-apiserver }
   - { dependency-name: k8s.io/sample-cli-plugin }
   - { dependency-name: k8s.io/sample-controller }
+  - { dependency-name: k8s.io/streaming }
   groups:
     golang-x:
       patterns: [ golang.org/x/* ]

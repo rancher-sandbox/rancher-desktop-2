@@ -220,7 +220,7 @@ type AppList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&App{}, &AppList{})
+	registerTypes(&App{}, &AppList{})
 }
 
 // GetResourceNamespace implements the base.ResourceNamespace interface.
