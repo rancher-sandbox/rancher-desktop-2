@@ -48,9 +48,10 @@ fake_rdd() {
     assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/kubectl"
 }
 
-@test 'leaves the links untouched when started from outside the bundle' {
+@test 'leaves working links untouched when started standalone' {
     load_var FAKE_BIN DEST_DIR
-    # The standard rdd is not in a bundle, so its startup must not touch the links.
+    # The bundle run's links still resolve, so a standalone rdd leaves its own
+    # rdd and kubectl links alone and never touches docker or helm.
     rdd svc start
     assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/rdd${EXE}"
     assert_symlink_to "${FAKE_BIN}/docker" "${DEST_DIR}/docker"
@@ -71,4 +72,19 @@ fake_rdd() {
     assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/rdd${EXE}"
     assert_symlink_to "${FAKE_BIN}/docker" "${DEST_DIR}/docker"
     assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/kubectl"
+}
+
+@test 'repairs missing or dangling rdd and kubectl links when started standalone' {
+    load_var FAKE_BIN DEST_DIR
+    # Simulate an instance whose app was deleted: rdd's link dangles, kubectl is
+    # gone, and an unrelated tool link still resolves.
+    rm -f "${DEST_DIR}/rdd${EXE}" "${DEST_DIR}/kubectl"
+    ln -s "${DEST_DIR}/deleted/rdd${EXE}" "${DEST_DIR}/rdd${EXE}"
+    rdd svc start
+    # The standalone rdd repairs its own links to point at the running binary.
+    standalone="${PATH_REPO_ROOT}/bin/rdd${EXE}"
+    assert_symlink_to "${standalone}" "${DEST_DIR}/rdd${EXE}"
+    assert_symlink_to "${standalone}" "${DEST_DIR}/kubectl"
+    # The unrelated docker link from the bundle run is left in place.
+    assert_symlink_to "${FAKE_BIN}/docker" "${DEST_DIR}/docker"
 }

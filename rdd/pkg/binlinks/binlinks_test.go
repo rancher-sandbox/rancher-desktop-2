@@ -115,12 +115,52 @@ func TestLinkBinaries(t *testing.T) {
 	assert.Assert(t, slices.Equal(got, want), "binDir contents = %v, want %v", got, want)
 }
 
-// TestLinkBundledBinariesNoopWhenStandalone checks that LinkBundledBinaries is
-// a no-op outside the application bundle: the test binary's path never ends in
-// the bundled <resources>/<goos>/bin/rdd tail, so the instance bin directory is
-// never touched.
-func TestLinkBundledBinariesNoopWhenStandalone(t *testing.T) {
-	assert.NilError(t, LinkBundledBinaries())
+// TestEnsureSelfLinks checks the standalone path: a missing or dangling rdd or
+// kubectl link is repaired to point at the running executable, while a working
+// link and any unrelated entry are left untouched.
+func TestEnsureSelfLinks(t *testing.T) {
+	srcDir := t.TempDir()
+	execPath := filepath.Join(srcDir, "rdd")
+	assert.NilError(t, os.WriteFile(execPath, []byte("binary"), 0o755))
+
+	binDir := filepath.Join(t.TempDir(), "bin")
+	assert.NilError(t, os.MkdirAll(binDir, 0o755))
+
+	// A working rdd link to a still-present binary must survive.
+	appRdd := filepath.Join(srcDir, "app-rdd")
+	assert.NilError(t, os.WriteFile(appRdd, []byte("binary"), 0o755))
+	assert.NilError(t, os.Symlink(appRdd, filepath.Join(binDir, "rdd")))
+
+	// A dangling kubectl link must be replaced.
+	assert.NilError(t, os.Symlink(filepath.Join(srcDir, "gone"), filepath.Join(binDir, "kubectl")))
+
+	// An unrelated entry must be left untouched.
+	docker := filepath.Join(binDir, "docker")
+	assert.NilError(t, os.Symlink(filepath.Join(srcDir, "docker"), docker))
+
+	assert.NilError(t, ensureSelfLinks(execPath, binDir))
+
+	// The working rdd link is preserved, still pointing at the app binary.
+	assertSymlink(t, filepath.Join(binDir, "rdd"), appRdd)
+	// The dangling kubectl link now points at the running executable.
+	assertSymlink(t, filepath.Join(binDir, "kubectl"), execPath)
+	// The unrelated link is left as it was.
+	assertSymlink(t, docker, filepath.Join(srcDir, "docker"))
+}
+
+// TestEnsureSelfLinksCreatesDir checks that an instance with no bin directory —
+// the app was never installed — gets one with rdd and kubectl linked to the
+// running rdd.
+func TestEnsureSelfLinksCreatesDir(t *testing.T) {
+	srcDir := t.TempDir()
+	execPath := filepath.Join(srcDir, "rdd")
+	assert.NilError(t, os.WriteFile(execPath, []byte("binary"), 0o755))
+
+	binDir := filepath.Join(t.TempDir(), "bin")
+	assert.NilError(t, ensureSelfLinks(execPath, binDir))
+
+	assertSymlink(t, filepath.Join(binDir, "rdd"), execPath)
+	assertSymlink(t, filepath.Join(binDir, "kubectl"), execPath)
 }
 
 // assertSymlink fails unless path is a symlink that points at want.
