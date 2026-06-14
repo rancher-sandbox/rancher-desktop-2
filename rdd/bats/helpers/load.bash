@@ -61,6 +61,9 @@ source "${PATH_BATS_HELPERS}/paths.bash"
 # and PATH_* variables from paths.bash
 source "${PATH_BATS_HELPERS}/commands.bash"
 
+# docker.bash depends on defaults.bash, os.bash, and utils.bash, sourced above.
+source "${PATH_BATS_HELPERS}/docker.bash"
+
 # Add repo-root/bin directory to the PATH. This is where the Makefile puts all compiled programs.
 export PATH="${PATH_BATS_ROOT}/../bin:${PATH}"
 
@@ -86,9 +89,12 @@ setup_file() {
 }
 
 teardown_file() {
-    # Stop the control plane but don't delete it, to preserve logs for debugging.
-    # The next test run's setup will clean up and create a fresh instance.
-    rdd svc stop || true
+    # Stop the control plane between files so logs survive for debugging; the
+    # next run's setup creates a fresh instance. RDD_KEEP_RUNNING=1 keeps the
+    # engine up across files so a VM-booting suite boots once.
+    if [[ "${RDD_KEEP_RUNNING:-}" != 1 ]]; then
+        rdd svc stop || true
+    fi
 
     call_local_function
 }
