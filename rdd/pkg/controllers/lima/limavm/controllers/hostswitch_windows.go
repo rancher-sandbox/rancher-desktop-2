@@ -232,15 +232,30 @@ func (r *LimaVMReconciler) stopHostSwitch(name string) {
 func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger, name string, state *hostSwitchState, done chan struct{}) {
 	defer close(done)
 
+	// fail flags an unexpected setup exit so the reconciler restarts the bridge.
+	// A cancelled context is a clean shutdown, not a failure, so fail only logs it.
+	fail := func(err error, msg string, kv ...any) {
+		if ctx.Err() != nil {
+			logger.Info("Host-switch stopped")
+			return
+		}
+		logger.Error(err, msg, kv...)
+		state.failed.Store(true)
+		r.enqueueReconcile(name, state.namespace)
+	}
+
 	subnet, err := validateSubnet(defaultSubnet)
 	if err != nil {
+		// defaultSubnet is a compile-time constant, so this fails only on a bad
+		// code change, never at runtime; a restart cannot fix it. Exit without
+		// flagging for recovery, which would otherwise loop forever.
 		logger.Error(err, "Invalid subnet configuration")
 		return
 	}
 
 	ln, vmGUID, err := vsockHandshake(ctx, logger)
 	if err != nil {
-		logger.Error(err, "Vsock handshake failed")
+		fail(err, "Vsock handshake failed")
 		return
 	}
 
@@ -248,7 +263,7 @@ func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger
 	vn, err := virtualnetwork.New(&cfg)
 	if err != nil {
 		ln.Close()
-		logger.Error(err, "Failed to create virtual network")
+		fail(err, "Failed to create virtual network")
 		return
 	}
 	defer unexposeAllForwards(logger, vn)
@@ -259,7 +274,7 @@ func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger
 	vnLn, err := vn.Listen("tcp", apiAddr)
 	if err != nil {
 		ln.Close()
-		logger.Error(err, "Failed to listen on API address", "addr", apiAddr)
+		fail(err, "Failed to listen on API address", "addr", apiAddr)
 		return
 	}
 	mux := http.NewServeMux()
@@ -267,11 +282,10 @@ func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger
 	mux.Handle("/services/forwarder/expose", vn.Mux())
 	mux.Handle("/services/forwarder/unexpose", vn.Mux())
 
-	// Capture the parent context before errgroup shadows it: after g.Wait() the
-	// errgroup's derived ctx is always cancelled, so only the parent reveals
-	// whether this exit was a clean shutdown or an unexpected failure.
-	parentCtx := ctx
-	g, ctx := errgroup.WithContext(ctx)
+	// gctx is the errgroup's context, always cancelled by the time g.Wait()
+	// returns. Only the original ctx distinguishes a clean shutdown from a
+	// failure, so fail and the check below read ctx, not gctx.
+	g, gctx := errgroup.WithContext(ctx)
 
 	// Start the host-side socket bridge now that we have the VM GUID.
 	// It listens on the Docker named pipe and forwards each connection to
@@ -279,7 +293,7 @@ func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger
 	// the VM image (via rancher-desktop-opensuse) and started by systemd.
 	g.Go(func() error {
 		bridge := socketbridge.NewDockerHostBridge(vmGUID, logger)
-		if err := bridge.Run(ctx); err != nil {
+		if err := bridge.Run(gctx); err != nil {
 			logger.Error(err, "Socket bridge exited with error")
 		}
 		return nil
@@ -300,7 +314,7 @@ func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger
 			// intentional: each VM runs a single vm-switch process, so
 			// reconnections are serial (old connection EOF, then new accept).
 			start := time.Now()
-			err = vn.AcceptStdio(ctx, conn)
+			err = vn.AcceptStdio(gctx, conn)
 			elapsed := time.Since(start)
 			switch {
 			case err == nil:
@@ -331,12 +345,12 @@ func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger
 
 	// Close the vsock listener when the context is cancelled.
 	g.Go(func() error {
-		<-ctx.Done()
+		<-gctx.Done()
 		return ln.Close()
 	})
 
 	g.Go(func() error {
-		<-ctx.Done()
+		<-gctx.Done()
 		return vnLn.Close()
 	})
 	g.Go(func() error {
@@ -363,7 +377,7 @@ func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger
 			defer ticker.Stop()
 			for {
 				select {
-				case <-ctx.Done():
+				case <-gctx.Done():
 					return nil
 				case <-ticker.C:
 					vl.Info("Virtual network diagnostics", vnDiagnostics(vn)...)
@@ -374,17 +388,11 @@ func (r *LimaVMReconciler) runHostSwitch(ctx context.Context, logger logr.Logger
 
 	logger.Info("Host-switch running", "subnet", subnet.SubnetCIDR, "gateway", subnet.GatewayIP)
 
-	switch err := g.Wait(); {
-	case parentCtx.Err() != nil:
-		// Cancelled by stopHostSwitch or restartHostSwitch: a clean shutdown.
-		logger.Info("Host-switch stopped")
-	case err != nil:
-		// The bridge died on its own; the guest has no DHCP/DNS/NAT until it is
-		// restarted. Flag it and wake the reconciler to recover.
-		logger.Error(err, "Host-switch exited unexpectedly; guest networking is down until it is restarted")
-		state.failed.Store(true)
-		r.enqueueReconcile(name, state.namespace)
-	default:
+	if err := g.Wait(); err != nil {
+		// The bridge died on its own; the guest has no DHCP/DNS/NAT until it
+		// is restarted.
+		fail(err, "Host-switch exited unexpectedly; guest networking is down until it is restarted")
+	} else {
 		logger.Info("Host-switch stopped")
 	}
 }
