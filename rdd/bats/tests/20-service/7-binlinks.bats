@@ -34,7 +34,10 @@ local_setup() {
 }
 
 # fake_rdd runs the bundled rdd copy. It closes BATS fds 3 and 4 so the daemon
-# it spawns cannot inherit them and hang bats, matching the rdd() helper.
+# it spawns cannot inherit them and hang bats, matching the rdd() helper. A
+# daemon fake_rdd starts must be stopped with fake_rdd too: on Windows rdd only
+# recognizes a control plane running its own binary, so the repo rdd in
+# local_setup cannot stop the bundled copy's daemon, and would orphan it.
 fake_rdd() {
     "${FAKE_BIN}/rdd${EXE}" "$@" 3>&- 4>&-
 }
@@ -55,6 +58,8 @@ assert_hardlink_to() { # <target> <link>
     assert_symlink_to "${FAKE_BIN}/helm${EXE}" "${DEST_DIR}/helm${EXE}"
     # kubectl is not bundled; it links to rdd.
     assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/kubectl${EXE}"
+    # Stop the bundled daemon with fake_rdd; the repo rdd cannot (see fake_rdd).
+    fake_rdd svc stop
 }
 
 @test 'leaves working links untouched when started standalone' {
@@ -81,6 +86,7 @@ assert_hardlink_to() { # <target> <link>
     assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/rdd${EXE}"
     assert_symlink_to "${FAKE_BIN}/docker${EXE}" "${DEST_DIR}/docker${EXE}"
     assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/kubectl${EXE}"
+    fake_rdd svc stop
 }
 
 @test 'repairs missing or dangling rdd and kubectl links when started standalone' {
@@ -139,4 +145,5 @@ assert_hardlink_to() { # <target> <link>
     assert_hardlink_to "${FAKE_BIN}/docker${EXE}" "${DEST_DIR}/docker${EXE}"
     # kubectl is not bundled; it hardlinks to rdd.
     assert_hardlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/kubectl${EXE}"
+    fake_rdd svc stop
 }
