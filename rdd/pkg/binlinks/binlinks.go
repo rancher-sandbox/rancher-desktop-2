@@ -20,14 +20,18 @@ import (
 	"runtime"
 	"strings"
 
+	"k8s.io/klog/v2"
+
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 )
 
 // LinkBundledBinaries publishes rdd's binaries into the instance bin directory.
 // Inside the application bundle it recreates the directory to mirror every
 // bundled binary; standalone it repairs only its own rdd and kubectl links.
-// Publishing is best-effort: the returned error is for the caller to log and
-// must not block startup.
+// Publishing is best-effort and must not block startup. A per-binary link
+// failure is logged and skipped; only a whole-operation failure — an unreadable
+// bundle directory or an unwritable bin directory — is returned for the caller
+// to log.
 func LinkBundledBinaries() error {
 	execPath, err := os.Executable()
 	if err != nil {
@@ -98,14 +102,14 @@ func linkBinaries(execPath, binDir, exe string, useSymlink bool) error {
 		}
 		name := entry.Name()
 		if err := link(filepath.Join(srcDir, name), filepath.Join(binDir, name), useSymlink); err != nil {
-			return fmt.Errorf("link %q: %w", name, err)
+			klog.Warningf("Failed to link bundled binary %q, skipping: %v", name, err)
 		}
 	}
 
 	// No separate kubectl binary is bundled; rdd provides it. Link kubectl to
 	// rdd so kubectl on PATH reaches rdd.
 	if err := link(execPath, filepath.Join(binDir, "kubectl"+exe), useSymlink); err != nil {
-		return fmt.Errorf("link kubectl: %w", err)
+		klog.Warningf("Failed to link kubectl to rdd: %v", err)
 	}
 	return nil
 }
@@ -118,9 +122,13 @@ func linkBinaries(execPath, binDir, exe string, useSymlink bool) error {
 // cross-volume copy fallback is deferred (see #448).
 func link(target, linkPath string, useSymlink bool) error {
 	if useSymlink {
-		if err := os.Symlink(target, linkPath); err == nil {
+		err := os.Symlink(target, linkPath)
+		if err == nil {
 			return nil
 		}
+		// Falling back is expected where symlinks need absent privileges, so log
+		// the cause at a verbose level instead of warning on every such link.
+		klog.V(1).Infof("symlink %q -> %q failed, falling back to a hardlink: %v", linkPath, target, err)
 	}
 	return os.Link(target, linkPath)
 }
@@ -138,7 +146,7 @@ func ensureSelfLinks(execPath, binDir, exe string, useSymlink bool) error {
 	}
 	for _, name := range []string{"rdd" + exe, "kubectl" + exe} {
 		if err := ensureSelfLink(filepath.Join(binDir, name), execPath, useSymlink); err != nil {
-			return err
+			klog.Warningf("Failed to repair the %q link: %v", name, err)
 		}
 	}
 	return nil
@@ -150,6 +158,9 @@ func ensureSelfLinks(execPath, binDir, exe string, useSymlink bool) error {
 // searching on. Working links and non-symlink entries stay. A hardlink from an
 // uninstalled application is not dangling and survives, so it still shadows;
 // detecting that needs the app install location (see #448).
+//
+// An entry it cannot stat or remove is logged and skipped, so one failure does
+// not abort pruning the rest.
 func pruneDanglingLinks(binDir string) error {
 	entries, err := os.ReadDir(binDir)
 	if err != nil {
@@ -163,10 +174,11 @@ func pruneDanglingLinks(binDir string) error {
 		if _, err := os.Stat(linkPath); err == nil {
 			continue
 		} else if !os.IsNotExist(err) {
-			return fmt.Errorf("stat %q: %w", linkPath, err)
+			klog.Warningf("Cannot stat %q while pruning dangling links, skipping: %v", linkPath, err)
+			continue
 		}
 		if err := os.Remove(linkPath); err != nil {
-			return fmt.Errorf("remove dangling link %q: %w", linkPath, err)
+			klog.Warningf("Failed to remove dangling link %q: %v", linkPath, err)
 		}
 	}
 	return nil
