@@ -274,7 +274,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.32 // indirect
 	github.com/mdlayher/netlink v1.11.2 // indirect
 	github.com/mdlayher/socket v0.6.0 // indirect
-	github.com/mdlayher/vsock v1.2.1 // indirect
+	github.com/mdlayher/vsock v1.3.0 // indirect
 	github.com/mgechev/revive v1.13.0 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/miekg/dns v1.1.72 // indirect
@@ -467,6 +467,8 @@ require (
 
 replace (
 	github.com/containerd/ltag => github.com/mook-as/ltag v0.0.0-20260224191129-27fed92c7adf
+	// Lima from the windows-plain-ci fork branch, pending lima-vm/lima#4998
+	github.com/lima-vm/lima/v2 => github.com/rancher-sandbox/lima/v2 v2.1.3-0.20260615203514-88c8dcc9ce06
 	k8s.io/api => k8s.io/api v0.35.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.35.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.35.4
