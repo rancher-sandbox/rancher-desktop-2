@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	appv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/console"
 	cliexit "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/exit"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/help"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
@@ -162,6 +163,10 @@ func execCommand(ctx context.Context, args []string) error {
 	command.Stdin = os.Stdin
 	command.Stdout = os.Stdout
 	command.Stderr = os.Stderr
+
+	// Booting the App's VM runs wsl.exe, which corrupts the shared console's
+	// newline mode; repair it before the child inherits the console.
+	console.Repair()
 
 	err := command.Run()
 	var exitErr *exec.ExitError

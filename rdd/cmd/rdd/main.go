@@ -23,6 +23,7 @@ import (
 	_ "k8s.io/component-base/metrics/prometheus/clientgo"
 	_ "k8s.io/component-base/metrics/prometheus/version"
 
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/console"
 	cliexit "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/exit"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/help"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/developer"
@@ -85,6 +86,9 @@ func setLogOptions(cmd *cobra.Command, _ []string) error {
 			return fmt.Errorf("invalid log format: %q", logFormat)
 		}
 	}
+	// Route log output through RepairingWriter so a child corrupting the shared
+	// console's newline mode doesn't make our lines "staircase" (see pkg/cli/console).
+	logrus.SetOutput(console.RepairingWriter(os.Stderr))
 	logLevel, err := cmd.Root().Flags().GetString("log-level")
 	if err != nil {
 		return err
