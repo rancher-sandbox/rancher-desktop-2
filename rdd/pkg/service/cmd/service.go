@@ -53,6 +53,7 @@ import (
 	// Justify blank import.
 	_ "k8s.io/kubernetes/pkg/features"
 
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/binlinks"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/help"
 	// Import controller packages to trigger init() functions for embedded mode.
 	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/app"
@@ -715,6 +716,12 @@ func NewServeCommand(ctx context.Context) *cobra.Command {
 				return err
 			}
 			cliflag.PrintFlags(fs)
+
+			// Publish the application's bundled binaries to the instance bin
+			// directory. Best-effort: a failure must not block the control plane.
+			if err := binlinks.LinkBundledBinaries(); err != nil {
+				klog.Warningf("Failed to link bundled binaries: %v", err)
+			}
 
 			completedOptions, err := s.Complete(cmd.Context())
 			if err != nil {
