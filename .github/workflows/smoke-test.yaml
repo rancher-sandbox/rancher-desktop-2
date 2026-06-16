@@ -152,6 +152,13 @@ jobs:
         EXEC_COMMAND: >-
           exec xvfb-run --auto-servernum
           --server-args='-screen 0 1280x960x24'
+    - name: "Linux: Install Extra Packages"
+      if: runner.os == 'Linux'
+      run: |
+        set -o xtrace
+        sudo apt-get update
+        sudo apt-get install --yes --no-install-recommends \
+          ovmf qemu-system qemu-utils
 
     - name: Set log directory
       shell: bash
@@ -192,6 +199,14 @@ jobs:
       image: ${{ matrix.image }}
       options: --privileged
     steps:
+    - name: Disable AppArmor User Namespace Restrictions
+      run: |
+        # This is needed because even though we run in a container for a
+        # different distribution, we're still running the Ubuntu kernel in the
+        # runner VM.  Filed as
+        # https://github.com/rancher-sandbox/rancher-desktop-2/issues/459
+        set +o errexit
+        echo 0 > /proc/sys/kernel/apparmor_restrict_unprivileged_userns
     - name: Install basic tools
       if: contains(matrix.id, 'opensuse')
       run: >-
@@ -216,11 +231,6 @@ jobs:
       env:
         RD_VERSION: ${{ needs.download-artifacts.outputs.release-tag }}
         OBS_PROJECT: ${{ inputs.obs-project }}
-    - name: "openSUSE Workaround for #9145"
-      if: contains(matrix.id, 'opensuse')
-      run: >-
-        zypper --non-interactive install
-        qemu-img qemu-hw-display-virtio-gpu
     - name: Run smoke test
       shell: bash
       run: |
@@ -293,6 +303,32 @@ jobs:
     - uses: ./.github/actions/setup-environment
       with:
         user: ci-user
+
+    - name: Install qemu
+      run: |
+        source /etc/os-release
+        for id in $ID $ID_LIKE; do
+          case $id in
+            suse|opensuse)
+              zypper --non-interactive install qemu-headless
+              exit 0;;
+            rocky|rhel|centos|fedora)
+              dnf install --assumeyes qemu-kvm
+              # On RHEL/CentOS, the qemu exectuable is not actually exposed;
+              # make a symlink to qemu-kvm, even though it's unsupported.
+              if ! command -v qemu-system-x86_64; then
+                ln -sf /usr/libexec/qemu-kvm /usr/local/bin/qemu-system-x86_64
+              fi
+              qemu-system-x86_64 --version
+              exit 0;;
+            debian|ubuntu)
+              apt-get update
+              apt-get install --yes ovmf qemu-system qemu-utils
+              exit 0;;
+          esac
+        done
+        printf "Could not find known distribution in [%s %s]\n" "$ID" "$ID_LIKE" >&2
+        exit 1
 
     - name: Download AppImage
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
