@@ -15,12 +15,16 @@
 
 # Note that, on Windows, this is run via msys bash (installed wit git).
 
+# The `install_*` functions are expected start Rancher Desktop.  Other than the
+# AppImage implementation on Linux, they should also set `RDD`.
+
 set -o errexit -o nounset
 shopt -s nullglob
 
 export MSYS2_ARG_CONV_EXCL='*'
-RDCTL= # Path to rdctl
+RDD= # Path to rdd
 APPIMAGE_PID= # PID of AppImage process; not used if not using AppImage.
+RDD_VM_CPUS= # To allow the RDD VM to use more CPUs during the test.
 
 # All commands in the cleanups array will be run on exit.  They must be plain
 # strings that will be passed to eval
@@ -78,20 +82,26 @@ get_platform() {
 }
 
 # Assume the first argument given is a path to the Rancher Desktop .dmg disk
-# image; install it, and set the global variable RDCTL to the path of the rdctl
+# image; install it, and set the global variable RDD to the path of the rdd
 # executable.
 install_darwin() {
     local archiveName=$1
-    local mountpoint
+    local mountpoint srcApp destApp
     mountpoint=$(mktemp -d -t rd-dmg-)
     cleanups+=("rm -rf '$mountpoint'")
 
-    local srcApp="${mountpoint}/Rancher Desktop.app"
-    local destApp="/Applications/Rancher Desktop.app"
-
     codesign --verify --deep --strict --verbose=2 --check-notarization "$archiveName"
+    xattr -d -r -s -v com.apple.quarantine "$archiveName"
     hdiutil attach "$archiveName" -mountpoint "$mountpoint"
     cleanups+=("hdiutil detach '$mountpoint'")
+
+    srcApp=$(echo "${mountpoint}"/*.app)
+    if [[ ! -d "$srcApp" ]]; then
+        echo "Failed to find app in mounted image." >&2
+        ls -l "$mountpoint"
+        exit 1
+    fi
+    destApp="/Applications/$(basename "$srcApp")"
 
     codesign --verify --deep --strict --verbose=2 --check-notarization "$srcApp"
     mkdir -p "$destApp"
@@ -119,11 +129,17 @@ install_darwin() {
         exit 0
     fi
 
-    RDCTL="$destApp/Contents/Resources/resources/darwin/bin/rdctl"
+    # Use as many CPUs as possible.
+    RDD_VM_CPUS=$(sysctl -n hw.ncpu)
+    RDD="$destApp/Contents/Resources/darwin/bin/rdd"
+
+    export RDD_VM_CPUS
+    # `open` wouldn't pick up `RDD_VM_CPUS`, so run the executable directly.
+    "$destApp/Contents/MacOS/Rancher Desktop 2" &
 }
 
 # Assume the first argument given is a path to the Rancher Desktop zip file;
-# install it, and set the global variable RDCTL to the path of the rdctl
+# install it, and set the global variable RDD to the path of the rdd
 # executable.  If the archive is an AppImage file instead, then this function
 # instead sets APPIMAGE_PID.
 install_linux() {
@@ -138,19 +154,22 @@ install_linux() {
         if [[ "$archiveName" =~ .*\.AppImage$ ]]; then
             sudo chmod a+x "$archiveName"
             "$archiveName" \
-                --no-sandbox --enable-logging=stderr --v=1 \
-                --no-modal-dialogs --kubernetes.enabled \
-                --application.updater.enabled=false&
+                --no-sandbox --enable-logging=stderr --v=1 &
             APPIMAGE_PID=$!
             return
         else
-            sudo mkdir -p /opt/rancher-desktop
-            sudo unzip -d /opt/rancher-desktop "$archiveName"
-            sudo chmod 4755 /opt/rancher-desktop/chrome-sandbox
+            sudo mkdir -p /opt/rancher-desktop-2
+            sudo unzip -d /opt/rancher-desktop-2 "$archiveName"
+            sudo chmod 4755 /opt/rancher-desktop-2/chrome-sandbox
         fi
     fi
 
-    RDCTL="/opt/rancher-desktop/resources/resources/linux/bin/rdctl"
+    # Use as many CPUs as possible, but leave one for GitHub runner use.
+    RDD_VM_CPUS=$(($(nproc) - 1))
+    RDD="/opt/rancher-desktop-2/resources/linux/bin/rdd"
+    export RDD_VM_CPUS
+
+    /opt/rancher-desktop-2/rancher-desktop &
 }
 
 # Helper function on Windows to verify the signature of a file (provided as the
@@ -175,7 +194,7 @@ win32_verify() {
 }
 
 # Assume the first argument given is a path to the Rancher Desktop installer;
-# install it, and set the global variable RDCTL to the path of the rdctl
+# install it, and set the global variable RDD to the path of the rdd
 # executable.
 install_win32() {
     local archiveName=$1
@@ -202,8 +221,8 @@ install_win32() {
         exit 1
     fi
     local installDirectory
-    installDirectory=$(cygpath --unix 'C:\Program Files\Rancher Desktop')
-    local rdctl="$installDirectory/resources/resources/win32/bin/rdctl.exe"
+    installDirectory=$(cygpath --unix 'C:\Program Files\Rancher Desktop 2')
+    local rdd="$installDirectory/resources/win32/bin/rdd.exe"
 
     local -a keys
     mapfile -t keys < <(yq.exe 'keys | .[]' < build/signing-config-win.yaml)
@@ -221,45 +240,48 @@ install_win32() {
         done
     done
 
-    # Verify that rdctl exists
-    win32_verify "$rdctl"
-    RDCTL=$rdctl
+    # Verify that rdd exists
+    win32_verify "$rdd"
+    RDD=$rdd
+
+    "$installDirectory/Rancher Desktop 2.exe" &
 }
 
-# Wait for the backend to be alive.  $RDCTL must be set (from the install_*
+# Wait for the backend to be alive.  $RDD must be set (from the install_*
 # functions).  If $APPIMAGE_PID is set, assume we're running AppImage instead.
 wait_for_backend() {
-    local deadline state deadline_date platform rd_pid
+    local deadline deadline_date platform
     deadline=$(( $(date +%s) + 10 * 60 ))
     deadline_date=$({ date --date="@$deadline" || date -j -f %s "$deadline"; } 2>/dev/null)
     platform=$(get_platform)
 
     while [[ $(date +%s) -lt $deadline ]]; do
-        if [[ -n "${APPIMAGE_PID:-}" ]] && [[ -z "${RDCTL:-}" ]]; then
+        if [[ -n "${APPIMAGE_PID:-}" ]] && [[ -z "${RDD:-}" ]]; then
+            local rd_pid
             rd_pid=$(pidof --separator $'\n' rancher-desktop | sort -n | head -n 1 || echo missing)
-            if [[ -e /proc/$rd_pid/exe ]]; then
-                RDCTL=$(dirname "$(readlink /proc/$rd_pid/exe)")/resources/resources/linux/bin/rdctl
+            if [[ -e "/proc/$rd_pid/exe" ]]; then
+                # The AppImage initialization is complete, we can locate rdd and poll for status.
+                RDD=$(dirname "$(readlink "/proc/$rd_pid/exe")")/resources/linux/bin/rdd
                 continue
             fi
-            state=NOT_RUNNING
-        elif [[ $platform == linux ]] && [[ ! -e $HOME/.local/share/rancher-desktop/rd-engine.json ]]; then
-            state=NO_SERVER_CONFIG
+            printf "Waiting for AppImage to start: %s (deadline: %s)\n" "$(date)" "$deadline_date"
         else
-            state=$("$RDCTL" api /v1/backend_state || echo '{"vmState": "NO_RESPONSE"}')
-            state=$(jq --raw-output .vmState <<< "$state")
+            if "$RDD" service status 2>&1 | grep --quiet 'control plane has been started: true'; then
+                # RDD is running; check for the app; note that the app may not exist yet.
+                status=$("$RDD" ctl get app -o jsonpath='{.items[].status.conditions[?(@.type=="Settled")]}' 2>/dev/null || echo '{}')
+                if [[ "$(jq --raw-output .status <<< "${status}")" == "True" ]]; then
+                    # App is settled; waiting is done.
+                    "$RDD" ctl describe app
+                    return
+                fi
+                printf "Waiting for app to settle: (%s) %s (deadline: %s)\n" \
+                    "$(jq --raw-output .message <<< "${status}")" "$(date)" "$deadline_date"
+            else
+                "$RDD" service status
+            fi
         fi
-        case "$state" in
-            ERROR)
-                echo "Backend reached error state." >&2
-                exit 1 ;;
-            STARTED|DISABLED)
-                return ;;
-            *)
-                printf "Backend state: %s\n" "$state";;
-        esac
 
         # if we get here, either we failed to get state or it's starting.
-        printf "Waiting for backend: (%s) %s/%s\n" "$state" "$(date)" "$deadline_date"
         sleep 10
     done
 
@@ -274,12 +296,11 @@ main() {
     platform=$(get_platform)
     archive=$(get_archive)
 
+    # Start the app, and wait for it to settle.
     eval "install_${platform}" "$archive"
-    if [[ -z "${APPIMAGE_PID:-}" ]]; then
-        "$RDCTL" start --no-modal-dialogs \
-            --kubernetes.enabled --application.updater.enabled=false
-        cleanups+=("'$RDCTL' shutdown")
-    fi
+    wait_for_backend
+    # Enable Kubernetes, and wait for it to settle.
+    "$RDD" set --wait=false running=true kubernetes.enabled=true
     wait_for_backend
     echo "Smoke test passed."
 }
