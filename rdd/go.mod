@@ -468,7 +468,7 @@ require (
 replace (
 	github.com/containerd/ltag => github.com/mook-as/ltag v0.0.0-20260224191129-27fed92c7adf
 	// Lima from the windows-plain-ci fork branch, pending lima-vm/lima#4998
-	github.com/lima-vm/lima/v2 => github.com/rancher-sandbox/lima/v2 v2.1.3-0.20260615203514-88c8dcc9ce06
+	github.com/lima-vm/lima/v2 => github.com/rancher-sandbox/lima/v2 v2.1.3-0.20260619054522-25bdf86634d8
 	k8s.io/api => k8s.io/api v0.35.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.35.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.35.4
