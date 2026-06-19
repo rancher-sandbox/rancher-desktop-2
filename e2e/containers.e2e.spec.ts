@@ -1,8 +1,9 @@
 import { expect, test, ElectronApplication, Page } from '@playwright/test';
 
-import { ContainerInfoPage } from './pages/container-info-page';
+import { ContainerInspectPage } from './pages/container-inspect-page';
 import { ContainerLogsPage } from './pages/container-logs-page';
 import { ContainerShellPage } from './pages/container-shell-page';
+import { ContainerStatsPage } from './pages/container-stats-page';
 import { ContainersPage } from './pages/containers-page';
 import { NavPage } from './pages/nav-page';
 import { startSlowerDesktop, teardown, tool } from './utils/TestUtils';
@@ -146,7 +147,7 @@ test.describe.fixme('Containers Tests', () => {
 
   test('should handle terminal scrolling', async() => {
     const scrollTestContainerName = `test-scroll-container-${ Date.now() }`;
-    let scrollTestContainerId: string;
+    let scrollTestContainerId = '';
 
     try {
       const output = await tool(
@@ -207,7 +208,7 @@ test.describe.fixme('Containers Tests', () => {
 
   test('should output logs if container not exited', async() => {
     const longRunningContainerName = `test-not-exited-logs-${ Date.now() }`;
-    let longRunningContainerId: string;
+    let longRunningContainerId = '';
 
     try {
       const output = await tool(
@@ -457,13 +458,13 @@ test.describe.fixme('Container Info Tab', () => {
   });
 
   test('Info tab is the default and active tab', async() => {
-    const infoPage = new ContainerInfoPage(page);
+    const infoPage = new ContainerInspectPage(page);
 
     await expect(infoPage.tab).toHaveClass(/\bactive\b/);
   });
 
   test('summary table shows key container fields', async() => {
-    const infoPage = new ContainerInfoPage(page);
+    const infoPage = new ContainerInspectPage(page);
 
     await infoPage.waitForData();
 
@@ -484,7 +485,7 @@ test.describe.fixme('Container Info Tab', () => {
   });
 
   test('summary table shows IP address', async() => {
-    const infoPage = new ContainerInfoPage(page);
+    const infoPage = new ContainerInspectPage(page);
 
     // IP row is always rendered; value is either an IP or '—'.
     const ip = await infoPage.getSummaryValue('info-row-ip');
@@ -493,7 +494,7 @@ test.describe.fixme('Container Info Tab', () => {
   });
 
   test('ports section is always visible', async() => {
-    const infoPage = new ContainerInfoPage(page);
+    const infoPage = new ContainerInspectPage(page);
 
     // The alpine container has no published ports, but the section must still render.
     await expect(infoPage.portsSection).toBeVisible();
@@ -503,7 +504,7 @@ test.describe.fixme('Container Info Tab', () => {
   });
 
   test('mounts section can be expanded', async() => {
-    const infoPage = new ContainerInfoPage(page);
+    const infoPage = new ContainerInspectPage(page);
 
     await infoPage.mountsSection.locator('summary').click();
     // After opening the <details>, the section body should appear.
@@ -511,7 +512,7 @@ test.describe.fixme('Container Info Tab', () => {
   });
 
   test('switching to Logs tab and back preserves Info data', async() => {
-    const infoPage = new ContainerInfoPage(page);
+    const infoPage = new ContainerInspectPage(page);
 
     await page.getByTestId('tab-logs').click();
     await infoPage.clickTab();
@@ -521,5 +522,106 @@ test.describe.fixme('Container Info Tab', () => {
     const id = await infoPage.getSummaryValue('info-row-id');
 
     expect(id).toMatch(/^[a-f0-9]{12}$/);
+  });
+});
+
+test.describe.serial('Container Stats Tab', () => {
+  let electronApp: ElectronApplication;
+  let runningContainerId: string;
+  let stoppedContainerId: string;
+
+  test.beforeAll(async({ colorScheme }, testInfo) => {
+    [electronApp, page] = await startSlowerDesktop(testInfo, {
+      kubernetes:      { enabled: false },
+      containerEngine: { name: ContainerEngine.MOBY, allowedImages: { enabled: false } },
+    });
+
+    const navPage = new NavPage(page);
+    await navPage.progressBecomesReady();
+
+    // Long-running container for the "running" tests.
+    const runOutput = await tool('docker', 'run', '--detach', 'alpine', 'sleep', 'infinity');
+
+    runningContainerId = runOutput.trim();
+
+    // Stopped container (exits immediately).
+    const stopOutput = await tool('docker', 'run', '--detach', 'alpine', 'echo', 'done');
+
+    stoppedContainerId = stopOutput.trim();
+    // Give it a moment to exit.
+    await new Promise(resolve => setTimeout(resolve, 2_000));
+  });
+
+  test.afterAll(async({ colorScheme }, testInfo) => {
+    for (const id of [runningContainerId, stoppedContainerId]) {
+      if (id) {
+        try {
+          await tool('docker', 'rm', '-f', id);
+        } catch {}
+      }
+    }
+    await teardown(electronApp, testInfo);
+  });
+
+  async function navigateToStatsTab(containerId: string): Promise<ContainerStatsPage> {
+    const navPage = new NavPage(page);
+    await navPage.navigateTo('Containers');
+    const containersPage = new ContainersPage(page);
+    await containersPage.waitForTableToLoad();
+    await containersPage.waitForContainerToAppear(containerId);
+    await containersPage.clickContainerAction(containerId, 'info');
+    await page.waitForURL(`**/containers/info/${ containerId }**`, { timeout: 10_000 });
+    const statsPage = new ContainerStatsPage(page);
+    await statsPage.clickTab();
+
+    return statsPage;
+  }
+
+  test('Stats tab appears between Info and Logs', async() => {
+    const navPage = new NavPage(page);
+    await navPage.navigateTo('Containers');
+    const containersPage = new ContainersPage(page);
+    await containersPage.waitForTableToLoad();
+    await containersPage.waitForContainerToAppear(runningContainerId);
+    await containersPage.clickContainerAction(runningContainerId, 'info');
+    await page.waitForURL(`**/containers/info/${ runningContainerId }**`, { timeout: 10_000 });
+
+    const tabs = page.locator('.tabs li.tab');
+    const tabTexts = await tabs.allTextContents();
+    const names = tabTexts.map((t: string) => t.trim());
+
+    const infoIdx = names.findIndex((n: string) => n === 'Info');
+    const statsIdx = names.findIndex((n: string) => n === 'Stats');
+    const logsIdx = names.findIndex((n: string) => n === 'Logs');
+
+    expect(infoIdx).toBeGreaterThanOrEqual(0);
+    expect(statsIdx).toBeGreaterThan(infoIdx);
+    expect(logsIdx).toBeGreaterThan(statsIdx);
+  });
+
+  test('charts render on a running container', async() => {
+    const statsPage = await navigateToStatsTab(runningContainerId);
+    await statsPage.waitForCharts();
+  });
+
+  test('process table shows at least one row', async() => {
+    const statsPage = await navigateToStatsTab(runningContainerId);
+    await expect(statsPage.processTable.locator('tbody tr').first()).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('refresh rate select has the correct options', async() => {
+    const statsPage = await navigateToStatsTab(runningContainerId);
+
+    await expect(statsPage.refreshSelect).toBeVisible({ timeout: 15_000 });
+    const options = await statsPage.refreshSelect.locator('option').allTextContents();
+
+    expect(options).toEqual(['1 s', '5 s', '10 s', '20 s', '30 s', '1 min']);
+  });
+
+  test('stopped container shows not-running banner', async() => {
+    const statsPage = await navigateToStatsTab(stoppedContainerId);
+
+    await expect(statsPage.notRunningBanner).toBeVisible({ timeout: 10_000 });
+    await expect(statsPage.cpuChart).not.toBeVisible();
   });
 });

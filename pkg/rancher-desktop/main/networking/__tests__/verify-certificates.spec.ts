@@ -5,7 +5,7 @@ import mockModules from '@pkg/utils/testUtils/mockModules';
 jest.mock('@pkg/window');
 
 const modules = mockModules({
-  '@pkg/window': { windowMapping: { } as Record<string, number> },
+  '@pkg/window': { windowMapping: { } },
   electron:      undefined,
 });
 

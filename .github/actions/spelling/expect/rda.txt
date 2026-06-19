@@ -92,6 +92,7 @@ cecinestpasuncategory
 ceph
 certutil
 cgroupfs
+chartjs
 checkpath
 chirico
 cidata
@@ -315,6 +316,7 @@ jsmith
 JSONOr
 jsontable
 JSONTo
+jsonutils
 julianb
 karl
 Kaspersky
@@ -351,7 +353,6 @@ linuxkit
 Linuxy
 loadbalancer
 loblaw
-localnet
 logdna
 loglines
 logz
@@ -417,6 +418,7 @@ NLMSG
 nlmsghdr
 noarch
 nocopy
+noctx
 nologin
 nologo
 nomount
@@ -486,6 +488,7 @@ POptions
 poppins
 portbinding
 portforward
+portfwd
 portmap
 portmapping
 portproxy
@@ -683,6 +686,7 @@ TStr
 TVar
 tvf
 typeperf
+typeutils
 ubuntu
 ucmonitor
 udhcpc
@@ -717,6 +721,7 @@ VMGUID
 VMID
 vmnet
 vmsplice
+VMSWITCH
 vmwarevsphere
 vmx
 vnc
