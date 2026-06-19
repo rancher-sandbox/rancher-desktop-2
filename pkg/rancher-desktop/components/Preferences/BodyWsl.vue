@@ -8,9 +8,6 @@ import PreferencesWslProxy from '@pkg/components/Preferences/WslProxy.vue';
 import RdTabbed from '@pkg/components/Tabbed/RdTabbed.vue';
 import Tab from '@pkg/components/Tabbed/Tab.vue';
 import { Settings } from '@pkg/config/settings';
-import type { TransientSettings } from '@pkg/config/transientSettings';
-import type { ServerState } from '@pkg/main/commandServer/httpCommandServer';
-import { RecursivePartial } from '@pkg/utils/typeUtils';
 
 import type { PropType } from 'vue';
 

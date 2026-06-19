@@ -171,7 +171,7 @@ export default defineComponent({
   components: { SortableTable, ContainerStatusBadge, Banner },
   data() {
     return {
-      collapsed:                   {} as Record<string, boolean>,
+      collapsed:                   {},
       headers:              [
         {
           name:  'containerState',

@@ -155,5 +155,5 @@ export function getObjectRepresentation(fqFieldAccessor: RecursiveKeys<Settings>
     throw new Error("Unrecognized command-line option ends with a dot ('.')");
   }
 
-  return _.set({}, fqFieldAccessor, finalValue) as RecursivePartial<Settings>;
+  return _.set({}, fqFieldAccessor, finalValue);
 }

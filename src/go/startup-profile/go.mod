@@ -2,7 +2,7 @@ module github.com/rancher-sandbox/rancher-desktop/src/go/startup-profile
 
 go 1.25.0
 
-require golang.org/x/sync v0.20.0
+require golang.org/x/sync v0.21.0
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.3.0 // indirect
