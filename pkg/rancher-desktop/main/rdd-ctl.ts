@@ -11,19 +11,15 @@ import { getRDDPath } from '@pkg/utils/paths';
 
 const console = Logging.rdd;
 
-let lastKubeConfig = '';
+let fetchConfigPromise: Promise<string> | undefined;
 
 /**
- * fetchConfig returns the kubeconfig for accessing RDD.  If it has previously
- * been fetched, it returns the cached version.
+ * fetchConfig returns the kubeconfig for accessing RDD.
+ * @note Using fetchConfig is preferred.
  * @note If we fail to fetch the configuration, we just wait more instead of
  * throwing.
  */
-async function fetchConfig(): Promise<string> {
-  if (lastKubeConfig) {
-    // Return any existing kubeconfig that is available.
-    return lastKubeConfig;
-  }
+async function fetchConfigWithoutCache(): Promise<string> {
   const rddPath = getRDDPath();
 
   // Loop until the control plane is ready.
@@ -70,7 +66,6 @@ async function fetchConfig(): Promise<string> {
       // Assume all other error messages do not contain `apiVersion`; as we
       // control the output, that should be safe.
       if (stdout.includes('apiVersion')) {
-        lastKubeConfig = stdout;
         // Notify the networking code that the kubeconfig is ready, to configure
         // the certificate handling.
         try {
@@ -110,6 +105,18 @@ async function fetchConfig(): Promise<string> {
 
     await new Promise(resolve => setTimeout(resolve, 1_000));
   }
+}
+
+/**
+ * fetchConfig returns the kubeconfig for accessing RDD.  If it has previously
+ * been fetched, it returns the cached version.
+ * @note If we fail to fetch the configuration, we just wait more instead of
+ * throwing.
+ */
+function fetchConfig(): Promise<string> {
+  fetchConfigPromise ??= fetchConfigWithoutCache();
+
+  return fetchConfigPromise;
 }
 
 getIpcMainProxy(console).handle('rdd/kube-config', () => fetchConfig());
