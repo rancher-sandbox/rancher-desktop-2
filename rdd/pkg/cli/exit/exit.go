@@ -15,10 +15,13 @@ import (
 // reserved for cobra usage errors, so named codes start at 3.
 const (
 	// CodeRejected indicates the API server's admission controller rejected the request.
-	CodeRejected = 3
+	CodeRejected = iota + 3
 
 	// CodeTimeout indicates the wait deadline expired before the desired state was reached.
-	CodeTimeout = 4
+	CodeTimeout
+
+	// CodeIncompatibleServer indicates the server is incompatible with the client.
+	CodeIncompatibleServer
 )
 
 // Error is an error that carries a process exit code for main to return.
