@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	appv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
 	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 )
@@ -101,6 +102,15 @@ func (c *controller) setupReconciler(ctx context.Context, mgr ctrl.Manager) erro
 		return err
 	}
 
+	log.Info("Setting up Mock AppReconciler")
+	err = (&appReconciler{
+		Client:   mgr.GetClient(),
+		Recorder: mgr.GetEventRecorder(controllerLongName),
+	}).SetupWithManager(mgr)
+	if err != nil {
+		return err
+	}
+
 	log.Info("Setting up Mock ContainerNamespaceReconciler")
 	err = (&containerNamespaceReconciler{
 		Client:   mgr.GetClient(),
@@ -174,6 +184,9 @@ func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
 	ctx := context.Background()
 	c.mgr = mgr
 
+	if err := appv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
+		return err
+	}
 	if err := containersv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return err
 	}
