@@ -114,6 +114,11 @@ Stops the control plane and removes the instance directory, the short directory
 (which contains the Lima home), and — unless `RDD_KEEP_LOGS` is set — the log
 directory.
 
+On Windows it also unregisters each Lima instance's WSL2 distro before removing
+the Lima home, because deleting the directory drops the distro's `ext4.vhdx` but
+leaves the `wsl --list` registration behind, which the next `rdd service create`
+would boot against a missing disk.
+
 Delete always waits for the control plane to exit before removing files, because
 removing the instance directory under a live process corrupts it on Windows and
 breaks PID-file mutual exclusion on Unix. Use `--timeout` to bound that wait
