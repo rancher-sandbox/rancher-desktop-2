@@ -540,15 +540,18 @@ func Delete(ctx context.Context, timeout time.Duration) error {
 		}
 	}
 
-	// Drop the datastore first, before anything destructive. It is the file a
-	// still-running control plane holds open; if RemoveAll fails because it is
-	// locked, a daemon is alive and we could not stop it, so abort before
-	// deleting the rest of the directory — in particular rdd.pid. A half-finished
-	// delete that strips rdd.pid would orphan that daemon (it becomes unfindable)
-	// and leave state.db behind: the exact failure this guards against.
-	if err := os.RemoveAll(filepath.Join(instance.Dir(), "db")); err != nil {
+	// Probe the datastore lock before anything destructive. state.db is the file a
+	// still-running control plane holds open; remove it alone first, so a lock
+	// error aborts the delete before os.RemoveAll could strip the -wal/-shm
+	// sidecars or rdd.pid out from under a live daemon and orphan it — the exact
+	// failure this guards against. (os.RemoveAll records the first error but keeps
+	// deleting siblings, so it cannot be the probe.) Once state.db is gone the
+	// daemon is confirmed stopped, so clearing the rest is safe.
+	dbDir := filepath.Join(instance.Dir(), "db")
+	if err := os.Remove(filepath.Join(dbDir, "state.db")); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove datastore for %q; the control plane may still be running: %w", instance.Name(), err)
 	}
+	_ = os.RemoveAll(dbDir)
 
 	preserveAllInstanceLogs()
 	if os.Getenv("RDD_KEEP_LOGS") == "" {
@@ -701,16 +704,18 @@ func NewServeCommand(ctx context.Context) *cobra.Command {
 			}
 
 			// Register the interrupt event before writing the PID file so a peer can
-			// confirm our identity (IsOurProcess) as soon as the file exists. The
-			// daemon's shutdown runs when the event fires; no-op on Unix.
+			// confirm our identity (IsOurProcess) as soon as the file exists. On
+			// failure, bail before the PID file exists rather than run a daemon that
+			// `rdd svc stop` cannot find. The daemon's shutdown runs when the event
+			// fires; no-op on Unix.
 			ctx := genericapiserver.SetupSignalContext()
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
-			if releaseInterrupt, err := process.RegisterInterruptHandler(process.ServeInterruptKey, cancel); err != nil {
-				klog.Warningf("Failed to register interrupt handler: %v", err)
-			} else {
-				defer releaseInterrupt()
+			releaseInterrupt, err := process.RegisterInterruptHandler(process.ServeInterruptKey, cancel)
+			if err != nil {
+				return fmt.Errorf("failed to register interrupt handler: %w", err)
 			}
+			defer releaseInterrupt()
 
 			pid := []byte(strconv.Itoa(os.Getpid()))
 			if err := os.WriteFile(instance.PIDFile(), pid, 0o600); err != nil {

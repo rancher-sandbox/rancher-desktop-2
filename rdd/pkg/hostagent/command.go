@@ -58,18 +58,20 @@ func hostagentAction(cmd *cobra.Command, args []string) error {
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
 
 	// Register the interrupt event before writing the PID file so a peer can
-	// confirm our identity (IsOurProcess) as soon as the file exists. The
-	// closure forwards the event as os.Interrupt; no-op on Unix.
-	if releaseInterrupt, err := process.RegisterInterruptHandler(process.HostagentInterruptKey(instName), func() {
+	// confirm our identity (IsOurProcess) as soon as the file exists. On failure,
+	// return before the PID file exists rather than run a hostagent the control
+	// plane cannot signal; the lima reconciler retries the launch with backoff.
+	// The closure forwards the event as os.Interrupt; no-op on Unix.
+	releaseInterrupt, err := process.RegisterInterruptHandler(process.HostagentInterruptKey(instName), func() {
 		select {
 		case signalCh <- os.Interrupt:
 		default:
 		}
-	}); err != nil {
-		logrus.Warnf("Failed to register interrupt handler: %v", err)
-	} else {
-		defer releaseInterrupt()
+	})
+	if err != nil {
+		return fmt.Errorf("failed to register interrupt handler: %w", err)
 	}
+	defer releaseInterrupt()
 
 	if pidfile != "" {
 		if existingPID, err := store.ReadPIDFile(pidfile); existingPID != 0 {

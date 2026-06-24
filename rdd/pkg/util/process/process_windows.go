@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"golang.org/x/sys/windows"
+
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 )
 
 // SetGroup configures the command to run in its own process group.
@@ -34,11 +36,12 @@ func SetGroup(cmd *exec.Cmd) {
 // process identified by (key, pid) to shut down gracefully. The Local\ namespace
 // scopes the event to the current session, which is where the control plane and
 // the CLI run (same user, interactive session); a daemon running as a session-0
-// Windows service would need the Global\ namespace. key namespaces the event by
-// role (see ServeInterruptKey / HostagentInterruptKey) so a name collision
-// across roles is impossible and IsOurProcess can confirm the role.
+// Windows service would need the Global\ namespace. instance.Suffix() namespaces
+// the event by rdd instance and key by role (see ServeInterruptKey /
+// HostagentInterruptKey), so a PID recycled to a different instance or role
+// creates no matching event and IsOurProcess can confirm both.
 func interruptEventName(key string, pid int) string {
-	return fmt.Sprintf(`Local\rdd-interrupt-%s-%d`, key, pid)
+	return fmt.Sprintf(`Local\rdd-%s-interrupt-%s-%d`, instance.Suffix(), key, pid)
 }
 
 // openInterruptEvent opens the interrupt event for (key, pid). It fails when no
