@@ -120,7 +120,7 @@ jobs:
         # in pull requests GITHUB_REF_NAME is in the form "<pr_number>/merge";
         # remove slashes since they aren't valid in filenames
         no_slash_ref_name="${GITHUB_REF_NAME//\//-}"
-        zip_name="rancher-desktop-linux-${no_slash_ref_name}.zip"
+        zip_name="rancher-desktop-2-linux-${no_slash_ref_name}.zip"
 
         # Copy zip file to S3
         aws s3 cp \
@@ -130,7 +130,7 @@ jobs:
         # Trigger OBS services for relevant package in dev channel
         curl -X POST \
           -H "Authorization: Token ${OBS_WEBHOOK_TOKEN}" \
-          "https://build.opensuse.org/trigger/runservice?project=isv:Rancher:dev&package=rancher-desktop-${GITHUB_REF_NAME}"
+          "https://build.opensuse.org/trigger/runservice?project=isv:Rancher:dev&package=rancher-desktop-2-${GITHUB_REF_NAME}"
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
