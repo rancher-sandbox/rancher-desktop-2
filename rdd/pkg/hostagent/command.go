@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/guestagent"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/process"
 )
 
 // NewCommand creates a new hostagent cobra command.
@@ -51,6 +52,25 @@ func hostagentAction(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	instName := args[0]
+
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
+
+	// Register the interrupt event before writing the PID file so a peer can
+	// confirm our identity (IsOurProcess) as soon as the file exists. The
+	// closure forwards the event as os.Interrupt; no-op on Unix.
+	if releaseInterrupt, err := process.RegisterInterruptHandler(process.HostagentInterruptKey(instName), func() {
+		select {
+		case signalCh <- os.Interrupt:
+		default:
+		}
+	}); err != nil {
+		logrus.Warnf("Failed to register interrupt handler: %v", err)
+	} else {
+		defer releaseInterrupt()
+	}
+
 	if pidfile != "" {
 		if existingPID, err := store.ReadPIDFile(pidfile); existingPID != 0 {
 			return fmt.Errorf("another hostagent may already be running with pid %d (pidfile %q)", existingPID, pidfile)
@@ -70,8 +90,6 @@ func hostagentAction(cmd *cobra.Command, args []string) error {
 		return errors.New("socket must be specified")
 	}
 
-	instName := args[0]
-
 	runGUI, err := cmd.Flags().GetBool("run-gui")
 	if err != nil {
 		return err
@@ -81,9 +99,6 @@ func hostagentAction(cmd *cobra.Command, args []string) error {
 		runtime.LockOSThread()
 		defer runtime.UnlockOSThread()
 	}
-
-	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
 
 	debug, _ := cmd.Flags().GetBool("debug")
 	if debug {

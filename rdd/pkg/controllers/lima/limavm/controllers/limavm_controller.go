@@ -635,12 +635,11 @@ func (r *LimaVMReconciler) shutdownAllHostagents() {
 
 	// Send graceful shutdown signal to all hostagents in parallel. Skip any whose
 	// process has already been reaped: once cmd.Wait() closes procExited it has
-	// released the OS process handle, freeing the PID for reuse. On Windows a
-	// CTRL_BREAK to a recycled PID escapes to the console and kills the service
-	// and terminal. While procExited is open the handle is normally still held,
-	// so the PID is still ours; cmd.Wait() releases it just before closing the
-	// channel, leaving a brief window.
-	for _, state := range states {
+	// released the OS process handle, freeing the PID for reuse. The named
+	// interrupt event keyed by instance and PID makes a recycled PID harmless (it
+	// has no such event, so Interrupt fails), but there is nothing to signal once
+	// the process is reaped.
+	for name, state := range states {
 		if state.cmd == nil || state.cmd.Process == nil {
 			continue
 		}
@@ -649,7 +648,7 @@ func (r *LimaVMReconciler) shutdownAllHostagents() {
 			continue
 		default:
 		}
-		_ = process.Interrupt(state.cmd.Process.Pid)
+		_ = process.Interrupt(process.HostagentInterruptKey(name), state.cmd.Process.Pid)
 	}
 
 	// Wait for each hostagent process to exit. The watcher goroutine may finish

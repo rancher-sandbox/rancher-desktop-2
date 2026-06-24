@@ -22,16 +22,29 @@ func SetGroup(cmd *exec.Cmd) {
 	cmd.SysProcAttr.Setpgid = true
 }
 
-// Interrupt sends SIGINT to the process with the given PID.
-func Interrupt(pid int) error {
+// Interrupt sends SIGINT to the process with the given PID. The key is ignored
+// on Unix (it namespaces the named event used on Windows); a signal reaches the
+// process regardless of which console either party is attached to.
+func Interrupt(_ string, pid int) error {
 	return unix.Kill(pid, unix.SIGINT)
 }
 
-// IsOurProcess reports whether pid is a live process running this program's own
-// executable. On Unix it is always true: a deliberate no-op, not a guard, so
-// the parameters go unused (they exist for signature parity with the Windows
-// build, where the check defends GenerateConsoleCtrlEvent against PID reuse — a
-// console-signal hazard that does not exist on Unix).
+// RegisterInterruptHandler is a no-op on Unix and returns a no-op release
+// function. Interrupt here sends SIGINT, which processes already handle via
+// signal.Notify / genericapiserver.SetupSignalContext, so no extra wiring is
+// needed. It exists for signature parity with the Windows build, where Interrupt
+// signals a named event the target must create at startup.
+func RegisterInterruptHandler(_ string, _ func()) (func(), error) {
+	return func() {}, nil
+}
+
+// IsOurProcess reports whether pid is a live process we may signal under key. On
+// Unix it is always true: a deliberate no-op, not a guard, so the parameters go
+// unused. They exist for signature parity with the Windows build, where the
+// check confirms a PID belongs to one of our processes (by named-event
+// registration) before a caller acts on it. Unix needs no such confirmation:
+// Interrupt/Kill use signals, and PID reuse is far less aggressive than on
+// Windows.
 //
 // Residual risk: callers that read an on-disk PID (ha.pid from a previous
 // service) can, after a crash or reboot leaves the file behind, act on a PID
@@ -39,15 +52,16 @@ func Interrupt(pid int) error {
 // SIGKILL of its process group on the forced path. We accept it because Unix
 // recycles PIDs only after the counter wraps, far less aggressively than
 // Windows.
-func IsOurProcess(_ int, _ ...string) bool {
+func IsOurProcess(_ string, _ int) bool {
 	return true
 }
 
-// IsOurProcessWithArg is the whole-argument counterpart of IsOurProcess. On
-// Unix it is the same deliberate no-op, returning true for signature parity
-// with the Windows build.
-func IsOurProcessWithArg(_ int, _ string) bool {
-	return true
+// IsAlive reports whether a process with the given PID currently exists. A
+// process that exists but cannot be signalled by this user (EPERM) still counts
+// as alive.
+func IsAlive(pid int) bool {
+	err := unix.Kill(pid, 0)
+	return err == nil || errors.Is(err, unix.EPERM)
 }
 
 // Kill sends SIGTERM to the process with the given PID.
