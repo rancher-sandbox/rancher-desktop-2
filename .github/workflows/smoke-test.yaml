@@ -29,7 +29,7 @@ on:
         default: false
 
 jobs:
-  download-artifacts:
+  find-release:
     name: Find release
     runs-on: ubuntu-latest
     permissions:
@@ -41,22 +41,27 @@ jobs:
     steps:
     - name: Find release
       if: inputs.tag == ''
-      run: >-
-        set -o xtrace;
-        printf "RELEASE_TAG=%s\n" >>"$GITHUB_ENV"
-        "$(gh api repos/${{ github.repository }}/releases
-        --jq 'map(select(.draft))[0].tag_name')"
-      env:
-        GH_TOKEN: ${{ github.token }}
-    - id: set-release-tag
-      run: >-
-        printf "release-tag=%s\n" "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
-    - name: Download artifacts
       run: |
+        set -o xtrace
+        gh api repos/${{ github.repository }}/releases --jq 'map(select(.draft))[0].tag_name' > release-tag
+        RELEASE_TAG=$(cat release-tag)
         if [[ -z "$RELEASE_TAG" ]]; then
           echo "Failed to find release tag" >&2
           exit 1
         fi
+        echo "RELEASE_TAG=$RELEASE_TAG" >>"$GITHUB_ENV"
+      env:
+        GH_TOKEN: ${{ github.token }}
+    - id: set-release-tag
+      run: printf "release-tag=%s\n" "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+  download-installer:
+    name: Download Installers
+    needs: find-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to download from draft releases
+    steps:
+    - run: |
         gh release download "$RELEASE_TAG" \
           --repo ${{ github.repository }} \
           --pattern '*.dmg' \
@@ -67,23 +72,7 @@ jobs:
           --pattern 'rancher-desktop-linux-*.zip.sha512sum'
       env:
         GH_TOKEN: ${{ github.token }}
-
-    - name: Download AppImage
-      run: |
-        # The OBS project needs to have a slash added after each colon.
-        OBS_DOWNLOAD_URL=https://download.opensuse.org/download/repositories/${OBS_PROJECT//:/:/}/AppImage/
-        branch=$(cut -d. -f1,2 <<< "${RELEASE_TAG#v}")
-        read -r artifact_name < <(
-          curl "${OBS_DOWNLOAD_URL}?jsontable" \
-            | jq --raw-output ".data[].name | select(endswith(\".AppImage\")) | select(contains(\".release${branch}.\"))"
-          )
-        curl -L -o rancher-desktop.AppImage "${OBS_DOWNLOAD_URL}${artifact_name}"
-        # The AppImage does not have a checksum; make one up.
-        sha512sum rancher-desktop.AppImage > rancher-desktop.AppImage.sha512sum
-        chmod a+x rancher-desktop.AppImage
-      env:
-        OBS_PROJECT: ${{ inputs.obs-project }}
-
+        RELEASE_TAG: ${{ needs.find-release.outputs.release-tag }}
     - name: Upload macOS aarch-64 artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
@@ -116,6 +105,29 @@ jobs:
         path: |
           rancher-desktop-linux-*.zip
           rancher-desktop-linux-*.zip.sha512sum
+
+  download-appimage:
+    name: Download Linux AppImage
+    needs: find-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+    - run: |
+        # The OBS project needs to have a slash added after each colon.
+        OBS_DOWNLOAD_URL=https://download.opensuse.org/download/repositories/${OBS_PROJECT//:/:/}/AppImage/
+        branch=$(cut -d. -f1,2 <<< "${RELEASE_TAG#v}")
+        read -r artifact_name < <(
+          curl "${OBS_DOWNLOAD_URL}?jsontable" \
+            | jq --raw-output ".data[].name | select(endswith(\".AppImage\")) | select(contains(\".release${branch}.\"))"
+          )
+        curl -L -o rancher-desktop.AppImage "${OBS_DOWNLOAD_URL}${artifact_name}"
+        # The AppImage does not have a checksum; make one up.
+        sha512sum rancher-desktop.AppImage > rancher-desktop.AppImage.sha512sum
+        chmod a+x rancher-desktop.AppImage
+      env:
+        OBS_PROJECT: ${{ inputs.obs-project }}
+        RELEASE_TAG: ${{ needs.find-release.outputs.release-tag }}
     - name: Upload Linux AppImage
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
@@ -125,9 +137,9 @@ jobs:
           rancher-desktop.AppImage
           rancher-desktop.AppImage.sha512sum
 
-  smoke-test:
-    name: Smoke test
-    needs: download-artifacts
+  smoke-test-installer:
+    name: Smoke test installers
+    needs: download-installer
     strategy:
       fail-fast: false
       matrix:
@@ -205,9 +217,9 @@ jobs:
         path: ${{ github.workspace }}/logs
         if-no-files-found: warn
 
-  repository-smoke-test:
+  smoke-test-repository:
     name: Smoke test repository
-    needs: download-artifacts
+    needs: find-release
     strategy:
       fail-fast: false
       matrix:
@@ -251,7 +263,7 @@ jobs:
       if: runner.os == 'Linux'
       run: .github/workflows/smoke-test/install-from-repo.sh
       env:
-        RD_VERSION: ${{ needs.download-artifacts.outputs.release-tag }}
+        RD_VERSION: ${{ needs.find-release.outputs.release-tag }}
         OBS_PROJECT: ${{ inputs.obs-project }}
     - name: Run smoke test
       shell: bash
@@ -309,9 +321,9 @@ jobs:
         path: ${{ github.workspace }}/logs
         if-no-files-found: warn
 
-  appimage-smoke-test:
+  smoke-test-appimage:
     name: Smoke test AppImage
-    needs: download-artifacts
+    needs: download-appimage
     strategy:
       fail-fast: false
       matrix:
@@ -429,7 +441,7 @@ jobs:
 
   flag-skipped-signing-checks:
     name: Flag that signing checks were skipped
-    needs: [smoke-test,repository-smoke-test,appimage-smoke-test]
+    needs: [smoke-test-installer, smoke-test-repository, smoke-test-appimage]
     runs-on: ubuntu-latest
     if: inputs.skip-signing-checks
     steps:
