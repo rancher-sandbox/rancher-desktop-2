@@ -4,14 +4,16 @@ import stream from 'node:stream';
 import Electron from 'electron';
 
 import { getIpcMainProxy } from '@pkg/main/ipcMain';
-import mainEvents from '@pkg/main/mainEvents';
+import mainEvents, { NoMainEventsHandlerError } from '@pkg/main/mainEvents';
 import { spawnFile, SpawnError } from '@pkg/utils/childProcess';
 import Logging from '@pkg/utils/logging';
 import { getRDDPath } from '@pkg/utils/paths';
 
 const console = Logging.rdd;
+const CodeIncompatibleServer = 5;
 
 let fetchConfigPromise: Promise<string> | undefined;
+let missingReadyCallback = false;
 
 /**
  * fetchConfig returns the kubeconfig for accessing RDD.
@@ -71,8 +73,13 @@ async function fetchConfigWithoutCache(): Promise<string> {
         try {
           await mainEvents.invoke('rdd/kube-config-ready', stdout);
         } catch (err) {
-          // Retrying to get the config will not help.
-          console.error('Error processing new RDD configuration', err);
+          if (err instanceof NoMainEventsHandlerError) {
+            // The callback hasn't been registered yet.
+            missingReadyCallback = true;
+          } else {
+            // Retrying to get the config will not help.
+            console.error('Error processing new RDD configuration', err);
+          }
         }
 
         // Log the RDD version for debugging purposes; no need to do that
@@ -84,12 +91,23 @@ async function fetchConfigWithoutCache(): Promise<string> {
         return stdout;
       }
     } catch (err) {
-      if (err instanceof SpawnError && err.code === 5) {
-        // Fatal: the server is using an incompatible backend.
+      if (err instanceof SpawnError && err.code === CodeIncompatibleServer) {
+        // Fatal: the server is using an incompatible backend.  `stderr` is in
+        // JSONL (i.e. JSON objects on separate lines); try to get the error
+        // message out of them.
         let message = 'Unsupported RDD service version';
-        try {
-          message = JSON.parse(stderr).msg ?? message;
-        } catch { /* ignore, use fallback message */ }
+        for (const line of stderr.split(/\r?\n/)) {
+          try {
+            const error: { 'exit-code'?: number; msg?: string } = JSON.parse(line);
+            if (error?.['exit-code'] !== CodeIncompatibleServer) {
+              continue;
+            }
+            if (typeof error?.msg === 'string' && error.msg && error.msg !== '<nil>') {
+              message = error.msg;
+              break;
+            }
+          } catch { /* ignore; try next line, or use fallback message */ }
+        }
         console.error(message);
         Electron.dialog.showErrorBox('Incompatible RDD Service', message);
         Electron.app.quit();
@@ -115,6 +133,17 @@ async function fetchConfigWithoutCache(): Promise<string> {
  */
 function fetchConfig(): Promise<string> {
   fetchConfigPromise ??= fetchConfigWithoutCache();
+
+  if (missingReadyCallback) {
+    // The callback for `rdd/kube-config-ready` was not registered by the time
+    // the initial `fetchConfig` call was made.  Call that now (because the
+    // kube config must have been ready for that flag to be set).
+    fetchConfigPromise.then(kubeConfigStr => {
+      mainEvents.invoke('rdd/kube-config-ready', kubeConfigStr)
+        .catch(err => console.error('Error processing new RDD configuration', err));
+    });
+    missingReadyCallback = false;
+  }
 
   return fetchConfigPromise;
 }
