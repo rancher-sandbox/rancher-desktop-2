@@ -16,6 +16,7 @@ extraResources:
   - '!**/*.tgz'
   - '!**/*.xz'
   - '!**/*.zip'
+  - '!**/*-release.png' # stable icon masters, kept only to restore at GA
 - from: rdd/bin
   to: ${platform}/bin/
   filter:
