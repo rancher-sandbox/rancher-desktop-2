@@ -4,7 +4,7 @@
 # The value is an array of files in that directory to sign, or an explicit
 # negation (prefixed with "!").  Any files not listed is an error.
 .:
-- Rancher Desktop.exe
+- Rancher Desktop 2.exe
 - wix-custom-action.dll
 - '!dxcompiler.dll'     # spellcheck-ignore-line
 - '!ffmpeg.dll'

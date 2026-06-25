@@ -22,6 +22,12 @@
 
 set -o errexit -o nounset
 shopt -s nullglob
+# On bash 4.4+, command substitution `$(command ...)` does _not_ inherit
+# errexit; set `inherit_errexit` here to make it work like older version.  We
+# want to ignore failure here because macOS may be on bash 3.2 that does not
+# support this option; that is fine, because in that case command substitution
+# does inherit errexit.
+shopt -s inherit_errexit &>/dev/null || true
 
 export MSYS2_ARG_CONV_EXCL='*'
 RDD= # Path to rdd
@@ -56,15 +62,16 @@ get_archive() {
     for checksum in *.sha512sum; do
         archiveName=${checksum%.sha512sum}
         if command -v sha512sum &>/dev/null; then
-            sha512sum --check --quiet --strict "$checksum"
+            sha512sum --check --quiet --strict "$checksum" >&2
         else
-            shasum --check --quiet --algorithm 512 "$checksum"
+            shasum --check --quiet --algorithm 512 "$checksum" >&2
         fi
         grep --quiet "$archiveName" "$checksum"
         readlink -f "$archiveName"
         return
     done
     echo "Failed to find archive." >&2
+    ls -l
     exit 1
 }
 

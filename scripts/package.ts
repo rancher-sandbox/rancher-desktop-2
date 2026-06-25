@@ -279,12 +279,15 @@ class Builder {
       }
     }
 
-    // Update signing configuration
+    // Ensure that the signing config contains the proper name for the excutable.
+    // This is needed because the smoke test script uses that config file to find
+    // files to check; if it does not match, the smoke tests will fail.
     const { productName } = buildUtils.packageMeta;
-    const windowsSigningConfig = yaml.parse(await fs.promises.readFile('build/signing-config-win.yaml', 'utf-8'));
-    windowsSigningConfig['.'] = windowsSigningConfig['.'].map((filename: string) => {
-      return /^Rancher Desktop.*\.exe$/.test(filename) ? `${ productName }.exe` : filename;
-    });
+    const windowsSigningConfig: Record<string, string[]> =
+      yaml.parse(await fs.promises.readFile('build/signing-config-win.yaml', 'utf-8'));
+    if (!windowsSigningConfig['.'].includes(`${ productName }.exe`)) {
+      throw new Error(`signing-config-win.yaml does not contain the expected executable name: ${ productName }.exe`);
+    }
     await fs.promises.writeFile(
       path.join(workDir, 'signing-config-win.yaml'),
       yaml.stringify(windowsSigningConfig), 'utf-8');
