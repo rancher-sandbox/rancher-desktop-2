@@ -116,10 +116,10 @@ kube_current_context_is() { # <expected-context>
 }
 
 @test "rdd run targets the instance Kubernetes context" {
-    # rdd run points KUBECONFIG at a throwaway file whose current context
-    # is the instance, so a client talks to this cluster regardless of the
-    # user's selected context. config current-context reads the file
-    # without contacting the cluster. The user's kubeconfig is untouched.
+    # rdd run points KUBECONFIG at a separate kubeconfig it maintains, whose
+    # current context is the instance, so a client talks to this cluster
+    # regardless of the user's selected context. config current-context reads
+    # the file without contacting the cluster. The user's kubeconfig is untouched.
     run_e -0 rdd run rdd kubectl config current-context
     assert_output "${CONTEXT_NAME}"
 }
@@ -176,10 +176,10 @@ kube_current_context_is() { # <expected-context>
     # opens the NodePort on the node's 0.0.0.0; the Lima template forwards
     # that port to the host, so localhost:<nodePort> reaches the application.
 
-    # Warm the image cache so the cold nginx pull stays off the rollout's clock
-    # on a slow CI runner. With the default moby backend k3s pulls through
-    # cri-dockerd from dockerd, so warm it with rdd run, which points docker at
-    # the VM's engine.
+    # Pull nginx ahead of the rollout so the cold pull doesn't count against its
+    # --timeout; this helps on slow CI runners. With the default moby backend
+    # k3s pulls through cri-dockerd from dockerd; use rdd run docker to ensure we
+    # are using the correct docker context.
     rdd run docker pull --quiet nginx
 
     rdd kubectl --context "${CONTEXT_NAME}" create deployment test-connect --image=nginx
