@@ -218,7 +218,8 @@ ul {
         }
 
         a:is(.router-link-active, .rd-link-active) {
-            background-color: var(--nav-active);
+            background: var(--nav-active-stripes);
+            color: #fff;
         }
     }
 }
@@ -229,7 +230,8 @@ a {
   }
 
   &:is(.router-link-active, .rd-link-active) :deep(div) {
-    background-color: var(--nav-active);
+    background: var(--nav-active-stripes);
+    color: #fff;
   }
 }
 

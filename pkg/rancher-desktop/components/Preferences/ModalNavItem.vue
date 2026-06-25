@@ -47,6 +47,7 @@ export default defineComponent({
   }
 
   .active {
-    background-color: var(--nav-active);
+    background: var(--nav-active-stripes);
+    color: #fff;
   }
 </style>

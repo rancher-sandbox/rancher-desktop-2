@@ -314,6 +314,9 @@ $selected: rgba(#3D98D3, .5);
   --nav-width                  : 230px;
   --nav-bg                     : #{$lightest};
   --nav-active                 : #{$light};
+  // Beta marker: the selected nav item shares the app icon's diagonal stripes.
+  // Defined once here (light is the base :root); dark/suse inherit it unchanged.
+  --nav-active-stripes         : repeating-linear-gradient(-45deg, #0081be 0, #0081be 12px, #72b9db 12px, #72b9db 20px);
   --nav-hover                  : #{$medium};
   --nav-expander-hover         : #{darken($medium, 10%)};
   --nav-border                 : #{$medium};
