@@ -104,8 +104,7 @@ func (c *controller) setupReconciler(ctx context.Context, mgr ctrl.Manager) erro
 
 	log.Info("Setting up Mock AppReconciler")
 	err = (&appReconciler{
-		Client:   mgr.GetClient(),
-		Recorder: mgr.GetEventRecorder(controllerLongName),
+		Client: mgr.GetClient(),
 	}).SetupWithManager(mgr)
 	if err != nil {
 		return err

@@ -148,7 +148,6 @@ export async function teardownApp(app: ElectronApplication) {
       }
     }
   }
-  await rdd('service', 'delete');
 }
 
 export async function teardown(app: ElectronApplication, testInfo: TestInfo) {
@@ -157,6 +156,30 @@ export async function teardown(app: ElectronApplication, testInfo: TestInfo) {
 
   await context.tracing.stop({ path: reportAsset(testInfo) });
   await teardownApp(app);
+
+  const logsDir = reportAsset(testInfo, 'log');
+  const rddLogs = (await fs.promises.open(path.join(logsDir, 'rdd-exec.log'), 'a')).createWriteStream();
+  try {
+    const rddExe = path.join(import.meta.dirname, '..', '..', 'rdd', 'bin', exeName('rdd'));
+    await spawnFile(rddExe, ['service', 'delete'], { stdio: ['ignore', rddLogs, rddLogs] });
+  } catch (ex) {
+    console.error(`Failed to clean up RDD: ${ ex }`);
+  } finally {
+    await expect(util.promisify(rddLogs.close.bind(rddLogs))(), 'failed to close RDD logs')
+      .resolves.toBeUndefined();
+  }
+  try {
+    const attachment = testInfo.attachments.find(a => a.name === 'mock-controller-pid')?.body?.toString();
+    const pid = parseInt(attachment ?? '0', 10);
+    if (pid) {
+      process.kill(pid);
+    }
+  } catch (ex) {
+    // Ignore the error if the process is already gone, but log it otherwise.
+    if (!ex || typeof ex !== 'object' || !('code' in ex) || ex.code !== 'ESRCH') {
+      console.error(`Failed to clean up mock controller: ${ ex }`);
+    }
+  }
 
   if (currentTest?.file === filename) {
     const delta = (Date.now() - currentTest.startTime) / 1_000;
@@ -300,31 +323,31 @@ export async function startRancherDesktop(testInfo: TestInfo, options: startRanc
 
   // We need to manually launch RDD, to force the use of the mock backend.
   const rddLogs = (await fs.promises.open(path.join(logsDir, 'rdd-exec.log'), 'a')).createWriteStream();
-  await spawnFile(
-    path.join(topSrcDir, 'rdd', 'bin', exeName('rdd')),
-    ['service', 'delete'],
-    { env, stdio: ['ignore', rddLogs, rddLogs] });
-  await spawnFile(
-    path.join(topSrcDir, 'rdd', 'bin', exeName('rdd')),
-    ['service', 'start', '--controllers=', '--wait=false'],
-    { env, stdio: ['ignore', rddLogs, rddLogs] });
-  process.on('beforeExit', () => {
-    spawnFile(
+  try {
+    await spawnFile(
       path.join(topSrcDir, 'rdd', 'bin', exeName('rdd')),
-      ['service', 'stop'],
+      ['service', 'delete'],
       { env, stdio: ['ignore', rddLogs, rddLogs] });
-  });
+    await spawnFile(
+      path.join(topSrcDir, 'rdd', 'bin', exeName('rdd')),
+      ['service', 'start', '--controllers=', '--wait=false'],
+      { env, stdio: ['ignore', rddLogs, rddLogs] });
+  } finally {
+    await expect(util.promisify(rddLogs.close.bind(rddLogs))(), 'failed to close RDD logs')
+      .resolves.toBeUndefined();
+  }
 
   // The mock controller does not daemonize; launch it in the background.
   const controller = childProcess.spawn(
     path.join(topSrcDir, 'rdd', 'bin', exeName('mock-controller')),
     ['-v', '2', '--logtostderr=false', `-log_file=${ path.join(logsDir, 'mock-controller.log') }`],
     { env, stdio: 'ignore' });
-  process.on('beforeExit', () => {
-    // Stopping RDD should have caused the mock controller to exit; kill it just in case.
-    controller.kill();
+  controller.on('error', (err) => {
+    expect(err, 'mock controller exited with error').toBeUndefined();
   });
-  controller.unref();
+  // Stash controller PID in testInfo so we can kill it in teardown().
+  testInfo.attach('mock-controller-pid', { body: `${ controller.pid }`, contentType: 'text/plain' });
+  controller.unref(); // Don't block test if we fail to clean up.
 
   const args = [
     path.join(topSrcDir, packageMeta.main),

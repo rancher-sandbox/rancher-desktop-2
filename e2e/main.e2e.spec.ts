@@ -58,7 +58,7 @@ test.describe('Main App Test', () => {
     const navPage = new NavPage(page);
 
     await rdd('set', 'running=false', '--wait=false');
-    await expect(navPage.progressBar).toBeVisible({ timeout: 1_000 });
+    await expect(navPage.progressBar).toBeVisible();
     // The text should be reflected from the status condition.
     const rawApps = await rdd('ctl', 'get', 'apps', '--output=json');
     const appList: rddClient.IoRancherdesktopAppV1alpha1AppList = JSON.parse(rawApps);

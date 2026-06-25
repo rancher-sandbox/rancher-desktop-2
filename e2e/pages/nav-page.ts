@@ -1,4 +1,4 @@
-import util from 'util';
+import { expect, Locator, Page } from '@playwright/test';
 
 import { ContainersPage } from './containers-page';
 import { DiagnosticsPage } from './diagnostics-page';
@@ -13,8 +13,6 @@ import { WSLIntegrationsPage } from './wsl-integrations-page';
 import { rdd } from '../utils/TestUtils';
 
 import * as rddClient from '@rdd-client';
-
-import type { Locator, Page } from '@playwright/test';
 
 const pageConstructors = {
   General:         (page: Page) => page,
@@ -46,14 +44,16 @@ export class NavPage {
   }
 
   protected async isAppSettled(): Promise<boolean> {
-    try {
-      const rawApps = await rdd('ctl', 'get', 'apps', '--output=json');
-      const appList: rddClient.IoRancherdesktopAppV1alpha1AppList = JSON.parse(rawApps);
-      const conditions = appList.items.flatMap(item => item.status?.conditions ?? []);
-      return conditions.some(condition => condition.type === 'Settled' && condition.status === 'True');
-    } catch {
+    // Check CRDs first, to avoid error messages when apps are not registered yet.
+    const AppsCRDSuffix = '/apps.app.rancherdesktop.io';
+    const crds = await rdd('ctl', 'get', 'crds', '--output=name');
+    if (!crds.split('\n').some(line => line.trim().endsWith(AppsCRDSuffix))) {
       return false;
     }
+    const rawApps = await rdd('ctl', 'get', 'apps', '--output=json');
+    const appList: rddClient.IoRancherdesktopAppV1alpha1AppList = JSON.parse(rawApps);
+    const conditions = appList.items.flatMap(item => item.status?.conditions ?? []);
+    return conditions.some(condition => condition.type === 'Settled' && condition.status === 'True');
   }
 
   /**
@@ -62,21 +62,10 @@ export class NavPage {
   async waitForAppSettled() {
     // We are using the mock controller, so the progress should become ready
     // fairly quickly.
-
-    let timedOut = false;
-    setTimeout(() => { timedOut = true }, 30_000);
-    const delay = 500; // msec
-    // eslint-disable-next-line no-unmodified-loop-condition -- Flag updated by timer.
-    while (!timedOut) {
-      if (await this.isAppSettled()) {
-        return;
-      }
-      await util.promisify(setTimeout)(delay);
-    }
-
-    if (timedOut) {
-      throw new Error('Backend did not settle within 30 seconds');
-    }
+    await expect.poll(() => this.isAppSettled(), {
+      timeout: 30_000,
+      message: 'Backend did not settle',
+    }).toBeTruthy();
   }
 
   /**

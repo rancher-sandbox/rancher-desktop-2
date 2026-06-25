@@ -129,10 +129,6 @@ export async function verifyNoRegistrySubtree(hive: string): Promise<void> {
   }
 }
 
-export async function verifyUserProfile(): Promise<void> {
-  await clearUserProfile();
-}
-
 export async function verifyNoSystemProfile(): Promise<string[]> {
   const platform = os.platform() as 'win32' | 'darwin' | 'linux';
 

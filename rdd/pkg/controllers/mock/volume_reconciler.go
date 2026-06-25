@@ -15,9 +15,7 @@ import (
 	mobyvolume "github.com/moby/moby/api/types/volume"
 
 	corev1 "k8s.io/api/core/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	metav1apply "k8s.io/client-go/applyconfigurations/meta/v1"
 	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -47,14 +45,6 @@ func getVolumeName(volume mobyvolume.Volume) (namespace, name string) {
 func (r *volumeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var errs []error
 	log := log.FromContext(ctx)
-
-	// Check for the CRD to be registered.
-	const crdName = "volumes.containers.rancherdesktop.io"
-	var crd apiextensionsv1.CustomResourceDefinition
-	if err := r.Client.Get(ctx, types.NamespacedName{Name: crdName}, &crd); err != nil {
-		log.Error(err, "Failed to get CRD", "crd", crdName)
-		return ctrl.Result{}, err
-	}
 
 	var rddNamespace corev1.Namespace
 	if err := r.Client.Get(ctx, req.NamespacedName, &rddNamespace); err != nil {
