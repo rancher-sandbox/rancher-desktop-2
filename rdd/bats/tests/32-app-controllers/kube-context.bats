@@ -124,6 +124,21 @@ kube_current_context_is() { # <expected-context>
     assert_output "${CONTEXT_NAME}"
 }
 
+@test "rdd run kubectl reaches the instance cluster" {
+    # current-context (above) proves the maintained kubeconfig names the
+    # instance, not that it reaches the right cluster. The kube-system
+    # namespace UID is a stable per-cluster identity: read it through the
+    # known-good shared context and through rdd run's maintained config, and
+    # require the two to match.
+    run -0 rdd kubectl --context "${CONTEXT_NAME}" \
+        get namespace kube-system -o jsonpath='{.metadata.uid}'
+    expected_uid=${output}
+
+    run_e -0 rdd run rdd kubectl get namespace kube-system \
+        -o jsonpath='{.metadata.uid}'
+    assert_output "${expected_uid}"
+}
+
 @test "rdd run prepends the instance bin directory to PATH" {
     # The instance bin directory leads PATH so tools bundled with the
     # instance shadow any global ones for the duration of the command.
