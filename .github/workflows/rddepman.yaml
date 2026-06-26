@@ -31,6 +31,10 @@ jobs:
 
       - uses: ./.github/actions/yarn-install
 
-      - run: yarn rddepman
+      - run: yarn rddepman host
+        env:
+          GITHUB_TOKEN: ${{ secrets.RUN_WORKFLOW_FROM_WORKFLOW }}
+
+      - run: yarn rddepman guest
         env:
           GITHUB_TOKEN: ${{ secrets.RUN_WORKFLOW_FROM_WORKFLOW }}
