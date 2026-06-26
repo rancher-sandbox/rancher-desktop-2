@@ -12,13 +12,17 @@ import (
 )
 
 // Predefined exit codes. 0 and 1 are the defaults handled by main; 2 is
-// reserved for cobra usage errors, so named codes start at 3.
+// reserved for cobra usage errors, so named codes start at 3.  This list should
+// use explicit values, as this is a public API; see `cmd_app.md`.
 const (
 	// CodeRejected indicates the API server's admission controller rejected the request.
 	CodeRejected = 3
 
 	// CodeTimeout indicates the wait deadline expired before the desired state was reached.
 	CodeTimeout = 4
+
+	// CodeIncompatibleServer indicates the server is incompatible with the client.
+	CodeIncompatibleServer = 5
 )
 
 // Error is an error that carries a process exit code for main to return.
