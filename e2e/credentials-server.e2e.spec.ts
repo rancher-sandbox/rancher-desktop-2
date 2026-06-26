@@ -246,7 +246,7 @@ describeWithCreds('Credentials server', () => {
   test('should start loading the background services and hide progress bar', async() => {
     const navPage = new NavPage(page);
 
-    await navPage.progressBecomesReady();
+    await navPage.waitForAppSettled();
     await expect(navPage.progressBar).toBeHidden();
   });
 

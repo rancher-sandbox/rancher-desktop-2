@@ -84,7 +84,7 @@ test.describe.fixme('Extensions', () => {
   });
 
   test('should load backend', async() => {
-    await (new NavPage(page)).progressBecomesReady();
+    await (new NavPage(page)).waitForAppSettled();
   });
 
   test('determine container engine in use', async() => {

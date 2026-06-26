@@ -23,7 +23,7 @@ test.describe.fixme('Containers Tests', () => {
     });
 
     const navPage = new NavPage(page);
-    await navPage.progressBecomesReady();
+    await navPage.waitForAppSettled();
   });
 
   test.afterAll(async({ colorScheme }, testInfo) => {
@@ -321,7 +321,7 @@ test.describe.fixme('Container Shell Tab', () => {
     });
 
     const navPage = new NavPage(page);
-    await navPage.progressBecomesReady();
+    await navPage.waitForAppSettled();
 
     // Start a long-running container for the shell tests.
     // Ubuntu is used because the base Alpine image does not include `script`
@@ -429,7 +429,7 @@ test.describe.fixme('Container Info Tab', () => {
     });
 
     const navPage = new NavPage(page);
-    await navPage.progressBecomesReady();
+    await navPage.waitForAppSettled();
 
     // Run a named alpine container with a known env var so we can assert on it.
     const output = await tool(

@@ -23,7 +23,7 @@ test.describe.fixme('Dashboard', () => {
   test('should allow opening the dashboard', async() => {
     const navPage = new NavPage(page);
 
-    await navPage.progressBecomesReady();
+    await navPage.waitForAppSettled();
 
     // Set up the promise before clicking, to ensure we don't miss the event.
     const dashboardPromise = electronApp.waitForEvent('window', page => page.url().includes('/c/local/explorer'));

@@ -27,7 +27,7 @@ import { expect, test } from '@playwright/test';
 import { NavPage } from './pages/nav-page';
 import { verifyNoSystemProfile } from './utils/ProfileUtils';
 import {
-  createDefaultSettings, setUserProfile, startRancherDesktop, teardown, tool,
+  createDefaultSettings, startRancherDesktop, teardown, tool,
 } from './utils/TestUtils';
 
 import type { DeploymentProfileType } from '@pkg/config/settings';
@@ -67,14 +67,6 @@ test.describe.fixme('Locked fields', () => {
 
   test.beforeAll(async({ colorScheme }, testInfo) => {
     createDefaultSettings({ containerEngine: { allowedImages: { enabled: true, patterns: ['a', 'b', 'c', 'e'] } } });
-    await setUserProfile(
-      { version: 10 as typeof CURRENT_SETTINGS_VERSION, containerEngine: { allowedImages: { enabled: true } } },
-      {
-        version:         10,
-        containerEngine: { allowedImages: { enabled: true, patterns: ['c', 'd', 'f'] } },
-        kubernetes:      { version: lockedK8sVersion },
-      },
-    );
     electronApp = await startRancherDesktop(testInfo);
     page = await electronApp.firstWindow();
   });
@@ -88,7 +80,7 @@ test.describe.fixme('Locked fields', () => {
   test('should start up', async() => {
     const navPage = new NavPage(page);
 
-    await navPage.progressBecomesReady();
+    await navPage.waitForAppSettled();
     await expect(navPage.progressBar).toBeHidden();
   });
 

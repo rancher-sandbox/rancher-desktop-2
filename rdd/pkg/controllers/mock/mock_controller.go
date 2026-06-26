@@ -6,6 +6,7 @@ package mock
 
 import (
 	"context"
+	_ "embed"
 	"maps"
 	"net/http"
 	"slices"
@@ -16,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	appv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
 	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 )
@@ -32,6 +34,9 @@ const (
 	controllerName     = "mock"
 	controllerLongName = controllerName + "-controller"
 )
+
+//go:embed crd.yaml
+var controllerCRD string
 
 func init() {
 	base.RegisterController(newController())
@@ -74,7 +79,7 @@ func (c *controller) SetWebhookPort(port int) {
 }
 
 func (c *controller) GetCRDData() string {
-	return ""
+	return controllerCRD
 }
 
 func (c *controller) GetPassthroughEndpoints() []string {
@@ -92,6 +97,14 @@ func (c *controller) setupReconciler(ctx context.Context, mgr ctrl.Manager) erro
 	err := (&kubeNamespaceReconciler{
 		Client:   mgr.GetClient(),
 		Recorder: mgr.GetEventRecorder(controllerLongName),
+	}).SetupWithManager(mgr)
+	if err != nil {
+		return err
+	}
+
+	log.Info("Setting up Mock AppReconciler")
+	err = (&appReconciler{
+		Client: mgr.GetClient(),
 	}).SetupWithManager(mgr)
 	if err != nil {
 		return err
@@ -170,6 +183,9 @@ func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
 	ctx := context.Background()
 	c.mgr = mgr
 
+	if err := appv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
+		return err
+	}
 	if err := containersv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return err
 	}

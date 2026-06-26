@@ -1,18 +1,19 @@
 /**
  * TestUtils exports functions required for the E2E test specs.
  */
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import util from 'util';
+import childProcess from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import util from 'node:util';
 
 import { expect, _electron, ElectronApplication, TestInfo } from '@playwright/test';
 import _, { GetFieldType } from 'lodash';
 import { Page } from 'playwright-core';
-import * as plist from 'plist';
 
-import { defaultSettings, LockedSettingsType, Settings } from '@pkg/config/settings';
-import * as childProcess from '@pkg/utils/childProcess';
+import packageMeta from '@/package.json' with { type: 'json' };
+import { defaultSettings, Settings } from '@pkg/config/settings';
+import { spawnFile } from '@pkg/utils/childProcess';
 import paths from '@pkg/utils/paths';
 import { RecursivePartial, RecursiveTypes } from '@pkg/utils/typeUtils';
 
@@ -21,95 +22,6 @@ let currentTest: undefined | {
   startTime: number,
   options:   startRancherDesktopOptions,
 };
-
-/**
- * Remove any existing user profiles, and set it to the given settings.  If
- * either is `null`, then it is not re-added.
- */
-export async function setUserProfile(userProfile: RecursivePartial<Settings> | null, lockedFields:LockedSettingsType | null) {
-  const platform = os.platform() as 'win32' | 'darwin' | 'linux';
-
-  if (platform === 'win32') {
-    return await setWindowsUserLegacyProfile(userProfile, lockedFields);
-  } else if (platform === 'linux') {
-    return await setLinuxUserProfile(userProfile, lockedFields);
-  } else {
-    return await setDarwinUserProfile(userProfile, lockedFields);
-  }
-}
-
-async function setLinuxUserProfile(userProfile: RecursivePartial<Settings> | null, lockedFields:LockedSettingsType | null) {
-  const userProfilePath = path.join(paths.deploymentProfileUser, 'rancher-desktop.defaults.json');
-  const userLocksPath = path.join(paths.deploymentProfileUser, 'rancher-desktop.locked.json');
-
-  if (userProfile && Object.keys(userProfile).length > 0) {
-    await fs.promises.writeFile(userProfilePath, JSON.stringify(userProfile, undefined, 2));
-  } else {
-    await fs.promises.rm(userProfilePath, { force: true });
-  }
-  if (lockedFields && Object.keys(lockedFields).length > 0) {
-    await fs.promises.writeFile(userLocksPath, JSON.stringify(lockedFields, undefined, 2));
-  } else {
-    await fs.promises.rm(userLocksPath, { force: true });
-  }
-}
-
-function convertToRegistryLegacy(s: string) {
-  return s.replace(/Policies\\Rancher Desktop/g, 'Rancher Desktop\\Profile')
-    .replace('SOFTWARE\\Policies]', 'SOFTWARE\\Rancher Desktop]');
-}
-
-async function setWindowsUserLegacyProfile(userProfile: RecursivePartial<Settings> | null, lockedFields:LockedSettingsType | null) {
-  const workdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'rd-test-profiles'));
-
-  try {
-    for (const [registryType, settings] of [['defaults', userProfile], ['locked', lockedFields]] as const) {
-      // Always remove existing profiles, since we never want to merge any
-      // existing profiles with the new ones.
-      try {
-        const keyPath = `HKCU\\SOFTWARE\\Rancher Desktop\\Profile\\${ registryType }`;
-
-        await childProcess.spawnFile('reg.exe', ['DELETE', keyPath, '/f'], { stdio: 'pipe' });
-      } catch (cause: any) {
-        if (!/unable to find/.test(Object(cause).stderr ?? '')) {
-          throw new Error(`Error trying to delete a user registry hive: ${ cause }`, { cause });
-        }
-      }
-
-      if (settings && Object.keys(settings).length > 0) {
-        const genResult = convertToRegistryLegacy(await tool('rdctl', 'create-profile', '--body', JSON.stringify(settings),
-          '--output=reg', '--hive=hkcu', `--type=${ registryType }`));
-        const regFile = path.join(workdir, 'test.reg');
-
-        try {
-          await fs.promises.writeFile(regFile, genResult);
-          await childProcess.spawnFile('reg.exe', ['IMPORT', regFile], { stdio: 'ignore' });
-        } catch (cause: any) {
-          throw new Error(`Error trying to create a user registry hive: ${ cause }`, { cause });
-        }
-      }
-    }
-  } finally {
-    await fs.promises.rm(workdir, { recursive: true, force: true });
-  }
-}
-
-async function setDarwinUserProfile(userProfile: RecursivePartial<Settings> | null, lockedFields:LockedSettingsType | null) {
-  const userProfilePath = path.join(paths.deploymentProfileUser, 'io.rancherdesktop.profile.defaults.plist');
-  const userLocksPath = path.join(paths.deploymentProfileUser, 'io.rancherdesktop.profile.locked.plist');
-
-  if (userProfile && Object.keys(userProfile).length > 0) {
-    // plist.build() seems to have issues with RecursivePartial<Record<string, string>>, hence cast.
-    await fs.promises.writeFile(userProfilePath, plist.build(userProfile as any));
-  } else {
-    await fs.promises.rm(userProfilePath, { force: true });
-  }
-  if (lockedFields && Object.keys(lockedFields).length > 0) {
-    await fs.promises.writeFile(userLocksPath, plist.build(lockedFields));
-  } else {
-    await fs.promises.rm(userLocksPath, { force: true });
-  }
-}
 
 /**
  * Create empty default settings to bypass gracefully
@@ -158,9 +70,12 @@ export function getAlternateSetting<K extends keyof RecursiveTypes<Settings>>(cu
 
 /**
  * Calculate the path of an asset that should be attached to a test run.
- * @param type What kind of asset this is; defaults to `trace`.
+ * @param type What kind of asset this is:
+ * - 'trace' (default): Playwright trace file.
+ * - 'log': The directory where logs are stored.
+ * - 'instance': RDD instance suffix.
  */
-export function reportAsset(testInfo: TestInfo, type: 'trace' | 'log' = 'trace') {
+export function reportAsset(testInfo: TestInfo, type: 'trace' | 'log' | 'instance' = 'trace') {
   const testName = testInfo.file;
   let name = `${ path.basename(testName).replace(/(?:\.e2e)(?:\.spec)(?:\.ts)$/, '') }-`;
 
@@ -171,9 +86,14 @@ export function reportAsset(testInfo: TestInfo, type: 'trace' | 'log' = 'trace')
     name += `try-${ testInfo.retry }-`;
   }
   name += {
-    trace: 'pw-trace.zip',
-    log:   'logs',
+    trace:    'pw-trace.zip',
+    log:      'logs',
+    instance: '',
   }[type];
+
+  if (type === 'instance') {
+    return 'e2e-' + name.replace(/-$/, '');
+  }
 
   return path.join(import.meta.dirname, '..', 'reports', name);
 }
@@ -195,7 +115,6 @@ export async function teardownApp(app: ElectronApplication) {
       app.close(),
       util.promisify(setTimeout)(60 * 1000),
     ]);
-    await tool('rdctl', 'shutdown');
   } finally {
     if (proc.kill('SIGTERM') || proc.kill('SIGKILL')) {
       console.log(`Manually stopped process ${ pid }`);
@@ -209,7 +128,7 @@ export async function teardownApp(app: ElectronApplication) {
 
         try {
           const args = ['-o', 'pid=', process.platform === 'darwin' ? '-g' : '--sid', `${ pid }`];
-          const { stdout } = await childProcess.spawnFile('ps', args, { stdio: ['ignore', 'pipe', 'inherit'] });
+          const { stdout } = await spawnFile('ps', args, { stdio: ['ignore', 'pipe', 'inherit'] });
 
           pids = stdout.trim().split(/\s+/);
         } catch (ex) {
@@ -220,7 +139,7 @@ export async function teardownApp(app: ElectronApplication) {
         try {
           if (pids.length > 0) {
             console.log(`Manually killing group processes ${ pids.join(' ') }`);
-            await childProcess.spawnFile('kill', ['-s', signal, ...pids]);
+            await spawnFile('kill', ['-s', signal, ...pids]);
           }
         } catch (ex) {
           console.log(`Failed to process group: ${ ex } (retrying)`);
@@ -237,6 +156,30 @@ export async function teardown(app: ElectronApplication, testInfo: TestInfo) {
 
   await context.tracing.stop({ path: reportAsset(testInfo) });
   await teardownApp(app);
+
+  const logsDir = reportAsset(testInfo, 'log');
+  const rddLogs = (await fs.promises.open(path.join(logsDir, 'rdd-exec.log'), 'a')).createWriteStream();
+  try {
+    const rddExe = path.join(import.meta.dirname, '..', '..', 'rdd', 'bin', exeName('rdd'));
+    await spawnFile(rddExe, ['service', 'delete'], { stdio: ['ignore', rddLogs, rddLogs] });
+  } catch (ex) {
+    console.error(`Failed to clean up RDD: ${ ex }`);
+  } finally {
+    await expect(util.promisify(rddLogs.close.bind(rddLogs))(), 'failed to close RDD logs')
+      .resolves.toBeUndefined();
+  }
+  try {
+    const attachment = testInfo.attachments.find(a => a.name === 'mock-controller-pid')?.body?.toString();
+    const pid = parseInt(attachment ?? '0', 10);
+    if (pid) {
+      process.kill(pid);
+    }
+  } catch (ex) {
+    // Ignore the error if the process is already gone, but log it otherwise.
+    if (!ex || typeof ex !== 'object' || !('code' in ex) || ex.code !== 'ESRCH') {
+      console.error(`Failed to clean up mock controller: ${ ex }`);
+    }
+  }
 
   if (currentTest?.file === filename) {
     const delta = (Date.now() - currentTest.startTime) / 1_000;
@@ -256,10 +199,15 @@ export function getResourceBinDir(): string {
   return path.join(srcDir, '..', 'resources', os.platform(), 'bin');
 }
 
-export function getFullPathForTool(tool: string): string {
-  const filename = os.platform().startsWith('win') ? `${ tool }.exe` : tool;
+function exeName(executable: string) {
+  return process.platform.startsWith('win') ? `${ executable }.exe` : executable;
+}
 
-  return path.join(getResourceBinDir(), filename);
+export function getFullPathForTool(tool: string): string {
+  if (path.isAbsolute(tool)) {
+    return tool;
+  }
+  return path.join(getResourceBinDir(), exeName(tool));
 }
 
 /**
@@ -269,7 +217,7 @@ export async function tool(tool: string, ...args: string[]): Promise<string> {
   const exe = getFullPathForTool(tool);
 
   try {
-    const { stdout } = await childProcess.spawnFile(exe, args, {
+    const { stdout } = await spawnFile(exe, args, {
       env: {
         ...process.env,
         PATH: `${ process.env.PATH }${ path.delimiter }${ getResourceBinDir() }`,
@@ -291,6 +239,16 @@ export async function tool(tool: string, ...args: string[]): Promise<string> {
     }).toBeUndefined();
     throw ex;
   }
+}
+
+/**
+ * Run `rdd` with given arguments.
+ * @returns standard output of the command.
+ */
+export async function rdd(...args: string[]): Promise<string> {
+  const rddExe = path.join(import.meta.dirname, '..', '..', 'rdd', 'bin', exeName('rdd'));
+
+  return await tool(rddExe, ...args);
 }
 
 /**
@@ -330,54 +288,77 @@ export async function retry<T>(proc: () => Promise<T>, options?: { delay?: numbe
 }
 
 export interface startRancherDesktopOptions {
-  /** Whether to use the mock backend; defaults to true. */
-  mock?:           boolean;
   /** The environment to use. */
-  env?:            Record<string, string>;
-  /** Set to false if we want to see the first-run dialog (defaults to true). */
-  noModalDialogs?: boolean;
+  env?:        Record<string, string>;
   /** Maximum time in milliseconds to wait for the app to launch. */
-  timeout?:        number;
+  timeout?:    number;
   /** A suffix to be added to the log file, for variants. */
-  logVariant?:     string;
+  logVariant?: string;
 }
 
 /**
- * Run Rancher Desktop; return promise that resolves to commonly-used
- * playwright objects when it has started.
+ * Run Rancher Desktop using the mock controller.
  * @param testPath The path to the test file.
  * @param options Additional options; see type definition for details.
+ * @returns The Electon application.
  */
 export async function startRancherDesktop(testInfo: TestInfo, options: startRancherDesktopOptions = {}): Promise<ElectronApplication> {
   currentTest = {
     file: testInfo.file, options, startTime: Date.now(),
   };
-  const { default: packageMeta } = await import('../../package.json', { with: { type: 'json' } });
+  const topSrcDir = path.join(import.meta.dirname, '../..');
+  const logsDir = reportAsset(testInfo, 'log');
+  await fs.promises.rm(logsDir, {
+    recursive: true, force: true, maxRetries: 3,
+  });
+  await fs.promises.mkdir(logsDir, { recursive: true });
+  // Set the RDD_INSTANCE process-wide so we can use the correct instance for
+  // running any child processes.
+  process.env.RDD_INSTANCE = reportAsset(testInfo, 'instance');
+  const env = {
+    ...process.env,
+    ...options?.env ?? {},
+    RDD_LOG_DIR: logsDir,
+  };
+
+  // We need to manually launch RDD, to force the use of the mock backend.
+  const rddLogs = (await fs.promises.open(path.join(logsDir, 'rdd-exec.log'), 'a')).createWriteStream();
+  try {
+    await spawnFile(
+      path.join(topSrcDir, 'rdd', 'bin', exeName('rdd')),
+      ['service', 'delete'],
+      { env, stdio: ['ignore', rddLogs, rddLogs] });
+    await spawnFile(
+      path.join(topSrcDir, 'rdd', 'bin', exeName('rdd')),
+      ['service', 'start', '--controllers=', '--wait=false'],
+      { env, stdio: ['ignore', rddLogs, rddLogs] });
+  } finally {
+    await expect(util.promisify(rddLogs.close.bind(rddLogs))(), 'failed to close RDD logs')
+      .resolves.toBeUndefined();
+  }
+
+  // The mock controller does not daemonize; launch it in the background.
+  const controller = childProcess.spawn(
+    path.join(topSrcDir, 'rdd', 'bin', exeName('mock-controller')),
+    ['-v', '2', '--logtostderr=false', `-log_file=${ path.join(logsDir, 'mock-controller.log') }`],
+    { env, stdio: 'ignore' });
+  controller.on('error', (err) => {
+    expect(err, 'mock controller exited with error').toBeUndefined();
+  });
+  // Stash controller PID in testInfo so we can kill it in teardown().
+  testInfo.attach('mock-controller-pid', { body: `${ controller.pid }`, contentType: 'text/plain' });
+  controller.unref(); // Don't block test if we fail to clean up.
+
   const args = [
-    path.join(import.meta.dirname, '../..', packageMeta.main),
+    path.join(topSrcDir, packageMeta.main),
     '--disable-gpu',
     '--whitelisted-ips=',
     // See pkg/rancher-desktop/utils/commandLine.ts before changing the next item as the final option.
     '--disable-dev-shm-usage',
   ];
-  const logsDir = reportAsset(testInfo, 'log');
 
-  await fs.promises.rm(logsDir, {
-    recursive: true, force: true, maxRetries: 3,
-  });
-  const launchOptions: Parameters<typeof _electron.launch>[0] = {
-    args,
-    env: {
-      ...process.env,
-      ...options?.env ?? {},
-      RDD_LOG_DIR: logsDir,
-      ...options?.mock ?? true ? { RD_MOCK_BACKEND: '1' } : {},
-    },
-  };
+  const launchOptions: Parameters<typeof _electron.launch>[0] = { args, env };
 
-  if (options?.noModalDialogs ?? true) {
-    args.push('--no-modal-dialogs');
-  }
   if (options?.timeout) {
     launchOptions.timeout = options?.timeout;
   }
@@ -388,10 +369,10 @@ export async function startRancherDesktop(testInfo: TestInfo, options: startRanc
   return electronApp;
 }
 
-export async function startSlowerDesktop(testInfo: TestInfo, defaultSettings: RecursivePartial<Settings> = {}): Promise<[ElectronApplication, Page]> {
-  const launchOptions: startRancherDesktopOptions = { mock: false };
+// Start Rancher Desktop, and wait for the window to appear.
+export async function startSlowerDesktop(testInfo: TestInfo): Promise<[ElectronApplication, Page]> {
+  const launchOptions: startRancherDesktopOptions = { };
 
-  createDefaultSettings(defaultSettings);
   if (process.env.CI) {
     launchOptions.timeout = 120_000; // default is 30_000 msec but the CI is very slow
   }

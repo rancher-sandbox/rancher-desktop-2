@@ -19,7 +19,7 @@ test.describe.fixme('Volumes Tests', () => {
     });
 
     const navPage = new NavPage(page);
-    await navPage.progressBecomesReady();
+    await navPage.waitForAppSettled();
   });
 
   test.afterAll(async({ colorScheme }, testInfo) => {

@@ -15,7 +15,7 @@ import { NavPage } from '@/e2e/pages/nav-page';
 import { PreferencesPage } from '@/e2e/pages/preferences';
 import { clearUserProfile } from '@/e2e/utils/ProfileUtils';
 import {
-  createDefaultSettings, setUserProfile, retry, teardown, tool, startRancherDesktop, reportAsset,
+  createDefaultSettings, retry, teardown, tool, startRancherDesktop, reportAsset,
 } from '@/e2e/utils/TestUtils';
 import { ContainerEngine, CURRENT_SETTINGS_VERSION } from '@pkg/config/settings';
 import { Log } from '@pkg/utils/logging';
@@ -43,12 +43,7 @@ test.describe.serial('Main App Test', () => {
       diagnostics: { showMuted: true, mutedChecks: { MOCK_CHECKER: true } },
     });
 
-    await setUserProfile(
-      { version: 11 as typeof CURRENT_SETTINGS_VERSION, containerEngine: { allowedImages: { enabled: true, patterns: [] } } },
-      {},
-    );
-
-    electronApp = await startRancherDesktop(testInfo, { mock: false });
+    electronApp = await startRancherDesktop(testInfo);
     console = new Log(path.basename(import.meta.filename, '.ts'), reportAsset(testInfo, 'log'));
 
     page = await electronApp.firstWindow();
@@ -63,7 +58,7 @@ test.describe.serial('Main App Test', () => {
       browserWindow.setBounds({ x: 64, y: 64, width: 1024, height: 768 });
     });
 
-    await navPage.progressBecomesReady();
+    await navPage.waitForAppSettled();
 
     await page.waitForTimeout(2500);
 

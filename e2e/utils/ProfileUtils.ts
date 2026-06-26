@@ -9,7 +9,6 @@ import { expect, Page, TestInfo } from '@playwright/test';
 
 import {
   createDefaultSettings,
-  setUserProfile,
   startRancherDesktop,
   retry,
   teardown,
@@ -130,11 +129,6 @@ export async function verifyNoRegistrySubtree(hive: string): Promise<void> {
   }
 }
 
-export async function verifyUserProfile(): Promise<void> {
-  await clearUserProfile();
-  await setUserProfile({ version: 10 as typeof CURRENT_SETTINGS_VERSION, containerEngine: { allowedImages: { enabled: true } } }, null);
-}
-
 export async function verifyNoSystemProfile(): Promise<string[]> {
   const platform = os.platform() as 'win32' | 'darwin' | 'linux';
 
@@ -193,7 +187,7 @@ export async function testForFirstRunWindow(testInfo: TestInfo, options: startRa
   let windowCount = 0;
   let windowCountForMainPage = 0;
   const electronApp = await startRancherDesktop(testInfo, {
-    ...options, mock: false, noModalDialogs: false, timeout: 60_000,
+    ...options, timeout: 60_000,
   });
 
   electronApp.on('window', async(openedPage: Page) => {
@@ -255,7 +249,7 @@ export async function testForNoFirstRunWindow(testInfo: TestInfo, options: start
   let windowCount = 0;
   let windowCountForMainPage = 0;
   const electronApp = await startRancherDesktop(testInfo, {
-    ...options, mock: false, noModalDialogs: false, timeout: 60_000,
+    ...options, timeout: 60_000,
   });
 
   electronApp.on('window', async(openedPage: Page) => {
@@ -299,7 +293,7 @@ export async function testForNoFirstRunWindow(testInfo: TestInfo, options: start
 export async function testWaitForLogfile(testInfo: TestInfo, options: startRancherDesktopOptions) {
   let windowCount = 0;
   const electronApp = await startRancherDesktop(testInfo, {
-    ...options, mock: false, noModalDialogs: true, timeout: 60_000,
+    ...options, timeout: 60_000,
   });
   const logPath = path.join(reportAsset(testInfo, 'log'), 'background.log');
 
