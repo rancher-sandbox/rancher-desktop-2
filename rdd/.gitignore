@@ -1,2 +1,3 @@
 /bin/*
+/pkg/embedded/distro.img.xz
 /pkg/guestagent/lima-guestagent.gz

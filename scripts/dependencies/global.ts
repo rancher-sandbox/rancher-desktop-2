@@ -8,6 +8,7 @@ import { VersionedDependency } from '@/scripts/lib/dependencies';
 
 export const globalDependencies: VersionedDependency[] = [
   new tools.CheckSpelling(),
+  new tools.Distro(),
   new Electron(),
   new tools.DockerCLI(),
   new tools.DockerBuildx(),

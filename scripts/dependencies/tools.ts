@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 
 import { defined } from '@/pkg/rancher-desktop/utils/typeUtils';
@@ -7,6 +8,7 @@ import {
   fetchUpstreamChecksums,
   GitHubDependency,
   GlobalDependency,
+  GoArch,
   lookupChecksum,
   Sha256Checksum,
   Platform,
@@ -225,6 +227,47 @@ export class Steve extends GlobalDependency(GitHubDependency) {
 
       return [archiveName, checksum] as const;
     }))).filter(defined));
+  }
+}
+
+export class Distro extends GlobalDependency(GitHubDependency) {
+  readonly name = 'distro';
+  readonly githubOwner = 'rancher-sandbox';
+  readonly githubRepo = 'rancher-desktop-opensuse';
+
+  /** The release asset filename for an image form and arch. */
+  protected assetName(version: string, form: 'raw' | 'tar', arch: GoArch): string {
+    return `distro.v${ version }.${ arch }.${ form }.xz`;
+  }
+
+  async download(context: DownloadContext): Promise<void> {
+    const version = context.dependencies.distro.version;
+    // Unix hosts boot the raw ext4 image; Windows (WSL2) boots the tarball.
+    const form = context.goPlatform === 'windows' ? 'tar' : 'raw';
+    const archiveName = this.assetName(version, form, context.goArch);
+    const url = `https://github.com/${ this.githubOwner }/${ this.githubRepo }/releases/download/v${ version }/${ archiveName }`;
+    // Stage the compressed image in the rdd tree for a later build step
+    // to embed in the rdd binary; keep it non-executable.
+    const destPath = path.join(import.meta.dirname, '..', '..', 'rdd', 'pkg', 'embedded', 'distro.img.xz');
+    const expectedChecksum = lookupChecksum(context, this.name, archiveName);
+
+    await download(url, destPath, { expectedChecksum, access: fs.constants.W_OK });
+  }
+
+  async getChecksums(version: string): Promise<Record<string, Sha256Checksum>> {
+    const baseURL = `https://github.com/${ this.githubOwner }/${ this.githubRepo }/releases/download/v${ version }`;
+    const artifacts = cartesian(['raw', 'tar'] as const, ['amd64', 'arm64'] as const);
+
+    return Object.fromEntries(await Promise.all(artifacts.map(async([form, arch]) => {
+      const archiveName = this.assetName(version, form, arch);
+      const url = `${ baseURL }/${ archiveName }`;
+      const sidecar = await fetchUpstreamChecksums(`${ url }.sha256`, 'sha256');
+      const checksum = await downloadAndHash(url, {
+        verify: { algorithm: 'sha256', expected: sidecar[archiveName] },
+      });
+
+      return [archiveName, checksum];
+    })));
   }
 }
 

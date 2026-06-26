@@ -9,6 +9,13 @@
 check-spelling:
   version: 0.0.26
   checksums: {}
+distro:
+  version: 0.2.8
+  checksums:
+    distro.v0.2.8.amd64.raw.xz: sha256:a589e020df983d6b971fbbe73d1b378fb3dfaaa6c0a6056ac48a168f646e9007
+    distro.v0.2.8.arm64.raw.xz: sha256:64136a49ecebdf09e88d5026e942595e0c8b5c92d21f9d4e5e6bdfa85c2673dd
+    distro.v0.2.8.amd64.tar.xz: sha256:3d356fc196a5b929de075d132a3f46688fd881fadad16219172bde392a3a82e0
+    distro.v0.2.8.arm64.tar.xz: sha256:cd8d237c230bebc04dd1b77c5597302f68195de25b063b5f2876d6377ecafa79
 electron:
   version: 42.1.0
   checksums:

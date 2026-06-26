@@ -39,6 +39,7 @@ export type Version = string;
 
 export interface DependencyVersions {
   'check-spelling':                string;
+  distro:                          string;
   dockerCLI:                       string;
   dockerBuildx:                    string;
   dockerCompose:                   string;
