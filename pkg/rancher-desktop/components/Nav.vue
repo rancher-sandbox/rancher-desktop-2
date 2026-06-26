@@ -45,16 +45,14 @@
       </RouterLink>
     </div>
     <div class="nav-button-container">
-      <!-- TODO: https://github.com/rancher-sandbox/rancher-desktop-app/issues/27 -->
       <dashboard-button
-        v-if="app?.spec?.kubernetes?.enabled"
+        v-if="preferences?.kubernetes?.enabled"
         data-testid="dashboard-button"
         class="nav-button"
         @open-dashboard="openDashboard"
       />
-      <!-- TODO: https://github.com/rancher-sandbox/rancher-desktop-app/issues/26 -->
       <preferences-button
-        v-if="(() => false)()"
+        v-if="Object.keys(preferences).length > 0"
         data-testid="preferences-button"
         class="nav-button"
         @open-preferences="openPreferences"
@@ -68,7 +66,7 @@ import os from 'os';
 
 import { BadgeState } from '@rancher/components';
 import { PropType, defineComponent } from 'vue';
-import { RouteRecordPublic } from 'vue-router';
+import { RouteRecordNormalized } from 'vue-router';
 
 import NavIconExtension from './NavIconExtension.vue';
 import NavItem from './NavItem.vue';
@@ -98,7 +96,7 @@ export default defineComponent({
       type:      Array as PropType<{ route: string; error?: number; experimental?: boolean }[]>,
       required:  true,
       validator: (value: { route: string, error?: number }[]) => {
-        const routes = router.getRoutes().reduce((paths: Record<string, RouteRecordPublic>, route) => {
+        const routes = router.getRoutes().reduce((paths: Record<string, RouteRecordNormalized>, route) => {
           paths[route.path] = route;
 
           return paths;
@@ -124,7 +122,7 @@ export default defineComponent({
     return {
       // Generate a route (path) to route entry mapping, so that we can pick out
       // their names based on the paths given.
-      routes: this.$router.getRoutes().reduce((paths: Record<string, RouteRecordPublic>, route) => {
+      routes: this.$router.getRoutes().reduce((paths: Record<string, RouteRecordNormalized>, route) => {
         paths[route.path] = route;
         if (route.name === 'Supporting Utilities' && os.platform() === 'win32') {
           route.name = 'WSL Integrations';
@@ -135,7 +133,7 @@ export default defineComponent({
     };
   },
   computed: {
-    ...mapTypedGetters('rdd', ['app']),
+    ...mapTypedGetters('preferences', ['preferences']),
     extensionsWithUI(): ExtensionWithUI[] {
       function hasUI(ext: ExtensionState): ext is ExtensionWithUI {
         return !!ext.metadata.ui?.['dashboard-tab']?.title;

@@ -21,6 +21,7 @@ import getWSLVersion from '@pkg/utils/wslVersion';
 import * as window from '@pkg/window';
 import '@pkg/main/rdd-ctl';
 import { closeDashboard, openDashboard } from '@pkg/window/dashboard';
+import { openPreferences } from '@pkg/window/preferences';
 
 // https://www.electronjs.org/docs/latest/breaking-changes#changed-gtk-4-is-default-when-running-gnome
 if (process.platform === 'linux') {
@@ -236,6 +237,14 @@ ipcMainProxy.on('dashboard-open', () => {
 
 ipcMainProxy.on('dashboard-close', () => {
   closeDashboard();
+});
+
+ipcMainProxy.on('preferences-open', () => {
+  openPreferences();
+});
+
+ipcMainProxy.on('preferences-close', () => {
+  window.getWindow('preferences')?.close();
 });
 
 mainEvents.on('dialog-info', (args) => {
