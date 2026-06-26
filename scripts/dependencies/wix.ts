@@ -4,13 +4,14 @@ import path from 'path';
 import semver from 'semver';
 
 import {
+  assetChecksum,
+  DependencyAsset,
   DownloadContext,
   downloadAndHash,
   getOctokit,
   GitHubDependency,
   GlobalDependency,
-  lookupChecksum,
-  Sha256Checksum,
+  selectAsset,
 } from '../lib/dependencies';
 import { download } from '../lib/download';
 
@@ -30,28 +31,19 @@ export class Wix extends GlobalDependency(GitHubDependency) {
   readonly releaseFilter = 'custom';
 
   async download(context: DownloadContext): Promise<void> {
-    // WiX doesn't publish upstream checksum files; we rely on the digest
-    // recorded in dependencies.yaml at bump time.
-
-    const tagName = this.versionToTagName(context.dependencies.wix.version);
-    const version = semver.parse(context.dependencies.wix.version);
-
-    if (!version) {
-      throw new Error(`Could not parse WiX version ${ context.dependencies.wix.version }`);
-    }
-
+    // WiX is a .NET toolset with no per-arch build; a single Windows asset
+    // serves every architecture.  Upstream publishes no checksum file, so we
+    // rely on the digest recorded in dependencies.yaml at bump time.
+    const asset = selectAsset(context, this.name, { platform: 'windows' });
     const wixDir = path.join(context.hostDir, 'wix');
-    const archivePath = path.join(context.hostDir, `${ tagName }.zip`);
-    // The archive name never includes the patch version.
-    const archiveName = `wix${ version.major }${ version.minor }-binaries.zip`;
-    const url = `https://github.com/wixtoolset/wix3/releases/download/${ tagName }/${ archiveName }`;
+    const archivePath = path.join(context.hostDir, path.basename(new URL(asset.url).pathname));
 
     await fs.promises.mkdir(wixDir, { recursive: true });
-    await download(url, archivePath, { expectedChecksum: lookupChecksum(context, this.name, archiveName) });
+    await download(asset.url, archivePath, { expectedChecksum: assetChecksum(asset) });
     await simpleSpawn('unzip', ['-q', '-o', archivePath, '-d', wixDir], { cwd: wixDir });
   }
 
-  async getChecksums(version: string): Promise<Record<string, Sha256Checksum>> {
+  async getAssets(version: string): Promise<DependencyAsset[]> {
     const tagName = this.versionToTagName(version);
     const parsed = semver.parse(version);
 
@@ -59,10 +51,11 @@ export class Wix extends GlobalDependency(GitHubDependency) {
       throw new Error(`Could not parse WiX version ${ version }`);
     }
 
+    // The archive name never includes the patch version.
     const archiveName = `wix${ parsed.major }${ parsed.minor }-binaries.zip`;
     const url = `https://github.com/${ this.githubOwner }/${ this.githubRepo }/releases/download/${ tagName }/${ archiveName }`;
 
-    return { [archiveName]: await downloadAndHash(url) };
+    return [{ platform: 'windows', url, checksum: await downloadAndHash(url) }];
   }
 
   versionToTagName(versionString: string): string {
