@@ -7,7 +7,9 @@ import semver from 'semver';
 
 import { getExtensions } from './lib/extension-data';
 
+import { Distro } from '@/scripts/dependencies/distro';
 import { globalDependencies } from '@/scripts/dependencies/global';
+import { Nerdctl } from '@/scripts/dependencies/nerdctl';
 import {
   getOctokit,
   iterateIterator,
@@ -40,7 +42,8 @@ interface DependencyConfig {
 }
 
 const configs: Record<string, DependencyConfig> = {
-  host: { manifest: globalDependencies, extras: getExtensions(true) },
+  host:  { manifest: globalDependencies, extras: getExtensions(true) },
+  guest: { manifest: [new Distro(), new Nerdctl()], extras: [] },
 };
 
 /**

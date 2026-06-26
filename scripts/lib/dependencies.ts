@@ -60,6 +60,9 @@ export interface DependencyVersions {
 
 export const DEP_VERSIONS_PATH = 'pkg/rancher-desktop/assets/dependencies.yaml';
 
+/** The manifest for the guest packages the build bakes into the rdd binary. */
+export const GUEST_DEP_VERSIONS_PATH = 'rdd/dependencies.yaml';
+
 /**
  * A sha256 checksum as stored in `dependencies.yaml`, including the algorithm
  * prefix.  The prefix documents the algorithm for readers of the file; the

@@ -45,6 +45,10 @@ jobs:
 
       - uses: ./.github/actions/yarn-install
 
-      - run: yarn rddepman
+      - run: yarn rddepman host
+        env:
+          GITHUB_TOKEN: ${{ steps.get-token.outputs.token }}
+
+      - run: yarn rddepman guest
         env:
           GITHUB_TOKEN: ${{ steps.get-token.outputs.token }}
