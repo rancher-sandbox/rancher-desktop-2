@@ -225,6 +225,7 @@ class DevRunner extends events.EventEmitter {
   async run() {
     process.env.NODE_ENV = 'development';
     try {
+      await buildUtils.prepareIcons();
       await this.startRendererProcess();
       await this.startMainProcess();
 

@@ -22,6 +22,24 @@ describe('build-utils', () => {
     });
   });
 
+  describe('isReleaseVersion', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it.each([
+      ['1.9.0-tech-preview', false],
+      ['2.0.0-alpha.1', false],
+      ['2.0.0-alpha.1-9-g0106d8077', false],
+      ['2.0.0', true],
+      ['2.0.0-9-g0106d8077', false],
+      ['invalidVersion', false],
+    ])('should classify %s as release=%s', async(version, expected) => {
+      jest.spyOn(buildUtils, 'version', 'get').mockResolvedValue(version);
+      await expect(buildUtils.isReleaseVersion).resolves.toBe(expected);
+    });
+  });
+
   describe('computeVersion', () => {
     afterEach(() => {
       jest.restoreAllMocks();

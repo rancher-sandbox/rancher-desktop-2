@@ -46,7 +46,10 @@ export default defineComponent({
     user-select: none;
   }
 
+  // Solid highlight by default; pre-release builds override these vars with the
+  // striped app-icon look (see BODY.prerelease in _light.scss).
   .active {
-    background-color: var(--nav-active);
+    background: var(--nav-active-bg, var(--nav-active));
+    color: var(--nav-active-fg, inherit);
   }
 </style>

@@ -9,6 +9,8 @@ import usePlugins from './plugins';
 import router from './router';
 import store from './store';
 
+import { isReleaseVersion } from '@pkg/utils/version';
+
 // This does just the Vuex part of cookie-universal-nuxt, which is all we need.
 (store as any).$cookies = Cookies();
 
@@ -20,6 +22,12 @@ const matched = router.resolve(location.hash.substring(1)).matched.find(r => r);
 const component = matched?.components?.default;
 const layoutName: string = (component as any)?.layout ?? 'default';
 const { default: layout } = await import(`../layouts/${ layoutName }.vue`);
+
+// Pre-release builds (development, alpha, beta) carry the striped app-icon look
+// into the app windows; Nav.vue and ModalNavItem.vue key off this class.
+if (!isReleaseVersion(process.env.RD_VERSION ?? '')) {
+  document.body.classList.add('prerelease');
+}
 
 const app = createApp(layout);
 

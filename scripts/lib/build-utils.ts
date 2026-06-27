@@ -3,6 +3,7 @@
  */
 
 import childProcess from 'node:child_process';
+import fs from 'node:fs';
 import path from 'path';
 import util from 'util';
 
@@ -13,6 +14,7 @@ import webpack from 'webpack';
 
 import babelConfig from '@/babel.config.cjs';
 import packageJson from '@/package.json' with { type: 'json' };
+import { isReleaseVersion } from '@pkg/utils/version';
 
 /**
  * A promise that is resolved when the child exits.
@@ -106,6 +108,16 @@ export default {
   get version(): Promise<string> {
     cachedVersion ??= this.computeVersion();
     return cachedVersion;
+  },
+
+  /**
+   * Whether this is a release build; drives the pre-release styling (striped app
+   * icon and nav).
+   * @note Honours a mock version (RD_MOCK_VERSION), so screenshot runs can force
+   * the release look.
+   */
+  get isReleaseVersion(): Promise<boolean> {
+    return (async() => isReleaseVersion(await this.version))();
   },
 
   get docsUrl(): Promise<string> {
@@ -335,6 +347,21 @@ export default {
         resolve();
       });
     });
+  },
+
+  /**
+   * Generate the default icon names (`logo-square-512.png`, `mac-icon.png`) that
+   * the build, packaging and runtime all reference, copying from the `-release`
+   * masters for a release build and the striped `-prerelease` masters otherwise.
+   */
+  async prepareIcons(): Promise<void> {
+    const variant = (await this.isReleaseVersion) ? 'release' : 'prerelease';
+    const iconsDir = path.join(this.rootDir, 'resources', 'icons');
+
+    await Promise.all(['logo-square-512', 'mac-icon'].map(name => fs.promises.copyFile(
+      path.join(iconsDir, `${ name }-${ variant }.png`),
+      path.join(iconsDir, `${ name }.png`),
+    )));
   },
 
   get arch(): 'x64' | 'arm64' {

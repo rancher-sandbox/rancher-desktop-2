@@ -542,3 +542,12 @@ $selected: rgba(#3D98D3, .5);
   --button-icon                : #{$dark};
   --button-icon-bg             : #{$secondary};
 }
+
+// Pre-release builds (development, alpha, beta) stripe the selected nav item to
+// match the striped app icon; entry/index.ts adds this class.  The custom
+// properties cascade into the scoped nav components, so one definition covers
+// every theme.
+BODY.prerelease {
+  --nav-active-bg              : repeating-linear-gradient(-45deg, #0081be 0, #0081be 12px, #72b9db 12px, #72b9db 20px);
+  --nav-active-fg              : #fff;
+}

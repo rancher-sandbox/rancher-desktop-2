@@ -16,6 +16,8 @@ extraResources:
   - '!**/*.tgz'
   - '!**/*.xz'
   - '!**/*.zip'
+  - '!**/*-release.png' # icon masters; prepareIcons() generates the shipped names
+  - '!**/*-prerelease.png'
 - from: rdd/bin
   to: ${platform}/bin/
   filter:

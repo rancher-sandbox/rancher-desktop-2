@@ -127,6 +127,8 @@ class Builder {
   async package(): Promise<CliOptions> {
     log.info('Packaging...');
 
+    await buildUtils.prepareIcons();
+
     // Build the electron builder configuration to include the version data
     const config: ReadWrite<Configuration> = yaml.parse(await fs.promises.readFile('packaging/electron-builder.yml', 'utf-8'));
     const configPath = path.join(buildUtils.distDir, 'electron-builder.yaml');

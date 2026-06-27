@@ -217,8 +217,11 @@ ul {
             outline: none;
         }
 
+        // Solid highlight by default; pre-release builds override these vars
+        // with the striped app-icon look (see BODY.prerelease in _light.scss).
         a:is(.router-link-active, .rd-link-active) {
-            background-color: var(--nav-active);
+            background: var(--nav-active-bg, var(--nav-active));
+            color: var(--nav-active-fg, inherit);
         }
     }
 }
@@ -229,7 +232,8 @@ a {
   }
 
   &:is(.router-link-active, .rd-link-active) :deep(div) {
-    background-color: var(--nav-active);
+    background: var(--nav-active-bg, var(--nav-active));
+    color: var(--nav-active-fg, inherit);
   }
 }
 
