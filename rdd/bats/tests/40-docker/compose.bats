@@ -43,7 +43,9 @@ services:
 EOF
     run -0 host_path "${BATS_TEST_TMPDIR}/compose.yaml"
     compose_file=${output}
-    docker compose --file "${compose_file}" --project-name rdd-compose-logs up --detach
+    # Run in the foreground so the service finishes before logs is read.
+    # --abort-on-container-exit makes a foreground `up` return once the container exits.
+    docker compose --file "${compose_file}" --project-name rdd-compose-logs up --abort-on-container-exit
     run -0 docker compose --file "${compose_file}" --project-name rdd-compose-logs logs
     assert_output --partial composed
     docker compose --file "${compose_file}" --project-name rdd-compose-logs down
