@@ -19,6 +19,16 @@ win_to_posix_exports() {
     done
 }
 
+# Convert a path to the form the native Windows docker CLI needs (cygpath -m);
+# MSYS_NO_PATHCONV (load.bash) suppresses the automatic conversion. No-op elsewhere.
+host_path() { # <path>
+    if is_windows; then
+        cygpath -m "$1"
+    else
+        printf '%s\n' "$1"
+    fi
+}
+
 # Get instance paths from rdd (single source of truth).
 # shellcheck disable=SC1090
 if is_windows; then

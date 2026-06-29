@@ -64,13 +64,14 @@ jobs:
         - macos-15-intel
         - ubuntu-latest
         - windows-latest
-        # bats-app runs on its own runner so its WSL2 VM does not collide
-        # with bats-lima's on Windows (Lima hard-codes SSH port 22 per
-        # instance), and so bats-app can grow independently of the rest
-        # of the suite.
+        # bats-app and bats-docker each run on their own runner so their VMs
+        # do not collide with bats-lima's on Windows (Lima hard-codes SSH port
+        # 22 per instance), and so each can grow independently of the rest of
+        # the suite.
         suite:
         - bats-app
         - bats-lima
+        - bats-docker
         - bats-others
     # Run on ubuntu-latest if we don't need to actually run the tests, because
     # they start faster (and are cheaper).
@@ -105,7 +106,13 @@ jobs:
       if: needs.check-paths.outputs.should-run && runner.os == 'macOS'
       working-directory: ${{ runner.temp }}
       run: |
-        brew install bash coreutils make docker
+        brew install bash coreutils make docker docker-buildx docker-compose
+
+        # The docker formula installs only the CLI; symlink the buildx and
+        # compose plugins so `docker buildx` and `docker compose` resolve.
+        mkdir -p ~/.docker/cli-plugins
+        ln -sf "$(brew --prefix)/opt/docker-buildx/bin/docker-buildx" ~/.docker/cli-plugins/docker-buildx
+        ln -sf "$(brew --prefix)/opt/docker-compose/bin/docker-compose" ~/.docker/cli-plugins/docker-compose
 
         # Disable Spotlight indexing on all volumes. On macos-15-intel CI
         # runners, mds/mds_stores/mdworker_shared collectively consumed
@@ -233,11 +240,11 @@ jobs:
       shell: bash
       run: |
         case "${{ matrix.suite }}" in
-          bats-app|bats-lima)
+          bats-app|bats-lima|bats-docker)
             echo "BATS_TARGET=${{ matrix.suite }}" >> "$GITHUB_ENV"
             ;;
           bats-others)
-            echo "BATS_EXCLUDES=bats-app bats-lima" >> "$GITHUB_ENV"
+            echo "BATS_EXCLUDES=bats-app bats-lima bats-docker" >> "$GITHUB_ENV"
             echo "BATS_TARGET=bats-all" >> "$GITHUB_ENV"
             ;;
           *)
