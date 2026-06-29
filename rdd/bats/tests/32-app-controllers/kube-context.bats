@@ -171,15 +171,29 @@ kube_current_context_is() { # <expected-context>
 
 # --- Host connectivity ---
 
+# k3s applies coredns and traefik asynchronously, so wait for each to exist
+# before its rollout. Use rollout status, not --for=condition=Available, which
+# k3s reports True for coredns with zero ready pods (one replica, maxUnavailable:1).
+wait_for_k3s_bootstrap() {
+    for deployment in coredns traefik; do
+        rdd kubectl --context "${CONTEXT_NAME}" wait --for=create \
+            deployment/"${deployment}" --namespace kube-system --timeout=300s
+        rdd kubectl --context "${CONTEXT_NAME}" rollout status \
+            deployment/"${deployment}" --namespace kube-system --timeout=300s
+    done
+}
+
 @test "NodePort service is reachable from the host" {
     # Deploy nginx behind a NodePort service and reach it from the host. k3s
     # opens the NodePort on the node's 0.0.0.0; the Lima template forwards
     # that port to the host, so localhost:<nodePort> reaches the application.
 
-    # Pull nginx ahead of the rollout so the cold pull doesn't count against its
-    # --timeout; this helps on slow CI runners. With the default moby backend
-    # k3s pulls through cri-dockerd from dockerd; use rdd run docker to ensure we
-    # are using the correct docker context.
+    # The 240s rollout below is tight on a slow CI runner. coredns and traefik
+    # are still starting (KubernetesReady gates on node-Ready only), and a cold
+    # image pull would also eat the budget, so drain the herd and warm nginx
+    # before deploying. moby pulls via cri-dockerd, so rdd run docker picks the
+    # right context.
+    wait_for_k3s_bootstrap
     rdd run docker pull --quiet nginx
 
     rdd kubectl --context "${CONTEXT_NAME}" create deployment test-connect --image=nginx
