@@ -5,9 +5,11 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -89,8 +91,9 @@ func limaVMEditAction(ctx context.Context, name string) error {
 		return fmt.Errorf("LimaVM %q does not have a template ConfigMap", name)
 	}
 
-	configMap := &corev1.ConfigMap{}
 	configMapKey := types.NamespacedName{Name: configMapName, Namespace: limaVM.Namespace}
+
+	configMap := &corev1.ConfigMap{}
 	if err := c.Get(ctx, configMapKey, configMap); err != nil {
 		return fmt.Errorf("failed to get template ConfigMap %q: %w", configMapName, err)
 	}
@@ -101,28 +104,60 @@ func limaVMEditAction(ctx context.Context, name string) error {
 	}
 
 	edit := editor.NewDefaultEditor(editorEnvs())
-	updatedBytes, path, err := edit.LaunchTempFile(name+"-template-", ".yaml", strings.NewReader(templateData))
-	if err != nil {
-		return fmt.Errorf("failed to launch editor: %w", err)
-	}
-	defer os.Remove(path)
+	// currentContent is what we show in the editor. On the first iteration it
+	// is the original template; on retries it is the user's previous edits.
+	currentContent := templateData
 
-	updatedContent := strings.TrimSpace(string(updatedBytes))
-	if updatedContent == "" {
-		return errors.New("template data was cleared, aborting edit")
-	}
+	for {
+		updatedBytes, path, err := edit.LaunchTempFile(name+"-template-", ".yaml", strings.NewReader(currentContent))
+		if err != nil {
+			return fmt.Errorf("failed to launch editor: %w", err)
+		}
+		os.Remove(path)
 
-	if updatedContent == templateData {
-		logrus.Info("No changes made to template, skipping update")
+		updatedContent := strings.TrimSpace(string(updatedBytes))
+		if updatedContent == "" {
+			return errors.New("template data was cleared, aborting edit")
+		}
+
+		if updatedContent == templateData {
+			logrus.Info("No changes made to template, skipping update")
+			return nil
+		}
+
+		// Re-fetch the ConfigMap to get the latest resourceVersion before each
+		// update attempt, so a concurrent modification doesn't cause a stale-
+		// object conflict on retry.
+		if err := c.Get(ctx, configMapKey, configMap); err != nil {
+			return fmt.Errorf("failed to get template ConfigMap %q: %w", configMapName, err)
+		}
+		configMap.Data[limav1alpha1.TemplateConfigMapKey] = updatedContent
+
+		if err := c.Update(ctx, configMap); err != nil {
+			fmt.Fprintf(os.Stderr, "error: failed to update template ConfigMap: %v\n", err)
+			if !confirmRetry(os.Stdin, os.Stderr) {
+				return errors.New("aborted")
+			}
+			// Preserve the user's edits for the next iteration.
+			currentContent = updatedContent
+			continue
+		}
+
+		logrus.Infof("Template ConfigMap %q updated successfully", configMapName)
 		return nil
 	}
+}
 
-	configMap.Data[limav1alpha1.TemplateConfigMapKey] = updatedContent
-	if err := c.Update(ctx, configMap); err != nil {
-		return fmt.Errorf("failed to update template ConfigMap: %w", err)
+// confirmRetry asks the user on r/w whether they want to reopen the editor
+// with their previous edits. Returns true if the user answers "y" or "yes".
+func confirmRetry(r io.Reader, w io.Writer) bool {
+	fmt.Fprintf(w, "Retry editing with your previous changes? [y/N] ")
+	scanner := bufio.NewScanner(r)
+	if !scanner.Scan() {
+		return false
 	}
-	logrus.Infof("Template ConfigMap %q updated successfully", configMapName)
-	return nil
+	ans := strings.TrimSpace(strings.ToLower(scanner.Text()))
+	return ans == "y" || ans == "yes"
 }
 
 func newLimaVMCreateCommand() *cobra.Command {
