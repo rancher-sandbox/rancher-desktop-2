@@ -92,6 +92,28 @@ spec:
               running:
                 description: running specifies whether the VM should be running.
                 type: boolean
+              virtualMachine:
+                description: virtualMachine specifies the VM resource allocation (CPUs
+                  and memory).
+                properties:
+                  cpus:
+                    description: |-
+                      cpus is the number of vCPUs to allocate to the VM.
+                      Must be no greater than the number of CPUs on the host.
+                      When unset (0), the Lima template default is used.
+                    type: integer
+                  memory:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    description: |-
+                      memory is the amount of RAM to allocate to the VM, as a Kubernetes
+                      resource quantity (e.g. "4Gi", "2048Mi"). Must be at least 2Gi and no
+                      greater than the total memory on the host. When unset, the Lima
+                      template default is used.
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                type: object
             required:
             - running
             type: object

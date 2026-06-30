@@ -141,7 +141,7 @@ func (c *controller) setupWebhook(mgr ctrl.Manager) error {
 	}
 	c.webhookManagers = append(c.webhookManagers, managers...)
 
-	validator, err := controllers.NewAppValidator(k3sVersionsData)
+	validator, err := controllers.NewAppValidator(k3sVersionsData, controllers.DetectHostInfo())
 	if err != nil {
 		return err
 	}

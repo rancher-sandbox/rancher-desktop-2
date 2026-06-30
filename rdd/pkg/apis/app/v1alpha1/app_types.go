@@ -5,6 +5,7 @@
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -136,6 +137,21 @@ const (
 	EngineReasonConnectFailed = "ConnectFailed"
 )
 
+// VirtualMachineSpec defines the resource allocation for the Lima VM.
+type VirtualMachineSpec struct {
+	// cpus is the number of vCPUs to allocate to the VM.
+	// Must be no greater than the number of CPUs on the host.
+	// When unset (0), the Lima template default is used.
+	// +optional
+	CPUs int `json:"cpus,omitempty"`
+	// memory is the amount of RAM to allocate to the VM, as a Kubernetes
+	// resource quantity (e.g. "4Gi", "2048Mi"). Must be at least 2Gi and no
+	// greater than the total memory on the host. When unset, the Lima
+	// template default is used.
+	// +optional
+	Memory *resource.Quantity `json:"memory,omitempty"`
+}
+
 // ContainerEngineSpec defines the desired container engine configuration.
 type ContainerEngineSpec struct {
 	// name specifies the container engine to use.
@@ -174,6 +190,9 @@ type AppSpec struct {
 	// kubernetes specifies the Kubernetes configuration.
 	// +optional
 	Kubernetes KubernetesSpec `json:"kubernetes,omitempty"`
+	// virtualMachine specifies the VM resource allocation (CPUs and memory).
+	// +optional
+	VirtualMachine VirtualMachineSpec `json:"virtualMachine,omitempty"`
 }
 
 // AppStatus defines the observed state of App.

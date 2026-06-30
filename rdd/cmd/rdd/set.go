@@ -235,7 +235,9 @@ func collectEntries(schema *apiextensionsv1.JSONSchemaProps, prefix string, out 
 		}
 
 		info := "(" + prop.Type + ")"
-		if len(prop.Enum) > 0 {
+		if prop.XIntOrString {
+			info = "(quantity)"
+		} else if len(prop.Enum) > 0 {
 			var values []string
 			for _, e := range prop.Enum {
 				var s string
@@ -708,7 +710,8 @@ func resolvePropertyPath(schema *apiextensionsv1.JSONSchemaProps, segments []str
 func coerceValue(schema *apiextensionsv1.JSONSchemaProps, raw string) (any, error) {
 	// An empty string clears the field. For string types this sets it to "",
 	// which omitempty treats as unset. For boolean/integer types the
-	// type-specific parsers below return a clear error.
+	// type-specific parsers below return a clear error. For quantity fields
+	// (XIntOrString) an empty string produces a null patch that removes the field.
 	if len(schema.Enum) > 0 {
 		var validValues []string
 		found := false
@@ -743,6 +746,14 @@ func coerceValue(schema *apiextensionsv1.JSONSchemaProps, raw string) (any, erro
 	case "string":
 		return raw, nil
 	default:
+		if schema.XIntOrString {
+			// resource.Quantity — an empty string clears the field (null patch);
+			// otherwise pass the raw string and let the API server validate the format.
+			if raw == "" {
+				return nil, nil
+			}
+			return raw, nil
+		}
 		return nil, fmt.Errorf("unsupported schema type %q", schema.Type)
 	}
 }

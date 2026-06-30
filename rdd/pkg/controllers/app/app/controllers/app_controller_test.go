@@ -16,6 +16,7 @@ import (
 	"gotest.tools/v3/assert"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -459,20 +460,20 @@ func Test_applySpecToTemplate(t *testing.T) {
 	}
 }
 
-// Test_applyVMCPUsOverride is not parallel: t.Setenv forbids it.
-func Test_applyVMCPUsOverride(t *testing.T) {
+// Test_applyVMResources is not parallel: t.Setenv forbids it.
+func Test_applyVMResources(t *testing.T) {
 	template := "cpus: 2\nmemory: \"6442450944\"\n"
 
 	tests := []struct {
 		name    string
 		env     string
+		spec    v1alpha1.AppSpec
 		input   string
 		want    string
 		wantErr string
 	}{
 		{
-			name:  "unset env leaves the template unchanged",
-			env:   "",
+			name:  "unset env and spec leaves the template unchanged",
 			input: template,
 			want:  template,
 		},
@@ -483,19 +484,32 @@ func Test_applyVMCPUsOverride(t *testing.T) {
 			want:  "cpus: 3\nmemory: \"6442450944\"\n",
 		},
 		{
-			name:    "non-numeric value errors",
+			name:  "spec cpus take priority over env",
+			env:   "3",
+			spec:  v1alpha1.AppSpec{VirtualMachine: v1alpha1.VirtualMachineSpec{CPUs: 4}},
+			input: template,
+			want:  "cpus: 4\nmemory: \"6442450944\"\n",
+		},
+		{
+			name:  "spec memory rewrites the memory line",
+			spec:  v1alpha1.AppSpec{VirtualMachine: v1alpha1.VirtualMachineSpec{Memory: mustParseQuantity("4Gi")}},
+			input: template,
+			want:  "cpus: 2\nmemory: \"4294967296\"\n",
+		},
+		{
+			name:    "non-numeric env value errors",
 			env:     "many",
 			input:   template,
 			wantErr: "invalid RDD_VM_CPUS",
 		},
 		{
-			name:    "zero errors",
+			name:    "zero env errors",
 			env:     "0",
 			input:   template,
 			wantErr: "invalid RDD_VM_CPUS",
 		},
 		{
-			name:    "template without a cpus line errors",
+			name:    "template without a cpus line errors when cpus is set",
 			env:     "3",
 			input:   "memory: \"6442450944\"\n",
 			wantErr: "no cpus line",
@@ -504,7 +518,7 @@ func Test_applyVMCPUsOverride(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv(vmCPUsEnv, tt.env)
-			got, err := applyVMCPUsOverride(tt.input)
+			got, err := applyVMResources(tt.input, tt.spec)
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr)
 				return
@@ -696,4 +710,9 @@ func Test_limaTemplate_networkSetupExtraArgsDropin(t *testing.T) {
 	assert.Assert(t, strings.Contains(got,
 		`Environment="NETWORK_SETUP_EXTRA_ARGS=--vm-switch-logfile-append --trace-packets"`),
 		"got:\n%s", got)
+}
+
+func mustParseQuantity(s string) *resource.Quantity {
+	q := resource.MustParse(s)
+	return &q
 }

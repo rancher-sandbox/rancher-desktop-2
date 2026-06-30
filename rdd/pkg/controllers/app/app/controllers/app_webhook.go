@@ -9,25 +9,30 @@ import (
 	"errors"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/resource"
 	ctrlwebhookadmission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
 )
 
+const minMemoryBytes = 2 * 1024 * 1024 * 1024 // 2 GiB
+
 // AppValidator validates App resources via admission webhook.
 type AppValidator struct {
 	supportedK8sVersions map[string]struct{}
+	hostInfo             HostInfo
 }
 
 // NewAppValidator parses k3sVersionsData once at construction time so that a
 // malformed JSON fixture causes controller startup to fail rather than the
-// first admission request.
-func NewAppValidator(k3sVersionsData string) (*AppValidator, error) {
+// first admission request. hostInfo provides the upper bounds for CPU and
+// memory validation.
+func NewAppValidator(k3sVersionsData string, hostInfo HostInfo) (*AppValidator, error) {
 	supported, err := parseK3sVersions(k3sVersionsData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load supported Kubernetes versions: %w", err)
 	}
-	return &AppValidator{supportedK8sVersions: supported}, nil
+	return &AppValidator{supportedK8sVersions: supported, hostInfo: hostInfo}, nil
 }
 
 // ValidateCreate validates a new App resource.
@@ -57,5 +62,31 @@ func (v *AppValidator) validate(app *v1alpha1.App) (ctrlwebhookadmission.Warning
 		}
 	}
 
+	if err := v.validateVirtualMachine(app.Spec.VirtualMachine); err != nil {
+		return nil, err
+	}
+
 	return nil, nil
+}
+
+func (v *AppValidator) validateVirtualMachine(vm v1alpha1.VirtualMachineSpec) error {
+	if vm.CPUs != 0 {
+		if v.hostInfo.CPUs > 0 && vm.CPUs > v.hostInfo.CPUs {
+			return fmt.Errorf("spec.virtualMachine.cpus %d exceeds the host CPU count of %d", vm.CPUs, v.hostInfo.CPUs)
+		}
+	}
+
+	if vm.Memory != nil {
+		memBytes := vm.Memory.Value()
+		if memBytes < minMemoryBytes {
+			minQ := resource.NewQuantity(minMemoryBytes, resource.BinarySI)
+			return fmt.Errorf("spec.virtualMachine.memory %v is less than the minimum of %v", vm.Memory, minQ)
+		}
+		if v.hostInfo.Memory > 0 && memBytes > v.hostInfo.Memory {
+			maxQ := resource.NewQuantity(v.hostInfo.Memory, resource.BinarySI)
+			return fmt.Errorf("spec.virtualMachine.memory %v exceeds the host memory of %v", vm.Memory, maxQ)
+		}
+	}
+
+	return nil
 }
