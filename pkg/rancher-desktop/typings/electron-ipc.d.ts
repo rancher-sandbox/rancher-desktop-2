@@ -5,7 +5,9 @@
 import Electron from 'electron';
 import semver from 'semver';
 
+import type { TransientPreferencesState } from '@pkg/types/transientPreferences';
 import type { Direction, RecursivePartial } from '@pkg/utils/typeUtils';
+
 /**
  * IpcMainEvents describes events the renderer can send to the main process,
  * i.e. ipcRenderer.send() -> ipcMain.on().
@@ -46,6 +48,12 @@ export interface IpcMainEvents {
   'preferences-close':      () => void;
   'preferences-set-dirty':  (isDirty: boolean) => void;
   'get-debugging-statuses': () => void;
+
+  /**
+   * Trigger a fetch of transient preferences; causes
+   * 'transient-preferences/update' to be emitted.
+   */
+  'transient-preferences/get': () => void;
   // #endregion
 
   'dashboard-open':  () => void;
@@ -108,6 +116,11 @@ export interface IpcMainInvokeEvents {
   /** Fetch the KubeConfig for use with RDD */
   'rdd/kube-config': () => string;
   // #endregion
+
+  // #region Preferences
+  'transient-preferences/set': (preferences: RecursivePartial<TransientPreferencesState>) => void;
+  // #endregion
+
 }
 
 /**
@@ -130,6 +143,11 @@ export interface IpcRendererEvents {
   ) => void;
   'update-network-status': (status: boolean) => void;
   'diagnostics/update':    () => void;
+
+  // #region preferences
+  /** The transient preferences have been updated. */
+  'transient-preferences/update': (preferences: TransientPreferencesState) => void;
+  // #endregion
 
   // #region dialog
   'dialog/mounted':  () => void;

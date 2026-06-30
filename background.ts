@@ -12,6 +12,7 @@ import { getIpcMainProxy } from '@pkg/main/ipcMain';
 import mainEvents from '@pkg/main/mainEvents';
 import buildApplicationMenu from '@pkg/main/mainmenu';
 import setupNetworking from '@pkg/main/networking';
+import initializeTransientPreferences from '@pkg/main/transientPreferences';
 import Logging, { clearLoggingDirectory } from '@pkg/utils/logging';
 import { fetchMacOsVersion, getMacOsVersion } from '@pkg/utils/osVersion';
 import paths from '@pkg/utils/paths';
@@ -72,6 +73,8 @@ Electron.protocol.registerSchemesAsPrivileged([{ scheme: 'app' }, {
 
 Electron.app.whenReady().then(async() => {
   try {
+    initializeTransientPreferences();
+
     setupProtocolHandlers();
 
     // make sure we have the macOS version cached before calling getMacOsVersion()

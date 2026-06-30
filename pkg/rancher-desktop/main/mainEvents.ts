@@ -136,6 +136,11 @@ interface MainEventNames {
    * Register a callback that will be called when the KubeConfig is ready.
    */
   'rdd/certificate-callback'(callback: (kubeConfig: string) => void): void;
+
+  /**
+   * Get the current transient preferences state.  This is for the help dialog.
+   */
+  'transient-preferences/get'(): Promise<import('@pkg/types/transientPreferences').TransientPreferencesState>;
 }
 
 /**
