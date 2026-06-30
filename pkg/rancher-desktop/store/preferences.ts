@@ -112,7 +112,7 @@ export const getters = {
     for (const [key, value] of Object.entries(state.changes)) {
       _.set(modified, key, value);
     }
-    return modified;
+    return modified as Required<RecursiveReadonly<AppSpec>>;
   },
   isPreferenceLocked: () => (key: RecursiveLeafKeys<AppSpec>) => {
     // TODO: deployment profiles https://github.com/rancher-sandbox/rancher-desktop-2/issues/513

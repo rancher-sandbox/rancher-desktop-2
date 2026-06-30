@@ -106,6 +106,17 @@ export type FieldType<T, K extends RecursiveLeafKeys<T>> =
     K extends keyof T ? T[K] : never;
 
 /**
+ * RecursiveLeafKeysOfType returns the set of all keys of a type, recursively,
+ * without any intermediate keys, separated by dots, that have a value of the
+ * given type.
+ *
+ * @example RecursiveLeafKeysOfType<{a: { b: number}, c: string}, number> = 'a.b'
+ */
+export type RecursiveLeafKeysOfType<T, V> = {
+  [K in RecursiveLeafKeys<T>]: FieldType<T, K> extends V ? K : never;
+}[RecursiveLeafKeys<T>];
+
+/**
  * RecursiveTypes returns a single-level type mapping of RecursiveKeys<T> to
  * the value type in T.
  */

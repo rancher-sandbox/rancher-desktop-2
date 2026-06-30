@@ -1,42 +1,55 @@
-<script lang="ts">
-import * as Components from '@rancher/components';
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import { Checkbox } from '@rancher/components';
+import _ from 'lodash';
+import { computed, PropType } from 'vue';
+import { useStore } from 'vuex';
 
 import TooltipIcon from '@pkg/components/form/TooltipIcon.vue';
+import { RecursiveLeafKeysOfType } from '@pkg/utils/typeUtils';
 
-const { Checkbox } = (Components as any).default ?? Components;
+import type { IoRancherdesktopAppV1alpha1AppSpec as AppSpec } from '@rdd-client';
 
-export default defineComponent({
+defineOptions({
   name:         'rd-checkbox',
-  components:   { TooltipIcon, Checkbox },
   inheritAttrs: false,
-  props:        {
-    isExperimental: {
-      type:    Boolean,
-      default: false,
-    },
-    isLocked: {
-      type:    Boolean,
-      default: false,
-    },
-    tooltip: {
-      type:    String,
-      default: null,
-    },
-    labelKey: {
-      type:    String,
-      default: null,
-    },
-    label: {
-      type:    String,
-      default: null,
-    },
-    tooltipKey: {
-      type:    String,
-      default: null,
-    },
+});
+
+const { preference: preferenceName, isExperimental, tooltip, labelKey, label, tooltipKey } = defineProps({
+  preference:      {
+    type:     String as PropType<RecursiveLeafKeysOfType<AppSpec, boolean | undefined>>,
+    required: true,
+  },
+  isExperimental: {
+    type:    Boolean,
+    default: false,
+  },
+  tooltip: {
+    type:    String,
+    default: undefined,
+  },
+  labelKey: {
+    type:    String,
+    default: undefined,
+  },
+  label: {
+    type:    String,
+    default: undefined,
+  },
+  tooltipKey: {
+    type:    String,
+    default: undefined,
   },
 });
+
+const store = useStore();
+const preferences = computed(() => store.getters['preferences/preferences']);
+const value = computed(() => !!_.get(preferences.value, preferenceName, false));
+const isLocked = computed(() => store.getters['preferences/isPreferenceLocked'](preferenceName));
+
+function onUpdate(value: boolean) {
+  store.dispatch('preferences/modify', { key: preferenceName, value });
+}
+
 </script>
 
 <template>
@@ -45,6 +58,8 @@ export default defineComponent({
       v-bind="$attrs"
       class="checkbox"
       :disabled="$attrs.disabled || isLocked"
+      :value="value"
+      @update:value="onUpdate"
     >
       <template #label>
         <slot name="label">
