@@ -1,4 +1,4 @@
-import type { Modules, RootGetters, RootState } from '@pkg/entry/store';
+import type { Modules, RootState } from '@pkg/entry/store';
 import type { UnionToIntersection, UpperSnakeCase } from '@pkg/utils/typeUtils';
 
 import type { CommitOptions, Dispatch, MutationTree, Store } from 'vuex';
@@ -24,8 +24,12 @@ type MutationsPayloadType<M> = {
 type moduleNames = keyof Modules;
 type mutationTypes<MN extends moduleNames> = keyof Modules[MN]['mutations'] & string;
 type fullMutationType<MN extends moduleNames, MT extends mutationTypes<MN>> = `${ MN }/${ MT }`;
+type moduleName<S> = { [MN in moduleNames]: S extends ReturnType<Modules[MN]['state']> ? MN : never }[moduleNames];
+type moduleFor<S> = moduleName<S> extends never ? never : Modules[moduleName<S>];
+type mutationsFor<S> = moduleFor<S> extends { mutations: any } ? moduleFor<S>['mutations'] : MutationsType<S> & MutationTree<S>;
+type gettersFor<S> = moduleFor<S> extends { getters: any } ? moduleFor<S>['getters'] : GetterTree<S, any>;
 
-type flattenedGetters = UnionToIntersection<{
+export type RootGetters = UnionToIntersection<{
   [MN in moduleNames]: Modules[MN] extends { getters: any } ? {
     [getter in keyof Modules[MN]['getters'] & string as `${ MN }/${ getter }`]:
     Modules[MN]['getters'][getter] extends (...args: any) => infer R ? R : never;
@@ -43,7 +47,7 @@ export interface ActionContext<S, M = MutationsType<S>, G = GetterTree<S>> {
   state:       S;
   rootState:   RootState;
   getters:     { [key in keyof G]: G[key] extends (...args: any) => any ? ReturnType<G[key]> : never };
-  rootGetters: flattenedGetters;
+  rootGetters: RootGetters;
 }
 
 export interface Commit<M> {
@@ -68,6 +72,11 @@ export type ActionTree<
   R = RootState,
   M extends MutationsType<S> & MutationTree<S> = MutationsType<S> & MutationTree<S>,
   G extends GetterTree<S, any> = GetterTree<S, any>,
-> = Record<string, Action<S, R, M, G>>;
+> = moduleName<S> extends never
+  ? Record<string, Action<S, R, M, G>>
+  : Record<string, Action<S, RootState, mutationsFor<S>, gettersFor<S>>>;
 
-export type GetterTree<S, R = RootState, G = any> = Record<string, (state: S, getters: G, rootState: R, rootGetters: RootGetters) => any>;
+// Unfortunately, we can't use the `RootGetters` type here, as that would lead to
+// a circular definition, since this is used to define the per-module getters.
+export type GetterTree<S, R = RootState, G = any> =
+  Record<string, (state: S, getters: G, rootState: R, rootGetters: Record<`${ string }/${ string }`, any>) => any>;

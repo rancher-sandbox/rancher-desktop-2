@@ -37,11 +37,6 @@ export type Modules = typeof modules;
 export type RootState = {
   [K in keyof Modules]: ReturnType<Modules[K]['state']>;
 };
-export type RootGetters = {
-  [K in keyof Modules]: Modules[K] extends { getters: any } ? {
-    [key in keyof Modules[K]['getters']]: ReturnType<Modules[K]['getters'][key]>;
-  } : never;
-};
 
 export default createStore<any>({
   modules: Object.fromEntries(Object.entries(modules).map(([k, v]) => [k, { namespaced: true, ...v }])),
