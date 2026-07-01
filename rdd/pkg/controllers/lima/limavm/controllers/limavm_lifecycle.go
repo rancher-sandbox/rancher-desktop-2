@@ -354,6 +354,12 @@ func (r *LimaVMReconciler) handleRestartNeeded(ctx context.Context, limaVM *v1al
 // on its own, because its WSL2 driver only re-imports a distro that is absent
 // from `wsl --list`. It arises when an instance directory is removed without
 // `wsl --unregister`. Always false off Windows, where VMType is never WSL2.
+//
+// inst.Status can read StatusRunning here even though no live process holds
+// the disk open. The only caller that reaches this with StatusRunning
+// (handleWatchedState's phaseStopped-but-shouldRun case) already ran
+// stopInstanceForcibly, which terminates the WSL2 distro first. Preserve that
+// ordering in any new startInstance caller, or this stat becomes a race.
 func wsl2RegistrationIsOrphaned(inst *limatype.Instance) bool {
 	if inst.VMType != limatype.WSL2 || inst.Status == limatype.StatusUninitialized {
 		return false

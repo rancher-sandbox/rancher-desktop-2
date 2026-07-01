@@ -3,8 +3,8 @@
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
 // Package wsl wraps the wsl.exe commands rdd uses to manage the WSL2 distros
-// that back Lima instances on Windows. Every command is a no-op off Windows,
-// where Lima creates no WSL2 distros.
+// that back Lima instances on Windows. Every command is a no-op on
+// non-Windows, where Lima creates no WSL2 distros.
 package wsl
 
 import (
@@ -33,15 +33,15 @@ func DistroName(instName string) string {
 }
 
 // Terminate runs `wsl.exe --terminate` to shut the distro down, releasing the
-// kernel state that can make a following --unregister deadlock. No-op off
-// Windows.
+// kernel state that can make a following --unregister deadlock. No-op on
+// non-Windows.
 func Terminate(ctx context.Context, distroName string) error {
 	return run(ctx, terminateTimeout, "--terminate", distroName)
 }
 
 // Unregister runs `wsl.exe --unregister`, dropping the WSL2 registration and
 // the distro's ext4.vhdx so Lima imports a fresh distro on the next start.
-// Terminate the distro first. No-op off Windows.
+// Terminate the distro first. No-op on non-Windows.
 func Unregister(ctx context.Context, distroName string) error {
 	return run(ctx, unregisterTimeout, "--unregister", distroName)
 }
