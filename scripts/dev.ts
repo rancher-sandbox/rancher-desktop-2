@@ -110,6 +110,7 @@ class DevRunner extends events.EventEmitter {
    * the function returns.
    */
   async startRendererProcess(): Promise<void> {
+    await buildUtils.prepareIcons();
     await buildUtils.buildPreload();
     let started = false;
     let startError: Error | undefined;
@@ -225,7 +226,6 @@ class DevRunner extends events.EventEmitter {
   async run() {
     process.env.NODE_ENV = 'development';
     try {
-      await buildUtils.prepareIcons();
       await this.startRendererProcess();
       await this.startMainProcess();
 
