@@ -45,6 +45,7 @@ The `--instance` flag takes precedence over the `RDD_INSTANCE` environment varia
 * [Service commands](cmd_service.md) for managing the RDD control plane
 * [Lima commands](cmd_lima.md) are an easier way to manage Lima VMs, disks, and networks
 * [App commands](cmd_app.md) provide a CLI interface to "Rancher Desktop 2"
+* [nerdctl stub](nerdctl.md) runs nerdctl inside the Lima VM and translates host paths
 * [Other commands](cmd_other.md) for commands that don't fit the other categories
 
 ### API Groups / Controllers
