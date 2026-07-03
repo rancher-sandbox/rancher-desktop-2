@@ -140,7 +140,11 @@ generate-crds:
 	scripts/generate-crds.sh
 .PHONY: generate-crds
 
-generate: generate-deepcopy generate-crds
+generate-nerdctl:
+	scripts/generate-nerdctl.sh
+.PHONY: generate-nerdctl
+
+generate: generate-deepcopy generate-crds generate-nerdctl
 .PHONY: generate
 
 verify-generate: generate
