@@ -70,10 +70,10 @@ export function createWindow(name: string, url: string, options: Electron.Browse
 
   window = new BrowserWindow(options);
   window.webContents.on('console-message', (event) => {
-    const { level, lineNumber, message } = event;
+    const { level, sourceId, lineNumber, message } = event;
     const method = level === 'warning' ? 'warn' : level;
 
-    console[method](`${ name }@${ lineNumber }: ${ message }`);
+    Logging[`window_${ name }`][method](`${ sourceId }@${ lineNumber }: ${ message }`);
   });
   window.webContents.on('will-navigate', (event, input) => {
     if (isInternalURL(input)) {
@@ -92,7 +92,7 @@ export function createWindow(name: string, url: string, options: Electron.Browse
     return { action: 'deny' };
   });
   window.webContents.on('did-fail-load', (event, errorCode, errorDescription, url) => {
-    console.log(`Failed to load ${ url }: ${ errorCode } (${ errorDescription })`, event);
+    Logging[`window_${ name }`].error(`Failed to load ${ url }: ${ errorCode } (${ errorDescription })`, event);
   });
   console.debug('createWindow() name:', name, ' url:', url);
   window.loadURL(url);
