@@ -7,10 +7,10 @@
 // can put that directory on PATH. Each entry is a symlink, or a hardlink where
 // symlinks need privileges that are absent (Windows without developer mode).
 // Inside the application bundle rdd owns the directory and recreates it to
-// mirror the bundled binaries. Standalone, rdd repairs its own rdd and kubectl
-// links and prunes any symlink left dangling by an uninstalled application, so a
-// stale link cannot shadow a tool the user later installs on PATH; working links
-// and non-symlink entries survive.
+// mirror the bundled binaries. Standalone, rdd repairs its own rdd and
+// multicall links and prunes any symlink left dangling by an uninstalled
+// application, so a stale link cannot shadow a tool the user later installs on
+// PATH; working links and non-symlink entries survive.
 package binlinks
 
 import (
@@ -25,9 +25,14 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 )
 
+// multiCallLinks are the subcommands rdd also provides as multicall binaries
+// (see cmd/rdd/multicall.go); each gets a link in the bin directory pointing
+// at rdd.
+var multiCallLinks = []string{"kubectl", "nerdctl"}
+
 // LinkBundledBinaries publishes rdd's binaries into the instance bin directory.
 // Inside the application bundle it recreates the directory to mirror every
-// bundled binary; standalone it repairs only its own rdd and kubectl links.
+// bundled binary; standalone it repairs only its own rdd and multicall links.
 // Publishing is best-effort and must not block startup. A per-binary link
 // failure is logged and skipped; only a whole-operation failure — an unreadable
 // bundle directory or an unwritable bin directory — is returned for the caller
@@ -50,7 +55,7 @@ func LinkBundledBinaries() error {
 
 // exeSuffix is the executable extension for goos: ".exe" on Windows, empty
 // elsewhere. Bundled binaries carry it in their own names; only the links rdd
-// invents (kubectl, and the standalone rdd and kubectl) need it appended.
+// invents (the multicall links, and the standalone rdd) need it appended.
 func exeSuffix(goos string) string {
 	if goos == "windows" {
 		return ".exe"
@@ -78,10 +83,10 @@ func inAppBundle(execPath, goos string) bool {
 	return strings.HasSuffix(execPath, sep+tail)
 }
 
-// linkBinaries recreates binDir with links to the bundled binaries and a kubectl
-// link to rdd. Recreating it drops stale links from a previous install; reading
-// the source directory before removing binDir keeps the existing links when the
-// read fails.
+// linkBinaries recreates binDir with links to the bundled binaries and the
+// multicall links to rdd. Recreating it drops stale links from a previous
+// install; reading the source directory before removing binDir keeps the
+// existing links when the read fails.
 func linkBinaries(execPath, binDir, exe string, useSymlink bool) error {
 	srcDir := filepath.Dir(execPath)
 	entries, err := os.ReadDir(srcDir)
@@ -106,10 +111,17 @@ func linkBinaries(execPath, binDir, exe string, useSymlink bool) error {
 		}
 	}
 
-	// No separate kubectl binary is bundled; rdd provides it. Link kubectl to
-	// rdd so kubectl on PATH reaches rdd.
-	if err := link(execPath, filepath.Join(binDir, "kubectl"+exe), useSymlink); err != nil {
-		klog.Warningf("Failed to link kubectl to rdd: %v", err)
+	// No separate kubectl or nerdctl binary is bundled; rdd provides them.
+	// Link each multicall name to rdd so it reaches rdd from PATH. A bundled
+	// binary of the same name wins over the multicall link.
+	for _, name := range multiCallLinks {
+		linkPath := filepath.Join(binDir, name+exe)
+		if _, err := os.Lstat(linkPath); err == nil {
+			continue
+		}
+		if err := link(execPath, linkPath, useSymlink); err != nil {
+			klog.Warningf("Failed to link %s to rdd: %v", name, err)
+		}
 	}
 	return nil
 }
@@ -135,8 +147,8 @@ func link(target, linkPath string, useSymlink bool) error {
 
 // ensureSelfLinks keeps the instance bin directory usable when no application
 // bundle has published it. It first prunes symlinks left dangling by an
-// uninstalled application, then points the rdd and kubectl links at a standalone
-// rdd. Working links and non-symlink entries survive.
+// uninstalled application, then points the rdd and multicall links at a
+// standalone rdd. Working links and non-symlink entries survive.
 func ensureSelfLinks(execPath, binDir, exe string, useSymlink bool) error {
 	if err := os.MkdirAll(binDir, 0o755); err != nil {
 		return fmt.Errorf("create %q: %w", binDir, err)
@@ -144,9 +156,9 @@ func ensureSelfLinks(execPath, binDir, exe string, useSymlink bool) error {
 	if err := pruneDanglingLinks(binDir); err != nil {
 		return err
 	}
-	for _, name := range []string{"rdd" + exe, "kubectl" + exe} {
-		if err := ensureSelfLink(filepath.Join(binDir, name), execPath, useSymlink); err != nil {
-			klog.Warningf("Failed to repair the %q link: %v", name, err)
+	for _, name := range append([]string{"rdd"}, multiCallLinks...) {
+		if err := ensureSelfLink(filepath.Join(binDir, name+exe), execPath, useSymlink); err != nil {
+			klog.Warningf("Failed to repair the %q link: %v", name+exe, err)
 		}
 	}
 	return nil

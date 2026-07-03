@@ -56,8 +56,9 @@ assert_hardlink_to() { # <target> <link>
     assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/rdd${EXE}"
     assert_symlink_to "${FAKE_BIN}/docker${EXE}" "${DEST_DIR}/docker${EXE}"
     assert_symlink_to "${FAKE_BIN}/helm${EXE}" "${DEST_DIR}/helm${EXE}"
-    # kubectl is not bundled; it links to rdd.
+    # kubectl and nerdctl are not bundled; they link to rdd.
     assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/kubectl${EXE}"
+    assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/nerdctl${EXE}"
     # Stop the bundled daemon with fake_rdd; the repo rdd cannot (see fake_rdd).
     fake_rdd svc stop
 }
@@ -75,7 +76,8 @@ assert_hardlink_to() { # <target> <link>
 
 @test 'updates the links when the bundle changes and rdd runs from it again' {
     load_var FAKE_BIN DEST_DIR
-    # Add a tool and drop one, then restart from the bundle.
+    # Add a tool and drop one, then restart from the bundle. The added tool
+    # shares the nerdctl multicall name; the bundled binary must win.
     echo "stand-in nerdctl" >"${FAKE_BIN}/nerdctl${EXE}"
     rm "${FAKE_BIN}/helm${EXE}"
     fake_rdd svc start
@@ -107,6 +109,8 @@ assert_hardlink_to() { # <target> <link>
     standalone="${PATH_REPO_ROOT}/bin/rdd${EXE}"
     assert_symlink_to "${standalone}" "${DEST_DIR}/rdd${EXE}"
     assert_symlink_to "${standalone}" "${DEST_DIR}/kubectl${EXE}"
+    # The bundle's nerdctl link still resolves, so it survives the repair.
+    assert_symlink_to "${FAKE_BIN}/nerdctl${EXE}" "${DEST_DIR}/nerdctl${EXE}"
     # The unrelated docker link from the bundle run is left in place.
     assert_symlink_to "${FAKE_BIN}/docker${EXE}" "${DEST_DIR}/docker${EXE}"
 }
@@ -133,6 +137,7 @@ assert_hardlink_to() { # <target> <link>
     standalone="${PATH_REPO_ROOT}/bin/rdd${EXE}"
     assert_symlink_to "${standalone}" "${DEST_DIR}/rdd${EXE}"
     assert_symlink_to "${standalone}" "${DEST_DIR}/kubectl${EXE}"
+    assert_symlink_to "${standalone}" "${DEST_DIR}/nerdctl${EXE}"
 }
 
 @test 'publishes hardlinks when symlinks are disabled' {
