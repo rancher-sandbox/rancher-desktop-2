@@ -271,8 +271,12 @@ ipcMainProxy.handle('host/isArm', () => {
   return process.arch === 'arm64';
 });
 
-ipcMainProxy.on('help/preferences/open-url', () => {
-  Help.preferences.openUrl();
+ipcMainProxy.on('help/preferences/open-url', async() => {
+  try {
+    await Help.preferences.openUrl();
+  } catch (err) {
+    console.error('Failed to open preferences help URL:', err);
+  }
 });
 
 ipcMainProxy.handle('show-message-box', (_event, options: Electron.MessageBoxOptions): Promise<Electron.MessageBoxReturnValue> => {

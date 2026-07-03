@@ -89,12 +89,10 @@ export interface IpcMainEvents {
  * invoke on the main process, i.e. ipcRenderer.invoke() -> ipcMain.handle()
  */
 export interface IpcMainInvokeEvents {
-  'get-locked-fields':         () => import('@pkg/config/settings').LockedSettingsType;
-  'settings-write':            (arg: RecursivePartial<import('@pkg/config/settings').Settings>) => void;
-  'transient-settings-fetch':  () => import('@pkg/config/transientSettings').TransientSettings;
-  'transient-settings-update': (arg: RecursivePartial<import('@pkg/config/transientSettings').TransientSettings>) => void;
-  'show-message-box':          (options: Electron.MessageBoxOptions) => Electron.MessageBoxReturnValue;
-  'show-message-box-rd':       (options: Electron.MessageBoxOptions, modal?: boolean) => any;
+  'get-locked-fields':   () => import('@pkg/config/settings').LockedSettingsType;
+  'settings-write':      (arg: RecursivePartial<import('@pkg/config/settings').Settings>) => void;
+  'show-message-box':    (options: Electron.MessageBoxOptions) => Electron.MessageBoxReturnValue;
+  'show-message-box-rd': (options: Electron.MessageBoxOptions, modal?: boolean) => any;
 
   // #region extensions
   /** Execute the given command and return the results. */
@@ -162,7 +160,7 @@ export interface IpcRendererEvents {
 
   // #region tab navigation
   route: (route: {
-    name?:      string;
+    name?:      import('@pkg/window/preferenceConstants').preferencesNavItemName;
     path?:      string;
     direction?: Direction;
   }) => void;
@@ -186,10 +184,6 @@ export interface IpcRendererEvents {
 
   // #region window
   'window/blur': (state: boolean) => void;
-  // #endregion
-
-  // #region preferences
-  'preferences/changed': () => void;
   // #endregion
 
   // #region Versions

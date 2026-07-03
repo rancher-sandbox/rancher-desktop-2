@@ -3,12 +3,9 @@
  * main process.
  */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 
-import type { Settings } from '@pkg/config/settings';
-import type { TransientSettings } from '@pkg/config/transientSettings';
 import { DiagnosticsCheckerResult } from '@pkg/main/diagnostics/types';
-import { RecursivePartial, RecursiveReadonly } from '@pkg/utils/typeUtils';
 
 export class NoMainEventsHandlerError extends Error {
   constructor(eventName: string) {

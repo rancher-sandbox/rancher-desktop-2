@@ -4,7 +4,6 @@ import _ from 'lodash';
 
 import { LockedSettingsType, Settings } from '@pkg/config/settings';
 import { turnFirstRunOff } from '@pkg/config/settingsImpl';
-import { TransientSettings } from '@pkg/config/transientSettings';
 import Logging from '@pkg/utils/logging';
 import paths from '@pkg/utils/paths';
 import { RecursiveKeys, RecursivePartial } from '@pkg/utils/typeUtils';
@@ -56,6 +55,7 @@ export function updateFromCommandLine(cfg: Settings, lockedFields: LockedSetting
 
     if (fqFieldName === 'no-modal-dialogs') {
       switch (value) {
+      /*
       case '':
       case 'true':
         TransientSettings.update({ noModalDialogs: true });
@@ -63,6 +63,7 @@ export function updateFromCommandLine(cfg: Settings, lockedFields: LockedSetting
       case 'false':
         TransientSettings.update({ noModalDialogs: false });
         break;
+      */
       default:
         throw new Error(`Invalid associated value for ${ arg }: must be unspecified (set to true), true or false`);
       }

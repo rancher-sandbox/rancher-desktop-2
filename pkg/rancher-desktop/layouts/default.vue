@@ -120,10 +120,6 @@ export default {
     });
     this.$store.dispatch('extensions/fetch');
 
-    ipcRenderer.on('preferences/changed', () => {
-      this.$store.dispatch('preferences/fetchPreferences');
-    });
-
     ipcRenderer.on('extensions/getContentArea', () => {
       /** @type {DOMRect} */
       const titleRect = this.$refs.title.$el.getBoundingClientRect();
