@@ -143,7 +143,7 @@ status:
   | `Running`              | `False`   | `StartFailed`    | Lima instance failed to start                                     |
   | `Running`              | `False`   | `StopFailed`     | Lima instance failed to stop cleanly                              |
   | `ContainerEngineReady` | `True`    | `Connected`      | Engine controller has connected to Docker and completed full sync |
-  | `ContainerEngineReady` | `True`    | `NotApplicable`  | Mirroring is not implemented for the current backend (e.g. `containerd`); forced `True` so `rdd set` can finish waiting |
+  | `ContainerEngineReady` | `True`    | `NotApplicable`  | Mirroring is not supported for the selected engine on this platform (containerd on Windows); forced `True` so `rdd set` can finish waiting |
   | `ContainerEngineReady` | `False`   | `ConnectFailed`  | Engine controller failed to connect to Docker                     |
   | `ContainerEngineReady` | `False`   | `Stopped`        | The VM is stopped; the engine watcher is not running              |
   | `KubernetesReady`      | `True`    | `Ready`          | API server answers, node Ready, context merged into `~/.kube/config`. Workload-level readiness (coredns, traefik) is not gated; wait for those Deployments directly when needed |
