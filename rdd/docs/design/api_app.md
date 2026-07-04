@@ -129,6 +129,8 @@ status:
 
 - **status.kubernetesPort**: The host TCP port allocated for the k3s API server (`7441 + instance.Index()` by default). Set by the App reconciler on the first reconcile after `spec.kubernetes.enabled` becomes `true`, and cleared when `spec.kubernetes.enabled` is set back to `false` so that a fresh port is resolved on the next enable. The `KUBERNETES_PORT` Lima template param is set to this value; Lima's identity port-forward rule binds the same port on the host and forwards it to the guest.
 
+- **status.supportsNamespaces**: `true` when the selected container engine scopes containers and images into namespaces (`containerd`), `false` when it does not (`moby`). The engine controller writes it together with the `ContainerEngineReady` condition, so the UI can hide its container-namespace selector. It is also `false` whenever that condition's reason is `NotApplicable`, since a backend that mirrors nothing offers no namespaces to choose from. The field is absent until the engine controller first writes it; treat absence as unknown.
+
 - **status.conditions**: Multiple controllers write here. The App controller mirrors `Created` and `Running` from the owned `LimaVM` and computes `Settled`, the engine controller writes `ContainerEngineReady`, the Kubernetes controller writes `KubernetesReady`, and the PATH management controller writes `PathManagementReady`. All writers use `retry.RetryOnConflict` with a re-Get so concurrent status updates do not 409.
 
   | Type                   | Status    | Reason           | Description                                                       |
