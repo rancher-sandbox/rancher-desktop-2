@@ -84,3 +84,29 @@ setup_rdd_control_plane() {
     rdd svc create --controllers="${controllers}"
     rdd svc start
 }
+
+# assert_action_consumed reports success once the reconciler has
+# removed the action annotation, which is how we know the dispatch
+# has completed.
+assert_action_consumed() {
+    local cid=$1
+    run -0 rdd ctl get container "${cid}" --namespace="${RDD_NAMESPACE}" \
+        -o "jsonpath={.metadata.annotations['containers\.rancherdesktop\.io/action']}"
+    refute_output
+}
+
+# request_action sets the action annotation and blocks until the
+# reconciler removes it. The annotation is a one-shot trigger.
+request_action() {
+    local cid=$1 action=$2
+    rdd ctl annotate container "${cid}" --namespace="${RDD_NAMESPACE}" --overwrite \
+        "containers.rancherdesktop.io/action=${action}"
+    try --max 30 --delay 1 -- assert_action_consumed "${cid}"
+}
+
+assert_last_action() {
+    local cid=$1 action=$2 state=$3
+    run -0 rdd ctl get container "${cid}" --namespace="${RDD_NAMESPACE}" \
+        -o jsonpath='{.status.lastAction.action}={.status.lastAction.state}'
+    assert_output "${action}=${state}"
+}

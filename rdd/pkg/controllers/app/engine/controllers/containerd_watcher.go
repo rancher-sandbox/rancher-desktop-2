@@ -17,7 +17,6 @@ import (
 	"github.com/containerd/containerd/v2/core/events"
 	typeurl "github.com/containerd/typeurl/v2"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -247,52 +246,6 @@ func (w *containerdWatcher) handleEvent(ctx context.Context, e *events.Envelope)
 	}
 }
 
-// processContainerAction records the requested container action as failed:
-// containerd action dispatch lands in a later PR. Consuming the annotation
-// here (instead of leaving it in place) keeps the reconciler from retrying
-// forever.
-func (w *containerdWatcher) processContainerAction(ctx context.Context, c *containersv1alpha1.Container) error {
-	raw, ok := c.Annotations[containersv1alpha1.AnnotationAction]
-	if !ok {
-		return nil
-	}
-
-	log := logf.FromContext(ctx).WithName("containerd-watcher")
-	action := containersv1alpha1.ContainerAction(raw)
-	observedAt := metav1.Now()
-
-	// The webhook rejects invalid action values, but one written while the
-	// webhook is offline can still reach storage. Drop such values here;
-	// otherwise the CRD enum rejects the status.lastAction write, the
-	// annotation stays in place, and every reconcile retries forever.
-	if !action.IsValid() {
-		log.Info("Dropping invalid container action annotation", "id", c.Name, "action", raw)
-		return w.removeActionAnnotation(ctx, c, raw)
-	}
-
-	lastAction := &containersv1alpha1.ContainerLastAction{
-		Action:      action,
-		ObservedAt:  observedAt,
-		CompletedAt: metav1.Now(),
-		State:       containersv1alpha1.ContainerActionFailed,
-		Error:       "container actions are not supported with the containerd engine yet",
-	}
-
-	latest, err := w.patchContainerLastAction(ctx, c.Name, lastAction)
-	if err != nil {
-		return fmt.Errorf("failed to patch lastAction for %s: %w", c.Name, err)
-	}
-	if latest == nil {
-		// Mirror was deleted between the read and the status patch; nothing
-		// left to clean up.
-		return nil
-	}
-	if err := w.removeActionAnnotation(ctx, latest, raw); err != nil {
-		return fmt.Errorf("failed to remove action annotation for %s: %w", c.Name, err)
-	}
-	return nil
-}
-
 // hasTTY is not wired for containerd: nerdctl owns the container log files
 // inside the VM, and containerd itself exposes no log API.
 func (w *containerdWatcher) hasTTY(_ context.Context, _ *containersv1alpha1.Container) (bool, error) {
@@ -303,18 +256,6 @@ func (w *containerdWatcher) hasTTY(_ context.Context, _ *containersv1alpha1.Cont
 // inside the VM, and containerd itself exposes no log API.
 func (w *containerdWatcher) getLogs(_ context.Context, _ *containersv1alpha1.Container, _ ...engineLogOptions) (io.ReadCloser, error) {
 	return nil, errors.New("container logs are not supported with the containerd engine yet")
-}
-
-// deleteContainer is unreachable in this PR: containerd mirrors carry no
-// mirror finalizer yet, so no K8s-side delete is forwarded here.
-func (w *containerdWatcher) deleteContainer(_ context.Context, _ *containersv1alpha1.Container) error {
-	return errors.New("container deletion is not supported with the containerd engine yet")
-}
-
-// deleteImage is unreachable in this PR: containerd Image mirrors carry no
-// mirror finalizer yet, so no K8s-side delete is forwarded here.
-func (w *containerdWatcher) deleteImage(_ context.Context, _ *containersv1alpha1.Image) error {
-	return errors.New("image deletion is not supported with the containerd engine yet")
 }
 
 // deleteVolume returns nil: containerd has no native volume concept.

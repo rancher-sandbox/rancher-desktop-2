@@ -14,6 +14,7 @@ import (
 	"github.com/containerd/containerd/v2/pkg/namespaces"
 	"github.com/containerd/errdefs"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -158,15 +159,24 @@ func (w *containerdWatcher) applyContainer(nsCtx context.Context, ns string, ctr
 	}
 	statusApply.WithStatus(status)
 
-	// Create the mirror before the status apply: applying to the status
-	// subresource cannot create a missing object. Unlike the moby mirror,
-	// no mirror finalizer is added — containerd-side deletes land in a
-	// later PR, and with a finalizer but no delete handler, user deletes
-	// would trap in Terminating.
-	err = w.k8s.Apply(nsCtx, containersv1alpha1apply.Container(mirrorName, w.apiNamespace),
-		client.ForceOwnership, client.FieldOwner(controllerName))
-	if err != nil {
-		return fmt.Errorf("failed to apply container %s: %w", mirrorName, err)
+	// Re-assert the mirror finalizer on every sync so a user who
+	// `kubectl edit`s it away cannot bypass the engine-side containerd
+	// cleanup on a later delete. Skip re-assertion once the mirror is
+	// Terminating: adding a finalizer to a deleting object is rejected,
+	// and processContainerFinalizers is about to strip the finalizer
+	// anyway. The finalizer-only apply also creates the object: applying
+	// to the status subresource cannot create a missing one.
+	var existing containersv1alpha1.Container
+	err = w.k8s.Get(nsCtx, client.ObjectKey{Name: mirrorName, Namespace: w.apiNamespace}, &existing)
+	if apierrors.IsNotFound(err) || (err == nil && existing.DeletionTimestamp == nil) {
+		finalizerOnly := containersv1alpha1apply.Container(mirrorName, w.apiNamespace).
+			WithFinalizers(mirrorFinalizer)
+		if err := w.k8s.Apply(nsCtx, finalizerOnly,
+			client.ForceOwnership, client.FieldOwner(controllerName)); err != nil {
+			return fmt.Errorf("failed to apply container finalizer %s: %w", mirrorName, err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to get container %s: %w", mirrorName, err)
 	}
 
 	err = w.k8s.Status().Apply(nsCtx,
