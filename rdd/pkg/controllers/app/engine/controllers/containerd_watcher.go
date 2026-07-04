@@ -78,7 +78,7 @@ func newContainerdWatcher(ctx context.Context, k8s client.Client, apiNamespace s
 	// subscription must already be open before the snapshot is taken;
 	// otherwise events fired during fullSync are lost. Events that race the
 	// snapshot are re-applied afterwards, and handleEvent is idempotent.
-	eventCh, errCh := cli.Subscribe(watchCtx, `topic~="^/containers/"`, `topic~="^/tasks/"`)
+	eventCh, errCh := cli.Subscribe(watchCtx, `topic~="^/containers/"`, `topic~="^/tasks/"`, `topic~="^/images/"`)
 
 	if err := w.fullSync(watchCtx); err != nil {
 		watchCancel()
@@ -227,6 +227,21 @@ func (w *containerdWatcher) handleEvent(ctx context.Context, e *events.Envelope)
 	case *apievents.TaskOOM:
 		log.V(1).Info("Task OOM", "namespace", e.Namespace, "id", ev.ContainerID)
 		return w.syncContainer(ctx, e.Namespace, ev.ContainerID)
+	case *apievents.ImageCreate:
+		log.V(1).Info("Image created", "namespace", e.Namespace, "name", ev.Name)
+		// Namespaces appear implicitly on first use; fullSync only catches
+		// pre-existing ones, so apply the namespace mirror before the image.
+		if err := w.applyNamespace(ctx, e.Namespace); err != nil {
+			return err
+		}
+		return w.syncImage(ctx, e.Namespace, ev.Name)
+	case *apievents.ImageUpdate:
+		log.V(1).Info("Image updated", "namespace", e.Namespace, "name", ev.Name)
+		return w.syncImage(ctx, e.Namespace, ev.Name)
+	case *apievents.ImageDelete:
+		log.V(1).Info("Image deleted", "namespace", e.Namespace, "name", ev.Name)
+		return w.removeMirrorResource(ctx, &containersv1alpha1.Image{},
+			containerdImageMirrorName(e.Namespace, ev.Name))
 	default:
 		return nil
 	}
@@ -296,8 +311,8 @@ func (w *containerdWatcher) deleteContainer(_ context.Context, _ *containersv1al
 	return errors.New("container deletion is not supported with the containerd engine yet")
 }
 
-// deleteImage is unreachable in this PR: containerd Image mirrors do not
-// exist yet.
+// deleteImage is unreachable in this PR: containerd Image mirrors carry no
+// mirror finalizer yet, so no K8s-side delete is forwarded here.
 func (w *containerdWatcher) deleteImage(_ context.Context, _ *containersv1alpha1.Image) error {
 	return errors.New("image deletion is not supported with the containerd engine yet")
 }
@@ -307,9 +322,9 @@ func (w *containerdWatcher) deleteVolume(_ context.Context, _ *containersv1alpha
 	return nil
 }
 
-// fullSync lists namespaces and containers from containerd and creates
-// corresponding mirror resources, pruning stale ones. Images arrive in a
-// later PR; containerd has no volumes.
+// fullSync lists namespaces, containers, and images from containerd and
+// creates corresponding mirror resources, pruning stale ones. containerd has
+// no volumes.
 func (w *containerdWatcher) fullSync(ctx context.Context) error {
 	log := logf.FromContext(ctx).WithName("containerd-watcher")
 	log.Info("Starting full sync")
@@ -321,6 +336,9 @@ func (w *containerdWatcher) fullSync(ctx context.Context) error {
 	}
 	if err := w.syncAllContainers(ctx); err != nil {
 		errs = append(errs, fmt.Errorf("failed to sync containers: %w", err))
+	}
+	if err := w.syncAllImages(ctx); err != nil {
+		errs = append(errs, fmt.Errorf("failed to sync images: %w", err))
 	}
 
 	log.Info("Full sync complete", "errors", len(errs))

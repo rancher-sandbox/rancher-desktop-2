@@ -174,29 +174,6 @@ func imageStatusFromInspect(inspect mobyimage.InspectResponse) *containersv1alph
 	return statusApply
 }
 
-// applyImage creates or updates a single `Image` mirror and its status.
-func (w *dockerWatcher) applyImage(
-	ctx context.Context,
-	image *containersv1alpha1apply.ImageApplyConfiguration,
-	status *containersv1alpha1apply.ImageStatusApplyConfiguration,
-) error {
-	err := w.k8s.Apply(ctx, image,
-		client.ForceOwnership, client.FieldOwner(controllerName))
-	if err != nil {
-		return fmt.Errorf("failed to apply image %s: %w", *image.GetName(), err)
-	}
-
-	err = w.k8s.Status().Apply(ctx,
-		containersv1alpha1apply.Image(*image.GetName(), *image.GetNamespace()).
-			WithStatus(status),
-		client.ForceOwnership, client.FieldOwner(controllerName))
-	if err != nil {
-		return fmt.Errorf("failed to apply image status %s: %w", *image.GetName(), err)
-	}
-
-	return nil
-}
-
 // reconcileImageByID re-inspects a Docker image and reconciles every
 // Image mirror whose status.id matches. Present tags are re-applied;
 // mirrors for removed tags are deleted. If the image is gone from

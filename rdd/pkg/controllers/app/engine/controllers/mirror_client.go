@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
+	containersv1alpha1apply "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1/applyconfiguration/containers/v1alpha1"
 )
 
 // mirrorClient holds the Kubernetes-side plumbing shared by every engine
@@ -53,6 +54,29 @@ func (m *mirrorClient) removeMirrorResource(ctx context.Context, obj client.Obje
 		return fmt.Errorf("failed to remove finalizer from %s: %w", name, retryErr)
 	}
 	return client.IgnoreNotFound(m.k8s.Delete(ctx, latest))
+}
+
+// applyImage creates or updates a single `Image` mirror and its status.
+func (m *mirrorClient) applyImage(
+	ctx context.Context,
+	image *containersv1alpha1apply.ImageApplyConfiguration,
+	status *containersv1alpha1apply.ImageStatusApplyConfiguration,
+) error {
+	err := m.k8s.Apply(ctx, image,
+		client.ForceOwnership, client.FieldOwner(controllerName))
+	if err != nil {
+		return fmt.Errorf("failed to apply image %s: %w", *image.GetName(), err)
+	}
+
+	err = m.k8s.Status().Apply(ctx,
+		containersv1alpha1apply.Image(*image.GetName(), *image.GetNamespace()).
+			WithStatus(status),
+		client.ForceOwnership, client.FieldOwner(controllerName))
+	if err != nil {
+		return fmt.Errorf("failed to apply image status %s: %w", *image.GetName(), err)
+	}
+
+	return nil
 }
 
 // patchContainerLastAction writes status.lastAction with retry-on-conflict
