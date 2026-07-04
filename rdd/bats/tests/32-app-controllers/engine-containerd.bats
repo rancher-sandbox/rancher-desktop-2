@@ -39,6 +39,11 @@ nerdctl() {
     assert_output "Connected"
 }
 
+@test "containerd engine reports namespace support" {
+    run -0 rdd ctl get app app -o jsonpath='{.status.supportsNamespaces}'
+    assert_output "true"
+}
+
 # limavm shell runs as the same unprivileged user as Lima's SSH forward, so
 # reading the mode through it also proves the /run/k3s directories are
 # traversable. 666 is the permissions drop-in's chmod; containerd itself

@@ -503,6 +503,16 @@ func (r *EngineReconciler) setEngineCondition(ctx context.Context, app *appv1alp
 			Message:            message,
 			ObservedGeneration: latest.Generation,
 		})
+		// supportsNamespaces tracks the selected engine so the UI can hide
+		// its container-namespace selector for engines without the concept.
+		// A pointer keeps the field absent until this first write; a plain
+		// bool would let another status writer materialize a zero-valued
+		// false next to a stale ContainerEngineReady after a restart.
+		supportsNamespaces := latest.Spec.ContainerEngine.Name == engineContainerd
+		if latest.Status.SupportsNamespaces == nil || *latest.Status.SupportsNamespaces != supportsNamespaces {
+			latest.Status.SupportsNamespaces = &supportsNamespaces
+			changed = true
+		}
 		if !changed {
 			return nil
 		}

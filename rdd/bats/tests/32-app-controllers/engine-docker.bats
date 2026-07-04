@@ -68,6 +68,14 @@ do_websocket() { # endpoint
         ContainerNamespace/moby --timeout=10s
 }
 
+@test "moby engine reports no namespace support" {
+    # The single moby ContainerNamespace is an implementation detail of the
+    # mirror model; the engine itself has no namespace concept for the UI
+    # to select from.
+    run -0 rdd ctl get app app -o jsonpath='{.status.supportsNamespaces}'
+    assert_output "false"
+}
+
 # --- Image mirroring ---
 
 @test "docker pull creates Image resource" {
