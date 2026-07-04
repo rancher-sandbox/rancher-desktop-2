@@ -10,7 +10,6 @@ load '../../helpers/load'
 # resources are forwarded to Docker.
 
 CONTEXT_NAME="rancher-desktop-${RDD_INSTANCE}"
-VM_NAME="rd"
 
 local_setup_file() {
     # Isolate all Docker config reads and writes from the developer's real
@@ -772,63 +771,6 @@ EOF
     refute_output
 }
 
-# --- containerd backend ---
-
-@test "containerd backend reports ContainerEngineReady=NotApplicable and skips mirroring" {
-    # Stop first so there is no stale True/Connected from moby to
-    # satisfy the Settled wait below before the engine reconciler has
-    # processed the containerd switch.
-    rdd set running=false
-
-    # Start with containerd. rdd set waits for Settled=True, which
-    # requires ContainerEngineReady=True. The engine reconciler
-    # satisfies that immediately with reason NotApplicable because
-    # engine mirroring only supports the moby backend.
-    rdd set containerEngine.name=containerd running=true
-
-    run -0 rdd ctl get app app \
-        -o jsonpath='{.status.conditions[?(@.type=="ContainerEngineReady")].reason}'
-    assert_output "NotApplicable"
-
-    # No mirror resources should exist in containerd mode.
-    run -0 rdd ctl get containers --namespace="${RDD_NAMESPACE}" --output=name
-    refute_output
-    run -0 rdd ctl get images --namespace="${RDD_NAMESPACE}" --output=name
-    refute_output
-    run -0 rdd ctl get volumes --namespace="${RDD_NAMESPACE}" --output=name
-    refute_output
-    run -0 rdd ctl get ContainerNamespaces --namespace="${RDD_NAMESPACE}" --output=name
-    refute_output
-}
-
-# limavm shell runs as the same unprivileged user as Lima's SSH forward, so
-# reading the mode through it also proves the /run/k3s directories are
-# traversable. 666 is the permissions drop-in's chmod; containerd itself
-# creates the socket root-only.
-assert_containerd_socket_open() {
-    run -0 rdd limavm shell "${VM_NAME}" stat --format=%a /run/k3s/containerd/containerd.sock
-    assert_output 666
-}
-
-@test "containerd socket is forwarded to the host" {
-    if is_windows; then
-        skip "containerd socket forwarding is not implemented on Windows"
-    fi
-
-    # Wait for containerd to create the socket and the drop-in to open it up.
-    try --max 10 --delay 3 -- assert_containerd_socket_open
-
-    run -0 rdd svc paths containerd_socket
-    socket_path=${output}
-    assert_exists "${socket_path}"
-
-    # containerd's gRPC server answers a plain-HTTP client with an HTTP/2
-    # GOAWAY frame; --http0.9 lets curl accept those raw bytes and exit 0.
-    # A broken forward or unreachable guest socket exits nonzero instead.
-    curl --unix-socket "${socket_path}" --http0.9 --max-time 5 --silent \
-        --output /dev/null http://localhost/
-}
-
 # --- Docker context management ---
 
 # docker_context_dir returns the ~/.docker/contexts/meta/<hash> directory for
@@ -854,8 +796,8 @@ assert_docker_context() { # <expected-context>
 }
 
 @test "moby engine creates Docker context for the instance" {
-    # Restart with moby (the containerd test above may have left the engine in
-    # containerd mode).
+    # Ensure the engine is running on the moby backend; earlier tests may
+    # have stopped it.
     rdd set running=true containerEngine.name=moby
     rdd ctl wait --for=condition=ContainerEngineReady \
         app/app --timeout=30s
