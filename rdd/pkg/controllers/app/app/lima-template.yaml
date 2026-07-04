@@ -30,6 +30,14 @@ portForwards:
   - 0
   - 0
   hostSocket: "{{.Param.HOST_DOCKER_SOCKET}}"
+- guestPortRange:
+  - 0
+  - 0
+  guestSocket: /run/k3s/containerd/containerd.sock
+  hostPortRange:
+  - 0
+  - 0
+  hostSocket: "{{.Param.HOST_CONTAINERD_SOCKET}}"
 provision:
 # Write runtime parameters as a systemd EnvironmentFile. Using mode:data lets
 # Lima's Go template engine handle quoting via printf "%q", which produces
@@ -44,6 +52,16 @@ provision:
     KUBERNETES_ENABLED={{.Param.KUBERNETES_ENABLED}}
     KUBERNETES_VERSION={{.Param.KUBERNETES_VERSION}}
     KUBERNETES_PORT={{.Param.KUBERNETES_PORT}}
+# Lima forwards guest sockets over SSH as an unprivileged user, but containerd
+# creates its socket and the /run/k3s directories root-only. Grant access like
+# the distro's docker.service.d/permissions.conf does for docker.sock.
+# TODO: move this drop-in into the distro image.
+- mode: data
+  path: /etc/systemd/system/containerd.service.d/permissions.conf
+  content: |
+    [Service]
+    ExecStartPost=chmod a+x /run/k3s /run/k3s/containerd
+    ExecStartPost=chmod a+rw /run/k3s/containerd/containerd.sock
 # Redirect vm-switch's log to a host-mounted file (under the service log dir) so
 # it survives VM teardown and is collected with the other instance logs. The
 # distro's network-setup.service defaults VM_SWITCH_LOG to an in-guest path; this
@@ -96,6 +114,10 @@ provision:
     trap 'systemctl start --no-block rancher-desktop.target' EXIT
 
     systemctl stop rancher-desktop.target
+
+    # Load unit drop-ins written by the data entries above; on first boot
+    # systemd read the unit files before lima-init wrote them.
+    systemctl daemon-reload
 
     # Enable the requested container engine and disable the other.
     # containerd.service has a Conflicts=docker, so we must not start both.

@@ -10,6 +10,7 @@ load '../../helpers/load'
 # resources are forwarded to Docker.
 
 CONTEXT_NAME="rancher-desktop-${RDD_INSTANCE}"
+VM_NAME="rd"
 
 local_setup_file() {
     # Isolate all Docker config reads and writes from the developer's real
@@ -798,6 +799,34 @@ EOF
     refute_output
     run -0 rdd ctl get ContainerNamespaces --namespace="${RDD_NAMESPACE}" --output=name
     refute_output
+}
+
+# limavm shell runs as the same unprivileged user as Lima's SSH forward, so
+# reading the mode through it also proves the /run/k3s directories are
+# traversable. 666 is the permissions drop-in's chmod; containerd itself
+# creates the socket root-only.
+assert_containerd_socket_open() {
+    run -0 rdd limavm shell "${VM_NAME}" stat --format=%a /run/k3s/containerd/containerd.sock
+    assert_output 666
+}
+
+@test "containerd socket is forwarded to the host" {
+    if is_windows; then
+        skip "containerd socket forwarding is not implemented on Windows"
+    fi
+
+    # Wait for containerd to create the socket and the drop-in to open it up.
+    try --max 10 --delay 3 -- assert_containerd_socket_open
+
+    run -0 rdd svc paths containerd_socket
+    socket_path=${output}
+    assert_exists "${socket_path}"
+
+    # containerd's gRPC server answers a plain-HTTP client with an HTTP/2
+    # GOAWAY frame; --http0.9 lets curl accept those raw bytes and exit 0.
+    # A broken forward or unreachable guest socket exits nonzero instead.
+    curl --unix-socket "${socket_path}" --http0.9 --max-time 5 --silent \
+        --output /dev/null http://localhost/
 }
 
 # --- Docker context management ---
