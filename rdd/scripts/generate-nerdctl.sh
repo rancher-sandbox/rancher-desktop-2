@@ -12,6 +12,12 @@ set -o errexit -o nounset
 
 cd "$(dirname "$0")/../pkg/nerdctlstub/generate"
 
+# The extract stage locates nerdctl's source via `go list -m -f {{.Dir}}`,
+# which is empty until the module has been downloaded — building extract
+# alone does not pull it in, since extract reads the source and never
+# imports it.
+go mod download
+
 go run ./extract
 
 if [ "$(go env GOOS)" = "linux" ]; then
