@@ -174,11 +174,10 @@ func main() {
 		newVersionCommand(),
 	)
 	if err := cli.RunNoErrOutput(cmd); err != nil {
-		// *cliexit.Error lets a subcommand opt into a specific exit code; everything else gets exit 1.
+		// *cliexit.Error lets a subcommand pick its exit code (else exit 1). A
+		// nil inner Err (rdd run, kuberlr.Exec) means it already logged, so skip.
 		var exitErr *cliexit.Error
 		if errors.As(err, &exitErr) {
-			// A propagated child-exit code carries no message (nil Err); logging it
-			// would emit a bare level=error line, so log only when there is one.
 			if exitErr.Err != nil {
 				logrus.Error(err)
 			}

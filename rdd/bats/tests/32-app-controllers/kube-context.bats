@@ -130,7 +130,7 @@ kube_current_context_is() { # <expected-context>
     # namespace UID is a stable per-cluster identity: read it through the
     # known-good shared context and through rdd run's maintained config, and
     # require the two to match.
-    run -0 rdd kubectl --context "${CONTEXT_NAME}" \
+    run_e -0 rdd kubectl --context "${CONTEXT_NAME}" \
         get namespace kube-system -o jsonpath='{.metadata.uid}'
     expected_uid=${output}
 
@@ -201,7 +201,7 @@ wait_for_k3s_bootstrap() {
         --name=test-connect --port=80 --type=NodePort
     rdd kubectl --context "${CONTEXT_NAME}" rollout status deployment/test-connect --timeout=240s
 
-    run -0 rdd kubectl --context "${CONTEXT_NAME}" get service test-connect \
+    run_e -0 rdd kubectl --context "${CONTEXT_NAME}" get service test-connect \
         -o jsonpath='{.spec.ports[0].nodePort}'
     node_port=${output}
 
