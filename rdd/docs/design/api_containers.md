@@ -57,9 +57,12 @@ the controller:
    corresponding `Container`, `Image`, and `Volume` mirrors.
 4. Watches the Docker event stream for create, update, and delete events.
 
-Containerd mirroring is not implemented yet; with `containerEngine.name=containerd`
-the controller sets `ContainerEngineReady` to `True` with reason `NotApplicable`
-and takes no mirroring action.
+With `containerEngine.name=containerd` the controller runs a containerd watcher
+instead, mirroring every containerd namespace along with its containers and
+images.  containerd has no volume concept, so it creates no `Volume` mirrors.
+Windows is the exception, since nothing serves the containerd named pipe there
+yet; the controller sets `ContainerEngineReady` to `True` with reason
+`NotApplicable` and takes no mirroring action.
 
 The controller sets the `ContainerEngineReady` condition on the `App` resource
 to `True` after the initial sync completes.  Scripts can wait for readiness:

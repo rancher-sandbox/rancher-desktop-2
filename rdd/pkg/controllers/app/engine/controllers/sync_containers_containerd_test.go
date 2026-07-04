@@ -40,6 +40,29 @@ func TestContainerdMirrorName(t *testing.T) {
 	})
 }
 
+func TestContainerdImageMirrorName(t *testing.T) {
+	t.Run("always hashes, since refs are never valid object names", func(t *testing.T) {
+		got := containerdImageMirrorName("default", "docker.io/library/busybox:latest")
+		assert.Assert(t, strings.HasPrefix(got, "img-"))
+		assert.Equal(t, len(validation.IsDNS1123Subdomain(got)), 0)
+	})
+
+	t.Run("distinguishes the same ref in different namespaces", func(t *testing.T) {
+		ref := "docker.io/library/busybox:latest"
+		assert.Assert(t, containerdImageMirrorName("default", ref) != containerdImageMirrorName("k8s.io", ref))
+	})
+
+	t.Run("separates the namespace from the ref", func(t *testing.T) {
+		// Concatenated without a separator both of these are "abx".
+		assert.Assert(t, containerdImageMirrorName("a", "bx") != containerdImageMirrorName("ab", "x"))
+	})
+
+	t.Run("is stable across calls", func(t *testing.T) {
+		ref := "docker.io/library/busybox:latest"
+		assert.Equal(t, containerdImageMirrorName("ns", ref), containerdImageMirrorName("ns", ref))
+	})
+}
+
 func TestMapContainerdProcessStatus(t *testing.T) {
 	tests := []struct {
 		input containerdclient.ProcessStatus
