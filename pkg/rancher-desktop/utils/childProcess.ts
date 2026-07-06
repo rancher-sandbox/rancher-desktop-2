@@ -28,7 +28,7 @@ interface SpawnOptionsEncoding {
   encoding?: { stdout?: BufferEncoding, stderr?: BufferEncoding } | BufferEncoding
 }
 
-class SpawnError extends Error {
+export class SpawnError extends Error {
   constructor(command: string[], options: { code: number | null, signal: NodeJS.Signals | null, stdout?: string, stderr?: string }) {
     const executable = command[0];
     let message = `${ executable } exited with code ${ options.code }`;

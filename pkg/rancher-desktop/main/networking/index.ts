@@ -41,25 +41,31 @@ export default async function setupNetworking() {
   http.globalAgent = proxyAgent;
   https.globalAgent = proxyAgent;
 
-  const kubeConfig = new KubeConfig();
-  kubeConfig.loadFromString(await mainEvents.invoke('rdd/kube-config'));
-  configureRDDAuthentication(kubeConfig);
-  const kubeCerts =
-    Buffer.from(kubeConfig.getCurrentCluster()?.caData ?? '', 'base64')
-      .toString('utf-8')
-      .split(/(?=-----BEGIN CERTIFICATE-----)/g)
-      .map(cleanupCert)
-      .filter(x => x);
+  mainEvents.emit('rdd/certificate-callback', (kubeConfigStr) => {
+    const kubeConfig = new KubeConfig();
+    kubeConfig.loadFromString(kubeConfigStr);
+    configureRDDAuthentication(kubeConfig);
+    const kubeCerts =
+      Buffer.from(kubeConfig.getCurrentCluster()?.caData ?? '', 'base64')
+        .toString('utf-8')
+        .split(/(?=-----BEGIN CERTIFICATE-----)/g)
+        .map(cleanupCert)
+        .filter(x => x);
 
-  // Set up certificate handling for specific hosts; we ignore the certificate
-  // completely on these, but limit them to specific ports.
-  Electron.app.on('certificate-error', handleCertificateError.bind(null, kubeCerts));
-  // Set up certificate handling for system certificates, as well as handling
-  // custom certificate authorities for RDD.
-  Electron.session.defaultSession.setCertificateVerifyProc(
-    verifyCertificate.bind(null, kubeCerts, getSystemCertificates));
+    // Set up certificate handling for specific hosts; we ignore the certificate
+    // completely on these, but limit them to specific ports.
+    Electron.app.on('certificate-error', handleCertificateError.bind(null, kubeCerts));
+    // Set up certificate handling for system certificates, as well as handling
+    // custom certificate authorities for RDD.
+    Electron.session.defaultSession.setCertificateVerifyProc(
+      verifyCertificate.bind(null, kubeCerts, getSystemCertificates));
 
-  mainEvents.emit('network-ready');
+    mainEvents.emit('network-ready');
+  });
+  // Trigger RDD config loading, ignoring the result.  This lets us move the
+  // certificate handling setup outside of a potential hot path.  If this has
+  // already occurred, it would just ignore the cached result.
+  mainEvents.invoke('rdd/kube-config').catch(console.error);
 }
 
 /**

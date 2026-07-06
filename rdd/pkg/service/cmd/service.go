@@ -52,6 +52,7 @@ import (
 	_ "k8s.io/kubernetes/pkg/features"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/binlinks"
+	cliexit "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/exit"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/help"
 	// Import controller packages to trigger init() functions for embedded mode.
 	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/app"
@@ -195,14 +196,6 @@ func Create(args []string) error {
 	return os.WriteFile(instance.ArgsFile(), data, 0o600)
 }
 
-// errorServerVersionUnsupported indicates the control plane is running an
-// unsupported version.
-type errorServerVersionUnsupported struct{ message string }
-
-func (e errorServerVersionUnsupported) Error() string {
-	return e.message
-}
-
 // checkSupportedVersion checks if the control plane is running a version that
 // is compatible with this client.
 func checkSupportedVersion(config *rest.Config) error {
@@ -225,10 +218,11 @@ func checkSupportedVersion(config *rest.Config) error {
 	// Currently, we only support the version that is the exact version of the
 	// client.
 	if serverVersion.GitVersion != version.Get().GitVersion {
-		message := fmt.Sprintf(
-			"Unsupported server version %s (expected %s)",
-			serverVersion.GitVersion, version.Get().GitVersion)
-		return errorServerVersionUnsupported{message: message}
+		return &cliexit.Error{
+			Code: cliexit.CodeIncompatibleServer,
+			Err: fmt.Errorf("unsupported server version %s (expected %s)",
+				serverVersion.GitVersion, version.Get().GitVersion),
+		}
 	}
 	return nil
 }
@@ -419,7 +413,9 @@ func Wait(ctx context.Context) error {
 			err := checkReadiness(ctx, reportPhase)
 			if err == nil {
 				return nil
-			} else if errors.As(err, &errorServerVersionUnsupported{}) {
+			}
+			var cliError *cliexit.Error
+			if errors.As(err, &cliError) && cliError.Code == cliexit.CodeIncompatibleServer {
 				// The error will never recover; stop waiting.
 				return err
 			}

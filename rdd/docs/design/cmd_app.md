@@ -38,8 +38,9 @@ rdd set --wait=false running=true
 | `1` | Generic / internal error. |
 | `3` | The API server's admission controller rejected the request. |
 | `4` | The wait deadline expired before the desired state was reached. |
+| `5` | The running Rancher Desktop Daemon is not compatible with the invoked client. |
 
-`2` is reserved for cobra usage errors. Other rdd commands will adopt the same scheme as they grow `--wait` semantics; the codes are defined in `pkg/cli/exit`.
+`2` is reserved for cobra usage errors. Other rdd commands will adopt the same scheme as they grow `--wait` semantics; the codes are defined in [`pkg/cli/exit`](/rdd/pkg/cli/exit/exit.go).
 
 ## `rdd start`
 
