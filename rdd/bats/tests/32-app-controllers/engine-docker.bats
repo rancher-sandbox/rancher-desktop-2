@@ -68,6 +68,14 @@ do_websocket() { # endpoint
         ContainerNamespace/moby --timeout=10s
 }
 
+@test "moby engine reports no namespace support" {
+    # The single moby ContainerNamespace is an implementation detail of the
+    # mirror model; the engine itself has no namespace concept for the UI
+    # to select from.
+    run -0 rdd ctl get app app -o jsonpath='{.status.supportsNamespaces}'
+    assert_output "false"
+}
+
 # --- Image mirroring ---
 
 @test "docker pull creates Image resource" {
@@ -485,32 +493,8 @@ assert_single_mirror() { # <image-id> <expected-tag>
 }
 
 # --- Container actions via annotation ---
-
-# assert_action_consumed reports success once the reconciler has
-# removed the action annotation, which is how we know the dispatch
-# has completed.
-assert_action_consumed() {
-    local cid=$1
-    run -0 rdd ctl get container "${cid}" --namespace="${RDD_NAMESPACE}" \
-        -o "jsonpath={.metadata.annotations['containers\.rancherdesktop\.io/action']}"
-    refute_output
-}
-
-# request_action sets the action annotation and blocks until the
-# reconciler removes it. The annotation is a one-shot trigger.
-request_action() {
-    local cid=$1 action=$2
-    rdd ctl annotate container "${cid}" --namespace="${RDD_NAMESPACE}" --overwrite \
-        "containers.rancherdesktop.io/action=${action}"
-    try --max 30 --delay 1 -- assert_action_consumed "${cid}"
-}
-
-assert_last_action() {
-    local cid=$1 action=$2 state=$3
-    run -0 rdd ctl get container "${cid}" --namespace="${RDD_NAMESPACE}" \
-        -o jsonpath='{.status.lastAction.action}={.status.lastAction.state}'
-    assert_output "${action}=${state}"
-}
+# request_action / assert_action_consumed / assert_last_action live in
+# helpers/controller.bash, shared with engine-containerd.bats.
 
 @test "stop action stops a running container" {
     run_e -0 docker run -d --name test-state busybox sleep inf
@@ -771,35 +755,6 @@ EOF
     refute_output
 }
 
-# --- containerd backend ---
-
-@test "containerd backend reports ContainerEngineReady=NotApplicable and skips mirroring" {
-    # Stop first so there is no stale True/Connected from moby to
-    # satisfy the Settled wait below before the engine reconciler has
-    # processed the containerd switch.
-    rdd set running=false
-
-    # Start with containerd. rdd set waits for Settled=True, which
-    # requires ContainerEngineReady=True. The engine reconciler
-    # satisfies that immediately with reason NotApplicable because
-    # engine mirroring only supports the moby backend.
-    rdd set containerEngine.name=containerd running=true
-
-    run -0 rdd ctl get app app \
-        -o jsonpath='{.status.conditions[?(@.type=="ContainerEngineReady")].reason}'
-    assert_output "NotApplicable"
-
-    # No mirror resources should exist in containerd mode.
-    run -0 rdd ctl get containers --namespace="${RDD_NAMESPACE}" --output=name
-    refute_output
-    run -0 rdd ctl get images --namespace="${RDD_NAMESPACE}" --output=name
-    refute_output
-    run -0 rdd ctl get volumes --namespace="${RDD_NAMESPACE}" --output=name
-    refute_output
-    run -0 rdd ctl get ContainerNamespaces --namespace="${RDD_NAMESPACE}" --output=name
-    refute_output
-}
-
 # --- Docker context management ---
 
 # docker_context_dir returns the ~/.docker/contexts/meta/<hash> directory for
@@ -825,8 +780,8 @@ assert_docker_context() { # <expected-context>
 }
 
 @test "moby engine creates Docker context for the instance" {
-    # Restart with moby (the containerd test above may have left the engine in
-    # containerd mode).
+    # Ensure the engine is running on the moby backend; earlier tests may
+    # have stopped it.
     rdd set running=true containerEngine.name=moby
     rdd ctl wait --for=condition=ContainerEngineReady \
         app/app --timeout=30s

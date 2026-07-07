@@ -194,6 +194,13 @@ type AppStatus struct {
 	// intent.
 	// +optional
 	KubernetesPort int `json:"kubernetesPort,omitempty"`
+	// supportsNamespaces reports whether the selected container engine
+	// scopes containers and images into namespaces: true for containerd,
+	// false for moby. The engine controller writes it together with the
+	// ContainerEngineReady condition; the field is absent until that
+	// first write, so absence means unknown.
+	// +optional
+	SupportsNamespaces *bool `json:"supportsNamespaces,omitempty"`
 	// conditions represent the current state of the App resource.
 	// +listType=map
 	// +listMapKey=type

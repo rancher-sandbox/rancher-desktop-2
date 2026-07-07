@@ -18,11 +18,8 @@ import (
 	"github.com/moby/moby/api/types/events"
 	mobyclient "github.com/moby/moby/client"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -35,11 +32,9 @@ var _ engine = (*dockerWatcher)(nil)
 // dockerWatcher manages a Docker client connection and event stream. It
 // performs a full sync on connect and then watches for incremental changes.
 type dockerWatcher struct {
-	cli *mobyclient.Client
-	k8s client.Client
+	mirrorClient
 
-	// apiNamespace is the Kubernetes namespace where mirror resources live.
-	apiNamespace string
+	cli *mobyclient.Client
 
 	cancel context.CancelFunc
 	done   chan struct{}
@@ -69,9 +64,8 @@ func newDockerWatcher(ctx context.Context, k8s client.Client, apiNamespace strin
 	watchCtx, watchCancel := context.WithCancel(ctx)
 
 	w := &dockerWatcher{
+		mirrorClient:  mirrorClient{k8s: k8s, apiNamespace: apiNamespace},
 		cli:           cli,
-		k8s:           k8s,
-		apiNamespace:  apiNamespace,
 		cancel:        watchCancel,
 		done:          make(chan struct{}),
 		reconcileChan: reconcileChan,
@@ -314,36 +308,6 @@ func (w *dockerWatcher) handleVolumeEvent(ctx context.Context, msg events.Messag
 	}
 }
 
-// removeMirrorResource strips the finalizer from a mirror resource and
-// deletes it, used when Docker has already deleted the underlying
-// object. Update retries on conflict to survive a stale cache;
-// NotFound counts as success. obj is a template: one DeepCopyObject
-// carries name and apiNamespace through both the retry's Get target
-// (each Get overwrites its contents) and the final Delete (which keys
-// off name+namespace).
-func (w *dockerWatcher) removeMirrorResource(ctx context.Context, obj client.Object, name string) error {
-	latest := obj.DeepCopyObject().(client.Object)
-	latest.SetName(name)
-	latest.SetNamespace(w.apiNamespace)
-	key := client.ObjectKeyFromObject(latest)
-	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		if err := w.k8s.Get(ctx, key, latest); err != nil {
-			if apierrors.IsNotFound(err) {
-				return nil
-			}
-			return err
-		}
-		if !controllerutil.RemoveFinalizer(latest, mirrorFinalizer) {
-			return nil
-		}
-		return w.k8s.Update(ctx, latest)
-	})
-	if retryErr != nil {
-		return fmt.Errorf("failed to remove finalizer from %s: %w", name, retryErr)
-	}
-	return client.IgnoreNotFound(w.k8s.Delete(ctx, latest))
-}
-
 // processContainerAction handles a container carrying the AnnotationAction
 // annotation. It dispatches the Docker call, records the outcome in
 // status.lastAction, and then removes the annotation.
@@ -495,72 +459,6 @@ func (w *dockerWatcher) containerRunState(ctx context.Context, id string) (runni
 		return false, false, err
 	}
 	return inspect.Container.State.Running, inspect.Container.State.Paused, nil
-}
-
-// patchContainerLastAction writes status.lastAction with retry-on-conflict
-// and returns the updated Container. The main engine sync writes the
-// status subresource on every reconcile, so this write races against it.
-// If the mirror is deleted concurrently, any step may return NotFound;
-// the caller treats a nil Container as "nothing left to do".
-func (w *dockerWatcher) patchContainerLastAction(ctx context.Context, id string, lastAction *containersv1alpha1.ContainerLastAction) (*containersv1alpha1.Container, error) {
-	key := client.ObjectKey{Name: id, Namespace: w.apiNamespace}
-	var result *containersv1alpha1.Container
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		var latest containersv1alpha1.Container
-		if err := w.k8s.Get(ctx, key, &latest); err != nil {
-			if apierrors.IsNotFound(err) {
-				return nil
-			}
-			return err
-		}
-		patch := client.MergeFromWithOptions(latest.DeepCopy(), client.MergeFromWithOptimisticLock{})
-		latest.Status.LastAction = lastAction
-		if err := w.k8s.Status().Patch(ctx, &latest, patch); err != nil {
-			if apierrors.IsNotFound(err) {
-				return nil
-			}
-			return err
-		}
-		result = &latest
-		return nil
-	})
-	return result, err
-}
-
-// removeActionAnnotation clears the AnnotationAction annotation only if
-// its value still matches the action just processed. A concurrent writer
-// may replace the annotation with a different action between dispatch
-// and cleanup; that new value must survive so the next reconcile picks
-// it up. Callers pass either a fresh Container from patchContainerLastAction
-// (which bypasses the informer cache, not yet showing the preceding status
-// write) or a cached one (which may 409 on the first Patch). On conflict,
-// the retry re-reads from the cache; by then it has usually caught up.
-func (w *dockerWatcher) removeActionAnnotation(ctx context.Context, latest *containersv1alpha1.Container, observed string) error {
-	firstAttempt := true
-	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		if !firstAttempt {
-			if err := w.k8s.Get(ctx, client.ObjectKeyFromObject(latest), latest); err != nil {
-				if apierrors.IsNotFound(err) {
-					return nil
-				}
-				return err
-			}
-		}
-		firstAttempt = false
-		current, present := latest.Annotations[containersv1alpha1.AnnotationAction]
-		if !present || current != observed {
-			return nil
-		}
-		patch := client.MergeFromWithOptions(latest.DeepCopy(), client.MergeFromWithOptimisticLock{})
-		delete(latest.Annotations, containersv1alpha1.AnnotationAction)
-		if err := w.k8s.Patch(ctx, latest, patch); err != nil {
-			if apierrors.IsNotFound(err) {
-				return nil
-			}
-			return err
-		}
-		return nil
-	})
 }
 
 // deleteContainer removes a container from Docker. NotFound is treated
