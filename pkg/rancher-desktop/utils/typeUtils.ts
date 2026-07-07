@@ -5,16 +5,14 @@
 export type RecursivePartial<T> = {
   [P in keyof T]?:
   T[P] extends (infer U)[] ? RecursivePartial<U>[] :
-
-    T[P] extends Record<string, unknown> ? RecursivePartial<T[P]> :
+    T[P] extends object ? RecursivePartial<T[P]> :
       T[P];
 };
 
 export type RecursiveReadonly<T> = {
   readonly [P in keyof T]:
   T[P] extends (infer U)[] ? readonly RecursiveReadonly<U>[] :
-
-    T[P] extends Record<string, unknown> ? RecursiveReadonly<T[P]> :
+    T[P] extends object ? RecursiveReadonly<T[P]> :
       T[P];
 };
 
@@ -70,10 +68,42 @@ export function UpperSnakeCase<T extends string>(input: T): UpperSnakeCase<T> {
 export type RecursiveKeys<T> =
   Record<string, unknown> extends T ? string :
     T extends readonly unknown[] ? RecursiveKeys<T[number]> :
-      T extends Record<string, unknown> ? keyof T & string | RecursiveKeysInner<T, keyof T & string> :
+      T extends object ? keyof T & string | RecursiveKeysInner<Required<T>, keyof T & string> :
         never;
 
 type RecursiveKeysInner<T, K extends string> = K extends keyof T ? `${ K }.${ RecursiveKeys<T[K]> }` : never;
+
+/**
+ * RecursiveLeafKeys returns the set of all keys of a type, recursively, without
+ * any intermediate keys, separated by dots.
+ *
+ * @example RecursiveLeafKeys<{a: { b: number}, c: number}> = 'a.b' | 'c'
+ * @note This currently does not handle arrays.
+ */
+export type RecursiveLeafKeys<T> =
+  T extends readonly unknown[] ? RecursiveLeafKeys<T[number]> :
+    T extends object ?
+      RecursiveLeafKeysInner<Required<T>, keyof T & string> :
+      never;
+
+type RecursiveLeafKeysInner<T, K extends string> =
+  K extends keyof T ?
+    NonNullable<T[K]> extends object ?
+      `${ K }.${ RecursiveLeafKeys<T[K]> }` :
+      `${ K }` :
+    never;
+
+/**
+ * Get the type of a value at a given key in a nested object type.
+ * @example FieldType<{ a: { b: number } }, 'a.b'> = number
+ * @note This currently does not handle arrays.
+ */
+export type FieldType<T, K extends RecursiveLeafKeys<T>> =
+  K extends `${ infer P }.${ infer R }` ?
+    P extends keyof T ?
+      FieldType<NonNullable<T[P]>, R & RecursiveLeafKeys<T[P]>> :
+      never :
+    K extends keyof T ? T[K] : never;
 
 /**
  * RecursiveTypes returns a single-level type mapping of RecursiveKeys<T> to
