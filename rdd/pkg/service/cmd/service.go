@@ -58,6 +58,7 @@ import (
 	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/app"
 	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/demo"
 	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/engine"
+	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/k3sversions"
 	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/kubernetes"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 	// Import built-in system controllers.
