@@ -306,7 +306,9 @@ async function checkDependencies(): Promise<void> {
     git('checkout', '-b', branchName, MAIN_BRANCH);
     git('add', ...await dependency.updateManifest(latestVersion, newChecksums));
     git('commit', '--signoff', '--message', commitMessage);
-    git('push', '--force', `https://${ process.env.GITHUB_TOKEN }@github.com/${ GITHUB_OWNER }/${ GITHUB_REPO }`);
+    // GitHub accepts an app installation token only as the password, so
+    // pass it via `x-access-token:`; a bare `token@host` fails.
+    git('push', '--force', `https://x-access-token:${ process.env.GITHUB_TOKEN }@github.com/${ GITHUB_OWNER }/${ GITHUB_REPO }`);
     await createDependencyBumpPR(dependency, currentVersion, latestVersion);
   }
 }

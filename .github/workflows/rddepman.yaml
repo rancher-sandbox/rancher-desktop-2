@@ -1,12 +1,13 @@
 name: Update external dependencies
+# When run upstream, this workflow gets its token from vault; elsewhere it
+# needs the RUN_WORKFLOW_FROM_WORKFLOW secret, and skips when that is unset.
 on:
   schedule:
     - cron: '23 8 * * *'
   workflow_dispatch: {}
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   check-for-token:
@@ -17,20 +18,33 @@ jobs:
     - id: calc
       run: echo "HAS_SECRET=${HAS_SECRET}" >> "${GITHUB_OUTPUT}"
       env:
-        HAS_SECRET: ${{ secrets.RUN_WORKFLOW_FROM_WORKFLOW != '' }}
+        HAS_SECRET: ${{ github.repository == 'rancher-sandbox/rancher-desktop-2' || secrets.RUN_WORKFLOW_FROM_WORKFLOW != '' }}
 
   check-update-versions:
     needs: check-for-token
     if: needs.check-for-token.outputs.has-token == 'true'
+    permissions:
+      contents: read
+      id-token: write # Required for ./.github/actions/get-token
     runs-on: ubuntu-latest
     steps:
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          # rddepman pushes with the vault app token in the URL; a persisted
+          # github.token would override that, so keep it out of git config.
+          persist-credentials: false
+
+      - # rddepman needs a token whose pull requests trigger CI; the
+        # workflow-provided github.token does not trigger further workflows.
+        id: get-token
+        uses: ./.github/actions/get-token
+        with:
+          token-secret: ${{ secrets.RUN_WORKFLOW_FROM_WORKFLOW }}
 
       - uses: ./.github/actions/yarn-install
 
       - run: yarn rddepman
         env:
-          GITHUB_TOKEN: ${{ secrets.RUN_WORKFLOW_FROM_WORKFLOW }}
+          GITHUB_TOKEN: ${{ steps.get-token.outputs.token }}
