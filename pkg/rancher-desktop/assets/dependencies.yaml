@@ -19,16 +19,16 @@ electron:
     electron-v42.1.0-win32-x64.zip: sha256:0b03582d0a68dce8473fcc090114dabef7eaafd52b6d8cd2c85b000358c6af31
     electron-v42.1.0-win32-arm64.zip: sha256:78a6bc7d1648383d72a79c95748e6bbc0faae412f11f29b987ee9deda605535e
 dockerCLI:
-  version: 29.5.2
+  version: 29.6.1
   checksums:
-    docker-linux-amd64: sha256:a04abd7d5f2a4164d52582dc526ca7ffb5458bfbb341a0800bcd5475c176c21b
-    docker-linux-arm64: sha256:8dcfd81c8a6df7b37cf1435a837e29adaa0b7408d792060cd8b4bd0a3e99c373
-    docker-wsl-amd64: sha256:513516ab07b4015c97db53f045d930d0960c464eedbfe1af8b96956f2a2fdf0c
-    docker-wsl-arm64: sha256:12b658c94473273063da119871876ec3df10d68789a047746f32dd3fb6c03f7a
-    docker-darwin-amd64: sha256:04173e46390667184fe66fede83142a4e09975e33a6654c142cc05350c65909c
-    docker-darwin-arm64: sha256:1995f5be7d5533e5b02b899c0c2a38c784a102672446bb48b021df1599613489
-    docker-windows-amd64.exe: sha256:cda5009060935a0c8938d3725314e79b66d97cb5ef23627a9bcfd1eab5c0dea5
-    docker-windows-arm64.exe: sha256:f767e4cf0072a3ac591f6e5e4995a70664db3052582db7e54e9d2b9b0907605f
+    docker-linux-amd64: sha256:9538977b55435e392ce5d312dd6e9ff5338e138275044733fd6a11f6b2dfcaca
+    docker-linux-arm64: sha256:608ef1462d2f5d6c52fff9ce7141c0e8dc88704ae06eb7215ec14ec982ca713a
+    docker-wsl-amd64: sha256:4126faf3aaebc983260ab676ad739df7338c3e0ce0dcc135017c9a514e8c488a
+    docker-wsl-arm64: sha256:4f716b44640d4c9feac1f9a46b7eaf97c206e06f4087ad5d618e4b08dd170a69
+    docker-darwin-amd64: sha256:6a5d1be0a87bbd069abb73eb5affbb36608ea931ad411ecd71a75c5fc0da6dfc
+    docker-darwin-arm64: sha256:1d7e8d612b09d52e80381b6e1a60d0de9d78bb9586e70745186fa8aa770b402b
+    docker-windows-amd64.exe: sha256:f27e888d2e00ed28907964e5242d61dc30df74d0e83985f542cd5af7f5093877
+    docker-windows-arm64.exe: sha256:4a10b5d48a8242c94e002e1c3c46c860b91e04768d4e90aa15f11c1769a29d76
 dockerBuildx:
   version: 0.34.1
   checksums:
