@@ -7,7 +7,7 @@ import * as rddClient from '@rdd-client';
 
 import type { ElectronApplication, Page } from '@playwright/test';
 
-test.describe('Main App Test', () => {
+test.describe.serial('Main App Test', () => {
   let electronApp: ElectronApplication;
   let page: Page;
 

@@ -165,9 +165,9 @@ export async function teardown(app: ElectronApplication | undefined, testInfo: T
   }
 
   const logsDir = reportAsset(testInfo, 'log');
+  await fs.promises.mkdir(logsDir, { recursive: true });
   const rddLogs = (await fs.promises.open(path.join(logsDir, 'rdd-exec.log'), 'a')).createWriteStream();
   try {
-    const rddExe = path.join(import.meta.dirname, '..', '..', 'rdd', 'bin', exeName('rdd'));
     await spawnFile(rddExe, ['service', 'delete'], { stdio: ['ignore', rddLogs, rddLogs] });
   } catch (ex) {
     console.error(`Failed to clean up RDD: ${ ex }`);
@@ -175,18 +175,20 @@ export async function teardown(app: ElectronApplication | undefined, testInfo: T
     await expect(util.promisify(rddLogs.close.bind(rddLogs))(), 'failed to close RDD logs')
       .resolves.toBeUndefined();
   }
+  let exit: number | null = 0;
+  let signal: NodeJS.Signals | null = null;
   try {
     const { mockController } = currentTest ?? {};
     if (mockController) {
-      if (typeof mockController?.exitCode !== 'number') {
-        const promise = new Promise<void>((resolve) => {
-          mockController.once('exit', () => resolve());
-        });
+      if (mockController.exitCode === null && mockController.signalCode === null) {
+        // The process has not exited yet.
+        const timeout = setTimeout(() => mockController.kill('SIGKILL'), 10_000);
+        const promise = new Promise<void>(resolve => mockController.once('exit', resolve));
         mockController.kill();
         await promise;
+        clearTimeout(timeout);
       }
-      const { exitCode: exit, signalCode: signal } = mockController;
-      expect({ exit, signal }, 'mock controller exited').toEqual({ exit: 0, signal: null });
+      ({ exitCode: exit, signalCode: signal } = mockController);
     }
   } catch (ex) {
     // Ignore the error if the process is already gone, but log it otherwise.
@@ -194,6 +196,7 @@ export async function teardown(app: ElectronApplication | undefined, testInfo: T
       console.error(`Failed to clean up mock controller: ${ ex }`);
     }
   }
+  expect({ exit, signal }, 'mock controller exited').toEqual({ exit: 0, signal: null });
 
   if (currentTest?.file === filename) {
     const delta = (Date.now() - currentTest.startTime) / 1_000;
@@ -312,11 +315,19 @@ export interface startRancherDesktopOptions {
 
 /**
  * Run Rancher Desktop using the mock controller.
- * @param testPath The path to the test file.
+ * @param testInfo The Playwright test info object.
  * @param options Additional options; see type definition for details.
- * @returns The Electon application.
+ * @returns The Electron application.
  */
 export async function startRancherDesktop(testInfo: TestInfo, options: startRancherDesktopOptions = {}): Promise<ElectronApplication> {
+  // If we have a previous mock controller, kill it.  This should have happened
+  // in teardown(); this only exists as insurance.
+  try {
+    if (typeof currentTest?.mockController?.exitCode !== 'number') {
+      currentTest?.mockController?.kill();
+    }
+  } catch { /* Ignore errors killing stale controllers */ }
+
   currentTest = {
     file: testInfo.file, options, startTime: Date.now(),
   };
@@ -352,11 +363,6 @@ export async function startRancherDesktop(testInfo: TestInfo, options: startRanc
   }
 
   // The mock controller does not daemonize; launch it in the background.
-  try {
-    if (typeof currentTest.mockController?.exitCode !== 'number') {
-      currentTest.mockController?.kill();
-    }
-  } catch { /* Ignore errors killing stale controllers */ }
   const controller = childProcess.spawn(
     path.join(topSrcDir, 'rdd', 'bin', exeName('mock-controller')),
     ['-v', '2', '--logtostderr=false', `-log_file=${ path.join(logsDir, 'mock-controller.log') }`],
