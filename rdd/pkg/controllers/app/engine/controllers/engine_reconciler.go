@@ -143,15 +143,11 @@ type EngineReconciler struct {
 	watcherCtx    context.Context
 	watcherCancel context.CancelFunc
 
-	// contextMu protects contextProbeCancel and contextProbeGen.
+	// contextMu protects contextProbeCancel.
 	contextMu sync.Mutex
 	// contextProbeCancel cancels the in-flight Docker context probe goroutine.
 	// It is nil when no probe is running.
 	contextProbeCancel context.CancelFunc
-	// contextProbeGen is incremented each time a new probe is launched; the
-	// goroutine captures its generation at launch and uses it to detect
-	// whether it has been superseded.
-	contextProbeGen int
 	// contextProbeWg is used by removeDockerContext to wait for the probe
 	// goroutine to finish before deleting the context directory, ensuring
 	// the goroutine cannot write currentContext after the directory is gone.
@@ -348,17 +344,16 @@ func (r *EngineReconciler) manageDockerContext(endpointURL string) {
 	}
 	probeCtx, cancel := context.WithCancel(r.watcherCtx)
 	r.contextProbeCancel = cancel
-	r.contextProbeGen++
-	myGen := r.contextProbeGen
 	r.contextMu.Unlock()
 
 	r.contextProbeWg.Add(1)
 	go func() {
 		defer r.contextProbeWg.Done()
 		defer func() {
+			// A superseding probe or removeDockerContext cancels probeCtx before
+			// replacing contextProbeCancel, so err == nil means we still own it.
 			r.contextMu.Lock()
-			// Clear the cancel func only if we are still the current probe.
-			if r.contextProbeGen == myGen {
+			if probeCtx.Err() == nil {
 				r.contextProbeCancel = nil
 			}
 			r.contextMu.Unlock()
