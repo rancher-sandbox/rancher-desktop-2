@@ -102,12 +102,10 @@ type KubernetesReconciler struct {
 	// inject a path under a temp directory.
 	InstanceKubeConfigPath string
 
-	// contextMu protects contextProbeCancel and contextProbeGen.
+	// contextMu protects contextProbeCancel.
 	contextMu sync.Mutex
 	// contextProbeCancel cancels the in-flight current-context probe goroutine.
 	contextProbeCancel context.CancelFunc
-	// contextProbeGen detects superseded goroutines.
-	contextProbeGen int
 	// contextProbeWg lets removeKubeContext wait for any probe to finish.
 	contextProbeWg sync.WaitGroup
 
@@ -458,8 +456,6 @@ func (r *KubernetesReconciler) manageKubeContext(ctx context.Context) error {
 	}
 	probeCtx, cancel := context.WithCancel(ctx)
 	r.contextProbeCancel = cancel
-	r.contextProbeGen++
-	myGen := r.contextProbeGen
 	r.contextMu.Unlock()
 
 	r.contextProbeWg.Add(1)
@@ -468,8 +464,10 @@ func (r *KubernetesReconciler) manageKubeContext(ctx context.Context) error {
 		// covers that write instead of racing it.
 		defer r.contextProbeWg.Done()
 		defer func() {
+			// Both paths that replace contextProbeCancel cancel probeCtx first, so
+			// an uncancelled probeCtx means the field still holds our cancel func.
 			r.contextMu.Lock()
-			if r.contextProbeGen == myGen {
+			if probeCtx.Err() == nil {
 				r.contextProbeCancel = nil
 			}
 			r.contextMu.Unlock()
