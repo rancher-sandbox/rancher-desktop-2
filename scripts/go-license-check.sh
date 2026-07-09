@@ -19,6 +19,13 @@ ARGS=(
     "--ignore=github.com/hashicorp/hcl"
     "--ignore=github.com/hashicorp/errwrap"
     "--ignore=github.com/hashicorp/go-multierror"
+    # As for golang 1.26, go-licensese no longer correctly ignores stdlib.  Also, it's no longer maintained.
+    # https://github.com/google/go-licenses/issues/335 https://github.com/google/go-licenses/issues/332
+    "--ignore=bufio" "--ignore=bytes" "--ignore=cmp" "--ignore=context" "--ignore=encoding" "--ignore=errors"
+    "--ignore=flag" "--ignore=fmt" "--ignore=internal" "--ignore=io" "--ignore=iter" "--ignore=log"
+    "--ignore=math" "--ignore=os" "--ignore=path" "--ignore=reflect" "--ignore=regexp" "--ignore=runtime"
+    "--ignore=slices" "--ignore=sort" "--ignore=strconv" "--ignore=strings" "--ignore=sync" "--ignore=syscall"
+    "--ignore=testing" "--ignore=time" "--ignore=unicode"
 )
 
 find src/go -mindepth 1 -maxdepth 1 -type d | while IFS= read -r DIR; do
