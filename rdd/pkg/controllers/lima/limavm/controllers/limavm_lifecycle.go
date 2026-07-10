@@ -268,9 +268,43 @@ func (r *LimaVMReconciler) handleWatchedState(ctx context.Context, limaVM *v1alp
 	}
 }
 
+// unwatchedAction is the decision for an instance with no watcher, split from
+// handleUnwatchedState's side effects so the choice can be unit-tested without
+// a real Lima instance.
+type unwatchedAction int
+
+const (
+	// actionKillOrphan: a hostagent of ours from a previous controller lifetime
+	// is still alive. Kill it and re-check next reconcile, once it has exited.
+	actionKillOrphan unwatchedAction = iota
+	// actionStart: no live hostagent and the VM should run. Start it.
+	actionStart
+	// actionMarkStopped: no live hostagent and the VM should stay stopped.
+	actionMarkStopped
+)
+
+// decideUnwatchedAction chooses how to reconcile an instance that has no
+// watcher. The kill-and-requeue path exists solely to wait for a live hostagent
+// of ours to exit, so it gates on hostagent liveness, not on the Running/Broken
+// status. An instance can report Broken with nothing alive to kill — e.g. WSL
+// is not installed, or `wsl --list` is momentarily empty — and requeueing every
+// second to kill a process that does not exist spins forever. hasLiveHostagent
+// must therefore be true only when HostAgentPID names a live process of ours
+// (screened by IsOurProcess); a stale or recycled PID is not a live hostagent.
+func decideUnwatchedAction(hasLiveHostagent, shouldRun bool) unwatchedAction {
+	switch {
+	case hasLiveHostagent:
+		return actionKillOrphan
+	case shouldRun:
+		return actionStart
+	default:
+		return actionMarkStopped
+	}
+}
+
 // handleUnwatchedState handles a VM with no active watcher. This occurs after
-// controller restart. If a hostagent is still running, it is orphaned and must
-// be killed so the next reconcile can start fresh with a watcher.
+// controller restart. If a hostagent of ours is still alive, it is orphaned and
+// must be killed so the next reconcile can start fresh with a watcher.
 func (r *LimaVMReconciler) handleUnwatchedState(ctx context.Context, limaVM *v1alpha1.LimaVM, shouldRun bool) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -283,10 +317,11 @@ func (r *LimaVMReconciler) handleUnwatchedState(ctx context.Context, limaVM *v1a
 		return ctrl.Result{}, errors.New("instance not found")
 	}
 
-	switch inst.Status {
-	case limatype.StatusRunning, limatype.StatusBroken:
-		// Orphaned hostagent from before controller restart. Kill it so the
-		// next reconcile can start with a watcher.
+	hasLiveHostagent := inst.HostAgentPID > 0 &&
+		process.IsOurProcess(process.HostagentInterruptKey(inst.Name), inst.HostAgentPID)
+
+	switch decideUnwatchedAction(hasLiveHostagent, shouldRun) {
+	case actionKillOrphan:
 		// killOrphanedHostagent guards the recycled HostAgentPID before signalling
 		// or taskkill, as handleWatchedState does.
 		logger.Info("Found orphaned hostagent, killing it", "status", inst.Status)
@@ -294,13 +329,19 @@ func (r *LimaVMReconciler) handleUnwatchedState(ctx context.Context, limaVM *v1a
 			logger.Error(err, "Failed to kill orphaned hostagent")
 			return ctrl.Result{}, err
 		}
+		// The only path that requeues: we are waiting for a live process to exit
+		// before starting fresh.
 		return ctrl.Result{RequeueAfter: time.Second}, nil
 
-	default:
-		// Stopped — proceed normally.
-		if shouldRun {
-			return r.startInstance(ctx, limaVM, inst)
-		}
+	case actionStart:
+		// A driver or distro left over from a previous controller lifetime may
+		// still be running; force-stop it so the start begins clean, mirroring
+		// handleWatchedState's phaseStopped recovery.
+		r.forceStopLeftoverDriver(ctx, inst)
+		return r.startInstance(ctx, limaVM, inst)
+
+	default: // actionMarkStopped
+		r.forceStopLeftoverDriver(ctx, inst)
 		if !base.HasConditionWithReason(limaVM.Status.Conditions, ConditionRunning, metav1.ConditionFalse, ReasonStopped) {
 			if err := r.updateCondition(ctx, limaVM, ConditionRunning, metav1.ConditionFalse, ReasonStopped, "Lima instance is stopped"); err != nil {
 				logger.Error(err, "Failed to update stopped condition")
@@ -308,6 +349,17 @@ func (r *LimaVMReconciler) handleUnwatchedState(ctx context.Context, limaVM *v1a
 			}
 		}
 		return ctrl.Result{}, nil
+	}
+}
+
+// forceStopLeftoverDriver force-stops a Running or Broken instance that has no
+// live hostagent — a VM driver or distro left over from a previous controller
+// lifetime. Otherwise it is a no-op.
+func (r *LimaVMReconciler) forceStopLeftoverDriver(ctx context.Context, inst *limatype.Instance) {
+	if inst.Status == limatype.StatusRunning || inst.Status == limatype.StatusBroken {
+		logger := log.FromContext(ctx)
+		logger.Info("Force-stopping leftover VM driver", "status", inst.Status)
+		stopInstanceForcibly(ctx, logger, inst)
 	}
 }
 
