@@ -118,7 +118,7 @@ jobs:
     name: Trigger OBS build
     needs: package
     runs-on: ubuntu-latest
-    if: github.ref_type == 'branch' && ( startsWith(github.ref_name, 'main') || startsWith(github.ref_name, 'release-') )
+    # if: github.ref_type == 'branch' && ( startsWith(github.ref_name, 'main') || startsWith(github.ref_name, 'release-') )
     permissions:
       contents: read
       id-token: write # Needed for read-value-secrets
@@ -161,6 +161,8 @@ jobs:
           "https://build.opensuse.org/trigger/runservice?project=isv:Rancher:dev&package=rancher-desktop-2-${GITHUB_REF_NAME}"
       env:
         AWS_DEFAULT_REGION: us-east-1
+        # XXX Mook for testing
+        GITHUB_REF_NAME: main
 
   sign-win:
     name: Test Signing (Windows)
