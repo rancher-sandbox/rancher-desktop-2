@@ -23,6 +23,9 @@ defaults:
   run:
     shell: bash
 
+permissions:
+  contents: read
+
 jobs:
   check-paths:
     uses: ./.github/workflows/paths-ignore.yaml
@@ -110,13 +113,38 @@ jobs:
         name: Rancher Desktop-linux.zip
         path: dist/rancher-desktop-*-linux.zip
         if-no-files-found: error
+
+  trigger-obs:
+    name: Trigger OBS build
+    needs: package
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'branch' && ( startsWith(github.ref_name, 'main') || startsWith(github.ref_name, 'release-') )
+    permissions:
+      contents: read
+      id-token: write # Needed for read-value-secrets
+    steps:
+    - id: get-token
+      name: Read vault secrets
+      continue-on-error: true
+      uses: rancher-eio/read-vault-secrets@7282bf97898cd1c16c89f837e0bb442e6d384c89 # main
+      with:
+        secrets: |
+          secret/data/github/repo/${{ github.repository }}/obs/webhook-token token | OBS_WEBHOOK_TOKEN;
+          secret/data/github/repo/${{ github.repository }}/aws/credentials AWS_ACCESS_KEY_ID | AWS_ACCESS_KEY_ID;
+          secret/data/github/repo/${{ github.repository }}/aws/credentials AWS_SECRET_ACCESS_KEY | AWS_SECRET_ACCESS_KEY
+    - id: download
+      name: Download artifacts
+      if: >-
+        steps.get-token.outcome == 'success' &&
+        env.AWS_ACCESS_KEY_ID != '' &&
+        env.AWS_SECRET_ACCESS_KEY != '' &&
+        env.OBS_WEBHOOK_TOKEN != ''
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: Rancher Desktop-linux.zip
     - name: Trigger OBS build
-      if: matrix.platform == 'linux' && github.ref_type == 'branch' && ( startsWith(github.ref_name, 'main') || startsWith(github.ref_name, 'release-') )
+      if: steps.download.outcome == 'success'
       run: |
-        if [[ -z $AWS_ACCESS_KEY_ID ]] || [[ -z $OBS_WEBHOOK_TOKEN ]]; then
-          echo "Secrets unavailable, skipping."
-          exit 0
-        fi
         # in pull requests GITHUB_REF_NAME is in the form "<pr_number>/merge";
         # remove slashes since they aren't valid in filenames
         no_slash_ref_name="${GITHUB_REF_NAME//\//-}"
@@ -124,18 +152,15 @@ jobs:
 
         # Copy zip file to S3
         aws s3 cp \
-          dist/rancher-desktop-*-linux.zip \
+          rancher-desktop-*-linux.zip \
           "s3://rancher-desktop-assets-for-obs/$zip_name"
 
         # Trigger OBS services for relevant package in dev channel
-        curl -X POST \
-          -H "Authorization: Token ${OBS_WEBHOOK_TOKEN}" \
+        curl --request POST --fail-with-body \
+          --header "Authorization: Token ${OBS_WEBHOOK_TOKEN}" \
           "https://build.opensuse.org/trigger/runservice?project=isv:Rancher:dev&package=rancher-desktop-2-${GITHUB_REF_NAME}"
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_DEFAULT_REGION: us-east-1
-        OBS_WEBHOOK_TOKEN: ${{ secrets.OBS_WEBHOOK_TOKEN }}
 
   sign-win:
     name: Test Signing (Windows)
