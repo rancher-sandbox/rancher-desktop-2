@@ -1,25 +1,20 @@
-import { NavItemName } from '@pkg/config/transientSettings';
-
-interface NavItems {
-  name:  NavItemName;
-  tabs?: string[];
-}
-const wslTabs: string[] = ['integrations', 'network', 'proxy'];
-const vmLinuxTabs: string[] = ['hardware', 'volumes'];
-const vmDarwinTabs: string[] = vmLinuxTabs.concat(['network', 'emulation']);
-
-export const preferencesNavItems: NavItems[] = [
+export const preferencesNavItems = [
+  /*
   {
     name: 'Application',
     tabs: ['general', 'behavior', 'environment'],
   },
+  */
+  /*
   {
     name: process.platform === 'win32' ? 'WSL' : 'Virtual Machine',
-    tabs: process.platform === 'win32' ? wslTabs : ( process.platform === 'linux' ? vmLinuxTabs : vmDarwinTabs ),
+    tabs: vmTabs,
   },
+  */
   {
     name: 'Container Engine',
-    tabs: ['general', 'allowed-images'],
+    tabs: ['general'/*, 'allowed-images' */],
   },
   { name: 'Kubernetes' },
-];
+] as const satisfies readonly { name: string; tabs?: readonly string[] }[];
+export type preferencesNavItemName = (typeof preferencesNavItems)[number]['name'];

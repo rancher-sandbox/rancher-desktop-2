@@ -5,7 +5,9 @@
 import Electron from 'electron';
 import semver from 'semver';
 
+import type { TransientPreferencesState } from '@pkg/types/transientPreferences';
 import type { Direction, RecursivePartial } from '@pkg/utils/typeUtils';
+
 /**
  * IpcMainEvents describes events the renderer can send to the main process,
  * i.e. ipcRenderer.send() -> ipcMain.on().
@@ -46,6 +48,12 @@ export interface IpcMainEvents {
   'preferences-close':      () => void;
   'preferences-set-dirty':  (isDirty: boolean) => void;
   'get-debugging-statuses': () => void;
+
+  /**
+   * Trigger a fetch of transient preferences; causes
+   * 'transient-preferences/update' to be emitted.
+   */
+  'transient-preferences/get': () => void;
   // #endregion
 
   'dashboard-open':  () => void;
@@ -81,12 +89,10 @@ export interface IpcMainEvents {
  * invoke on the main process, i.e. ipcRenderer.invoke() -> ipcMain.handle()
  */
 export interface IpcMainInvokeEvents {
-  'get-locked-fields':         () => import('@pkg/config/settings').LockedSettingsType;
-  'settings-write':            (arg: RecursivePartial<import('@pkg/config/settings').Settings>) => void;
-  'transient-settings-fetch':  () => import('@pkg/config/transientSettings').TransientSettings;
-  'transient-settings-update': (arg: RecursivePartial<import('@pkg/config/transientSettings').TransientSettings>) => void;
-  'show-message-box':          (options: Electron.MessageBoxOptions) => Electron.MessageBoxReturnValue;
-  'show-message-box-rd':       (options: Electron.MessageBoxOptions, modal?: boolean) => any;
+  'get-locked-fields':   () => import('@pkg/config/settings').LockedSettingsType;
+  'settings-write':      (arg: RecursivePartial<import('@pkg/config/settings').Settings>) => void;
+  'show-message-box':    (options: Electron.MessageBoxOptions) => Electron.MessageBoxReturnValue;
+  'show-message-box-rd': (options: Electron.MessageBoxOptions, modal?: boolean) => any;
 
   // #region extensions
   /** Execute the given command and return the results. */
@@ -108,6 +114,11 @@ export interface IpcMainInvokeEvents {
   /** Fetch the KubeConfig for use with RDD */
   'rdd/kube-config': () => string;
   // #endregion
+
+  // #region Preferences
+  'transient-preferences/set': (preferences: RecursivePartial<TransientPreferencesState>) => void;
+  // #endregion
+
 }
 
 /**
@@ -131,6 +142,11 @@ export interface IpcRendererEvents {
   'update-network-status': (status: boolean) => void;
   'diagnostics/update':    () => void;
 
+  // #region preferences
+  /** The transient preferences have been updated. */
+  'transient-preferences/update': (preferences: TransientPreferencesState) => void;
+  // #endregion
+
   // #region dialog
   'dialog/mounted':  () => void;
   'dialog/populate': (...args: any) => void;
@@ -144,7 +160,7 @@ export interface IpcRendererEvents {
 
   // #region tab navigation
   route: (route: {
-    name?:      string;
+    name?:      import('@pkg/window/preferenceConstants').preferencesNavItemName;
     path?:      string;
     direction?: Direction;
   }) => void;
@@ -168,10 +184,6 @@ export interface IpcRendererEvents {
 
   // #region window
   'window/blur': (state: boolean) => void;
-  // #endregion
-
-  // #region preferences
-  'preferences/changed': () => void;
   // #endregion
 
   // #region Versions

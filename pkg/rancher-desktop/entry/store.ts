@@ -14,22 +14,24 @@ import * as RDDConnection from '../store/rddConnection';
 import * as ResourceFetch from '../store/resource-fetch';
 import * as Snapshots from '../store/snapshots';
 import * as Steve from '../store/steve';
+import * as TransientPreferences from '../store/transient-preferences';
 
 const modules = {
-  'action-menu':       ActionMenu,
-  'container-engine':  ContainerEngine,
-  diagnostics:         Diagnostics,
-  extensions:          Extensions,
-  i18n:                I18n,
-  imageManager:        ImageManager,
-  page:                Page,
-  preferences:         Preferences,
-  prefs:               Prefs,
-  rdd:                 RDD,
-  'rdd-connection':    RDDConnection,
-  'resource-fetch':    ResourceFetch,
-  snapshots:           Snapshots,
-  steve:               Steve,
+  'action-menu':           ActionMenu,
+  'container-engine':      ContainerEngine,
+  diagnostics:             Diagnostics,
+  extensions:              Extensions,
+  i18n:                    I18n,
+  imageManager:            ImageManager,
+  page:                    Page,
+  preferences:             Preferences,
+  prefs:                   Prefs,
+  rdd:                     RDD,
+  'rdd-connection':        RDDConnection,
+  'resource-fetch':        ResourceFetch,
+  snapshots:               Snapshots,
+  steve:                   Steve,
+  'transient-preferences': TransientPreferences,
 };
 
 export type Modules = typeof modules;
