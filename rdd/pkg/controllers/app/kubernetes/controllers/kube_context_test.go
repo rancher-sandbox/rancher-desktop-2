@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"gotest.tools/v3/assert"
 
@@ -230,6 +231,77 @@ func TestWriteInstanceKubeConfig(t *testing.T) {
 	user, ok := cfg.AuthInfos["rancher-desktop-2"]
 	assert.Assert(t, ok, "user rancher-desktop-2 not found")
 	assert.Equal(t, user.Token, "fake-token")
+}
+
+func TestCreateReplaceKubeContext_NoRewriteWhenUnchanged(t *testing.T) {
+	dir := t.TempDir()
+	destPath := filepath.Join(dir, ".kube", "config")
+	t.Setenv("KUBECONFIG", destPath)
+	srcPath := makeSrcKubeconfig(t, dir)
+
+	assert.NilError(t, createReplaceKubeContext("rancher-desktop-2", srcPath))
+	info1, err := os.Stat(destPath)
+	assert.NilError(t, err)
+
+	// Record mtime to verify the file is not rewritten.
+	assert.NilError(t, createReplaceKubeContext("rancher-desktop-2", srcPath))
+	info2, err := os.Stat(destPath)
+	assert.NilError(t, err)
+	assert.Equal(t, info1.ModTime(), info2.ModTime())
+}
+
+// TestKubeConfigWritersSerialized guards against the concurrent
+// load-modify-write races that tore ~/.kube/config into invalid YAML and
+// silently wiped user entries: while one writer sits between its load and its
+// write, a second writer must block, not interleave.
+func TestKubeConfigWritersSerialized(t *testing.T) {
+	dir := t.TempDir()
+	destPath := filepath.Join(dir, ".kube", "config")
+	t.Setenv("KUBECONFIG", destPath)
+	srcPath := makeSrcKubeconfig(t, dir)
+
+	// Seed a user-owned context so the final assertions can detect a wipe.
+	existing := clientcmdapi.NewConfig()
+	existing.Clusters["other"] = &clientcmdapi.Cluster{Server: "https://other:6443"}
+	existing.AuthInfos["other-user"] = &clientcmdapi.AuthInfo{Token: "other-token"}
+	existing.Contexts["other"] = &clientcmdapi.Context{Cluster: "other", AuthInfo: "other-user"}
+	existing.CurrentContext = "other"
+	assert.NilError(t, os.MkdirAll(filepath.Dir(destPath), 0o700))
+	assert.NilError(t, clientcmd.WriteToFile(*existing, destPath))
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	testAfterLoadKubeConfig = func() {
+		close(entered)
+		<-release
+	}
+	t.Cleanup(func() { testAfterLoadKubeConfig = nil })
+
+	mergeDone := make(chan error, 1)
+	go func() { mergeDone <- createReplaceKubeContext("rancher-desktop-2", srcPath) }()
+	<-entered
+
+	setDone := make(chan error, 1)
+	go func() { setDone <- setCurrentKubeContext("rancher-desktop-2") }()
+
+	select {
+	case <-setDone:
+		assert.Assert(t, false,
+			"setCurrentKubeContext completed inside createReplaceKubeContext's load-to-write window")
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	close(release)
+	assert.NilError(t, <-mergeDone)
+	assert.NilError(t, <-setDone)
+
+	cfg := loadDest(t, destPath)
+	_, ok := cfg.Clusters["other"]
+	assert.Assert(t, ok, "user cluster wiped by concurrent write")
+	_, ok = cfg.Clusters["rancher-desktop-2"]
+	assert.Assert(t, ok, "merged cluster missing")
+	// The later setCurrentKubeContext must not be reverted by the merge's write.
+	assert.Equal(t, cfg.CurrentContext, "rancher-desktop-2")
 }
 
 func TestRemoveInstanceKubeConfig(t *testing.T) {
