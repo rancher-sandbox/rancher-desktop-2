@@ -8,33 +8,33 @@ description: >-
 inputs:
   token-secret:
     description: Secret to fall back to
-    required: false
+    required: true
 outputs:
   token:
     description: The GitHub token retrieved
-    value: ${{ github.repository == 'rancher-sandbox/rancher-desktop-2' && steps.gen-token.outputs.token || steps.get-secret.outputs.token }}
+    value: ${{ steps.gen-token.outcome == 'success' && steps.gen-token.outputs.token || steps.get-secret.outputs.token }}
 runs:
   using: composite
   steps:
   - id: vault
     name: Read vault secrets
-    if: github.repository == 'rancher-sandbox/rancher-desktop-2'
+    if: github.repository_owner == 'rancher-sandbox'
     uses: rancher-eio/read-vault-secrets@7282bf97898cd1c16c89f837e0bb442e6d384c89 # main
     with:
       secrets: |
-        secret/data/github/repo/${{ github.repository }}/github/app-credentials appId | APP_ID ;
+        secret/data/github/repo/${{ github.repository }}/github/app-credentials clientId | CLIENT_ID ;
         secret/data/github/repo/${{ github.repository }}/github/app-credentials privateKey | PRIVATE_KEY
   - id: gen-token
     name: Generate token
-    if: github.repository == 'rancher-sandbox/rancher-desktop-2'
+    if: steps.vault.outcome == 'success'
     uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
     with:
-      app-id: ${{ env.APP_ID }}
+      client-id: ${{ env.CLIENT_ID }}
       private-key: ${{ env.PRIVATE_KEY }}
   - id: get-secret
-    name: Fetch secret.
-    if: github.repository != 'rancher-sandbox/rancher-desktop-2'
-    run: echo "token=$SECRET" >> "$GITHUB_OUTPUT"
+    name: Fall back to GitHub-hosted secrets
+    if: steps.vault.outcome == 'skipped'
+    run: echo "token=${SECRET:?Secret not found}" >> "$GITHUB_OUTPUT"
     shell: bash
     env:
       SECRET: ${{ inputs.token-secret }}

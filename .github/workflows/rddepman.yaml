@@ -10,19 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  check-for-token:
-    outputs:
-      has-token: ${{ steps.calc.outputs.HAS_SECRET }}
-    runs-on: ubuntu-latest
-    steps:
-    - id: calc
-      run: echo "HAS_SECRET=${HAS_SECRET}" >> "${GITHUB_OUTPUT}"
-      env:
-        HAS_SECRET: ${{ github.repository == 'rancher-sandbox/rancher-desktop-2' || secrets.RUN_WORKFLOW_FROM_WORKFLOW != '' }}
-
   check-update-versions:
-    needs: check-for-token
-    if: needs.check-for-token.outputs.has-token == 'true'
     permissions:
       contents: read
       id-token: write # Required for ./.github/actions/get-token
@@ -36,14 +24,12 @@ jobs:
           # github.token would override that, so keep it out of git config.
           persist-credentials: false
 
-      - # rddepman needs a token whose pull requests trigger CI; the
-        # workflow-provided github.token does not trigger further workflows.
-        id: get-token
+      - uses: ./.github/actions/yarn-install
+
+      - id: get-token
         uses: ./.github/actions/get-token
         with:
           token-secret: ${{ secrets.RUN_WORKFLOW_FROM_WORKFLOW }}
-
-      - uses: ./.github/actions/yarn-install
 
       - run: yarn rddepman
         env:
