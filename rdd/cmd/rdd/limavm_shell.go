@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -23,7 +24,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	cliexit "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/exit"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/nerdctlstub"
 )
 
 func newLimaVMShellCommand() *cobra.Command {
@@ -45,14 +48,27 @@ func newLimaVMShellCommand() *cobra.Command {
 
 func limaVMShellAction(cmd *cobra.Command, args []string) error {
 	logrus.SetLevel(logrus.InfoLevel)
-	ctx := cmd.Context()
+	shell, err := cmd.Flags().GetString("shell")
+	if err != nil {
+		return err
+	}
+	workDir, err := cmd.Flags().GetString("workdir")
+	if err != nil {
+		return err
+	}
+	return limaVMGuestExec(cmd.Context(), args[0], shell, workDir, args[1:])
+}
 
+// limaVMGuestExec runs a command (or an interactive shell when command is
+// empty) in a Lima VM over ssh, wiring up the caller's stdio and
+// propagating the remote exit code.
+func limaVMGuestExec(ctx context.Context, instanceName, shell, workDir string, command []string) error {
 	// Validate the VM exists in the API server
 	c, err := getKubeClient(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = findLimaVM(ctx, c, args[0])
+	_, err = findLimaVM(ctx, c, instanceName)
 	if err != nil {
 		return err
 	}
@@ -63,33 +79,36 @@ func limaVMShellAction(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get the Lima instance from the store
-	inst, err := store.Inspect(ctx, args[0])
+	inst, err := store.Inspect(ctx, instanceName)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("instance %q does not exist on disk", args[0])
+			return fmt.Errorf("instance %q does not exist on disk", instanceName)
 		}
 		return err
 	}
 	if len(inst.Errors) > 0 {
-		return fmt.Errorf("instance %q has configuration errors: %w", args[0], errors.Join(inst.Errors...))
+		return fmt.Errorf("instance %q has configuration errors: %w", instanceName, errors.Join(inst.Errors...))
 	}
 	if inst.Config == nil {
-		return fmt.Errorf("instance %q has no configuration", args[0])
+		return fmt.Errorf("instance %q has no configuration", instanceName)
 	}
 	if inst.Status != limatype.StatusRunning {
-		return fmt.Errorf("instance %q is not running (status: %s), use 'rdd lima start %s' first", args[0], inst.Status, args[0])
+		return fmt.Errorf("instance %q is not running (status: %s), use 'rdd lima start %s' first", instanceName, inst.Status, instanceName)
 	}
 
 	// Build working directory change command
 	var changeDirCmd string
-	workDir, err := cmd.Flags().GetString("workdir")
-	if err != nil {
-		return err
-	}
 	if workDir != "" {
 		changeDirCmd = fmt.Sprintf("cd %s || exit 1", shellescape.Quote(workDir))
-	} else if len(inst.Config.Mounts) > 0 {
+	} else if len(inst.Config.Mounts) > 0 || runtime.GOOS == "windows" {
 		hostCurrentDir, err := os.Getwd()
+		if err == nil {
+			// On Windows the guest mounts drives under /mnt, so a host
+			// path like C:\work maps to /mnt/c/work; elsewhere host
+			// mounts keep their own path and translation passes them
+			// through unchanged.
+			hostCurrentDir, err = nerdctlstub.TranslateHostPath(hostCurrentDir)
+		}
 		if err == nil {
 			changeDirCmd = fmt.Sprintf("cd %s", shellescape.Quote(hostCurrentDir))
 		} else {
@@ -97,6 +116,9 @@ func limaVMShellAction(cmd *cobra.Command, args []string) error {
 			logrus.WithError(err).Warn("failed to get the current directory")
 		}
 		hostHomeDir, err := os.UserHomeDir()
+		if err == nil {
+			hostHomeDir, err = nerdctlstub.TranslateHostPath(hostHomeDir)
+		}
 		if err == nil {
 			changeDirCmd = fmt.Sprintf("%s || cd %s", changeDirCmd, shellescape.Quote(hostHomeDir))
 		} else {
@@ -112,10 +134,6 @@ func limaVMShellAction(cmd *cobra.Command, args []string) error {
 	logrus.Debugf("changeDirCmd=%q", changeDirCmd)
 
 	// Determine shell
-	shell, err := cmd.Flags().GetString("shell")
-	if err != nil {
-		return err
-	}
 	if shell == "" {
 		shell = `"$SHELL"`
 	} else {
@@ -124,9 +142,9 @@ func limaVMShellAction(cmd *cobra.Command, args []string) error {
 
 	// Build script
 	script := fmt.Sprintf("%s ; exec %s --login", changeDirCmd, shell)
-	if len(args) > 1 {
-		quotedArgs := make([]string, len(args[1:]))
-		for i, arg := range args[1:] {
+	if len(command) > 0 {
+		quotedArgs := make([]string, len(command))
+		for i, arg := range command {
 			quotedArgs[i] = shellescape.Quote(arg)
 		}
 		script += fmt.Sprintf(" -c %s", shellescape.Quote(strings.Join(quotedArgs, " ")))
@@ -194,5 +212,12 @@ func limaVMShellAction(cmd *cobra.Command, args []string) error {
 
 	logrus.Debugf("executing ssh: %+v", sshCmd.Args)
 
-	return sshCmd.Run()
+	err = sshCmd.Run()
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		// ssh exits with the remote command's exit code (or 255 for
+		// connection errors); propagate it.
+		return &cliexit.Error{Code: exitErr.ExitCode()}
+	}
+	return err
 }
