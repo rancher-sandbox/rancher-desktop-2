@@ -21,8 +21,10 @@ local_setup_file() {
     rdd set --wait=false running=false
 }
 
-@test "HostInfo singleton is created at startup" {
-    rdd ctl wait --for=create hostinfo/system --timeout=30s
+@test "HostInfo singleton reports its host limits at startup" {
+    # The singleton is created with an empty Status and a follow-up reconcile
+    # fills it, so waiting on the create alone would race that write.
+    rdd ctl wait --for=jsonpath='{.status.cpus}' hostinfo/system --timeout=30s
 }
 
 @test "HostInfo has a positive cpu count" {
@@ -30,10 +32,11 @@ local_setup_file() {
     assert_output_ge 1
 }
 
-@test "HostInfo has memory of at least 2 GiB" {
+@test "HostInfo reports memory as a quantity" {
     run -0 rdd ctl get hostinfo system -o jsonpath='{.status.memory}'
-    # 2 GiB = 2147483648 bytes
-    assert_output_ge 2147483648
+    # A quantity so the GUI can compare it against spec.virtualMachine.memory
+    # without converting units; the byte value is asserted in the Go tests.
+    assert_output --regexp '^[0-9]+(Ki|Mi|Gi)?$'
 }
 
 @test "rdd set --help lists virtualMachine properties" {

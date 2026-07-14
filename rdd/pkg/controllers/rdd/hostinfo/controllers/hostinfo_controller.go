@@ -12,6 +12,7 @@ import (
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -28,6 +29,18 @@ const SingletonName = "system"
 // HostInfoReconciler reconciles the HostInfo singleton.
 type HostInfoReconciler struct {
 	client.Client
+
+	// detect reads the host limits. Tests replace it to drive a zero reading,
+	// which no supported platform produces.
+	detect func() hostinfo.HostInfo
+}
+
+// hostLimits returns the detected host limits, defaulting to the real host.
+func (r *HostInfoReconciler) hostLimits() hostinfo.HostInfo {
+	if r.detect != nil {
+		return r.detect()
+	}
+	return hostinfo.Detect()
 }
 
 // +kubebuilder:rbac:groups=rdd.rancherdesktop.io,resources=hostinfos,verbs=get;list;watch;create;update;patch;delete
@@ -37,9 +50,15 @@ type HostInfoReconciler struct {
 func (r *HostInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 
+	// Populating a Status under any other name would lend a user-created object
+	// the same authority as the singleton.
+	if req.Name != SingletonName {
+		return ctrl.Result{}, nil
+	}
+
 	var hi rddv1alpha1.HostInfo
 	if err := r.Get(ctx, req.NamespacedName, &hi); err != nil {
-		if apierrors.IsNotFound(err) && req.Name == SingletonName {
+		if apierrors.IsNotFound(err) {
 			// The singleton was deleted at runtime. Recreate it so its Status
 			// is repopulated; the create schedules another reconcile that lands
 			// in the Status.Patch path below. (An initial bootstrap failure
@@ -48,20 +67,27 @@ func (r *HostInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			log.Info("HostInfo singleton missing; recreating it")
 			return ctrl.Result{}, r.bootstrapSingleton(ctx)
 		}
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		return ctrl.Result{}, err
 	}
 
-	info := hostinfo.Detect()
+	info := r.hostLimits()
+	memory := *resource.NewQuantity(info.Memory, resource.BinarySI)
 
-	patch := client.MergeFrom(hi.DeepCopy())
+	if hi.Status.CPUs == info.CPUs && hi.Status.Memory.Equal(memory) {
+		return ctrl.Result{}, nil
+	}
+
 	hi.Status.CPUs = info.CPUs
-	hi.Status.Memory = info.Memory
+	hi.Status.Memory = memory
 
-	if err := r.Status().Patch(ctx, &hi, patch); err != nil {
+	// Write the whole status, not a merge patch: a zero reading marshals the same
+	// as the empty status it would be diffed against, so it would drop out of the
+	// patch and never reach a client.
+	if err := r.Status().Update(ctx, &hi); err != nil {
 		log.Error(err, "Failed to update HostInfo status")
 		return ctrl.Result{}, err
 	}
-	log.Info("Updated HostInfo status", "cpus", info.CPUs, "memory", info.Memory)
+	log.Info("Updated HostInfo status", "cpus", info.CPUs, "memory", memory.String())
 	return ctrl.Result{}, nil
 }
 

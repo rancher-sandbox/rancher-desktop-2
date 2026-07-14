@@ -2,15 +2,23 @@
 
 package v1alpha1
 
+import (
+	resource "k8s.io/apimachinery/pkg/api/resource"
+)
+
 // HostInfoStatusApplyConfiguration represents a declarative configuration of the HostInfoStatus type for use
 // with apply.
 //
-// HostInfoStatus reports the detected host hardware limits.
+// HostInfoStatus reports the detected host hardware limits. Both fields are
+// serialized even when zero: a zero reading means detection failed, and the App
+// webhook then leaves the matching ceiling unenforced, which a client cannot
+// distinguish from an absent field.
 type HostInfoStatusApplyConfiguration struct {
 	// cpus is the number of logical CPUs on the host.
 	CPUs *int `json:"cpus,omitempty"`
-	// memory is the total host RAM in bytes.
-	Memory *int64 `json:"memory,omitempty"`
+	// memory is the total host RAM, as a quantity so that clients can compare it
+	// against spec.virtualMachine.memory without converting units.
+	Memory *resource.Quantity `json:"memory,omitempty"`
 }
 
 // HostInfoStatusApplyConfiguration constructs a declarative configuration of the HostInfoStatus type for use with
@@ -30,7 +38,7 @@ func (b *HostInfoStatusApplyConfiguration) WithCPUs(value int) *HostInfoStatusAp
 // WithMemory sets the Memory field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Memory field is set to the value of the last call.
-func (b *HostInfoStatusApplyConfiguration) WithMemory(value int64) *HostInfoStatusApplyConfiguration {
+func (b *HostInfoStatusApplyConfiguration) WithMemory(value resource.Quantity) *HostInfoStatusApplyConfiguration {
 	b.Memory = &value
 	return b
 }
