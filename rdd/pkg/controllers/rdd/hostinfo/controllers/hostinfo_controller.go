@@ -9,17 +9,17 @@ package controllers
 import (
 	"context"
 	"fmt"
-	goruntime "runtime"
-
-	"github.com/pbnjay/memory"
+	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	rddv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/rdd/v1alpha1"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/hostinfo"
 )
 
 // SingletonName is the fixed name of the HostInfo singleton.
@@ -40,38 +40,59 @@ func (r *HostInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	var hi rddv1alpha1.HostInfo
 	if err := r.Get(ctx, req.NamespacedName, &hi); err != nil {
 		if apierrors.IsNotFound(err) && req.Name == SingletonName {
-			// The singleton was deleted (or its initial bootstrap failed).
-			// Recreate it so its Status is repopulated; the create schedules
-			// another reconcile that lands in the Status.Patch path below.
+			// The singleton was deleted at runtime. Recreate it so its Status
+			// is repopulated; the create schedules another reconcile that lands
+			// in the Status.Patch path below. (An initial bootstrap failure
+			// cannot reach here, since no watch event fires for an object that
+			// never existed; Start's retry loop covers that case instead.)
 			log.Info("HostInfo singleton missing; recreating it")
 			return ctrl.Result{}, r.bootstrapSingleton(ctx)
 		}
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	cpus := goruntime.NumCPU()
-	mem := int64(memory.TotalMemory())
+	info := hostinfo.Detect()
 
 	patch := client.MergeFrom(hi.DeepCopy())
-	hi.Status.CPUs = cpus
-	hi.Status.Memory = mem
+	hi.Status.CPUs = info.CPUs
+	hi.Status.Memory = info.Memory
 
 	if err := r.Status().Patch(ctx, &hi, patch); err != nil {
 		log.Error(err, "Failed to update HostInfo status")
 		return ctrl.Result{}, err
 	}
-	log.Info("Updated HostInfo status", "cpus", cpus, "memory", mem)
+	log.Info("Updated HostInfo status", "cpus", info.CPUs, "memory", info.Memory)
 	return ctrl.Result{}, nil
 }
 
-// Start implements manager.Runnable. It bootstraps the HostInfo singleton
-// once the cache is ready so that the reconciler loop can populate its Status.
-// Only the leader runs this to avoid concurrent creates. A bootstrap failure is
-// returned so the manager surfaces it (the daemon exits and is restarted) rather
-// than silently leaving the singleton absent; a runtime delete is instead
-// recovered by Reconcile.
+// bootstrapRetryInterval is how long Start waits between failed attempts to
+// create the HostInfo singleton.
+const bootstrapRetryInterval = 5 * time.Second
+
+// Start implements manager.Runnable. It bootstraps the HostInfo singleton once
+// the cache is ready so that the reconciler loop can populate its Status. Only
+// the leader runs this to avoid concurrent creates.
+//
+// It must never return a non-nil error outside of shutdown: Start is registered
+// as a manager Runnable, and a Runnable that returns an error aborts the whole
+// manager, stopping every controller while the daemon still reports the control
+// plane as ready. So a bootstrap failure is retried until it succeeds or the
+// manager is shutting down; a runtime delete is instead recovered by Reconcile.
 func (r *HostInfoReconciler) Start(ctx context.Context) error {
-	return r.bootstrapSingleton(ctx)
+	log := logf.FromContext(ctx)
+	// PollUntilContextCancel runs the condition immediately, then every
+	// interval, until it returns true or ctx is cancelled. The condition never
+	// returns an error, so the only way this exits non-nil is ctx cancellation
+	// (normal shutdown), which we deliberately swallow so the manager is never
+	// aborted by this Runnable.
+	_ = wait.PollUntilContextCancel(ctx, bootstrapRetryInterval, true, func(ctx context.Context) (bool, error) {
+		if err := r.bootstrapSingleton(ctx); err != nil {
+			log.Error(err, "Failed to bootstrap HostInfo singleton; will retry")
+			return false, nil
+		}
+		return true, nil
+	})
+	return nil
 }
 
 // bootstrapSingleton creates the HostInfo singleton, treating an existing object

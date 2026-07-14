@@ -19,6 +19,7 @@ import (
 	limav1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/app/controllers"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/hostinfo"
 	servicecontrollers "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
 )
 
@@ -120,7 +121,7 @@ func (c *controller) GetWebhookManagers() []base.WebhookManager {
 // webhook resolves Kubernetes version channels (e.g. "stable") to concrete
 // versions before the validating webhook checks them.
 func (c *controller) setupWebhook(mgr ctrl.Manager) error {
-	hostInfo := controllers.DetectHostInfo()
+	hostInfo := hostinfo.Detect()
 	defaulter, err := controllers.NewAppDefaulter(k3sVersionsData, hostInfo)
 	if err != nil {
 		return err

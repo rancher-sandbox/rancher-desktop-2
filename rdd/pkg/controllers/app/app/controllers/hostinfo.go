@@ -4,24 +4,10 @@
 
 package controllers
 
-import (
-	goruntime "runtime"
+import "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/hostinfo"
 
-	"github.com/pbnjay/memory"
-)
-
-// HostInfo holds the detected host hardware limits used to validate VM resource requests.
-type HostInfo struct {
-	// CPUs is the number of logical CPUs on the host.
-	CPUs int
-	// Memory is the total host memory in bytes.
-	Memory int64
-}
-
-// DetectHostInfo reads the host CPU count and total memory.
-func DetectHostInfo() HostInfo {
-	return HostInfo{
-		CPUs:   goruntime.NumCPU(),
-		Memory: int64(memory.TotalMemory()),
-	}
-}
+// HostInfo aliases the shared host-info type so the App webhooks can reference
+// the detected host hardware limits unqualified. Detection lives in
+// pkg/hostinfo so the webhooks and the HostInfo CRD reconciler share one
+// computation and can never drift apart.
+type HostInfo = hostinfo.HostInfo
