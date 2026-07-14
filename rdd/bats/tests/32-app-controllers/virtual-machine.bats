@@ -132,3 +132,38 @@ local_setup_file() {
         --type='merge' --dry-run=server \
         -p='{"spec":{"virtualMachine":{"cpus":0}}}'
 }
+
+# The tests above patch an App that local_setup_file created, which exercises
+# only the update path. Admission dispatches create and update through separate
+# methods, so the remaining tests delete the App first and must run last.
+
+@test "rdd set stores virtualMachine properties when it creates the App" {
+    delete_app
+
+    rdd set --wait=false virtualMachine.cpus=1
+
+    run -0 get_app_field '.spec.virtualMachine.cpus'
+    assert_output "1"
+}
+
+@test "rdd set clears memory while creating the App and the defaulter refills it" {
+    delete_app
+
+    # The cleared property is a null in the create body, which the CRD schema
+    # would reject for a quantity field; the create must omit it instead.
+    rdd set --wait=false "virtualMachine.memory="
+
+    run -0 get_app_field '.spec.virtualMachine.memory'
+    assert_output
+}
+
+@test "webhook rejects cpus exceeding the host count on create" {
+    run -0 rdd ctl get hostinfo system -o jsonpath='{.status.cpus}'
+    excessive=$((output + 1))
+
+    delete_app
+
+    run rdd set --wait=false "virtualMachine.cpus=${excessive}"
+    assert_failure
+    assert_output --partial "exceeds the host CPU count"
+}
