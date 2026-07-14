@@ -1,6 +1,6 @@
 # Application Commands
 
-The application commands use short option names for usability. Unlike the `rdctl` tool from "Rancher Desktop 1" they will use e.g. `--cpus` instead of `--virtual-machine.number-cpus`.
+The application commands name settings by their App spec path, so `rdd set virtualMachine.cpus=4` sets `spec.virtualMachine.cpus`. The paths are shorter than the equivalents in the `rdctl` tool from "Rancher Desktop 1", which spells the same setting `--virtual-machine.number-cpus`.
 
 ## `rdd set [--dry-run] [--wait=BOOL] [--timeout=DURATION] PROPERTY=VALUE [PROPERTY=VALUE ...]`
 

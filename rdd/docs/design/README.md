@@ -56,6 +56,7 @@ RDD includes controllers for multiple API groups. Each group can be separately v
 Provides basic infrastructure services. Examples include:
 
 * [resource APIs](api_resource.md) for downloading, caching and locating files
+* [host info APIs](api_hostinfo.md) publish the host CPU count and memory that bound the VM settings
 * [url monitoring APIs](api_url_monitor.md) periodically check for new versions
 * [diagnostics APIs](api_diagnostic.md) can raise warnings and errors from any component
 * [service lifecycle](api_service.md) explains how the control plane start up and shuts down
