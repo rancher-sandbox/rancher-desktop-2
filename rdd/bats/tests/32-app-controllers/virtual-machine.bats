@@ -60,6 +60,11 @@ local_setup_file() {
 }
 
 @test "rdd set preserves other fields when setting virtualMachine properties" {
+    rdd set --wait=false virtualMachine.cpus=1
+
+    run -0 get_app_field '.spec.virtualMachine.cpus'
+    assert_output "1"
+
     run -0 get_app_field '.spec.running'
     assert_output "false"
 }

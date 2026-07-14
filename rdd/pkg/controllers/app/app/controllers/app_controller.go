@@ -126,8 +126,9 @@ func applySpecToTemplate(baseTemplate string, spec v1alpha1.AppSpec, kubernetesP
 	}
 
 	// cpus and memory are appended here rather than baked into the template so
-	// the spec drives them directly. Lima falls back to its own default when a
-	// key is absent, which covers the unset case (cpus 0, memory nil).
+	// the spec drives them directly. AppDefaulter fills both in before an App is
+	// admitted, so the guards below only fire for an object that bypassed the
+	// mutating webhook; such a VM is sized by Lima's defaults, not RD1's.
 	lines := []string{baseTemplate}
 	if cpus := spec.VirtualMachine.CPUs; cpus > 0 {
 		lines = append(lines, fmt.Sprintf("cpus: %d", cpus))
