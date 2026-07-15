@@ -131,6 +131,18 @@ local_setup_file() {
     assert_output
 }
 
+@test "verify the App's cpus and memory reach the rd-template ConfigMap" {
+    run -0 rdd ctl get app "${APP_NAME}" -o jsonpath='{.spec.virtualMachine.cpus}'
+    cpus=${output}
+
+    run -0 rdd ctl get configmap "${VM_NAME}-template" \
+        --namespace "${RDD_NAMESPACE}" -o jsonpath='{.data.template}'
+    assert_line "cpus: ${cpus}"
+    # The spec carries a Quantity ("4Gi") while the template carries the byte
+    # count, so match the shape here; the exact conversion is unit-tested.
+    assert_line --regexp '^memory: "[0-9]+"$'
+}
+
 @test "wait for LimaVM Created condition to be set" {
     # Download the opensuse distro image (~350MB) and decompress it. The
     # Windows CI runner is much slower than macOS/Linux here: xz runs

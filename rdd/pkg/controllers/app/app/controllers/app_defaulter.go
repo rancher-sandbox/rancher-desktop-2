@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	ctrlwebhookadmission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
@@ -38,8 +39,8 @@ type AppDefaulter struct {
 
 // NewAppDefaulter parses k3sVersionsData once at construction time so that a
 // malformed JSON fixture causes controller startup to fail rather than the
-// first admission request. hostInfo provides the host memory used to default
-// spec.virtualMachine.memory.
+// first admission request. hostInfo provides the host limits used to default
+// spec.virtualMachine.
 func NewAppDefaulter(k3sVersionsData string, hostInfo HostInfo) (*AppDefaulter, error) {
 	channels, err := parseK3sChannels(k3sVersionsData)
 	if err != nil {
@@ -48,15 +49,34 @@ func NewAppDefaulter(k3sVersionsData string, hostInfo HostInfo) (*AppDefaulter, 
 	return &AppDefaulter{channels: channels, hostInfo: hostInfo}, nil
 }
 
+// resolveDefaultVMCPUs returns the cpu count to write into an unset
+// spec.virtualMachine.cpus, taking RDD_VM_CPUS over the built-in default.
+//
+// Read per request, not once at construction: an error from NewAppDefaulter
+// fails controller registration, and the daemon marks the control plane ready
+// before it registers controllers and only logs the failure, so a malformed
+// value would leave a daemon reporting healthy with no controllers running.
+func resolveDefaultVMCPUs() (int, error) {
+	val := os.Getenv(vmCPUsEnv)
+	if val == "" {
+		return defaultVMCPUs, nil
+	}
+	n, err := strconv.Atoi(val)
+	if err != nil || n < 1 {
+		return 0, fmt.Errorf("invalid %s value %q: want a positive integer", vmCPUsEnv, val)
+	}
+	return n, nil
+}
+
 var _ ctrlwebhookadmission.Defaulter[*v1alpha1.App] = &AppDefaulter{}
 
 // Default resolves a channel alias in spec.kubernetes.version to a concrete
 // version and fills in the default VM cpu count and memory. All run before the
 // validating webhook, so an alias such as "stable" becomes a concrete version
 // and cpus/memory become concrete values that AppValidator can accept or reject.
-func (d *AppDefaulter) Default(_ context.Context, app *v1alpha1.App) error {
+func (d *AppDefaulter) Default(ctx context.Context, app *v1alpha1.App) error {
 	d.defaultKubernetesVersion(&app.Spec.Kubernetes)
-	return d.defaultVirtualMachine(&app.Spec.VirtualMachine)
+	return d.defaultVirtualMachine(ctx, &app.Spec.VirtualMachine)
 }
 
 // defaultKubernetesVersion resolves a channel alias in k8s.Version to a
@@ -80,32 +100,31 @@ func (d *AppDefaulter) defaultKubernetesVersion(k8s *v1alpha1.KubernetesSpec) {
 // spec.virtualMachine. Keeping this in the admission controller lets the CLI and
 // the reconciler treat cpus/memory as plain values instead of special-casing the
 // zero value.
-func (d *AppDefaulter) defaultVirtualMachine(vm *v1alpha1.VirtualMachineSpec) error {
-	if err := defaultVMCPUCount(vm, d.hostInfo); err != nil {
+func (d *AppDefaulter) defaultVirtualMachine(ctx context.Context, vm *v1alpha1.VirtualMachineSpec) error {
+	if err := d.defaultVMCPUCount(ctx, vm); err != nil {
 		return err
 	}
 	return defaultVMMemory(vm, d.hostInfo)
 }
 
 // defaultVMCPUCount writes a concrete cpu count into an unset (0)
-// spec.virtualMachine.cpus. RDD_VM_CPUS overrides the built-in default for CI;
-// an explicit cpus wins over both. The resolved default is clamped to the host
-// CPU count so the mutating webhook never writes a value the validating webhook
-// would reject (e.g. the default 2 on a single-vCPU host).
-func defaultVMCPUCount(vm *v1alpha1.VirtualMachineSpec, hostInfo HostInfo) error {
+// spec.virtualMachine.cpus; an explicit cpus wins over the default. The default
+// is clamped to the host CPU count so the mutating webhook never writes a value
+// the validating webhook would reject (e.g. the default 2 on a single-vCPU
+// host). An explicit spec.virtualMachine.cpus above the host count is instead
+// rejected outright, so the clamp is logged to explain the divergence.
+func (d *AppDefaulter) defaultVMCPUCount(ctx context.Context, vm *v1alpha1.VirtualMachineSpec) error {
 	if vm.CPUs != 0 {
 		return nil
 	}
-	cpus := defaultVMCPUs
-	if val := os.Getenv(vmCPUsEnv); val != "" {
-		n, err := strconv.Atoi(val)
-		if err != nil || n < 1 {
-			return fmt.Errorf("invalid %s value %q: want a positive integer", vmCPUsEnv, val)
-		}
-		cpus = n
+	cpus, err := resolveDefaultVMCPUs()
+	if err != nil {
+		return err
 	}
-	if hostInfo.CPUs > 0 && cpus > hostInfo.CPUs {
-		cpus = hostInfo.CPUs
+	if d.hostInfo.CPUs > 0 && cpus > d.hostInfo.CPUs {
+		logf.FromContext(ctx).Info("Clamping the default VM cpu count to the host CPU count",
+			"default", cpus, "hostCPUs", d.hostInfo.CPUs)
+		cpus = d.hostInfo.CPUs
 	}
 	vm.CPUs = cpus
 	return nil

@@ -122,6 +122,12 @@ func (c *controller) GetWebhookManagers() []base.WebhookManager {
 // versions before the validating webhook checks them.
 func (c *controller) setupWebhook(mgr ctrl.Manager) error {
 	hostInfo := hostinfo.Detect()
+	if hostInfo.CPUs == 0 || hostInfo.Memory == 0 {
+		// AppValidator skips whichever ceiling reads zero, so an App may then
+		// request more cpus or memory than the host has.
+		mgr.GetLogger().Info("Host detection returned a zero reading; the matching VM limit is unenforced",
+			"cpus", hostInfo.CPUs, "memory", hostInfo.Memory)
+	}
 	defaulter, err := controllers.NewAppDefaulter(k3sVersionsData, hostInfo)
 	if err != nil {
 		return err

@@ -338,6 +338,28 @@ func classifyAPIError(err error) error {
 	return err
 }
 
+// pruneNilValues copies spec without its nil-valued entries, dropping any map
+// left empty. A nil encodes "clear this property", which a merge patch honours
+// but a create cannot: the CRD schema rejects an explicit null for a typed
+// field, and a newly created App has nothing to clear. The copy leaves the
+// caller's map intact for the patch that follows.
+func pruneNilValues(spec map[string]any) map[string]any {
+	pruned := make(map[string]any, len(spec))
+	for key, value := range spec {
+		switch typed := value.(type) {
+		case nil:
+			continue
+		case map[string]any:
+			if nested := pruneNilValues(typed); len(nested) > 0 {
+				pruned[key] = nested
+			}
+		default:
+			pruned[key] = value
+		}
+	}
+	return pruned
+}
+
 // createAndPatchApp creates the App using the dynamic client so that
 // only user-specified fields (plus required fields with zero values)
 // are sent; the API server fills in CRD defaults. The returned
@@ -353,7 +375,7 @@ func createAndPatchApp(ctx context.Context, c client.Client, config *rest.Config
 		return 0, fmt.Errorf("failed to create dynamic client: %w", err)
 	}
 
-	createSpec := specMap
+	createSpec := pruneNilValues(specMap)
 	if dryRun {
 		// Create with required defaults only; patch carries the real values.
 		createSpec = make(map[string]any)

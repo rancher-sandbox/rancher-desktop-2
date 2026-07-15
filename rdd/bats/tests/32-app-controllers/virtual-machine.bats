@@ -21,8 +21,10 @@ local_setup_file() {
     rdd set --wait=false running=false
 }
 
-@test "HostInfo singleton is created at startup" {
-    rdd ctl wait --for=create hostinfo/system --timeout=30s
+@test "HostInfo singleton reports its host limits at startup" {
+    # The singleton is created with an empty Status and a follow-up reconcile
+    # fills it, so waiting on the create alone would race that write.
+    rdd ctl wait --for=jsonpath='{.status.cpus}' hostinfo/system --timeout=30s
 }
 
 @test "HostInfo has a positive cpu count" {
@@ -30,10 +32,11 @@ local_setup_file() {
     assert_output_ge 1
 }
 
-@test "HostInfo has memory of at least 2 GiB" {
+@test "HostInfo reports memory as a quantity" {
     run -0 rdd ctl get hostinfo system -o jsonpath='{.status.memory}'
-    # 2 GiB = 2147483648 bytes
-    assert_output_ge 2147483648
+    # A quantity so the GUI can compare it against spec.virtualMachine.memory
+    # without converting units; the byte value is asserted in the Go tests.
+    assert_output --regexp '^[0-9]+(Ki|Mi|Gi)?$'
 }
 
 @test "rdd set --help lists virtualMachine properties" {
@@ -57,6 +60,11 @@ local_setup_file() {
 }
 
 @test "rdd set preserves other fields when setting virtualMachine properties" {
+    rdd set --wait=false virtualMachine.cpus=1
+
+    run -0 get_app_field '.spec.virtualMachine.cpus'
+    assert_output "1"
+
     run -0 get_app_field '.spec.running'
     assert_output "false"
 }
@@ -123,4 +131,39 @@ local_setup_file() {
     rdd ctl patch app "${APP_NAME}" \
         --type='merge' --dry-run=server \
         -p='{"spec":{"virtualMachine":{"cpus":0}}}'
+}
+
+# The tests above patch an App that local_setup_file created, which exercises
+# only the update path. Admission dispatches create and update through separate
+# methods, so the remaining tests delete the App first and must run last.
+
+@test "rdd set stores virtualMachine properties when it creates the App" {
+    delete_app
+
+    rdd set --wait=false virtualMachine.cpus=1
+
+    run -0 get_app_field '.spec.virtualMachine.cpus'
+    assert_output "1"
+}
+
+@test "rdd set clears memory while creating the App and the defaulter refills it" {
+    delete_app
+
+    # The cleared property is a null in the create body, which the CRD schema
+    # would reject for a quantity field; the create must omit it instead.
+    rdd set --wait=false "virtualMachine.memory="
+
+    run -0 get_app_field '.spec.virtualMachine.memory'
+    assert_output
+}
+
+@test "webhook rejects cpus exceeding the host count on create" {
+    run -0 rdd ctl get hostinfo system -o jsonpath='{.status.cpus}'
+    excessive=$((output + 1))
+
+    delete_app
+
+    run rdd set --wait=false "virtualMachine.cpus=${excessive}"
+    assert_failure
+    assert_output --partial "exceeds the host CPU count"
 }

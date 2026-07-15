@@ -95,6 +95,12 @@ status:
 
 - **spec.kubernetes.version**: The Kubernetes version to use (e.g. `"1.30.2"`). Defaults to `"1.30.2"`. Propagated to the `KUBERNETES_VERSION` Lima template param.
 
+- **spec.virtualMachine.cpus**: The number of vCPUs assigned to the VM. The mutating webhook fills in an unset (`0`) value with `2`, or with [`RDD_VM_CPUS`](environment.md) when that is set, and clamps the result to the host CPU count. An explicit value above the host CPU count is rejected rather than clamped, so setting it to `0` is how a client asks for the default back. Appended to the Lima template as `cpus:`.
+
+- **spec.virtualMachine.memory**: The memory assigned to the VM, as a quantity (e.g. `4Gi`). The mutating webhook fills in an unset value with a quarter of host memory, clamped to `[2Gi, 6Gi]` — the rule Rancher Desktop 1 uses. An explicit value below `2Gi` or above host memory is rejected. Clear it (`rdd set virtualMachine.memory=`) to get the default back. Appended to the Lima template as `memory:`, in bytes.
+
+  The webhook detects the host CPU count and memory itself. [`HostInfo`](api_hostinfo.md) publishes the same two readings, so a client can show the valid range without inspecting the host.
+
 - **status.kubernetesPort**: The host TCP port allocated for the k3s API server (`7441 + instance.Index()` by default). Set by the App reconciler on the first reconcile after `spec.kubernetes.enabled` becomes `true`, and cleared when `spec.kubernetes.enabled` is set back to `false` so that a fresh port is resolved on the next enable. The `KUBERNETES_PORT` Lima template param is set to this value; Lima's identity port-forward rule binds the same port on the host and forwards it to the guest.
 
 - **status.conditions**: Multiple controllers write here. The App controller mirrors `Created` and `Running` from the owned `LimaVM` and computes `Settled`, the engine controller writes `ContainerEngineReady`, and the Kubernetes controller writes `KubernetesReady`. All writers use `retry.RetryOnConflict` with a re-Get so concurrent status updates do not 409.
