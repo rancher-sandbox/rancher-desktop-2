@@ -179,8 +179,6 @@ async function runScripts(): Promise<void> {
   }
 
   await downloadDependencies(dependencies);
-
-  await buildUtils.prepareIcons();
 }
 
 function buildDownloadContextFor(rawPlatform: DependencyPlatform, manifest: DependencyManifest): Promise<DownloadContext> {
