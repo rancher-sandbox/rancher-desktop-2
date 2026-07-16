@@ -1,8 +1,23 @@
-// Pre-release builds (development, alpha, beta) stripe the selected nav item to
-// match the striped app icon; entry/index.ts adds this class.  The custom
-// properties cascade into the scoped nav components, so one definition covers
-// every theme.
+// Pre-release builds (development, alpha, beta) wear the app icon's stripes; entry/index.ts
+// adds this class.  Scoped nav components cannot select it, so the look travels to them as
+// custom properties.
+//
+// The stripes deliberately never sit behind text.  The selected nav item keeps the theme's
+// own fill and text colour, and the stripes show only as a ring inset within its box.
 BODY.prerelease {
-  --nav-active-bg              : repeating-linear-gradient(-45deg, #0081be 0, #0081be 12px, #72b9db 12px, #72b9db 20px);
-  --nav-active-fg              : #fff;
+  // The icon generator's stripe: 20px period at 0.40 duty.
+  --nav-stripe                 : repeating-linear-gradient(-45deg, #0081be 0, #0081be 12px, #72b9db 12px, #72b9db 20px);
+
+  // A ring reads thinner against the light theme's pale fill, so light gets the wider one.
+  --nav-stripe-inset           : 4px;
+
+  // A border would grow the row, so the ring is painted as background layers.
+  --nav-active-bg              : linear-gradient(var(--nav-active), var(--nav-active))
+                                 center / calc(100% - 2 * var(--nav-stripe-inset))
+                                          calc(100% - 2 * var(--nav-stripe-inset)) no-repeat,
+                                 var(--nav-stripe);
+
+  @media screen and (prefers-color-scheme: dark) {
+    --nav-stripe-inset         : 3px;
+  }
 }
