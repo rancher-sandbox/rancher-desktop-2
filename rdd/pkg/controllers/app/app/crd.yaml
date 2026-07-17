@@ -47,6 +47,25 @@ spec:
           spec:
             description: AppSpec defines the desired state of App.
             properties:
+              application:
+                default:
+                  updates:
+                    enabled: true
+                description: application specifies the settings for the Rancher Desktop
+                  Electron frontend.
+                properties:
+                  updates:
+                    default:
+                      enabled: true
+                    description: updates specifies application update settings.
+                    properties:
+                      enabled:
+                        default: true
+                        description: enabled specifies whether the application should
+                          check for updates.
+                        type: boolean
+                    type: object
+                type: object
               containerEngine:
                 default:
                   name: moby
@@ -80,8 +99,8 @@ spec:
               namespace:
                 default: default
                 description: |-
-                  Namespace is the namespace where this cluster-scoped App resource
-                  creates and manages its owned namespaced resources (e.g., rancher-desktop).
+                  namespace where this cluster-scoped App resource creates and manages its
+                  owned namespaced resources (e.g., rancher-desktop).
                   Defaults to "default" if not specified.
                   This field is immutable after creation: changing it would orphan existing
                   owned resources (LimaVM, ConfigMaps) in the original namespace.

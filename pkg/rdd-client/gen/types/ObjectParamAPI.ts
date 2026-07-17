@@ -18,6 +18,7 @@ import { IoRancherdesktopAppV1alpha1AppList } from '../models/IoRancherdesktopAp
 import { IoRancherdesktopAppV1alpha1AppSpec } from '../models/IoRancherdesktopAppV1alpha1AppSpec';
 import { IoRancherdesktopAppV1alpha1AppSpecContainerEngine } from '../models/IoRancherdesktopAppV1alpha1AppSpecContainerEngine';
 import { IoRancherdesktopAppV1alpha1AppSpecKubernetes } from '../models/IoRancherdesktopAppV1alpha1AppSpecKubernetes';
+import { IoRancherdesktopAppV1alpha1AppSpecVirtualMachine } from '../models/IoRancherdesktopAppV1alpha1AppSpecVirtualMachine';
 import { IoRancherdesktopAppV1alpha1AppStatus } from '../models/IoRancherdesktopAppV1alpha1AppStatus';
 import { IoRancherdesktopAppV1alpha1AppStatusConditionsInner } from '../models/IoRancherdesktopAppV1alpha1AppStatusConditionsInner';
 import { IoRancherdesktopAppV1alpha1Demo } from '../models/IoRancherdesktopAppV1alpha1Demo';
@@ -67,6 +68,9 @@ import { IoRancherdesktopRddV1alpha1ConfigMapReplicaSet } from '../models/IoRanc
 import { IoRancherdesktopRddV1alpha1ConfigMapReplicaSetList } from '../models/IoRancherdesktopRddV1alpha1ConfigMapReplicaSetList';
 import { IoRancherdesktopRddV1alpha1ConfigMapReplicaSetSpec } from '../models/IoRancherdesktopRddV1alpha1ConfigMapReplicaSetSpec';
 import { IoRancherdesktopRddV1alpha1ConfigMapReplicaSetStatus } from '../models/IoRancherdesktopRddV1alpha1ConfigMapReplicaSetStatus';
+import { IoRancherdesktopRddV1alpha1HostInfo } from '../models/IoRancherdesktopRddV1alpha1HostInfo';
+import { IoRancherdesktopRddV1alpha1HostInfoList } from '../models/IoRancherdesktopRddV1alpha1HostInfoList';
+import { IoRancherdesktopRddV1alpha1HostInfoStatus } from '../models/IoRancherdesktopRddV1alpha1HostInfoStatus';
 import { IoRancherdesktopRddV1alpha1Notary } from '../models/IoRancherdesktopRddV1alpha1Notary';
 import { IoRancherdesktopRddV1alpha1NotaryList } from '../models/IoRancherdesktopRddV1alpha1NotaryList';
 import { IoRancherdesktopRddV1alpha1NotarySpec } from '../models/IoRancherdesktopRddV1alpha1NotarySpec';
@@ -82,6 +86,7 @@ import { V1APIServiceSpec } from '../models/V1APIServiceSpec';
 import { V1APIServiceStatus } from '../models/V1APIServiceStatus';
 import { V1APIVersions } from '../models/V1APIVersions';
 import { V1AggregationRule } from '../models/V1AggregationRule';
+import { V1ApplyConfiguration } from '../models/V1ApplyConfiguration';
 import { V1AuditAnnotation } from '../models/V1AuditAnnotation';
 import { V1BoundObjectReference } from '../models/V1BoundObjectReference';
 import { V1ClusterRole } from '../models/V1ClusterRole';
@@ -110,6 +115,7 @@ import { V1ExternalDocumentation } from '../models/V1ExternalDocumentation';
 import { V1FieldSelectorAttributes } from '../models/V1FieldSelectorAttributes';
 import { V1FieldSelectorRequirement } from '../models/V1FieldSelectorRequirement';
 import { V1GroupVersionForDiscovery } from '../models/V1GroupVersionForDiscovery';
+import { V1JSONPatch } from '../models/V1JSONPatch';
 import { V1JSONSchemaProps } from '../models/V1JSONSchemaProps';
 import { V1LabelSelector } from '../models/V1LabelSelector';
 import { V1LabelSelectorAttributes } from '../models/V1LabelSelectorAttributes';
@@ -123,9 +129,16 @@ import { V1LocalSubjectAccessReview } from '../models/V1LocalSubjectAccessReview
 import { V1ManagedFieldsEntry } from '../models/V1ManagedFieldsEntry';
 import { V1MatchCondition } from '../models/V1MatchCondition';
 import { V1MatchResources } from '../models/V1MatchResources';
+import { V1MutatingAdmissionPolicy } from '../models/V1MutatingAdmissionPolicy';
+import { V1MutatingAdmissionPolicyBinding } from '../models/V1MutatingAdmissionPolicyBinding';
+import { V1MutatingAdmissionPolicyBindingList } from '../models/V1MutatingAdmissionPolicyBindingList';
+import { V1MutatingAdmissionPolicyBindingSpec } from '../models/V1MutatingAdmissionPolicyBindingSpec';
+import { V1MutatingAdmissionPolicyList } from '../models/V1MutatingAdmissionPolicyList';
+import { V1MutatingAdmissionPolicySpec } from '../models/V1MutatingAdmissionPolicySpec';
 import { V1MutatingWebhook } from '../models/V1MutatingWebhook';
 import { V1MutatingWebhookConfiguration } from '../models/V1MutatingWebhookConfiguration';
 import { V1MutatingWebhookConfigurationList } from '../models/V1MutatingWebhookConfigurationList';
+import { V1Mutation } from '../models/V1Mutation';
 import { V1NamedRuleWithOperations } from '../models/V1NamedRuleWithOperations';
 import { V1Namespace } from '../models/V1Namespace';
 import { V1NamespaceCondition } from '../models/V1NamespaceCondition';
@@ -165,6 +178,7 @@ import { V1SelfSubjectRulesReviewSpec } from '../models/V1SelfSubjectRulesReview
 import { V1ServerAddressByClientCIDR } from '../models/V1ServerAddressByClientCIDR';
 import { V1ServiceAccount } from '../models/V1ServiceAccount';
 import { V1ServiceAccountList } from '../models/V1ServiceAccountList';
+import { V1ShardInfo } from '../models/V1ShardInfo';
 import { V1Status } from '../models/V1Status';
 import { V1StatusCause } from '../models/V1StatusCause';
 import { V1StatusDetails } from '../models/V1StatusDetails';
@@ -227,6 +241,80 @@ export class ObjectAdmissionregistrationApi {
 
 import { ObservableAdmissionregistrationV1Api } from "./ObservableAPI";
 import { AdmissionregistrationV1ApiRequestFactory, AdmissionregistrationV1ApiResponseProcessor} from "../apis/AdmissionregistrationV1Api";
+
+export interface AdmissionregistrationV1ApiCreateMutatingAdmissionPolicyRequest {
+    /**
+     * 
+     * @type V1MutatingAdmissionPolicy
+     * @memberof AdmissionregistrationV1ApicreateMutatingAdmissionPolicy
+     */
+    body: V1MutatingAdmissionPolicy
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApicreateMutatingAdmissionPolicy
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApicreateMutatingAdmissionPolicy
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApicreateMutatingAdmissionPolicy
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApicreateMutatingAdmissionPolicy
+     */
+    fieldValidation?: string
+}
+
+export interface AdmissionregistrationV1ApiCreateMutatingAdmissionPolicyBindingRequest {
+    /**
+     * 
+     * @type V1MutatingAdmissionPolicyBinding
+     * @memberof AdmissionregistrationV1ApicreateMutatingAdmissionPolicyBinding
+     */
+    body: V1MutatingAdmissionPolicyBinding
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApicreateMutatingAdmissionPolicyBinding
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApicreateMutatingAdmissionPolicyBinding
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApicreateMutatingAdmissionPolicyBinding
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApicreateMutatingAdmissionPolicyBinding
+     */
+    fieldValidation?: string
+}
 
 export interface AdmissionregistrationV1ApiCreateMutatingWebhookConfigurationRequest {
     /**
@@ -376,6 +464,234 @@ export interface AdmissionregistrationV1ApiCreateValidatingWebhookConfigurationR
     fieldValidation?: string
 }
 
+export interface AdmissionregistrationV1ApiDeleteCollectionMutatingAdmissionPolicyRequest {
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    pretty?: string
+    /**
+     * The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    _continue?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    dryRun?: string
+    /**
+     * A selector to restrict the list of returned objects by their fields. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    fieldSelector?: string
+    /**
+     * The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.
+     * Defaults to: undefined
+     * @type number
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    gracePeriodSeconds?: number
+    /**
+     * if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    ignoreStoreReadErrorWithClusterBreakingPotential?: boolean
+    /**
+     * A selector to restrict the list of returned objects by their labels. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    labelSelector?: string
+    /**
+     * limit is a maximum number of responses to return for a list call. If more items exist, the server will set the &#x60;continue&#x60; field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+     * Defaults to: undefined
+     * @type number
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    limit?: number
+    /**
+     * Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \&quot;orphan\&quot; finalizer will be added to/removed from the object\&#39;s finalizers list. Either this field or PropagationPolicy may be set, but not both.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    orphanDependents?: boolean
+    /**
+     * Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: \&#39;Orphan\&#39; - orphan the dependents; \&#39;Background\&#39; - allow the garbage collector to delete the dependents in the background; \&#39;Foreground\&#39; - a cascading policy that deletes all dependents in the foreground.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    propagationPolicy?: string
+    /**
+     * resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    resourceVersion?: string
+    /**
+     * resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    resourceVersionMatch?: string
+    /**
+     * &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    shardSelector?: string
+    /**
+     * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+     * Defaults to: undefined
+     * @type number
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    timeoutSeconds?: number
+    /**
+     * 
+     * @type V1DeleteOptions
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicy
+     */
+    body?: V1DeleteOptions
+}
+
+export interface AdmissionregistrationV1ApiDeleteCollectionMutatingAdmissionPolicyBindingRequest {
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    pretty?: string
+    /**
+     * The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    _continue?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    dryRun?: string
+    /**
+     * A selector to restrict the list of returned objects by their fields. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    fieldSelector?: string
+    /**
+     * The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.
+     * Defaults to: undefined
+     * @type number
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    gracePeriodSeconds?: number
+    /**
+     * if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    ignoreStoreReadErrorWithClusterBreakingPotential?: boolean
+    /**
+     * A selector to restrict the list of returned objects by their labels. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    labelSelector?: string
+    /**
+     * limit is a maximum number of responses to return for a list call. If more items exist, the server will set the &#x60;continue&#x60; field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+     * Defaults to: undefined
+     * @type number
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    limit?: number
+    /**
+     * Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \&quot;orphan\&quot; finalizer will be added to/removed from the object\&#39;s finalizers list. Either this field or PropagationPolicy may be set, but not both.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    orphanDependents?: boolean
+    /**
+     * Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: \&#39;Orphan\&#39; - orphan the dependents; \&#39;Background\&#39; - allow the garbage collector to delete the dependents in the background; \&#39;Foreground\&#39; - a cascading policy that deletes all dependents in the foreground.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    propagationPolicy?: string
+    /**
+     * resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    resourceVersion?: string
+    /**
+     * resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    resourceVersionMatch?: string
+    /**
+     * &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    shardSelector?: string
+    /**
+     * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+     * Defaults to: undefined
+     * @type number
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    timeoutSeconds?: number
+    /**
+     * 
+     * @type V1DeleteOptions
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingAdmissionPolicyBinding
+     */
+    body?: V1DeleteOptions
+}
+
 export interface AdmissionregistrationV1ApiDeleteCollectionMutatingWebhookConfigurationRequest {
     /**
      * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
@@ -468,6 +784,13 @@ export interface AdmissionregistrationV1ApiDeleteCollectionMutatingWebhookConfig
      * @memberof AdmissionregistrationV1ApideleteCollectionMutatingWebhookConfiguration
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionMutatingWebhookConfiguration
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -576,6 +899,13 @@ export interface AdmissionregistrationV1ApiDeleteCollectionValidatingAdmissionPo
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionValidatingAdmissionPolicy
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -682,6 +1012,13 @@ export interface AdmissionregistrationV1ApiDeleteCollectionValidatingAdmissionPo
      * @memberof AdmissionregistrationV1ApideleteCollectionValidatingAdmissionPolicyBinding
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionValidatingAdmissionPolicyBinding
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -790,6 +1127,13 @@ export interface AdmissionregistrationV1ApiDeleteCollectionValidatingWebhookConf
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteCollectionValidatingWebhookConfiguration
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -800,6 +1144,122 @@ export interface AdmissionregistrationV1ApiDeleteCollectionValidatingWebhookConf
      * 
      * @type V1DeleteOptions
      * @memberof AdmissionregistrationV1ApideleteCollectionValidatingWebhookConfiguration
+     */
+    body?: V1DeleteOptions
+}
+
+export interface AdmissionregistrationV1ApiDeleteMutatingAdmissionPolicyRequest {
+    /**
+     * name of the MutatingAdmissionPolicy
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicy
+     */
+    name: string
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicy
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicy
+     */
+    dryRun?: string
+    /**
+     * The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.
+     * Defaults to: undefined
+     * @type number
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicy
+     */
+    gracePeriodSeconds?: number
+    /**
+     * if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicy
+     */
+    ignoreStoreReadErrorWithClusterBreakingPotential?: boolean
+    /**
+     * Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \&quot;orphan\&quot; finalizer will be added to/removed from the object\&#39;s finalizers list. Either this field or PropagationPolicy may be set, but not both.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicy
+     */
+    orphanDependents?: boolean
+    /**
+     * Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: \&#39;Orphan\&#39; - orphan the dependents; \&#39;Background\&#39; - allow the garbage collector to delete the dependents in the background; \&#39;Foreground\&#39; - a cascading policy that deletes all dependents in the foreground.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicy
+     */
+    propagationPolicy?: string
+    /**
+     * 
+     * @type V1DeleteOptions
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicy
+     */
+    body?: V1DeleteOptions
+}
+
+export interface AdmissionregistrationV1ApiDeleteMutatingAdmissionPolicyBindingRequest {
+    /**
+     * name of the MutatingAdmissionPolicyBinding
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicyBinding
+     */
+    name: string
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicyBinding
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicyBinding
+     */
+    dryRun?: string
+    /**
+     * The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.
+     * Defaults to: undefined
+     * @type number
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicyBinding
+     */
+    gracePeriodSeconds?: number
+    /**
+     * if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicyBinding
+     */
+    ignoreStoreReadErrorWithClusterBreakingPotential?: boolean
+    /**
+     * Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \&quot;orphan\&quot; finalizer will be added to/removed from the object\&#39;s finalizers list. Either this field or PropagationPolicy may be set, but not both.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicyBinding
+     */
+    orphanDependents?: boolean
+    /**
+     * Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: \&#39;Orphan\&#39; - orphan the dependents; \&#39;Background\&#39; - allow the garbage collector to delete the dependents in the background; \&#39;Foreground\&#39; - a cascading policy that deletes all dependents in the foreground.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicyBinding
+     */
+    propagationPolicy?: string
+    /**
+     * 
+     * @type V1DeleteOptions
+     * @memberof AdmissionregistrationV1ApideleteMutatingAdmissionPolicyBinding
      */
     body?: V1DeleteOptions
 }
@@ -1039,6 +1499,180 @@ export interface AdmissionregistrationV1ApiDeleteValidatingWebhookConfigurationR
 export interface AdmissionregistrationV1ApiGetAPIResourcesRequest {
 }
 
+export interface AdmissionregistrationV1ApiListMutatingAdmissionPolicyRequest {
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicy
+     */
+    pretty?: string
+    /**
+     * allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server\&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicy
+     */
+    allowWatchBookmarks?: boolean
+    /**
+     * The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicy
+     */
+    _continue?: string
+    /**
+     * A selector to restrict the list of returned objects by their fields. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicy
+     */
+    fieldSelector?: string
+    /**
+     * A selector to restrict the list of returned objects by their labels. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicy
+     */
+    labelSelector?: string
+    /**
+     * limit is a maximum number of responses to return for a list call. If more items exist, the server will set the &#x60;continue&#x60; field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+     * Defaults to: undefined
+     * @type number
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicy
+     */
+    limit?: number
+    /**
+     * resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicy
+     */
+    resourceVersion?: string
+    /**
+     * resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicy
+     */
+    resourceVersionMatch?: string
+    /**
+     * &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicy
+     */
+    sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicy
+     */
+    shardSelector?: string
+    /**
+     * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+     * Defaults to: undefined
+     * @type number
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicy
+     */
+    timeoutSeconds?: number
+    /**
+     * Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicy
+     */
+    watch?: boolean
+}
+
+export interface AdmissionregistrationV1ApiListMutatingAdmissionPolicyBindingRequest {
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicyBinding
+     */
+    pretty?: string
+    /**
+     * allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server\&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicyBinding
+     */
+    allowWatchBookmarks?: boolean
+    /**
+     * The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicyBinding
+     */
+    _continue?: string
+    /**
+     * A selector to restrict the list of returned objects by their fields. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicyBinding
+     */
+    fieldSelector?: string
+    /**
+     * A selector to restrict the list of returned objects by their labels. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicyBinding
+     */
+    labelSelector?: string
+    /**
+     * limit is a maximum number of responses to return for a list call. If more items exist, the server will set the &#x60;continue&#x60; field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+     * Defaults to: undefined
+     * @type number
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicyBinding
+     */
+    limit?: number
+    /**
+     * resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicyBinding
+     */
+    resourceVersion?: string
+    /**
+     * resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicyBinding
+     */
+    resourceVersionMatch?: string
+    /**
+     * &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicyBinding
+     */
+    sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicyBinding
+     */
+    shardSelector?: string
+    /**
+     * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+     * Defaults to: undefined
+     * @type number
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicyBinding
+     */
+    timeoutSeconds?: number
+    /**
+     * Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApilistMutatingAdmissionPolicyBinding
+     */
+    watch?: boolean
+}
+
 export interface AdmissionregistrationV1ApiListMutatingWebhookConfigurationRequest {
     /**
      * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
@@ -1103,6 +1737,13 @@ export interface AdmissionregistrationV1ApiListMutatingWebhookConfigurationReque
      * @memberof AdmissionregistrationV1ApilistMutatingWebhookConfiguration
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistMutatingWebhookConfiguration
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -1184,6 +1825,13 @@ export interface AdmissionregistrationV1ApiListValidatingAdmissionPolicyRequest 
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistValidatingAdmissionPolicy
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -1263,6 +1911,13 @@ export interface AdmissionregistrationV1ApiListValidatingAdmissionPolicyBindingR
      * @memberof AdmissionregistrationV1ApilistValidatingAdmissionPolicyBinding
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistValidatingAdmissionPolicyBinding
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -1344,6 +1999,13 @@ export interface AdmissionregistrationV1ApiListValidatingWebhookConfigurationReq
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApilistValidatingWebhookConfiguration
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -1357,6 +2019,108 @@ export interface AdmissionregistrationV1ApiListValidatingWebhookConfigurationReq
      * @memberof AdmissionregistrationV1ApilistValidatingWebhookConfiguration
      */
     watch?: boolean
+}
+
+export interface AdmissionregistrationV1ApiPatchMutatingAdmissionPolicyRequest {
+    /**
+     * name of the MutatingAdmissionPolicy
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApipatchMutatingAdmissionPolicy
+     */
+    name: string
+    /**
+     * 
+     * @type any
+     * @memberof AdmissionregistrationV1ApipatchMutatingAdmissionPolicy
+     */
+    body: any
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApipatchMutatingAdmissionPolicy
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApipatchMutatingAdmissionPolicy
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint. This field is required for apply requests (application/apply-patch) but optional for non-apply patch types (JsonPatch, MergePatch, StrategicMergePatch).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApipatchMutatingAdmissionPolicy
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApipatchMutatingAdmissionPolicy
+     */
+    fieldValidation?: string
+    /**
+     * Force is going to \&quot;force\&quot; Apply requests. It means user will re-acquire conflicting fields owned by other people. Force flag must be unset for non-apply patch requests.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApipatchMutatingAdmissionPolicy
+     */
+    force?: boolean
+}
+
+export interface AdmissionregistrationV1ApiPatchMutatingAdmissionPolicyBindingRequest {
+    /**
+     * name of the MutatingAdmissionPolicyBinding
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApipatchMutatingAdmissionPolicyBinding
+     */
+    name: string
+    /**
+     * 
+     * @type any
+     * @memberof AdmissionregistrationV1ApipatchMutatingAdmissionPolicyBinding
+     */
+    body: any
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApipatchMutatingAdmissionPolicyBinding
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApipatchMutatingAdmissionPolicyBinding
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint. This field is required for apply requests (application/apply-patch) but optional for non-apply patch types (JsonPatch, MergePatch, StrategicMergePatch).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApipatchMutatingAdmissionPolicyBinding
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApipatchMutatingAdmissionPolicyBinding
+     */
+    fieldValidation?: string
+    /**
+     * Force is going to \&quot;force\&quot; Apply requests. It means user will re-acquire conflicting fields owned by other people. Force flag must be unset for non-apply patch requests.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof AdmissionregistrationV1ApipatchMutatingAdmissionPolicyBinding
+     */
+    force?: boolean
 }
 
 export interface AdmissionregistrationV1ApiPatchMutatingWebhookConfigurationRequest {
@@ -1614,6 +2378,40 @@ export interface AdmissionregistrationV1ApiPatchValidatingWebhookConfigurationRe
     force?: boolean
 }
 
+export interface AdmissionregistrationV1ApiReadMutatingAdmissionPolicyRequest {
+    /**
+     * name of the MutatingAdmissionPolicy
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApireadMutatingAdmissionPolicy
+     */
+    name: string
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApireadMutatingAdmissionPolicy
+     */
+    pretty?: string
+}
+
+export interface AdmissionregistrationV1ApiReadMutatingAdmissionPolicyBindingRequest {
+    /**
+     * name of the MutatingAdmissionPolicyBinding
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApireadMutatingAdmissionPolicyBinding
+     */
+    name: string
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApireadMutatingAdmissionPolicyBinding
+     */
+    pretty?: string
+}
+
 export interface AdmissionregistrationV1ApiReadMutatingWebhookConfigurationRequest {
     /**
      * name of the MutatingWebhookConfiguration
@@ -1697,6 +2495,94 @@ export interface AdmissionregistrationV1ApiReadValidatingWebhookConfigurationReq
      * @memberof AdmissionregistrationV1ApireadValidatingWebhookConfiguration
      */
     pretty?: string
+}
+
+export interface AdmissionregistrationV1ApiReplaceMutatingAdmissionPolicyRequest {
+    /**
+     * name of the MutatingAdmissionPolicy
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApireplaceMutatingAdmissionPolicy
+     */
+    name: string
+    /**
+     * 
+     * @type V1MutatingAdmissionPolicy
+     * @memberof AdmissionregistrationV1ApireplaceMutatingAdmissionPolicy
+     */
+    body: V1MutatingAdmissionPolicy
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApireplaceMutatingAdmissionPolicy
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApireplaceMutatingAdmissionPolicy
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApireplaceMutatingAdmissionPolicy
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApireplaceMutatingAdmissionPolicy
+     */
+    fieldValidation?: string
+}
+
+export interface AdmissionregistrationV1ApiReplaceMutatingAdmissionPolicyBindingRequest {
+    /**
+     * name of the MutatingAdmissionPolicyBinding
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApireplaceMutatingAdmissionPolicyBinding
+     */
+    name: string
+    /**
+     * 
+     * @type V1MutatingAdmissionPolicyBinding
+     * @memberof AdmissionregistrationV1ApireplaceMutatingAdmissionPolicyBinding
+     */
+    body: V1MutatingAdmissionPolicyBinding
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApireplaceMutatingAdmissionPolicyBinding
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApireplaceMutatingAdmissionPolicyBinding
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApireplaceMutatingAdmissionPolicyBinding
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AdmissionregistrationV1ApireplaceMutatingAdmissionPolicyBinding
+     */
+    fieldValidation?: string
 }
 
 export interface AdmissionregistrationV1ApiReplaceMutatingWebhookConfigurationRequest {
@@ -1927,6 +2813,38 @@ export class ObjectAdmissionregistrationV1Api {
     }
 
     /**
+     * create a MutatingAdmissionPolicy
+     * @param param the request object
+     */
+    public createMutatingAdmissionPolicyWithHttpInfo(param: AdmissionregistrationV1ApiCreateMutatingAdmissionPolicyRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1MutatingAdmissionPolicy>> {
+        return this.api.createMutatingAdmissionPolicyWithHttpInfo(param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * create a MutatingAdmissionPolicy
+     * @param param the request object
+     */
+    public createMutatingAdmissionPolicy(param: AdmissionregistrationV1ApiCreateMutatingAdmissionPolicyRequest, options?: ConfigurationOptions): Promise<V1MutatingAdmissionPolicy> {
+        return this.api.createMutatingAdmissionPolicy(param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * create a MutatingAdmissionPolicyBinding
+     * @param param the request object
+     */
+    public createMutatingAdmissionPolicyBindingWithHttpInfo(param: AdmissionregistrationV1ApiCreateMutatingAdmissionPolicyBindingRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1MutatingAdmissionPolicyBinding>> {
+        return this.api.createMutatingAdmissionPolicyBindingWithHttpInfo(param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * create a MutatingAdmissionPolicyBinding
+     * @param param the request object
+     */
+    public createMutatingAdmissionPolicyBinding(param: AdmissionregistrationV1ApiCreateMutatingAdmissionPolicyBindingRequest, options?: ConfigurationOptions): Promise<V1MutatingAdmissionPolicyBinding> {
+        return this.api.createMutatingAdmissionPolicyBinding(param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
      * create a MutatingWebhookConfiguration
      * @param param the request object
      */
@@ -1991,11 +2909,43 @@ export class ObjectAdmissionregistrationV1Api {
     }
 
     /**
+     * delete collection of MutatingAdmissionPolicy
+     * @param param the request object
+     */
+    public deleteCollectionMutatingAdmissionPolicyWithHttpInfo(param: AdmissionregistrationV1ApiDeleteCollectionMutatingAdmissionPolicyRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
+        return this.api.deleteCollectionMutatingAdmissionPolicyWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
+    }
+
+    /**
+     * delete collection of MutatingAdmissionPolicy
+     * @param param the request object
+     */
+    public deleteCollectionMutatingAdmissionPolicy(param: AdmissionregistrationV1ApiDeleteCollectionMutatingAdmissionPolicyRequest = {}, options?: ConfigurationOptions): Promise<V1Status> {
+        return this.api.deleteCollectionMutatingAdmissionPolicy(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
+    }
+
+    /**
+     * delete collection of MutatingAdmissionPolicyBinding
+     * @param param the request object
+     */
+    public deleteCollectionMutatingAdmissionPolicyBindingWithHttpInfo(param: AdmissionregistrationV1ApiDeleteCollectionMutatingAdmissionPolicyBindingRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
+        return this.api.deleteCollectionMutatingAdmissionPolicyBindingWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
+    }
+
+    /**
+     * delete collection of MutatingAdmissionPolicyBinding
+     * @param param the request object
+     */
+    public deleteCollectionMutatingAdmissionPolicyBinding(param: AdmissionregistrationV1ApiDeleteCollectionMutatingAdmissionPolicyBindingRequest = {}, options?: ConfigurationOptions): Promise<V1Status> {
+        return this.api.deleteCollectionMutatingAdmissionPolicyBinding(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
+    }
+
+    /**
      * delete collection of MutatingWebhookConfiguration
      * @param param the request object
      */
     public deleteCollectionMutatingWebhookConfigurationWithHttpInfo(param: AdmissionregistrationV1ApiDeleteCollectionMutatingWebhookConfigurationRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionMutatingWebhookConfigurationWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionMutatingWebhookConfigurationWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -2003,7 +2953,7 @@ export class ObjectAdmissionregistrationV1Api {
      * @param param the request object
      */
     public deleteCollectionMutatingWebhookConfiguration(param: AdmissionregistrationV1ApiDeleteCollectionMutatingWebhookConfigurationRequest = {}, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionMutatingWebhookConfiguration(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionMutatingWebhookConfiguration(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -2011,7 +2961,7 @@ export class ObjectAdmissionregistrationV1Api {
      * @param param the request object
      */
     public deleteCollectionValidatingAdmissionPolicyWithHttpInfo(param: AdmissionregistrationV1ApiDeleteCollectionValidatingAdmissionPolicyRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionValidatingAdmissionPolicyWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionValidatingAdmissionPolicyWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -2019,7 +2969,7 @@ export class ObjectAdmissionregistrationV1Api {
      * @param param the request object
      */
     public deleteCollectionValidatingAdmissionPolicy(param: AdmissionregistrationV1ApiDeleteCollectionValidatingAdmissionPolicyRequest = {}, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionValidatingAdmissionPolicy(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionValidatingAdmissionPolicy(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -2027,7 +2977,7 @@ export class ObjectAdmissionregistrationV1Api {
      * @param param the request object
      */
     public deleteCollectionValidatingAdmissionPolicyBindingWithHttpInfo(param: AdmissionregistrationV1ApiDeleteCollectionValidatingAdmissionPolicyBindingRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionValidatingAdmissionPolicyBindingWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionValidatingAdmissionPolicyBindingWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -2035,7 +2985,7 @@ export class ObjectAdmissionregistrationV1Api {
      * @param param the request object
      */
     public deleteCollectionValidatingAdmissionPolicyBinding(param: AdmissionregistrationV1ApiDeleteCollectionValidatingAdmissionPolicyBindingRequest = {}, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionValidatingAdmissionPolicyBinding(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionValidatingAdmissionPolicyBinding(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -2043,7 +2993,7 @@ export class ObjectAdmissionregistrationV1Api {
      * @param param the request object
      */
     public deleteCollectionValidatingWebhookConfigurationWithHttpInfo(param: AdmissionregistrationV1ApiDeleteCollectionValidatingWebhookConfigurationRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionValidatingWebhookConfigurationWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionValidatingWebhookConfigurationWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -2051,7 +3001,39 @@ export class ObjectAdmissionregistrationV1Api {
      * @param param the request object
      */
     public deleteCollectionValidatingWebhookConfiguration(param: AdmissionregistrationV1ApiDeleteCollectionValidatingWebhookConfigurationRequest = {}, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionValidatingWebhookConfiguration(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionValidatingWebhookConfiguration(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
+    }
+
+    /**
+     * delete a MutatingAdmissionPolicy
+     * @param param the request object
+     */
+    public deleteMutatingAdmissionPolicyWithHttpInfo(param: AdmissionregistrationV1ApiDeleteMutatingAdmissionPolicyRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
+        return this.api.deleteMutatingAdmissionPolicyWithHttpInfo(param.name, param.pretty, param.dryRun, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.orphanDependents, param.propagationPolicy, param.body,  options).toPromise();
+    }
+
+    /**
+     * delete a MutatingAdmissionPolicy
+     * @param param the request object
+     */
+    public deleteMutatingAdmissionPolicy(param: AdmissionregistrationV1ApiDeleteMutatingAdmissionPolicyRequest, options?: ConfigurationOptions): Promise<V1Status> {
+        return this.api.deleteMutatingAdmissionPolicy(param.name, param.pretty, param.dryRun, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.orphanDependents, param.propagationPolicy, param.body,  options).toPromise();
+    }
+
+    /**
+     * delete a MutatingAdmissionPolicyBinding
+     * @param param the request object
+     */
+    public deleteMutatingAdmissionPolicyBindingWithHttpInfo(param: AdmissionregistrationV1ApiDeleteMutatingAdmissionPolicyBindingRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
+        return this.api.deleteMutatingAdmissionPolicyBindingWithHttpInfo(param.name, param.pretty, param.dryRun, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.orphanDependents, param.propagationPolicy, param.body,  options).toPromise();
+    }
+
+    /**
+     * delete a MutatingAdmissionPolicyBinding
+     * @param param the request object
+     */
+    public deleteMutatingAdmissionPolicyBinding(param: AdmissionregistrationV1ApiDeleteMutatingAdmissionPolicyBindingRequest, options?: ConfigurationOptions): Promise<V1Status> {
+        return this.api.deleteMutatingAdmissionPolicyBinding(param.name, param.pretty, param.dryRun, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.orphanDependents, param.propagationPolicy, param.body,  options).toPromise();
     }
 
     /**
@@ -2135,11 +3117,43 @@ export class ObjectAdmissionregistrationV1Api {
     }
 
     /**
+     * list or watch objects of kind MutatingAdmissionPolicy
+     * @param param the request object
+     */
+    public listMutatingAdmissionPolicyWithHttpInfo(param: AdmissionregistrationV1ApiListMutatingAdmissionPolicyRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1MutatingAdmissionPolicyList>> {
+        return this.api.listMutatingAdmissionPolicyWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
+    }
+
+    /**
+     * list or watch objects of kind MutatingAdmissionPolicy
+     * @param param the request object
+     */
+    public listMutatingAdmissionPolicy(param: AdmissionregistrationV1ApiListMutatingAdmissionPolicyRequest = {}, options?: ConfigurationOptions): Promise<V1MutatingAdmissionPolicyList> {
+        return this.api.listMutatingAdmissionPolicy(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
+    }
+
+    /**
+     * list or watch objects of kind MutatingAdmissionPolicyBinding
+     * @param param the request object
+     */
+    public listMutatingAdmissionPolicyBindingWithHttpInfo(param: AdmissionregistrationV1ApiListMutatingAdmissionPolicyBindingRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1MutatingAdmissionPolicyBindingList>> {
+        return this.api.listMutatingAdmissionPolicyBindingWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
+    }
+
+    /**
+     * list or watch objects of kind MutatingAdmissionPolicyBinding
+     * @param param the request object
+     */
+    public listMutatingAdmissionPolicyBinding(param: AdmissionregistrationV1ApiListMutatingAdmissionPolicyBindingRequest = {}, options?: ConfigurationOptions): Promise<V1MutatingAdmissionPolicyBindingList> {
+        return this.api.listMutatingAdmissionPolicyBinding(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
+    }
+
+    /**
      * list or watch objects of kind MutatingWebhookConfiguration
      * @param param the request object
      */
     public listMutatingWebhookConfigurationWithHttpInfo(param: AdmissionregistrationV1ApiListMutatingWebhookConfigurationRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1MutatingWebhookConfigurationList>> {
-        return this.api.listMutatingWebhookConfigurationWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listMutatingWebhookConfigurationWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -2147,7 +3161,7 @@ export class ObjectAdmissionregistrationV1Api {
      * @param param the request object
      */
     public listMutatingWebhookConfiguration(param: AdmissionregistrationV1ApiListMutatingWebhookConfigurationRequest = {}, options?: ConfigurationOptions): Promise<V1MutatingWebhookConfigurationList> {
-        return this.api.listMutatingWebhookConfiguration(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listMutatingWebhookConfiguration(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -2155,7 +3169,7 @@ export class ObjectAdmissionregistrationV1Api {
      * @param param the request object
      */
     public listValidatingAdmissionPolicyWithHttpInfo(param: AdmissionregistrationV1ApiListValidatingAdmissionPolicyRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1ValidatingAdmissionPolicyList>> {
-        return this.api.listValidatingAdmissionPolicyWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listValidatingAdmissionPolicyWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -2163,7 +3177,7 @@ export class ObjectAdmissionregistrationV1Api {
      * @param param the request object
      */
     public listValidatingAdmissionPolicy(param: AdmissionregistrationV1ApiListValidatingAdmissionPolicyRequest = {}, options?: ConfigurationOptions): Promise<V1ValidatingAdmissionPolicyList> {
-        return this.api.listValidatingAdmissionPolicy(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listValidatingAdmissionPolicy(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -2171,7 +3185,7 @@ export class ObjectAdmissionregistrationV1Api {
      * @param param the request object
      */
     public listValidatingAdmissionPolicyBindingWithHttpInfo(param: AdmissionregistrationV1ApiListValidatingAdmissionPolicyBindingRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1ValidatingAdmissionPolicyBindingList>> {
-        return this.api.listValidatingAdmissionPolicyBindingWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listValidatingAdmissionPolicyBindingWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -2179,7 +3193,7 @@ export class ObjectAdmissionregistrationV1Api {
      * @param param the request object
      */
     public listValidatingAdmissionPolicyBinding(param: AdmissionregistrationV1ApiListValidatingAdmissionPolicyBindingRequest = {}, options?: ConfigurationOptions): Promise<V1ValidatingAdmissionPolicyBindingList> {
-        return this.api.listValidatingAdmissionPolicyBinding(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listValidatingAdmissionPolicyBinding(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -2187,7 +3201,7 @@ export class ObjectAdmissionregistrationV1Api {
      * @param param the request object
      */
     public listValidatingWebhookConfigurationWithHttpInfo(param: AdmissionregistrationV1ApiListValidatingWebhookConfigurationRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1ValidatingWebhookConfigurationList>> {
-        return this.api.listValidatingWebhookConfigurationWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listValidatingWebhookConfigurationWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -2195,7 +3209,39 @@ export class ObjectAdmissionregistrationV1Api {
      * @param param the request object
      */
     public listValidatingWebhookConfiguration(param: AdmissionregistrationV1ApiListValidatingWebhookConfigurationRequest = {}, options?: ConfigurationOptions): Promise<V1ValidatingWebhookConfigurationList> {
-        return this.api.listValidatingWebhookConfiguration(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listValidatingWebhookConfiguration(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
+    }
+
+    /**
+     * partially update the specified MutatingAdmissionPolicy
+     * @param param the request object
+     */
+    public patchMutatingAdmissionPolicyWithHttpInfo(param: AdmissionregistrationV1ApiPatchMutatingAdmissionPolicyRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1MutatingAdmissionPolicy>> {
+        return this.api.patchMutatingAdmissionPolicyWithHttpInfo(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation, param.force,  options).toPromise();
+    }
+
+    /**
+     * partially update the specified MutatingAdmissionPolicy
+     * @param param the request object
+     */
+    public patchMutatingAdmissionPolicy(param: AdmissionregistrationV1ApiPatchMutatingAdmissionPolicyRequest, options?: ConfigurationOptions): Promise<V1MutatingAdmissionPolicy> {
+        return this.api.patchMutatingAdmissionPolicy(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation, param.force,  options).toPromise();
+    }
+
+    /**
+     * partially update the specified MutatingAdmissionPolicyBinding
+     * @param param the request object
+     */
+    public patchMutatingAdmissionPolicyBindingWithHttpInfo(param: AdmissionregistrationV1ApiPatchMutatingAdmissionPolicyBindingRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1MutatingAdmissionPolicyBinding>> {
+        return this.api.patchMutatingAdmissionPolicyBindingWithHttpInfo(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation, param.force,  options).toPromise();
+    }
+
+    /**
+     * partially update the specified MutatingAdmissionPolicyBinding
+     * @param param the request object
+     */
+    public patchMutatingAdmissionPolicyBinding(param: AdmissionregistrationV1ApiPatchMutatingAdmissionPolicyBindingRequest, options?: ConfigurationOptions): Promise<V1MutatingAdmissionPolicyBinding> {
+        return this.api.patchMutatingAdmissionPolicyBinding(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation, param.force,  options).toPromise();
     }
 
     /**
@@ -2279,6 +3325,38 @@ export class ObjectAdmissionregistrationV1Api {
     }
 
     /**
+     * read the specified MutatingAdmissionPolicy
+     * @param param the request object
+     */
+    public readMutatingAdmissionPolicyWithHttpInfo(param: AdmissionregistrationV1ApiReadMutatingAdmissionPolicyRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1MutatingAdmissionPolicy>> {
+        return this.api.readMutatingAdmissionPolicyWithHttpInfo(param.name, param.pretty,  options).toPromise();
+    }
+
+    /**
+     * read the specified MutatingAdmissionPolicy
+     * @param param the request object
+     */
+    public readMutatingAdmissionPolicy(param: AdmissionregistrationV1ApiReadMutatingAdmissionPolicyRequest, options?: ConfigurationOptions): Promise<V1MutatingAdmissionPolicy> {
+        return this.api.readMutatingAdmissionPolicy(param.name, param.pretty,  options).toPromise();
+    }
+
+    /**
+     * read the specified MutatingAdmissionPolicyBinding
+     * @param param the request object
+     */
+    public readMutatingAdmissionPolicyBindingWithHttpInfo(param: AdmissionregistrationV1ApiReadMutatingAdmissionPolicyBindingRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1MutatingAdmissionPolicyBinding>> {
+        return this.api.readMutatingAdmissionPolicyBindingWithHttpInfo(param.name, param.pretty,  options).toPromise();
+    }
+
+    /**
+     * read the specified MutatingAdmissionPolicyBinding
+     * @param param the request object
+     */
+    public readMutatingAdmissionPolicyBinding(param: AdmissionregistrationV1ApiReadMutatingAdmissionPolicyBindingRequest, options?: ConfigurationOptions): Promise<V1MutatingAdmissionPolicyBinding> {
+        return this.api.readMutatingAdmissionPolicyBinding(param.name, param.pretty,  options).toPromise();
+    }
+
+    /**
      * read the specified MutatingWebhookConfiguration
      * @param param the request object
      */
@@ -2356,6 +3434,38 @@ export class ObjectAdmissionregistrationV1Api {
      */
     public readValidatingWebhookConfiguration(param: AdmissionregistrationV1ApiReadValidatingWebhookConfigurationRequest, options?: ConfigurationOptions): Promise<V1ValidatingWebhookConfiguration> {
         return this.api.readValidatingWebhookConfiguration(param.name, param.pretty,  options).toPromise();
+    }
+
+    /**
+     * replace the specified MutatingAdmissionPolicy
+     * @param param the request object
+     */
+    public replaceMutatingAdmissionPolicyWithHttpInfo(param: AdmissionregistrationV1ApiReplaceMutatingAdmissionPolicyRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1MutatingAdmissionPolicy>> {
+        return this.api.replaceMutatingAdmissionPolicyWithHttpInfo(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * replace the specified MutatingAdmissionPolicy
+     * @param param the request object
+     */
+    public replaceMutatingAdmissionPolicy(param: AdmissionregistrationV1ApiReplaceMutatingAdmissionPolicyRequest, options?: ConfigurationOptions): Promise<V1MutatingAdmissionPolicy> {
+        return this.api.replaceMutatingAdmissionPolicy(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * replace the specified MutatingAdmissionPolicyBinding
+     * @param param the request object
+     */
+    public replaceMutatingAdmissionPolicyBindingWithHttpInfo(param: AdmissionregistrationV1ApiReplaceMutatingAdmissionPolicyBindingRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1MutatingAdmissionPolicyBinding>> {
+        return this.api.replaceMutatingAdmissionPolicyBindingWithHttpInfo(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * replace the specified MutatingAdmissionPolicyBinding
+     * @param param the request object
+     */
+    public replaceMutatingAdmissionPolicyBinding(param: AdmissionregistrationV1ApiReplaceMutatingAdmissionPolicyBindingRequest, options?: ConfigurationOptions): Promise<V1MutatingAdmissionPolicyBinding> {
+        return this.api.replaceMutatingAdmissionPolicyBinding(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
     }
 
     /**
@@ -2604,6 +3714,13 @@ export interface ApiextensionsV1ApiDeleteCollectionCustomResourceDefinitionReque
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ApiextensionsV1ApideleteCollectionCustomResourceDefinition
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -2743,6 +3860,13 @@ export interface ApiextensionsV1ApiListCustomResourceDefinitionRequest {
      * @memberof ApiextensionsV1ApilistCustomResourceDefinition
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ApiextensionsV1ApilistCustomResourceDefinition
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -3011,7 +4135,7 @@ export class ObjectApiextensionsV1Api {
      * @param param the request object
      */
     public deleteCollectionCustomResourceDefinitionWithHttpInfo(param: ApiextensionsV1ApiDeleteCollectionCustomResourceDefinitionRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionCustomResourceDefinitionWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionCustomResourceDefinitionWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -3019,7 +4143,7 @@ export class ObjectApiextensionsV1Api {
      * @param param the request object
      */
     public deleteCollectionCustomResourceDefinition(param: ApiextensionsV1ApiDeleteCollectionCustomResourceDefinitionRequest = {}, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionCustomResourceDefinition(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionCustomResourceDefinition(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -3059,7 +4183,7 @@ export class ObjectApiextensionsV1Api {
      * @param param the request object
      */
     public listCustomResourceDefinitionWithHttpInfo(param: ApiextensionsV1ApiListCustomResourceDefinitionRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1CustomResourceDefinitionList>> {
-        return this.api.listCustomResourceDefinitionWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listCustomResourceDefinitionWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -3067,7 +4191,7 @@ export class ObjectApiextensionsV1Api {
      * @param param the request object
      */
     public listCustomResourceDefinition(param: ApiextensionsV1ApiListCustomResourceDefinitionRequest = {}, options?: ConfigurationOptions): Promise<V1CustomResourceDefinitionList> {
-        return this.api.listCustomResourceDefinition(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listCustomResourceDefinition(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -3390,6 +4514,13 @@ export interface ApiregistrationV1ApiDeleteCollectionAPIServiceRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ApiregistrationV1ApideleteCollectionAPIService
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -3471,6 +4602,13 @@ export interface ApiregistrationV1ApiListAPIServiceRequest {
      * @memberof ApiregistrationV1ApilistAPIService
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ApiregistrationV1ApilistAPIService
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -3755,7 +4893,7 @@ export class ObjectApiregistrationV1Api {
      * @param param the request object
      */
     public deleteCollectionAPIServiceWithHttpInfo(param: ApiregistrationV1ApiDeleteCollectionAPIServiceRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionAPIServiceWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionAPIServiceWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -3763,7 +4901,7 @@ export class ObjectApiregistrationV1Api {
      * @param param the request object
      */
     public deleteCollectionAPIService(param: ApiregistrationV1ApiDeleteCollectionAPIServiceRequest = {}, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionAPIService(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionAPIService(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -3787,7 +4925,7 @@ export class ObjectApiregistrationV1Api {
      * @param param the request object
      */
     public listAPIServiceWithHttpInfo(param: ApiregistrationV1ApiListAPIServiceRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1APIServiceList>> {
-        return this.api.listAPIServiceWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listAPIServiceWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -3795,7 +4933,7 @@ export class ObjectApiregistrationV1Api {
      * @param param the request object
      */
     public listAPIService(param: ApiregistrationV1ApiListAPIServiceRequest = {}, options?: ConfigurationOptions): Promise<V1APIServiceList> {
-        return this.api.listAPIService(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listAPIService(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -4120,6 +5258,13 @@ export interface AppRancherdesktopIoV1alpha1ApiDeleteCollectionAppRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AppRancherdesktopIoV1alpha1ApideleteCollectionApp
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -4185,6 +5330,13 @@ export interface AppRancherdesktopIoV1alpha1ApiDeleteCollectionDemoRequest {
      * @memberof AppRancherdesktopIoV1alpha1ApideleteCollectionDemo
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AppRancherdesktopIoV1alpha1ApideleteCollectionDemo
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -4317,6 +5469,13 @@ export interface AppRancherdesktopIoV1alpha1ApiListAppRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AppRancherdesktopIoV1alpha1ApilistApp
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -4396,6 +5555,13 @@ export interface AppRancherdesktopIoV1alpha1ApiListDemoRequest {
      * @memberof AppRancherdesktopIoV1alpha1ApilistDemo
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof AppRancherdesktopIoV1alpha1ApilistDemo
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -4948,7 +6114,7 @@ export class ObjectAppRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionAppWithHttpInfo(param: AppRancherdesktopIoV1alpha1ApiDeleteCollectionAppRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionAppWithHttpInfo(param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionAppWithHttpInfo(param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -4956,7 +6122,7 @@ export class ObjectAppRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionApp(param: AppRancherdesktopIoV1alpha1ApiDeleteCollectionAppRequest = {}, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionApp(param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionApp(param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -4964,7 +6130,7 @@ export class ObjectAppRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionDemoWithHttpInfo(param: AppRancherdesktopIoV1alpha1ApiDeleteCollectionDemoRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionDemoWithHttpInfo(param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionDemoWithHttpInfo(param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -4972,7 +6138,7 @@ export class ObjectAppRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionDemo(param: AppRancherdesktopIoV1alpha1ApiDeleteCollectionDemoRequest = {}, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionDemo(param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionDemo(param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -4996,7 +6162,7 @@ export class ObjectAppRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listAppWithHttpInfo(param: AppRancherdesktopIoV1alpha1ApiListAppRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopAppV1alpha1AppList>> {
-        return this.api.listAppWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listAppWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -5004,7 +6170,7 @@ export class ObjectAppRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listApp(param: AppRancherdesktopIoV1alpha1ApiListAppRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopAppV1alpha1AppList> {
-        return this.api.listApp(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listApp(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -5012,7 +6178,7 @@ export class ObjectAppRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listDemoWithHttpInfo(param: AppRancherdesktopIoV1alpha1ApiListDemoRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopAppV1alpha1DemoList>> {
-        return this.api.listDemoWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listDemoWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -5020,7 +6186,7 @@ export class ObjectAppRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listDemo(param: AppRancherdesktopIoV1alpha1ApiListDemoRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopAppV1alpha1DemoList> {
-        return this.api.listDemo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listDemo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -5962,6 +7128,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespaced
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApideleteCollectionNamespacedContainer
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -6034,6 +7207,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespaced
      * @memberof ContainersRancherdesktopIoV1alpha1ApideleteCollectionNamespacedContainerCreateRequest
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApideleteCollectionNamespacedContainerCreateRequest
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -6108,6 +7288,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespaced
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApideleteCollectionNamespacedContainerNamespace
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -6180,6 +7367,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespaced
      * @memberof ContainersRancherdesktopIoV1alpha1ApideleteCollectionNamespacedImage
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApideleteCollectionNamespacedImage
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -6254,6 +7448,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespaced
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApideleteCollectionNamespacedImagePullRequest
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -6326,6 +7527,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespaced
      * @memberof ContainersRancherdesktopIoV1alpha1ApideleteCollectionNamespacedImagePushRequest
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApideleteCollectionNamespacedImagePushRequest
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -6400,6 +7608,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespaced
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApideleteCollectionNamespacedImageScanRequest
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -6473,6 +7688,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespaced
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApideleteCollectionNamespacedVolume
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -6545,6 +7767,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespaced
      * @memberof ContainersRancherdesktopIoV1alpha1ApideleteCollectionNamespacedVolumeCreateRequest
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApideleteCollectionNamespacedVolumeCreateRequest
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -7204,6 +8433,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListContainerCreateRequest
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistContainerCreateRequestForAllNamespaces
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -7283,6 +8519,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListContainerForAllNamespa
      * @memberof ContainersRancherdesktopIoV1alpha1ApilistContainerForAllNamespaces
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistContainerForAllNamespaces
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -7364,6 +8607,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListContainerNamespaceForA
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistContainerNamespaceForAllNamespaces
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -7443,6 +8693,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListImageForAllNamespacesR
      * @memberof ContainersRancherdesktopIoV1alpha1ApilistImageForAllNamespaces
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistImageForAllNamespaces
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -7524,6 +8781,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListImagePullRequestForAll
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistImagePullRequestForAllNamespaces
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -7604,6 +8868,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListImagePushRequestForAll
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistImagePushRequestForAllNamespaces
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -7683,6 +8954,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListImageScanRequestForAll
      * @memberof ContainersRancherdesktopIoV1alpha1ApilistImageScanRequestForAllNamespaces
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistImageScanRequestForAllNamespaces
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -7771,6 +9049,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListNamespacedContainerReq
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistNamespacedContainer
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -7857,6 +9142,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListNamespacedContainerCre
      * @memberof ContainersRancherdesktopIoV1alpha1ApilistNamespacedContainerCreateRequest
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistNamespacedContainerCreateRequest
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -7945,6 +9237,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListNamespacedContainerNam
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistNamespacedContainerNamespace
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -8031,6 +9330,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListNamespacedImageRequest
      * @memberof ContainersRancherdesktopIoV1alpha1ApilistNamespacedImage
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistNamespacedImage
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -8119,6 +9425,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListNamespacedImagePullReq
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistNamespacedImagePullRequest
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -8205,6 +9518,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListNamespacedImagePushReq
      * @memberof ContainersRancherdesktopIoV1alpha1ApilistNamespacedImagePushRequest
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistNamespacedImagePushRequest
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -8293,6 +9613,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListNamespacedImageScanReq
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistNamespacedImageScanRequest
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -8379,6 +9706,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListNamespacedVolumeReques
      * @memberof ContainersRancherdesktopIoV1alpha1ApilistNamespacedVolume
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistNamespacedVolume
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -8467,6 +9801,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListNamespacedVolumeCreate
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistNamespacedVolumeCreateRequest
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -8547,6 +9888,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListVolumeCreateRequestFor
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistVolumeCreateRequestForAllNamespaces
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -8626,6 +9974,13 @@ export interface ContainersRancherdesktopIoV1alpha1ApiListVolumeForAllNamespaces
      * @memberof ContainersRancherdesktopIoV1alpha1ApilistVolumeForAllNamespaces
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ContainersRancherdesktopIoV1alpha1ApilistVolumeForAllNamespaces
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -11178,7 +12533,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedContainerWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedContainerRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedContainerWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedContainerWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11186,7 +12541,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedContainer(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedContainerRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedContainer(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedContainer(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11194,7 +12549,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedContainerCreateRequestWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedContainerCreateRequestRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedContainerCreateRequestWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedContainerCreateRequestWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11202,7 +12557,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedContainerCreateRequest(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedContainerCreateRequestRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedContainerCreateRequest(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedContainerCreateRequest(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11210,7 +12565,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedContainerNamespaceWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedContainerNamespaceRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedContainerNamespaceWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedContainerNamespaceWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11218,7 +12573,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedContainerNamespace(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedContainerNamespaceRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedContainerNamespace(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedContainerNamespace(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11226,7 +12581,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedImageWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedImageRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedImageWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedImageWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11234,7 +12589,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedImage(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedImageRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedImage(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedImage(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11242,7 +12597,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedImagePullRequestWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedImagePullRequestRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedImagePullRequestWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedImagePullRequestWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11250,7 +12605,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedImagePullRequest(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedImagePullRequestRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedImagePullRequest(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedImagePullRequest(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11258,7 +12613,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedImagePushRequestWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedImagePushRequestRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedImagePushRequestWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedImagePushRequestWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11266,7 +12621,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedImagePushRequest(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedImagePushRequestRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedImagePushRequest(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedImagePushRequest(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11274,7 +12629,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedImageScanRequestWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedImageScanRequestRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedImageScanRequestWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedImageScanRequestWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11282,7 +12637,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedImageScanRequest(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedImageScanRequestRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedImageScanRequest(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedImageScanRequest(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11290,7 +12645,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedVolumeWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedVolumeRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedVolumeWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedVolumeWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11298,7 +12653,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedVolume(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedVolumeRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedVolume(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedVolume(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11306,7 +12661,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedVolumeCreateRequestWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedVolumeCreateRequestRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedVolumeCreateRequestWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedVolumeCreateRequestWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11314,7 +12669,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedVolumeCreateRequest(param: ContainersRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedVolumeCreateRequestRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedVolumeCreateRequest(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedVolumeCreateRequest(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -11466,7 +12821,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listContainerCreateRequestForAllNamespacesWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListContainerCreateRequestForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1ContainerCreateRequestList>> {
-        return this.api.listContainerCreateRequestForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listContainerCreateRequestForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11474,7 +12829,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listContainerCreateRequestForAllNamespaces(param: ContainersRancherdesktopIoV1alpha1ApiListContainerCreateRequestForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1ContainerCreateRequestList> {
-        return this.api.listContainerCreateRequestForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listContainerCreateRequestForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11482,7 +12837,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listContainerForAllNamespacesWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListContainerForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1ContainerList>> {
-        return this.api.listContainerForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listContainerForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11490,7 +12845,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listContainerForAllNamespaces(param: ContainersRancherdesktopIoV1alpha1ApiListContainerForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1ContainerList> {
-        return this.api.listContainerForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listContainerForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11498,7 +12853,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listContainerNamespaceForAllNamespacesWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListContainerNamespaceForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1ContainerNamespaceList>> {
-        return this.api.listContainerNamespaceForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listContainerNamespaceForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11506,7 +12861,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listContainerNamespaceForAllNamespaces(param: ContainersRancherdesktopIoV1alpha1ApiListContainerNamespaceForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1ContainerNamespaceList> {
-        return this.api.listContainerNamespaceForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listContainerNamespaceForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11514,7 +12869,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listImageForAllNamespacesWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListImageForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1ImageList>> {
-        return this.api.listImageForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listImageForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11522,7 +12877,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listImageForAllNamespaces(param: ContainersRancherdesktopIoV1alpha1ApiListImageForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1ImageList> {
-        return this.api.listImageForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listImageForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11530,7 +12885,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listImagePullRequestForAllNamespacesWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListImagePullRequestForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1ImagePullRequestList>> {
-        return this.api.listImagePullRequestForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listImagePullRequestForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11538,7 +12893,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listImagePullRequestForAllNamespaces(param: ContainersRancherdesktopIoV1alpha1ApiListImagePullRequestForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1ImagePullRequestList> {
-        return this.api.listImagePullRequestForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listImagePullRequestForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11546,7 +12901,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listImagePushRequestForAllNamespacesWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListImagePushRequestForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1ImagePushRequestList>> {
-        return this.api.listImagePushRequestForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listImagePushRequestForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11554,7 +12909,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listImagePushRequestForAllNamespaces(param: ContainersRancherdesktopIoV1alpha1ApiListImagePushRequestForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1ImagePushRequestList> {
-        return this.api.listImagePushRequestForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listImagePushRequestForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11562,7 +12917,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listImageScanRequestForAllNamespacesWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListImageScanRequestForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1ImageScanRequestList>> {
-        return this.api.listImageScanRequestForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listImageScanRequestForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11570,7 +12925,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listImageScanRequestForAllNamespaces(param: ContainersRancherdesktopIoV1alpha1ApiListImageScanRequestForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1ImageScanRequestList> {
-        return this.api.listImageScanRequestForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listImageScanRequestForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11578,7 +12933,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedContainerWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedContainerRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1ContainerList>> {
-        return this.api.listNamespacedContainerWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedContainerWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11586,7 +12941,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedContainer(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedContainerRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1ContainerList> {
-        return this.api.listNamespacedContainer(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedContainer(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11594,7 +12949,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedContainerCreateRequestWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedContainerCreateRequestRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1ContainerCreateRequestList>> {
-        return this.api.listNamespacedContainerCreateRequestWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedContainerCreateRequestWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11602,7 +12957,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedContainerCreateRequest(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedContainerCreateRequestRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1ContainerCreateRequestList> {
-        return this.api.listNamespacedContainerCreateRequest(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedContainerCreateRequest(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11610,7 +12965,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedContainerNamespaceWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedContainerNamespaceRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1ContainerNamespaceList>> {
-        return this.api.listNamespacedContainerNamespaceWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedContainerNamespaceWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11618,7 +12973,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedContainerNamespace(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedContainerNamespaceRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1ContainerNamespaceList> {
-        return this.api.listNamespacedContainerNamespace(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedContainerNamespace(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11626,7 +12981,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedImageWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedImageRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1ImageList>> {
-        return this.api.listNamespacedImageWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedImageWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11634,7 +12989,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedImage(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedImageRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1ImageList> {
-        return this.api.listNamespacedImage(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedImage(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11642,7 +12997,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedImagePullRequestWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedImagePullRequestRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1ImagePullRequestList>> {
-        return this.api.listNamespacedImagePullRequestWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedImagePullRequestWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11650,7 +13005,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedImagePullRequest(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedImagePullRequestRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1ImagePullRequestList> {
-        return this.api.listNamespacedImagePullRequest(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedImagePullRequest(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11658,7 +13013,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedImagePushRequestWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedImagePushRequestRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1ImagePushRequestList>> {
-        return this.api.listNamespacedImagePushRequestWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedImagePushRequestWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11666,7 +13021,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedImagePushRequest(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedImagePushRequestRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1ImagePushRequestList> {
-        return this.api.listNamespacedImagePushRequest(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedImagePushRequest(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11674,7 +13029,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedImageScanRequestWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedImageScanRequestRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1ImageScanRequestList>> {
-        return this.api.listNamespacedImageScanRequestWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedImageScanRequestWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11682,7 +13037,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedImageScanRequest(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedImageScanRequestRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1ImageScanRequestList> {
-        return this.api.listNamespacedImageScanRequest(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedImageScanRequest(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11690,7 +13045,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedVolumeWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedVolumeRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1VolumeList>> {
-        return this.api.listNamespacedVolumeWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedVolumeWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11698,7 +13053,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedVolume(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedVolumeRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1VolumeList> {
-        return this.api.listNamespacedVolume(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedVolume(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11706,7 +13061,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedVolumeCreateRequestWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedVolumeCreateRequestRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1VolumeCreateRequestList>> {
-        return this.api.listNamespacedVolumeCreateRequestWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedVolumeCreateRequestWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11714,7 +13069,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedVolumeCreateRequest(param: ContainersRancherdesktopIoV1alpha1ApiListNamespacedVolumeCreateRequestRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1VolumeCreateRequestList> {
-        return this.api.listNamespacedVolumeCreateRequest(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedVolumeCreateRequest(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11722,7 +13077,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listVolumeCreateRequestForAllNamespacesWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListVolumeCreateRequestForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1VolumeCreateRequestList>> {
-        return this.api.listVolumeCreateRequestForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listVolumeCreateRequestForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11730,7 +13085,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listVolumeCreateRequestForAllNamespaces(param: ContainersRancherdesktopIoV1alpha1ApiListVolumeCreateRequestForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1VolumeCreateRequestList> {
-        return this.api.listVolumeCreateRequestForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listVolumeCreateRequestForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11738,7 +13093,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listVolumeForAllNamespacesWithHttpInfo(param: ContainersRancherdesktopIoV1alpha1ApiListVolumeForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopContainersV1alpha1VolumeList>> {
-        return this.api.listVolumeForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listVolumeForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -11746,7 +13101,7 @@ export class ObjectContainersRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listVolumeForAllNamespaces(param: ContainersRancherdesktopIoV1alpha1ApiListVolumeForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopContainersV1alpha1VolumeList> {
-        return this.api.listVolumeForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listVolumeForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -12745,6 +14100,13 @@ export interface CoordinationV1ApiDeleteCollectionNamespacedLeaseRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoordinationV1ApideleteCollectionNamespacedLease
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -12892,6 +14254,13 @@ export interface CoordinationV1ApiListLeaseForAllNamespacesRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoordinationV1ApilistLeaseForAllNamespaces
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -12978,6 +14347,13 @@ export interface CoordinationV1ApiListNamespacedLeaseRequest {
      * @memberof CoordinationV1ApilistNamespacedLease
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoordinationV1ApilistNamespacedLease
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -13155,7 +14531,7 @@ export class ObjectCoordinationV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedLeaseWithHttpInfo(param: CoordinationV1ApiDeleteCollectionNamespacedLeaseRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedLeaseWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedLeaseWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -13163,7 +14539,7 @@ export class ObjectCoordinationV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedLease(param: CoordinationV1ApiDeleteCollectionNamespacedLeaseRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedLease(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedLease(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -13203,7 +14579,7 @@ export class ObjectCoordinationV1Api {
      * @param param the request object
      */
     public listLeaseForAllNamespacesWithHttpInfo(param: CoordinationV1ApiListLeaseForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1LeaseList>> {
-        return this.api.listLeaseForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listLeaseForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -13211,7 +14587,7 @@ export class ObjectCoordinationV1Api {
      * @param param the request object
      */
     public listLeaseForAllNamespaces(param: CoordinationV1ApiListLeaseForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<V1LeaseList> {
-        return this.api.listLeaseForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listLeaseForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -13219,7 +14595,7 @@ export class ObjectCoordinationV1Api {
      * @param param the request object
      */
     public listNamespacedLeaseWithHttpInfo(param: CoordinationV1ApiListNamespacedLeaseRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1LeaseList>> {
-        return this.api.listNamespacedLeaseWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedLeaseWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -13227,7 +14603,7 @@ export class ObjectCoordinationV1Api {
      * @param param the request object
      */
     public listNamespacedLease(param: CoordinationV1ApiListNamespacedLeaseRequest, options?: ConfigurationOptions): Promise<V1LeaseList> {
-        return this.api.listNamespacedLease(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedLease(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -13722,6 +15098,13 @@ export interface CoreV1ApiDeleteCollectionNamespacedConfigMapRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApideleteCollectionNamespacedConfigMap
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -13835,6 +15218,13 @@ export interface CoreV1ApiDeleteCollectionNamespacedEventRequest {
      * @memberof CoreV1ApideleteCollectionNamespacedEvent
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApideleteCollectionNamespacedEvent
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -13950,6 +15340,13 @@ export interface CoreV1ApiDeleteCollectionNamespacedResourceQuotaRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApideleteCollectionNamespacedResourceQuota
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -14064,6 +15461,13 @@ export interface CoreV1ApiDeleteCollectionNamespacedSecretRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApideleteCollectionNamespacedSecret
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -14177,6 +15581,13 @@ export interface CoreV1ApiDeleteCollectionNamespacedServiceAccountRequest {
      * @memberof CoreV1ApideleteCollectionNamespacedServiceAccount
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApideleteCollectionNamespacedServiceAccount
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -14643,6 +16054,13 @@ export interface CoreV1ApiListConfigMapForAllNamespacesRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApilistConfigMapForAllNamespaces
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -14723,6 +16141,13 @@ export interface CoreV1ApiListEventForAllNamespacesRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApilistEventForAllNamespaces
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -14802,6 +16227,13 @@ export interface CoreV1ApiListNamespaceRequest {
      * @memberof CoreV1ApilistNamespace
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApilistNamespace
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -14890,6 +16322,13 @@ export interface CoreV1ApiListNamespacedConfigMapRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApilistNamespacedConfigMap
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -14976,6 +16415,13 @@ export interface CoreV1ApiListNamespacedEventRequest {
      * @memberof CoreV1ApilistNamespacedEvent
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApilistNamespacedEvent
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -15064,6 +16510,13 @@ export interface CoreV1ApiListNamespacedResourceQuotaRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApilistNamespacedResourceQuota
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -15150,6 +16603,13 @@ export interface CoreV1ApiListNamespacedSecretRequest {
      * @memberof CoreV1ApilistNamespacedSecret
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApilistNamespacedSecret
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -15238,6 +16698,13 @@ export interface CoreV1ApiListNamespacedServiceAccountRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApilistNamespacedServiceAccount
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -15317,6 +16784,13 @@ export interface CoreV1ApiListResourceQuotaForAllNamespacesRequest {
      * @memberof CoreV1ApilistResourceQuotaForAllNamespaces
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApilistResourceQuotaForAllNamespaces
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -15398,6 +16872,13 @@ export interface CoreV1ApiListSecretForAllNamespacesRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApilistSecretForAllNamespaces
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -15477,6 +16958,13 @@ export interface CoreV1ApiListServiceAccountForAllNamespacesRequest {
      * @memberof CoreV1ApilistServiceAccountForAllNamespaces
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof CoreV1ApilistServiceAccountForAllNamespaces
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -16683,7 +18171,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedConfigMapWithHttpInfo(param: CoreV1ApiDeleteCollectionNamespacedConfigMapRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedConfigMapWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedConfigMapWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -16691,7 +18179,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedConfigMap(param: CoreV1ApiDeleteCollectionNamespacedConfigMapRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedConfigMap(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedConfigMap(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -16699,7 +18187,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedEventWithHttpInfo(param: CoreV1ApiDeleteCollectionNamespacedEventRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedEventWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedEventWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -16707,7 +18195,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedEvent(param: CoreV1ApiDeleteCollectionNamespacedEventRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedEvent(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedEvent(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -16715,7 +18203,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedResourceQuotaWithHttpInfo(param: CoreV1ApiDeleteCollectionNamespacedResourceQuotaRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedResourceQuotaWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedResourceQuotaWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -16723,7 +18211,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedResourceQuota(param: CoreV1ApiDeleteCollectionNamespacedResourceQuotaRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedResourceQuota(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedResourceQuota(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -16731,7 +18219,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedSecretWithHttpInfo(param: CoreV1ApiDeleteCollectionNamespacedSecretRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedSecretWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedSecretWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -16739,7 +18227,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedSecret(param: CoreV1ApiDeleteCollectionNamespacedSecretRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedSecret(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedSecret(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -16747,7 +18235,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedServiceAccountWithHttpInfo(param: CoreV1ApiDeleteCollectionNamespacedServiceAccountRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedServiceAccountWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedServiceAccountWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -16755,7 +18243,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedServiceAccount(param: CoreV1ApiDeleteCollectionNamespacedServiceAccountRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedServiceAccount(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedServiceAccount(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -16875,7 +18363,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listConfigMapForAllNamespacesWithHttpInfo(param: CoreV1ApiListConfigMapForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1ConfigMapList>> {
-        return this.api.listConfigMapForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listConfigMapForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16883,7 +18371,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listConfigMapForAllNamespaces(param: CoreV1ApiListConfigMapForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<V1ConfigMapList> {
-        return this.api.listConfigMapForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listConfigMapForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16891,7 +18379,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listEventForAllNamespacesWithHttpInfo(param: CoreV1ApiListEventForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<CoreV1EventList>> {
-        return this.api.listEventForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listEventForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16899,7 +18387,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listEventForAllNamespaces(param: CoreV1ApiListEventForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<CoreV1EventList> {
-        return this.api.listEventForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listEventForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16907,7 +18395,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listNamespaceWithHttpInfo(param: CoreV1ApiListNamespaceRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1NamespaceList>> {
-        return this.api.listNamespaceWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespaceWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16915,7 +18403,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listNamespace(param: CoreV1ApiListNamespaceRequest = {}, options?: ConfigurationOptions): Promise<V1NamespaceList> {
-        return this.api.listNamespace(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespace(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16923,7 +18411,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listNamespacedConfigMapWithHttpInfo(param: CoreV1ApiListNamespacedConfigMapRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1ConfigMapList>> {
-        return this.api.listNamespacedConfigMapWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedConfigMapWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16931,7 +18419,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listNamespacedConfigMap(param: CoreV1ApiListNamespacedConfigMapRequest, options?: ConfigurationOptions): Promise<V1ConfigMapList> {
-        return this.api.listNamespacedConfigMap(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedConfigMap(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16939,7 +18427,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listNamespacedEventWithHttpInfo(param: CoreV1ApiListNamespacedEventRequest, options?: ConfigurationOptions): Promise<HttpInfo<CoreV1EventList>> {
-        return this.api.listNamespacedEventWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedEventWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16947,7 +18435,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listNamespacedEvent(param: CoreV1ApiListNamespacedEventRequest, options?: ConfigurationOptions): Promise<CoreV1EventList> {
-        return this.api.listNamespacedEvent(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedEvent(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16955,7 +18443,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listNamespacedResourceQuotaWithHttpInfo(param: CoreV1ApiListNamespacedResourceQuotaRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1ResourceQuotaList>> {
-        return this.api.listNamespacedResourceQuotaWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedResourceQuotaWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16963,7 +18451,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listNamespacedResourceQuota(param: CoreV1ApiListNamespacedResourceQuotaRequest, options?: ConfigurationOptions): Promise<V1ResourceQuotaList> {
-        return this.api.listNamespacedResourceQuota(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedResourceQuota(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16971,7 +18459,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listNamespacedSecretWithHttpInfo(param: CoreV1ApiListNamespacedSecretRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1SecretList>> {
-        return this.api.listNamespacedSecretWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedSecretWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16979,7 +18467,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listNamespacedSecret(param: CoreV1ApiListNamespacedSecretRequest, options?: ConfigurationOptions): Promise<V1SecretList> {
-        return this.api.listNamespacedSecret(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedSecret(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16987,7 +18475,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listNamespacedServiceAccountWithHttpInfo(param: CoreV1ApiListNamespacedServiceAccountRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1ServiceAccountList>> {
-        return this.api.listNamespacedServiceAccountWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedServiceAccountWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -16995,7 +18483,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listNamespacedServiceAccount(param: CoreV1ApiListNamespacedServiceAccountRequest, options?: ConfigurationOptions): Promise<V1ServiceAccountList> {
-        return this.api.listNamespacedServiceAccount(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedServiceAccount(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -17003,7 +18491,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listResourceQuotaForAllNamespacesWithHttpInfo(param: CoreV1ApiListResourceQuotaForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1ResourceQuotaList>> {
-        return this.api.listResourceQuotaForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listResourceQuotaForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -17011,7 +18499,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listResourceQuotaForAllNamespaces(param: CoreV1ApiListResourceQuotaForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<V1ResourceQuotaList> {
-        return this.api.listResourceQuotaForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listResourceQuotaForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -17019,7 +18507,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listSecretForAllNamespacesWithHttpInfo(param: CoreV1ApiListSecretForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1SecretList>> {
-        return this.api.listSecretForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listSecretForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -17027,7 +18515,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listSecretForAllNamespaces(param: CoreV1ApiListSecretForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<V1SecretList> {
-        return this.api.listSecretForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listSecretForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -17035,7 +18523,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listServiceAccountForAllNamespacesWithHttpInfo(param: CoreV1ApiListServiceAccountForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1ServiceAccountList>> {
-        return this.api.listServiceAccountForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listServiceAccountForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -17043,7 +18531,7 @@ export class ObjectCoreV1Api {
      * @param param the request object
      */
     public listServiceAccountForAllNamespaces(param: CoreV1ApiListServiceAccountForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<V1ServiceAccountList> {
-        return this.api.listServiceAccountForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listServiceAccountForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -19582,6 +21070,13 @@ export interface EventsV1ApiDeleteCollectionNamespacedEventRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof EventsV1ApideleteCollectionNamespacedEvent
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -19729,6 +21224,13 @@ export interface EventsV1ApiListEventForAllNamespacesRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof EventsV1ApilistEventForAllNamespaces
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -19815,6 +21317,13 @@ export interface EventsV1ApiListNamespacedEventRequest {
      * @memberof EventsV1ApilistNamespacedEvent
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof EventsV1ApilistNamespacedEvent
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -19992,7 +21501,7 @@ export class ObjectEventsV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedEventWithHttpInfo(param: EventsV1ApiDeleteCollectionNamespacedEventRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedEventWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedEventWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -20000,7 +21509,7 @@ export class ObjectEventsV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedEvent(param: EventsV1ApiDeleteCollectionNamespacedEventRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedEvent(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedEvent(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -20040,7 +21549,7 @@ export class ObjectEventsV1Api {
      * @param param the request object
      */
     public listEventForAllNamespacesWithHttpInfo(param: EventsV1ApiListEventForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<EventsV1EventList>> {
-        return this.api.listEventForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listEventForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -20048,7 +21557,7 @@ export class ObjectEventsV1Api {
      * @param param the request object
      */
     public listEventForAllNamespaces(param: EventsV1ApiListEventForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<EventsV1EventList> {
-        return this.api.listEventForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listEventForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -20056,7 +21565,7 @@ export class ObjectEventsV1Api {
      * @param param the request object
      */
     public listNamespacedEventWithHttpInfo(param: EventsV1ApiListNamespacedEventRequest, options?: ConfigurationOptions): Promise<HttpInfo<EventsV1EventList>> {
-        return this.api.listNamespacedEventWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedEventWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -20064,7 +21573,7 @@ export class ObjectEventsV1Api {
      * @param param the request object
      */
     public listNamespacedEvent(param: EventsV1ApiListNamespacedEventRequest, options?: ConfigurationOptions): Promise<EventsV1EventList> {
-        return this.api.listNamespacedEvent(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedEvent(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -20229,6 +21738,13 @@ export interface LimaRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedLimaVM
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof LimaRancherdesktopIoV1alpha1ApideleteCollectionNamespacedLimaVM
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -20367,6 +21883,13 @@ export interface LimaRancherdesktopIoV1alpha1ApiListLimaVMForAllNamespacesReques
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof LimaRancherdesktopIoV1alpha1ApilistLimaVMForAllNamespaces
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -20453,6 +21976,13 @@ export interface LimaRancherdesktopIoV1alpha1ApiListNamespacedLimaVMRequest {
      * @memberof LimaRancherdesktopIoV1alpha1ApilistNamespacedLimaVM
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof LimaRancherdesktopIoV1alpha1ApilistNamespacedLimaVM
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -20777,7 +22307,7 @@ export class ObjectLimaRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedLimaVMWithHttpInfo(param: LimaRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedLimaVMRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedLimaVMWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedLimaVMWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -20785,7 +22315,7 @@ export class ObjectLimaRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedLimaVM(param: LimaRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedLimaVMRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedLimaVM(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedLimaVM(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -20809,7 +22339,7 @@ export class ObjectLimaRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listLimaVMForAllNamespacesWithHttpInfo(param: LimaRancherdesktopIoV1alpha1ApiListLimaVMForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopLimaV1alpha1LimaVMList>> {
-        return this.api.listLimaVMForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listLimaVMForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -20817,7 +22347,7 @@ export class ObjectLimaRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listLimaVMForAllNamespaces(param: LimaRancherdesktopIoV1alpha1ApiListLimaVMForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopLimaV1alpha1LimaVMList> {
-        return this.api.listLimaVMForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listLimaVMForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -20825,7 +22355,7 @@ export class ObjectLimaRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedLimaVMWithHttpInfo(param: LimaRancherdesktopIoV1alpha1ApiListNamespacedLimaVMRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopLimaV1alpha1LimaVMList>> {
-        return this.api.listNamespacedLimaVMWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedLimaVMWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -20833,7 +22363,7 @@ export class ObjectLimaRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedLimaVM(param: LimaRancherdesktopIoV1alpha1ApiListNamespacedLimaVMRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopLimaV1alpha1LimaVMList> {
-        return this.api.listNamespacedLimaVM(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedLimaVM(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -21370,6 +22900,13 @@ export interface RbacAuthorizationV1ApiDeleteCollectionClusterRoleRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RbacAuthorizationV1ApideleteCollectionClusterRole
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -21476,6 +23013,13 @@ export interface RbacAuthorizationV1ApiDeleteCollectionClusterRoleBindingRequest
      * @memberof RbacAuthorizationV1ApideleteCollectionClusterRoleBinding
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RbacAuthorizationV1ApideleteCollectionClusterRoleBinding
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -21591,6 +23135,13 @@ export interface RbacAuthorizationV1ApiDeleteCollectionNamespacedRoleRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RbacAuthorizationV1ApideleteCollectionNamespacedRole
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -21704,6 +23255,13 @@ export interface RbacAuthorizationV1ApiDeleteCollectionNamespacedRoleBindingRequ
      * @memberof RbacAuthorizationV1ApideleteCollectionNamespacedRoleBinding
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RbacAuthorizationV1ApideleteCollectionNamespacedRoleBinding
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -21917,6 +23475,13 @@ export interface RbacAuthorizationV1ApiListClusterRoleRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RbacAuthorizationV1ApilistClusterRole
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -21996,6 +23561,13 @@ export interface RbacAuthorizationV1ApiListClusterRoleBindingRequest {
      * @memberof RbacAuthorizationV1ApilistClusterRoleBinding
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RbacAuthorizationV1ApilistClusterRoleBinding
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -22084,6 +23656,13 @@ export interface RbacAuthorizationV1ApiListNamespacedRoleRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RbacAuthorizationV1ApilistNamespacedRole
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -22171,6 +23750,13 @@ export interface RbacAuthorizationV1ApiListNamespacedRoleBindingRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RbacAuthorizationV1ApilistNamespacedRoleBinding
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -22251,6 +23837,13 @@ export interface RbacAuthorizationV1ApiListRoleBindingForAllNamespacesRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RbacAuthorizationV1ApilistRoleBindingForAllNamespaces
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -22330,6 +23923,13 @@ export interface RbacAuthorizationV1ApiListRoleForAllNamespacesRequest {
      * @memberof RbacAuthorizationV1ApilistRoleForAllNamespaces
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RbacAuthorizationV1ApilistRoleForAllNamespaces
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -22944,7 +24544,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public deleteCollectionClusterRoleWithHttpInfo(param: RbacAuthorizationV1ApiDeleteCollectionClusterRoleRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionClusterRoleWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionClusterRoleWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -22952,7 +24552,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public deleteCollectionClusterRole(param: RbacAuthorizationV1ApiDeleteCollectionClusterRoleRequest = {}, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionClusterRole(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionClusterRole(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -22960,7 +24560,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public deleteCollectionClusterRoleBindingWithHttpInfo(param: RbacAuthorizationV1ApiDeleteCollectionClusterRoleBindingRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionClusterRoleBindingWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionClusterRoleBindingWithHttpInfo(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -22968,7 +24568,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public deleteCollectionClusterRoleBinding(param: RbacAuthorizationV1ApiDeleteCollectionClusterRoleBindingRequest = {}, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionClusterRoleBinding(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionClusterRoleBinding(param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -22976,7 +24576,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedRoleWithHttpInfo(param: RbacAuthorizationV1ApiDeleteCollectionNamespacedRoleRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedRoleWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedRoleWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -22984,7 +24584,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedRole(param: RbacAuthorizationV1ApiDeleteCollectionNamespacedRoleRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedRole(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedRole(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -22992,7 +24592,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedRoleBindingWithHttpInfo(param: RbacAuthorizationV1ApiDeleteCollectionNamespacedRoleBindingRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedRoleBindingWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedRoleBindingWithHttpInfo(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -23000,7 +24600,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedRoleBinding(param: RbacAuthorizationV1ApiDeleteCollectionNamespacedRoleBindingRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedRoleBinding(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.body,  options).toPromise();
+        return this.api.deleteCollectionNamespacedRoleBinding(param.namespace, param.pretty, param._continue, param.dryRun, param.fieldSelector, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.labelSelector, param.limit, param.orphanDependents, param.propagationPolicy, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.body,  options).toPromise();
     }
 
     /**
@@ -23056,7 +24656,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public listClusterRoleWithHttpInfo(param: RbacAuthorizationV1ApiListClusterRoleRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1ClusterRoleList>> {
-        return this.api.listClusterRoleWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listClusterRoleWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -23064,7 +24664,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public listClusterRole(param: RbacAuthorizationV1ApiListClusterRoleRequest = {}, options?: ConfigurationOptions): Promise<V1ClusterRoleList> {
-        return this.api.listClusterRole(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listClusterRole(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -23072,7 +24672,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public listClusterRoleBindingWithHttpInfo(param: RbacAuthorizationV1ApiListClusterRoleBindingRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1ClusterRoleBindingList>> {
-        return this.api.listClusterRoleBindingWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listClusterRoleBindingWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -23080,7 +24680,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public listClusterRoleBinding(param: RbacAuthorizationV1ApiListClusterRoleBindingRequest = {}, options?: ConfigurationOptions): Promise<V1ClusterRoleBindingList> {
-        return this.api.listClusterRoleBinding(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listClusterRoleBinding(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -23088,7 +24688,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public listNamespacedRoleWithHttpInfo(param: RbacAuthorizationV1ApiListNamespacedRoleRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1RoleList>> {
-        return this.api.listNamespacedRoleWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedRoleWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -23096,7 +24696,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public listNamespacedRole(param: RbacAuthorizationV1ApiListNamespacedRoleRequest, options?: ConfigurationOptions): Promise<V1RoleList> {
-        return this.api.listNamespacedRole(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedRole(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -23104,7 +24704,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public listNamespacedRoleBindingWithHttpInfo(param: RbacAuthorizationV1ApiListNamespacedRoleBindingRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1RoleBindingList>> {
-        return this.api.listNamespacedRoleBindingWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedRoleBindingWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -23112,7 +24712,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public listNamespacedRoleBinding(param: RbacAuthorizationV1ApiListNamespacedRoleBindingRequest, options?: ConfigurationOptions): Promise<V1RoleBindingList> {
-        return this.api.listNamespacedRoleBinding(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedRoleBinding(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -23120,7 +24720,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public listRoleBindingForAllNamespacesWithHttpInfo(param: RbacAuthorizationV1ApiListRoleBindingForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1RoleBindingList>> {
-        return this.api.listRoleBindingForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listRoleBindingForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -23128,7 +24728,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public listRoleBindingForAllNamespaces(param: RbacAuthorizationV1ApiListRoleBindingForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<V1RoleBindingList> {
-        return this.api.listRoleBindingForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listRoleBindingForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -23136,7 +24736,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public listRoleForAllNamespacesWithHttpInfo(param: RbacAuthorizationV1ApiListRoleForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1RoleList>> {
-        return this.api.listRoleForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listRoleForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -23144,7 +24744,7 @@ export class ObjectRbacAuthorizationV1Api {
      * @param param the request object
      */
     public listRoleForAllNamespaces(param: RbacAuthorizationV1ApiListRoleForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<V1RoleList> {
-        return this.api.listRoleForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listRoleForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -23344,6 +24944,43 @@ export class ObjectRbacAuthorizationV1Api {
 import { ObservableRddRancherdesktopIoV1alpha1Api } from "./ObservableAPI";
 import { RddRancherdesktopIoV1alpha1ApiRequestFactory, RddRancherdesktopIoV1alpha1ApiResponseProcessor} from "../apis/RddRancherdesktopIoV1alpha1Api";
 
+export interface RddRancherdesktopIoV1alpha1ApiCreateHostInfoRequest {
+    /**
+     * 
+     * @type IoRancherdesktopRddV1alpha1HostInfo
+     * @memberof RddRancherdesktopIoV1alpha1ApicreateHostInfo
+     */
+    body: IoRancherdesktopRddV1alpha1HostInfo
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApicreateHostInfo
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApicreateHostInfo
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApicreateHostInfo
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApicreateHostInfo
+     */
+    fieldValidation?: string
+}
+
 export interface RddRancherdesktopIoV1alpha1ApiCreateNamespacedConfigMapReplicaSetRequest {
     /**
      * object name and auth scope, such as for teams and projects
@@ -23432,6 +25069,79 @@ export interface RddRancherdesktopIoV1alpha1ApiCreateNamespacedNotaryRequest {
     fieldValidation?: string
 }
 
+export interface RddRancherdesktopIoV1alpha1ApiDeleteCollectionHostInfoRequest {
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteCollectionHostInfo
+     */
+    pretty?: string
+    /**
+     * The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteCollectionHostInfo
+     */
+    _continue?: string
+    /**
+     * A selector to restrict the list of returned objects by their fields. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteCollectionHostInfo
+     */
+    fieldSelector?: string
+    /**
+     * A selector to restrict the list of returned objects by their labels. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteCollectionHostInfo
+     */
+    labelSelector?: string
+    /**
+     * limit is a maximum number of responses to return for a list call. If more items exist, the server will set the &#x60;continue&#x60; field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+     * Defaults to: undefined
+     * @type number
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteCollectionHostInfo
+     */
+    limit?: number
+    /**
+     * resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteCollectionHostInfo
+     */
+    resourceVersion?: string
+    /**
+     * resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteCollectionHostInfo
+     */
+    resourceVersionMatch?: string
+    /**
+     * &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteCollectionHostInfo
+     */
+    sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteCollectionHostInfo
+     */
+    shardSelector?: string
+    /**
+     * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+     * Defaults to: undefined
+     * @type number
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteCollectionHostInfo
+     */
+    timeoutSeconds?: number
+}
+
 export interface RddRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedConfigMapReplicaSetRequest {
     /**
      * object name and auth scope, such as for teams and projects
@@ -23496,6 +25206,13 @@ export interface RddRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedConfigM
      * @memberof RddRancherdesktopIoV1alpha1ApideleteCollectionNamespacedConfigMapReplicaSet
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteCollectionNamespacedConfigMapReplicaSet
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -23570,12 +25287,77 @@ export interface RddRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedNotaryR
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteCollectionNamespacedNotary
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
      * @memberof RddRancherdesktopIoV1alpha1ApideleteCollectionNamespacedNotary
      */
     timeoutSeconds?: number
+}
+
+export interface RddRancherdesktopIoV1alpha1ApiDeleteHostInfoRequest {
+    /**
+     * name of the HostInfo
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteHostInfo
+     */
+    name: string
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteHostInfo
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteHostInfo
+     */
+    dryRun?: string
+    /**
+     * The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.
+     * Defaults to: undefined
+     * @type number
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteHostInfo
+     */
+    gracePeriodSeconds?: number
+    /**
+     * if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteHostInfo
+     */
+    ignoreStoreReadErrorWithClusterBreakingPotential?: boolean
+    /**
+     * Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \&quot;orphan\&quot; finalizer will be added to/removed from the object\&#39;s finalizers list. Either this field or PropagationPolicy may be set, but not both.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteHostInfo
+     */
+    orphanDependents?: boolean
+    /**
+     * Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: \&#39;Orphan\&#39; - orphan the dependents; \&#39;Background\&#39; - allow the garbage collector to delete the dependents in the background; \&#39;Foreground\&#39; - a cascading policy that deletes all dependents in the foreground.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteHostInfo
+     */
+    propagationPolicy?: string
+    /**
+     * 
+     * @type V1DeleteOptions
+     * @memberof RddRancherdesktopIoV1alpha1ApideleteHostInfo
+     */
+    body?: V1DeleteOptions
 }
 
 export interface RddRancherdesktopIoV1alpha1ApiDeleteNamespacedConfigMapReplicaSetRequest {
@@ -23773,6 +25555,13 @@ export interface RddRancherdesktopIoV1alpha1ApiListConfigMapReplicaSetForAllName
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApilistConfigMapReplicaSetForAllNamespaces
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -23784,6 +25573,93 @@ export interface RddRancherdesktopIoV1alpha1ApiListConfigMapReplicaSetForAllName
      * Defaults to: undefined
      * @type boolean
      * @memberof RddRancherdesktopIoV1alpha1ApilistConfigMapReplicaSetForAllNamespaces
+     */
+    watch?: boolean
+}
+
+export interface RddRancherdesktopIoV1alpha1ApiListHostInfoRequest {
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApilistHostInfo
+     */
+    pretty?: string
+    /**
+     * allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server\&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof RddRancherdesktopIoV1alpha1ApilistHostInfo
+     */
+    allowWatchBookmarks?: boolean
+    /**
+     * The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApilistHostInfo
+     */
+    _continue?: string
+    /**
+     * A selector to restrict the list of returned objects by their fields. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApilistHostInfo
+     */
+    fieldSelector?: string
+    /**
+     * A selector to restrict the list of returned objects by their labels. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApilistHostInfo
+     */
+    labelSelector?: string
+    /**
+     * limit is a maximum number of responses to return for a list call. If more items exist, the server will set the &#x60;continue&#x60; field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+     * Defaults to: undefined
+     * @type number
+     * @memberof RddRancherdesktopIoV1alpha1ApilistHostInfo
+     */
+    limit?: number
+    /**
+     * resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApilistHostInfo
+     */
+    resourceVersion?: string
+    /**
+     * resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApilistHostInfo
+     */
+    resourceVersionMatch?: string
+    /**
+     * &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof RddRancherdesktopIoV1alpha1ApilistHostInfo
+     */
+    sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApilistHostInfo
+     */
+    shardSelector?: string
+    /**
+     * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+     * Defaults to: undefined
+     * @type number
+     * @memberof RddRancherdesktopIoV1alpha1ApilistHostInfo
+     */
+    timeoutSeconds?: number
+    /**
+     * Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof RddRancherdesktopIoV1alpha1ApilistHostInfo
      */
     watch?: boolean
 }
@@ -23859,6 +25735,13 @@ export interface RddRancherdesktopIoV1alpha1ApiListNamespacedConfigMapReplicaSet
      * @memberof RddRancherdesktopIoV1alpha1ApilistNamespacedConfigMapReplicaSet
      */
     sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApilistNamespacedConfigMapReplicaSet
+     */
+    shardSelector?: string
     /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
@@ -23947,6 +25830,13 @@ export interface RddRancherdesktopIoV1alpha1ApiListNamespacedNotaryRequest {
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApilistNamespacedNotary
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -24027,6 +25917,13 @@ export interface RddRancherdesktopIoV1alpha1ApiListNotaryForAllNamespacesRequest
      */
     sendInitialEvents?: boolean
     /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApilistNotaryForAllNamespaces
+     */
+    shardSelector?: string
+    /**
      * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * Defaults to: undefined
      * @type number
@@ -24040,6 +25937,108 @@ export interface RddRancherdesktopIoV1alpha1ApiListNotaryForAllNamespacesRequest
      * @memberof RddRancherdesktopIoV1alpha1ApilistNotaryForAllNamespaces
      */
     watch?: boolean
+}
+
+export interface RddRancherdesktopIoV1alpha1ApiPatchHostInfoRequest {
+    /**
+     * name of the HostInfo
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApipatchHostInfo
+     */
+    name: string
+    /**
+     * 
+     * @type any
+     * @memberof RddRancherdesktopIoV1alpha1ApipatchHostInfo
+     */
+    body: any
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApipatchHostInfo
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApipatchHostInfo
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint. This field is required for apply requests (application/apply-patch) but optional for non-apply patch types (JsonPatch, MergePatch, StrategicMergePatch).
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApipatchHostInfo
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApipatchHostInfo
+     */
+    fieldValidation?: string
+    /**
+     * Force is going to \&quot;force\&quot; Apply requests. It means user will re-acquire conflicting fields owned by other people. Force flag must be unset for non-apply patch requests.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof RddRancherdesktopIoV1alpha1ApipatchHostInfo
+     */
+    force?: boolean
+}
+
+export interface RddRancherdesktopIoV1alpha1ApiPatchHostInfoStatusRequest {
+    /**
+     * name of the HostInfo
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApipatchHostInfoStatus
+     */
+    name: string
+    /**
+     * 
+     * @type any
+     * @memberof RddRancherdesktopIoV1alpha1ApipatchHostInfoStatus
+     */
+    body: any
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApipatchHostInfoStatus
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApipatchHostInfoStatus
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint. This field is required for apply requests (application/apply-patch) but optional for non-apply patch types (JsonPatch, MergePatch, StrategicMergePatch).
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApipatchHostInfoStatus
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApipatchHostInfoStatus
+     */
+    fieldValidation?: string
+    /**
+     * Force is going to \&quot;force\&quot; Apply requests. It means user will re-acquire conflicting fields owned by other people. Force flag must be unset for non-apply patch requests.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof RddRancherdesktopIoV1alpha1ApipatchHostInfoStatus
+     */
+    force?: boolean
 }
 
 export interface RddRancherdesktopIoV1alpha1ApiPatchNamespacedConfigMapReplicaSetRequest {
@@ -24274,6 +26273,54 @@ export interface RddRancherdesktopIoV1alpha1ApiPatchNamespacedNotaryStatusReques
     force?: boolean
 }
 
+export interface RddRancherdesktopIoV1alpha1ApiReadHostInfoRequest {
+    /**
+     * name of the HostInfo
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireadHostInfo
+     */
+    name: string
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireadHostInfo
+     */
+    pretty?: string
+    /**
+     * resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireadHostInfo
+     */
+    resourceVersion?: string
+}
+
+export interface RddRancherdesktopIoV1alpha1ApiReadHostInfoStatusRequest {
+    /**
+     * name of the HostInfo
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireadHostInfoStatus
+     */
+    name: string
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireadHostInfoStatus
+     */
+    pretty?: string
+    /**
+     * resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireadHostInfoStatus
+     */
+    resourceVersion?: string
+}
+
 export interface RddRancherdesktopIoV1alpha1ApiReadNamespacedConfigMapReplicaSetRequest {
     /**
      * name of the ConfigMapReplicaSet
@@ -24396,6 +26443,94 @@ export interface RddRancherdesktopIoV1alpha1ApiReadNamespacedNotaryStatusRequest
      * @memberof RddRancherdesktopIoV1alpha1ApireadNamespacedNotaryStatus
      */
     resourceVersion?: string
+}
+
+export interface RddRancherdesktopIoV1alpha1ApiReplaceHostInfoRequest {
+    /**
+     * name of the HostInfo
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireplaceHostInfo
+     */
+    name: string
+    /**
+     * 
+     * @type IoRancherdesktopRddV1alpha1HostInfo
+     * @memberof RddRancherdesktopIoV1alpha1ApireplaceHostInfo
+     */
+    body: IoRancherdesktopRddV1alpha1HostInfo
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireplaceHostInfo
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireplaceHostInfo
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireplaceHostInfo
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireplaceHostInfo
+     */
+    fieldValidation?: string
+}
+
+export interface RddRancherdesktopIoV1alpha1ApiReplaceHostInfoStatusRequest {
+    /**
+     * name of the HostInfo
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireplaceHostInfoStatus
+     */
+    name: string
+    /**
+     * 
+     * @type IoRancherdesktopRddV1alpha1HostInfo
+     * @memberof RddRancherdesktopIoV1alpha1ApireplaceHostInfoStatus
+     */
+    body: IoRancherdesktopRddV1alpha1HostInfo
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireplaceHostInfoStatus
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireplaceHostInfoStatus
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireplaceHostInfoStatus
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof RddRancherdesktopIoV1alpha1ApireplaceHostInfoStatus
+     */
+    fieldValidation?: string
 }
 
 export interface RddRancherdesktopIoV1alpha1ApiReplaceNamespacedConfigMapReplicaSetRequest {
@@ -24610,6 +26745,22 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
     }
 
     /**
+     * create a HostInfo
+     * @param param the request object
+     */
+    public createHostInfoWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiCreateHostInfoRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopRddV1alpha1HostInfo>> {
+        return this.api.createHostInfoWithHttpInfo(param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * create a HostInfo
+     * @param param the request object
+     */
+    public createHostInfo(param: RddRancherdesktopIoV1alpha1ApiCreateHostInfoRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopRddV1alpha1HostInfo> {
+        return this.api.createHostInfo(param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
      * create a ConfigMapReplicaSet
      * @param param the request object
      */
@@ -24642,11 +26793,27 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
     }
 
     /**
+     * delete collection of HostInfo
+     * @param param the request object
+     */
+    public deleteCollectionHostInfoWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiDeleteCollectionHostInfoRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
+        return this.api.deleteCollectionHostInfoWithHttpInfo(param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
+    }
+
+    /**
+     * delete collection of HostInfo
+     * @param param the request object
+     */
+    public deleteCollectionHostInfo(param: RddRancherdesktopIoV1alpha1ApiDeleteCollectionHostInfoRequest = {}, options?: ConfigurationOptions): Promise<V1Status> {
+        return this.api.deleteCollectionHostInfo(param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
+    }
+
+    /**
      * delete collection of ConfigMapReplicaSet
      * @param param the request object
      */
     public deleteCollectionNamespacedConfigMapReplicaSetWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedConfigMapReplicaSetRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedConfigMapReplicaSetWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedConfigMapReplicaSetWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -24654,7 +26821,7 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedConfigMapReplicaSet(param: RddRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedConfigMapReplicaSetRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedConfigMapReplicaSet(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedConfigMapReplicaSet(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -24662,7 +26829,7 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedNotaryWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedNotaryRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
-        return this.api.deleteCollectionNamespacedNotaryWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedNotaryWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
     }
 
     /**
@@ -24670,7 +26837,23 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public deleteCollectionNamespacedNotary(param: RddRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedNotaryRequest, options?: ConfigurationOptions): Promise<V1Status> {
-        return this.api.deleteCollectionNamespacedNotary(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds,  options).toPromise();
+        return this.api.deleteCollectionNamespacedNotary(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
+    }
+
+    /**
+     * delete a HostInfo
+     * @param param the request object
+     */
+    public deleteHostInfoWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiDeleteHostInfoRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
+        return this.api.deleteHostInfoWithHttpInfo(param.name, param.pretty, param.dryRun, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.orphanDependents, param.propagationPolicy, param.body,  options).toPromise();
+    }
+
+    /**
+     * delete a HostInfo
+     * @param param the request object
+     */
+    public deleteHostInfo(param: RddRancherdesktopIoV1alpha1ApiDeleteHostInfoRequest, options?: ConfigurationOptions): Promise<V1Status> {
+        return this.api.deleteHostInfo(param.name, param.pretty, param.dryRun, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.orphanDependents, param.propagationPolicy, param.body,  options).toPromise();
     }
 
     /**
@@ -24710,7 +26893,7 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listConfigMapReplicaSetForAllNamespacesWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiListConfigMapReplicaSetForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopRddV1alpha1ConfigMapReplicaSetList>> {
-        return this.api.listConfigMapReplicaSetForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listConfigMapReplicaSetForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -24718,7 +26901,23 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listConfigMapReplicaSetForAllNamespaces(param: RddRancherdesktopIoV1alpha1ApiListConfigMapReplicaSetForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopRddV1alpha1ConfigMapReplicaSetList> {
-        return this.api.listConfigMapReplicaSetForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listConfigMapReplicaSetForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
+    }
+
+    /**
+     * list objects of kind HostInfo
+     * @param param the request object
+     */
+    public listHostInfoWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiListHostInfoRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopRddV1alpha1HostInfoList>> {
+        return this.api.listHostInfoWithHttpInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
+    }
+
+    /**
+     * list objects of kind HostInfo
+     * @param param the request object
+     */
+    public listHostInfo(param: RddRancherdesktopIoV1alpha1ApiListHostInfoRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopRddV1alpha1HostInfoList> {
+        return this.api.listHostInfo(param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -24726,7 +26925,7 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedConfigMapReplicaSetWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiListNamespacedConfigMapReplicaSetRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopRddV1alpha1ConfigMapReplicaSetList>> {
-        return this.api.listNamespacedConfigMapReplicaSetWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedConfigMapReplicaSetWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -24734,7 +26933,7 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedConfigMapReplicaSet(param: RddRancherdesktopIoV1alpha1ApiListNamespacedConfigMapReplicaSetRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopRddV1alpha1ConfigMapReplicaSetList> {
-        return this.api.listNamespacedConfigMapReplicaSet(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedConfigMapReplicaSet(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -24742,7 +26941,7 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedNotaryWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiListNamespacedNotaryRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopRddV1alpha1NotaryList>> {
-        return this.api.listNamespacedNotaryWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedNotaryWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -24750,7 +26949,7 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNamespacedNotary(param: RddRancherdesktopIoV1alpha1ApiListNamespacedNotaryRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopRddV1alpha1NotaryList> {
-        return this.api.listNamespacedNotary(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNamespacedNotary(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -24758,7 +26957,7 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNotaryForAllNamespacesWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiListNotaryForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopRddV1alpha1NotaryList>> {
-        return this.api.listNotaryForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNotaryForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
     }
 
     /**
@@ -24766,7 +26965,39 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
      * @param param the request object
      */
     public listNotaryForAllNamespaces(param: RddRancherdesktopIoV1alpha1ApiListNotaryForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopRddV1alpha1NotaryList> {
-        return this.api.listNotaryForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.timeoutSeconds, param.watch,  options).toPromise();
+        return this.api.listNotaryForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
+    }
+
+    /**
+     * partially update the specified HostInfo
+     * @param param the request object
+     */
+    public patchHostInfoWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiPatchHostInfoRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopRddV1alpha1HostInfo>> {
+        return this.api.patchHostInfoWithHttpInfo(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation, param.force,  options).toPromise();
+    }
+
+    /**
+     * partially update the specified HostInfo
+     * @param param the request object
+     */
+    public patchHostInfo(param: RddRancherdesktopIoV1alpha1ApiPatchHostInfoRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopRddV1alpha1HostInfo> {
+        return this.api.patchHostInfo(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation, param.force,  options).toPromise();
+    }
+
+    /**
+     * partially update status of the specified HostInfo
+     * @param param the request object
+     */
+    public patchHostInfoStatusWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiPatchHostInfoStatusRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopRddV1alpha1HostInfo>> {
+        return this.api.patchHostInfoStatusWithHttpInfo(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation, param.force,  options).toPromise();
+    }
+
+    /**
+     * partially update status of the specified HostInfo
+     * @param param the request object
+     */
+    public patchHostInfoStatus(param: RddRancherdesktopIoV1alpha1ApiPatchHostInfoStatusRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopRddV1alpha1HostInfo> {
+        return this.api.patchHostInfoStatus(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation, param.force,  options).toPromise();
     }
 
     /**
@@ -24834,6 +27065,38 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
     }
 
     /**
+     * read the specified HostInfo
+     * @param param the request object
+     */
+    public readHostInfoWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiReadHostInfoRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopRddV1alpha1HostInfo>> {
+        return this.api.readHostInfoWithHttpInfo(param.name, param.pretty, param.resourceVersion,  options).toPromise();
+    }
+
+    /**
+     * read the specified HostInfo
+     * @param param the request object
+     */
+    public readHostInfo(param: RddRancherdesktopIoV1alpha1ApiReadHostInfoRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopRddV1alpha1HostInfo> {
+        return this.api.readHostInfo(param.name, param.pretty, param.resourceVersion,  options).toPromise();
+    }
+
+    /**
+     * read status of the specified HostInfo
+     * @param param the request object
+     */
+    public readHostInfoStatusWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiReadHostInfoStatusRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopRddV1alpha1HostInfo>> {
+        return this.api.readHostInfoStatusWithHttpInfo(param.name, param.pretty, param.resourceVersion,  options).toPromise();
+    }
+
+    /**
+     * read status of the specified HostInfo
+     * @param param the request object
+     */
+    public readHostInfoStatus(param: RddRancherdesktopIoV1alpha1ApiReadHostInfoStatusRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopRddV1alpha1HostInfo> {
+        return this.api.readHostInfoStatus(param.name, param.pretty, param.resourceVersion,  options).toPromise();
+    }
+
+    /**
      * read the specified ConfigMapReplicaSet
      * @param param the request object
      */
@@ -24895,6 +27158,38 @@ export class ObjectRddRancherdesktopIoV1alpha1Api {
      */
     public readNamespacedNotaryStatus(param: RddRancherdesktopIoV1alpha1ApiReadNamespacedNotaryStatusRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopRddV1alpha1Notary> {
         return this.api.readNamespacedNotaryStatus(param.name, param.namespace, param.pretty, param.resourceVersion,  options).toPromise();
+    }
+
+    /**
+     * replace the specified HostInfo
+     * @param param the request object
+     */
+    public replaceHostInfoWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiReplaceHostInfoRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopRddV1alpha1HostInfo>> {
+        return this.api.replaceHostInfoWithHttpInfo(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * replace the specified HostInfo
+     * @param param the request object
+     */
+    public replaceHostInfo(param: RddRancherdesktopIoV1alpha1ApiReplaceHostInfoRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopRddV1alpha1HostInfo> {
+        return this.api.replaceHostInfo(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * replace status of the specified HostInfo
+     * @param param the request object
+     */
+    public replaceHostInfoStatusWithHttpInfo(param: RddRancherdesktopIoV1alpha1ApiReplaceHostInfoStatusRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopRddV1alpha1HostInfo>> {
+        return this.api.replaceHostInfoStatusWithHttpInfo(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * replace status of the specified HostInfo
+     * @param param the request object
+     */
+    public replaceHostInfoStatus(param: RddRancherdesktopIoV1alpha1ApiReplaceHostInfoStatusRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopRddV1alpha1HostInfo> {
+        return this.api.replaceHostInfoStatus(param.name, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
     }
 
     /**

@@ -77,6 +77,7 @@ models/IoRancherdesktopAppV1alpha1AppList.ts
 models/IoRancherdesktopAppV1alpha1AppSpec.ts
 models/IoRancherdesktopAppV1alpha1AppSpecContainerEngine.ts
 models/IoRancherdesktopAppV1alpha1AppSpecKubernetes.ts
+models/IoRancherdesktopAppV1alpha1AppSpecVirtualMachine.ts
 models/IoRancherdesktopAppV1alpha1AppStatus.ts
 models/IoRancherdesktopAppV1alpha1AppStatusConditionsInner.ts
 models/IoRancherdesktopAppV1alpha1Demo.ts
@@ -126,6 +127,9 @@ models/IoRancherdesktopRddV1alpha1ConfigMapReplicaSet.ts
 models/IoRancherdesktopRddV1alpha1ConfigMapReplicaSetList.ts
 models/IoRancherdesktopRddV1alpha1ConfigMapReplicaSetSpec.ts
 models/IoRancherdesktopRddV1alpha1ConfigMapReplicaSetStatus.ts
+models/IoRancherdesktopRddV1alpha1HostInfo.ts
+models/IoRancherdesktopRddV1alpha1HostInfoList.ts
+models/IoRancherdesktopRddV1alpha1HostInfoStatus.ts
 models/IoRancherdesktopRddV1alpha1Notary.ts
 models/IoRancherdesktopRddV1alpha1NotaryList.ts
 models/IoRancherdesktopRddV1alpha1NotarySpec.ts
@@ -142,6 +146,7 @@ models/V1APIServiceSpec.ts
 models/V1APIServiceStatus.ts
 models/V1APIVersions.ts
 models/V1AggregationRule.ts
+models/V1ApplyConfiguration.ts
 models/V1AuditAnnotation.ts
 models/V1BoundObjectReference.ts
 models/V1ClusterRole.ts
@@ -170,6 +175,7 @@ models/V1ExternalDocumentation.ts
 models/V1FieldSelectorAttributes.ts
 models/V1FieldSelectorRequirement.ts
 models/V1GroupVersionForDiscovery.ts
+models/V1JSONPatch.ts
 models/V1JSONSchemaProps.ts
 models/V1LabelSelector.ts
 models/V1LabelSelectorAttributes.ts
@@ -183,9 +189,16 @@ models/V1LocalSubjectAccessReview.ts
 models/V1ManagedFieldsEntry.ts
 models/V1MatchCondition.ts
 models/V1MatchResources.ts
+models/V1MutatingAdmissionPolicy.ts
+models/V1MutatingAdmissionPolicyBinding.ts
+models/V1MutatingAdmissionPolicyBindingList.ts
+models/V1MutatingAdmissionPolicyBindingSpec.ts
+models/V1MutatingAdmissionPolicyList.ts
+models/V1MutatingAdmissionPolicySpec.ts
 models/V1MutatingWebhook.ts
 models/V1MutatingWebhookConfiguration.ts
 models/V1MutatingWebhookConfigurationList.ts
+models/V1Mutation.ts
 models/V1NamedRuleWithOperations.ts
 models/V1Namespace.ts
 models/V1NamespaceCondition.ts
@@ -225,6 +238,7 @@ models/V1SelfSubjectRulesReviewSpec.ts
 models/V1ServerAddressByClientCIDR.ts
 models/V1ServiceAccount.ts
 models/V1ServiceAccountList.ts
+models/V1ShardInfo.ts
 models/V1Status.ts
 models/V1StatusCause.ts
 models/V1StatusDetails.ts

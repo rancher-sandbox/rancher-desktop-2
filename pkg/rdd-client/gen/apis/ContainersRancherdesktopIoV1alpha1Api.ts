@@ -810,15 +810,17 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      */
-    public async deleteCollectionNamespacedContainer(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
+    public async deleteCollectionNamespacedContainer(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "deleteCollectionNamespacedContainer", "namespace");
         }
+
 
 
 
@@ -879,6 +881,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -910,15 +917,17 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      */
-    public async deleteCollectionNamespacedContainerCreateRequest(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
+    public async deleteCollectionNamespacedContainerCreateRequest(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "deleteCollectionNamespacedContainerCreateRequest", "namespace");
         }
+
 
 
 
@@ -979,6 +988,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -1010,15 +1024,17 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      */
-    public async deleteCollectionNamespacedContainerNamespace(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
+    public async deleteCollectionNamespacedContainerNamespace(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "deleteCollectionNamespacedContainerNamespace", "namespace");
         }
+
 
 
 
@@ -1079,6 +1095,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -1110,15 +1131,17 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      */
-    public async deleteCollectionNamespacedImage(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
+    public async deleteCollectionNamespacedImage(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "deleteCollectionNamespacedImage", "namespace");
         }
+
 
 
 
@@ -1179,6 +1202,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -1210,15 +1238,17 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      */
-    public async deleteCollectionNamespacedImagePullRequest(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
+    public async deleteCollectionNamespacedImagePullRequest(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "deleteCollectionNamespacedImagePullRequest", "namespace");
         }
+
 
 
 
@@ -1279,6 +1309,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -1310,15 +1345,17 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      */
-    public async deleteCollectionNamespacedImagePushRequest(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
+    public async deleteCollectionNamespacedImagePushRequest(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "deleteCollectionNamespacedImagePushRequest", "namespace");
         }
+
 
 
 
@@ -1379,6 +1416,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -1410,15 +1452,17 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      */
-    public async deleteCollectionNamespacedImageScanRequest(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
+    public async deleteCollectionNamespacedImageScanRequest(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "deleteCollectionNamespacedImageScanRequest", "namespace");
         }
+
 
 
 
@@ -1479,6 +1523,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -1510,15 +1559,17 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      */
-    public async deleteCollectionNamespacedVolume(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
+    public async deleteCollectionNamespacedVolume(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "deleteCollectionNamespacedVolume", "namespace");
         }
+
 
 
 
@@ -1579,6 +1630,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -1610,15 +1666,17 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      */
-    public async deleteCollectionNamespacedVolumeCreateRequest(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
+    public async deleteCollectionNamespacedVolumeCreateRequest(namespace: string, pretty?: string, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "deleteCollectionNamespacedVolumeCreateRequest", "namespace");
         }
+
 
 
 
@@ -1676,6 +1734,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         // Query Params
         if (sendInitialEvents !== undefined) {
             requestContext.setQueryParam("sendInitialEvents", ObjectSerializer.serialize(sendInitialEvents, "boolean", ""));
+        }
+
+        // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
         }
 
         // Query Params
@@ -2628,11 +2691,13 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listContainerCreateRequestForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listContainerCreateRequestForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
+
 
 
 
@@ -2698,6 +2763,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -2734,11 +2804,13 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listContainerForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listContainerForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
+
 
 
 
@@ -2804,6 +2876,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -2840,11 +2917,13 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listContainerNamespaceForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listContainerNamespaceForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
+
 
 
 
@@ -2910,6 +2989,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -2946,11 +3030,13 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listImageForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listImageForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
+
 
 
 
@@ -3016,6 +3102,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -3052,11 +3143,13 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listImagePullRequestForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listImagePullRequestForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
+
 
 
 
@@ -3122,6 +3215,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -3158,11 +3256,13 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listImagePushRequestForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listImagePushRequestForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
+
 
 
 
@@ -3228,6 +3328,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -3264,11 +3369,13 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listImageScanRequestForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listImageScanRequestForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
+
 
 
 
@@ -3334,6 +3441,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -3371,16 +3483,18 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listNamespacedContainer(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listNamespacedContainer(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "listNamespacedContainer", "namespace");
         }
+
 
 
 
@@ -3448,6 +3562,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -3485,16 +3604,18 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listNamespacedContainerCreateRequest(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listNamespacedContainerCreateRequest(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "listNamespacedContainerCreateRequest", "namespace");
         }
+
 
 
 
@@ -3562,6 +3683,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -3599,16 +3725,18 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listNamespacedContainerNamespace(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listNamespacedContainerNamespace(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "listNamespacedContainerNamespace", "namespace");
         }
+
 
 
 
@@ -3676,6 +3804,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -3713,16 +3846,18 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listNamespacedImage(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listNamespacedImage(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "listNamespacedImage", "namespace");
         }
+
 
 
 
@@ -3790,6 +3925,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -3827,16 +3967,18 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listNamespacedImagePullRequest(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listNamespacedImagePullRequest(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "listNamespacedImagePullRequest", "namespace");
         }
+
 
 
 
@@ -3904,6 +4046,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -3941,16 +4088,18 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listNamespacedImagePushRequest(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listNamespacedImagePushRequest(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "listNamespacedImagePushRequest", "namespace");
         }
+
 
 
 
@@ -4018,6 +4167,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -4055,16 +4209,18 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listNamespacedImageScanRequest(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listNamespacedImageScanRequest(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "listNamespacedImageScanRequest", "namespace");
         }
+
 
 
 
@@ -4132,6 +4288,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -4169,16 +4330,18 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listNamespacedVolume(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listNamespacedVolume(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "listNamespacedVolume", "namespace");
         }
+
 
 
 
@@ -4246,6 +4409,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -4283,16 +4451,18 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listNamespacedVolumeCreateRequest(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listNamespacedVolumeCreateRequest(namespace: string, pretty?: string, allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'namespace' is not null or undefined
         if (namespace === null || namespace === undefined) {
             throw new RequiredError("ContainersRancherdesktopIoV1alpha1Api", "listNamespacedVolumeCreateRequest", "namespace");
         }
+
 
 
 
@@ -4360,6 +4530,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -4396,11 +4571,13 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listVolumeCreateRequestForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listVolumeCreateRequestForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
+
 
 
 
@@ -4466,6 +4643,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         }
 
         // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
+        }
+
+        // Query Params
         if (timeoutSeconds !== undefined) {
             requestContext.setQueryParam("timeoutSeconds", ObjectSerializer.serialize(timeoutSeconds, "number", ""));
         }
@@ -4502,11 +4684,13 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
      * @param resourceVersion resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param resourceVersionMatch resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
      * @param sendInitialEvents &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * @param shardSelector shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
      * @param timeoutSeconds Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
      * @param watch Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
      */
-    public async listVolumeForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
+    public async listVolumeForAllNamespaces(allowWatchBookmarks?: boolean, _continue?: string, fieldSelector?: string, labelSelector?: string, limit?: number, pretty?: string, resourceVersion?: string, resourceVersionMatch?: string, sendInitialEvents?: boolean, shardSelector?: string, timeoutSeconds?: number, watch?: boolean, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
+
 
 
 
@@ -4569,6 +4753,11 @@ export class ContainersRancherdesktopIoV1alpha1ApiRequestFactory extends BaseAPI
         // Query Params
         if (sendInitialEvents !== undefined) {
             requestContext.setQueryParam("sendInitialEvents", ObjectSerializer.serialize(sendInitialEvents, "boolean", ""));
+        }
+
+        // Query Params
+        if (shardSelector !== undefined) {
+            requestContext.setQueryParam("shardSelector", ObjectSerializer.serialize(shardSelector, "string", ""));
         }
 
         // Query Params

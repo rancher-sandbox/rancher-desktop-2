@@ -170,12 +170,30 @@ type KubernetesSpec struct {
 	Version string `json:"version,omitempty"`
 }
 
+// ApplicationSpec defines settings for the Rancher Desktop App (the Electron
+// frontend).  RDD generally does not do anything with these.
+type ApplicationSpec struct {
+	// updates specifies application update settings.
+	// +optional
+	// +kubebuilder:default={enabled:true}
+	Updates ApplicationUpdatesSpec `json:"updates,omitempty"`
+}
+
+// ApplicationUpdatesSpec defines settings for the Rancher Desktop App's update
+// mechanism.  RDD generally does not do anything with these.
+type ApplicationUpdatesSpec struct {
+	// enabled specifies whether the application should check for updates.
+	// +optional
+	// +kubebuilder:default=true
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
 // AppSpec defines the desired state of App.
 type AppSpec struct {
 	// running specifies whether the VM should be running.
 	Running bool `json:"running"`
-	// Namespace is the namespace where this cluster-scoped App resource
-	// creates and manages its owned namespaced resources (e.g., rancher-desktop).
+	// namespace where this cluster-scoped App resource creates and manages its
+	// owned namespaced resources (e.g., rancher-desktop).
 	// Defaults to "default" if not specified.
 	// This field is immutable after creation: changing it would orphan existing
 	// owned resources (LimaVM, ConfigMaps) in the original namespace.
@@ -193,6 +211,10 @@ type AppSpec struct {
 	// virtualMachine specifies the VM resource allocation (CPUs and memory).
 	// +optional
 	VirtualMachine VirtualMachineSpec `json:"virtualMachine,omitempty"`
+	// application specifies the settings for the Rancher Desktop Electron frontend.
+	// +optional
+	// +kubebuilder:default={updates:{enabled:true}}
+	Application ApplicationSpec `json:"application,omitempty"`
 }
 
 // AppStatus defines the observed state of App.

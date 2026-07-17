@@ -43,6 +43,9 @@ async function run() {
   const templateDir = path.join(clientDir, 'templates');
   const rddPath = await which('rdd');
 
+  // Use a custom RDD instance to avoid interfering with the user's RDD instance.
+  process.env.RDD_INSTANCE = 'rdd-client-gen';
+
   // Fetch the OpenAPI definition.  This requires RDD to be started.
   console.log(`Fetching OpenAPI definition from ${ rddPath }...`);
   const port = await new Promise<number>(resolve => {
@@ -94,7 +97,7 @@ async function run() {
       proxy.kill();
     }
 
-    await execFile(rddPath, ['set', 'running=true']);
+    await execFile(rddPath, ['set', 'running=true', 'containerEngine.name=moby']);
 
     // Determine the hash of this file, used as the tag for the images.
     const tagHash = crypto.createHash('sha256');
@@ -106,7 +109,7 @@ async function run() {
 
     // Build the docker image if needed.
     async function hasImage(imageName: string): Promise<boolean> {
-      const { stdout } = await execFile('docker', ['images', '--quiet', imageName]);
+      const { stdout } = await execFile('rdd', ['run', 'docker', 'images', '--quiet', imageName]);
 
       return !!stdout.trim();
     }
@@ -129,21 +132,15 @@ async function run() {
       }
       dockerFile.push(null);
 
-      await spawnFile('docker', [
-        'build',
-        '-',
-        '-t', pythonImageName,
-      ], { stdio: [dockerFile, 'inherit', 'inherit'] });
+      await spawnFile('rdd', ['run', 'docker', 'build', '-', '-t', pythonImageName],
+        { stdio: [dockerFile, 'inherit', 'inherit'] });
     }
 
     // Generate the models
     console.log('Generating models...');
-    await spawnFile('docker', [
-      'run',
-      '--rm',
-      `--user=${ process.getuid?.() ?? 0 }`,
-      `--volume=${ outDir }:/out:rw`,
-      pythonImageName,
+    await spawnFile('rdd', [
+      'run', 'docker',
+      'run', '--rm', `--user=${ process.getuid?.() ?? 0 }`, `--volume=${ outDir }:/out:rw`, pythonImageName,
     ], { stdio: 'inherit' });
     await spawnFile('docker', [
       'run',
@@ -174,6 +171,7 @@ async function run() {
 
     console.log('Done.');
   } finally {
+    // We do not delete the instance, so that we can reuse the image.
     await execFile(rddPath, ['service', 'stop']);
   }
 }

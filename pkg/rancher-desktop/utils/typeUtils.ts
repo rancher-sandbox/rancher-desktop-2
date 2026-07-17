@@ -89,6 +89,9 @@ export type RecursiveLeafKeys<T> =
 type RecursiveLeafKeysInner<T, K extends string> =
   K extends keyof T ?
     NonNullable<T[K]> extends object ?
+      // `0 extends 1 & ...` checks if `...` is `any`, avoiding `any extends ...`
+      // because `any` is special and causes both branches to be taken.
+      0 extends 1 & NonNullable<T[K]> ? never :
       `${ K }.${ RecursiveLeafKeys<T[K]> }` :
       `${ K }` :
     never;
