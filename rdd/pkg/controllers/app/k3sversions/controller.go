@@ -7,6 +7,9 @@
 package k3sversions
 
 import (
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1apply "k8s.io/client-go/applyconfigurations/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
@@ -77,6 +80,28 @@ func (c *controller) GetWebhookManagers() []base.WebhookManager {
 	return c.webhookManagers
 }
 
+// setupWebhook sets up the k3s-versions validating webhook.
+func (c *controller) setupWebhook(mgr ctrl.Manager) error {
+	validatingConfig := base.WebhookConfig[*v1.ConfigMap]{
+		Name:        k3sVersionsValidatorConfigName,
+		WebhookName: k3sVersionsValidatorWebhookName,
+		WebhookPort: c.webhookPort,
+		ObjectSelector: metav1apply.LabelSelector().
+			WithMatchLabels(controllers.DesiredLabels()),
+		Operations: []admissionregistrationv1.OperationType{
+			admissionregistrationv1.Delete,
+		},
+		Validator: &controllers.K3sVersionsValidator{},
+	}
+
+	managers, err := base.SetupWebhookForResource(mgr, &v1.ConfigMap{}, validatingConfig)
+	if err != nil {
+		return err
+	}
+	c.webhookManagers = append(c.webhookManagers, managers...)
+	return nil
+}
+
 // RegisterWithManager implements the complete controller registration for both
 // embedded and external modes.  It sets up the controller with the manager.
 func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
@@ -89,5 +114,5 @@ func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	return nil
+	return c.setupWebhook(mgr)
 }
