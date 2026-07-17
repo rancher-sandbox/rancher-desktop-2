@@ -1,38 +1,34 @@
 # k3s version controller
 
-The `K3sVersions` object is part of the `app.rancherdesktop.io` API.
+The `K3sVersions` controller in the `app.rancherdesktop.io` API group manages
+the list of valid K3s versions.  It generates a `ConfigMap` with information
+about the supported versions and channels.
 
-It maintains an up-to-date list of `k3s` versions and generates [`Resource`](api_resource.md) objects for each version.
+## `k3s-versions` `ConfigMap`
 
-## `K3sVersions`
+A `ConfigMap` named `k3s-versions` is maintained in the namespace named by the
+[`App` object](api_app.md) (in `spec.namespace`).  The `ConfigMap` has two
+pieces of data, both serialized as JSON:
 
-The `K3sVersion` object is used to tell the controller to maintain a `k3s` version list in the same namespace. There will normally just be a single instance created by the `App` singleton.
+- The `versions` key is a mapping of version (e.g. `1.32.4`) to the full k3s
+  version number (`v1.32.4+k3s1`).
+- The `channels` key is a mapping of channel name (e.g. `stable`, `1.32`) to the
+  corresponding version, as a key into `versions`; for example, `1.32.4`.
+
+The `ConfigMap` will be created as soon as the `App` object exists, and any
+changes to the two keys above will be reverted.
+
+### Example
 
 ```yaml
-apiVersion: app.rancherdesktop.io/v1alpha1
-kind: K3sVersions
+apiVersion: v1
+kind: ConfigMap
 metadata:
   name: k3s-versions
   namespace: rancher-desktop
-spec:
-  repo: k3s-io/k3s
-  channel: https://update.k3s.io/v1-release/channels
-  minVersion: 1.25.0
-status:
-  lastCheck: "2025-06-09T04:55:00Z"
-  lastStatus: 200
+data:
+  channels: '{"1.32":"1.32.13","latest":"1.35.3","stable":"1.34.6"}'
+  versions: '{"1.32.0":"v1.32.0+k3s1","1.32.1":"v1.32.1+k3s1"}'
 ```
 
-### URL monitors
-
-The controller will create two `URLMonitor` objects to watch the update channel and the GitHub releases pages. It will be notified when either one changes.
-
-When a change is detected, the `k3s` version list is constructed and a `Resource` object is created for each version that doesn't have one yet. The `latest` and `stable` state will be updated by applying labels to the `Resource` objects.
-
-### Resource objects
-
-The `Resource` objects for each `k3s` version will include the download URL, so the resource controller can fetch and cache the binary when a `Checkout` object is requesting it.
-
-## GITHUB token???
-
-XXX How are we going to deal with the need for a GitHub token? Should we just retry throttled requests?
+Please note that the example has been modified for brevity.
