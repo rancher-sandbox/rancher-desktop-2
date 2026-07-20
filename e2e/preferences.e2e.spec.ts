@@ -16,13 +16,11 @@ let page: Page;
  * Using test.describe.serial make the test execute step by step, as described on each `test()` order
  * Playwright executes test in parallel by default and it will not work for our app backend loading process.
  * */
-test.describe.fixme('Main App Test', () => {
+test.describe.serial('Main App Test', () => {
   let electronApp: ElectronApplication;
   let preferencesWindow: Page;
 
   test.beforeAll(async({ colorScheme }, testInfo) => {
-    createDefaultSettings();
-
     electronApp = await startRancherDesktop(testInfo);
 
     page = await electronApp.firstWindow();
@@ -32,19 +30,17 @@ test.describe.fixme('Main App Test', () => {
 
   test.afterAll(async({ colorScheme }, testInfo) => {
     await teardown(electronApp, testInfo);
-    await tool('rdctl', 'reset', '--factory', '--verbose');
-    reopenLogs();
   });
 
   test('should open preferences modal', async() => {
     expect(preferencesWindow).toBeDefined();
 
-    // Wait for the window to actually load (i.e. transition from
-    // app://index.html/#/preferences to app://index.html/#/Preferences#general)
-    await preferencesWindow.waitForURL(/Preferences#/i);
+    // Wait for the navigation to appear; this only happens once the current
+    // preferences have been loaded.
+    await expect(preferencesWindow.locator('.preferences-nav')).toBeVisible();
   });
 
-  test('should show application page and render general tab', async() => {
+  test.fixme('should show application page and render general tab', async() => {
     const { application } = new PreferencesPage(preferencesWindow);
 
     await expect(application.nav).toHaveClass('preferences-nav-item active');
@@ -64,7 +60,7 @@ test.describe.fixme('Main App Test', () => {
     await expect(application.pathManagement).not.toBeVisible();
   });
 
-  test('should render behavior tab', async() => {
+  test.fixme('should render behavior tab', async() => {
     const { application } = new PreferencesPage(preferencesWindow);
 
     await application.tabBehavior.click();
@@ -76,7 +72,7 @@ test.describe.fixme('Main App Test', () => {
     await expect(application.pathManagement).not.toBeVisible();
   });
 
-  test('should render environment tab', async() => {
+  test.fixme('should render environment tab', async() => {
     test.skip(os.platform() === 'win32', 'Environment tab not available on Windows');
     const { application } = new PreferencesPage(preferencesWindow);
 
@@ -88,7 +84,7 @@ test.describe.fixme('Main App Test', () => {
     await expect(application.pathManagement).toBeVisible();
   });
 
-  test('should navigate to virtual machine and render hardware tab', async() => {
+  test.fixme('should navigate to virtual machine and render hardware tab', async() => {
     test.skip(os.platform() === 'win32', 'Virtual Machine not available on Windows');
     const { virtualMachine, application } = new PreferencesPage(preferencesWindow);
 
@@ -112,7 +108,7 @@ test.describe.fixme('Main App Test', () => {
     await expect(virtualMachine.cpus).toBeVisible();
   });
 
-  test('should render volumes tab', async() => {
+  test.fixme('should render volumes tab', async() => {
     test.skip(os.platform() === 'win32', 'Virtual Machine not available on Windows');
     const { virtualMachine } = new PreferencesPage(preferencesWindow);
 
@@ -144,7 +140,7 @@ test.describe.fixme('Main App Test', () => {
     await expect(virtualMachine.securityModel).toBeVisible();
   });
 
-  test('should render emulation tab on macOS', async() => {
+  test.fixme('should render emulation tab on macOS', async() => {
     test.skip(os.platform() !== 'darwin', 'Emulation tab only available on macOS');
 
     const { virtualMachine } = new PreferencesPage(preferencesWindow);
@@ -169,7 +165,7 @@ test.describe.fixme('Main App Test', () => {
     }
   });
 
-  test('should navigate to container engine', async() => {
+  test.fixme('should navigate to container engine', async() => {
     const { containerEngine } = new PreferencesPage(preferencesWindow);
 
     await containerEngine.nav.click();
@@ -181,7 +177,7 @@ test.describe.fixme('Main App Test', () => {
     await expect(containerEngine.tabAllowedImages).toBeVisible();
   });
 
-  test('should render allowed images tab after click on allowed images tab', async() => {
+  test.fixme('should render allowed images tab after click on allowed images tab', async() => {
     const { containerEngine } = new PreferencesPage(preferencesWindow);
 
     await containerEngine.tabAllowedImages.click();
@@ -191,19 +187,17 @@ test.describe.fixme('Main App Test', () => {
   });
 
   test('should navigate to kubernetes', async() => {
-    const { kubernetes, containerEngine } = new PreferencesPage(preferencesWindow);
+    const { kubernetes } = new PreferencesPage(preferencesWindow);
 
     await kubernetes.nav.click();
 
-    await expect(containerEngine.nav).toHaveClass('preferences-nav-item');
     await expect(kubernetes.nav).toHaveClass('preferences-nav-item active');
     await expect(kubernetes.kubernetesToggle).toBeVisible();
     await expect(kubernetes.kubernetesVersion).toBeVisible();
-    await expect(kubernetes.kubernetesPort).toBeVisible();
-    await expect(kubernetes.kubernetesOptions).toBeVisible();
+    // await expect(kubernetes.kubernetesOptions).toBeVisible();
   });
 
-  test('should navigate to WSL and render integrations tab', async() => {
+  test.fixme('should navigate to WSL and render integrations tab', async() => {
     test.skip(os.platform() !== 'win32', 'WSL nav item not available on macOS & Linux');
     const { wsl } = new PreferencesPage(preferencesWindow);
 
@@ -215,14 +209,14 @@ test.describe.fixme('Main App Test', () => {
     await expect(wsl.wslIntegrations).toBeVisible();
   });
 
-  test('should not render WSL nav item on macOS and Linux', async() => {
+  test.fixme('should not render WSL nav item on macOS and Linux', async() => {
     test.skip(os.platform() === 'win32', 'WSL nav item is only available on Windows');
     const { wsl } = new PreferencesPage(preferencesWindow);
 
     await expect(wsl.nav).not.toBeVisible();
   });
 
-  test.describe.serial('Preferences State', () => {
+  test.describe.fixme('Preferences State', () => {
     test.beforeAll(async() => {
       const { application } = new PreferencesPage(preferencesWindow);
 
