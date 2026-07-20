@@ -6,6 +6,8 @@ import * as Diagnostics from '../store/diagnostics';
 import * as Extensions from '../store/extensions';
 import * as I18n from '../store/i18n';
 import * as ImageManager from '../store/imageManager';
+import * as Kubernetes from '../store/kubernetes';
+import * as Network from '../store/network';
 import * as Page from '../store/page';
 import * as Preferences from '../store/preferences';
 import * as Prefs from '../store/prefs';
@@ -23,6 +25,8 @@ const modules = {
   extensions:              Extensions,
   i18n:                    I18n,
   imageManager:            ImageManager,
+  kubernetes:              Kubernetes,
+  network:                 Network,
   page:                    Page,
   preferences:             Preferences,
   prefs:                   Prefs,
