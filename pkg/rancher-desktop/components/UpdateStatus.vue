@@ -4,10 +4,10 @@
       <version />
       <rd-checkbox
         v-if="updatePossible"
-        v-model:value="updatesEnabled"
+        :preference="preference"
+        :immediate="true"
         class="updatesEnabled"
         label="Check for updates automatically"
-        :is-locked="autoUpdateLocked"
       />
     </div>
     <card
@@ -82,135 +82,101 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import * as Components from '@rancher/components';
 import DOMPurify from 'dompurify';
+import _ from 'lodash';
 import { marked } from 'marked';
-import { defineComponent } from 'vue';
+import { computed, PropType, ref } from 'vue';
+import { useStore } from 'vuex';
 
 import Version from '@pkg/components/Version.vue';
 import RdCheckbox from '@pkg/components/form/RdCheckbox.vue';
 import { UpdateState } from '@pkg/main/update';
+import type { RecursiveLeafKeysOfType } from '@pkg/utils/typeUtils';
 
-import type { PropType } from 'vue';
+import type { IoRancherdesktopAppV1alpha1AppSpec as AppSpec } from '@rdd-client';
 
 const { Card } = (Components as any).default ?? Components;
 
-export default defineComponent({
-  name:       'update-status',
-  components: {
-    Version, Card, RdCheckbox,
+defineOptions({
+  name: 'update-status',
+});
+
+const emit = defineEmits<{
+  apply: [],
+}>();
+
+const { preference, updateState, locale } = defineProps({
+  preference: {
+    type:     String as PropType<RecursiveLeafKeysOfType<AppSpec, boolean | undefined>>,
+    required: true,
   },
-
-  props: {
-    enabled: {
-      type:    Boolean,
-      default: false,
-    },
-    updateState: {
-      type:    Object as PropType<UpdateState | null>,
-      default: null,
-    },
-    locale: {
-      type:    String,
-      default: undefined,
-    },
-    isAutoUpdateLocked: {
-      type:    Boolean,
-      default: false,
-    },
+  updateState: {
+    type:    Object as PropType<UpdateState | null>,
+    default: null,
   },
-
-  data() {
-    return { applying: false };
-  },
-
-  computed: {
-    updatesEnabled: {
-      get(): boolean {
-        return this.enabled;
-      },
-      set(value: boolean) {
-        // We emit an event, but _don't_ set the prop here; we let the containing
-        // page update our prop instead.
-        this.$emit('enabled', value);
-      },
-    },
-
-    updatePossible(): boolean {
-      return !!this.updateState?.configured;
-    },
-
-    hasUpdate(): boolean {
-      return this.updatesEnabled && !!this.updateState?.available;
-    },
-
-    updateReady(): boolean {
-      return this.hasUpdate && !!this.updateState?.downloaded && !this.updateState?.error;
-    },
-
-    statusMessage(): string {
-      if (this.updateState?.error) {
-        return 'There was an error checking for updates.';
-      }
-      if (!this.updateState?.info) {
-        return '';
-      }
-
-      const { info, progress } = this.updateState;
-      const prefix = `An update to version ${ info.version } is available`;
-
-      if (!progress) {
-        return `${ prefix }.`;
-      }
-
-      const percent = Math.floor(progress.percent);
-      const speed = Intl.NumberFormat(this.locale, {
-        style:       'unit',
-        unit:        'byte-per-second',
-        unitDisplay: 'narrow',
-        notation:    'compact',
-      }).format(progress.bytesPerSecond);
-
-      return `${ prefix }; downloading... (${ percent }%, ${ speed })`;
-    },
-
-    detailsMessage(): string | undefined {
-      const markdown = this.updateState?.info?.releaseNotes;
-
-      if (typeof markdown !== 'string') {
-        return undefined;
-      }
-      // Here's the explanation of the following unorthodox typecast:
-      // The signature of `marked.marked` is, with version 11:
-      // marked(src: string, options?: MarkedOptions): string | Promise<string>
-      // It returns a Promise<string> if `options.async` is true; otherwise, a string.
-      const unsanitized = marked(markdown) as string;
-
-      return DOMPurify.sanitize(unsanitized, { USE_PROFILES: { html: true } });
-    },
-
-    applyMessage(): string {
-      return this.applying ? 'Applying update...' : 'Restart Now';
-    },
-
-    unsupportedUpdateAvailable(): boolean {
-      return !this.hasUpdate && !!this.updateState?.info?.unsupportedUpdateAvailable;
-    },
-
-    autoUpdateLocked(): boolean {
-      return this.isAutoUpdateLocked;
-    },
-  },
-
-  methods: {
-    applyUpdate() {
-      this.applying = true;
-      this.$emit('apply');
-    },
+  locale: {
+    type:    String,
+    default: undefined,
   },
 });
 
+const store = useStore();
+
+const applying = ref(false);
+const preferences = computed(() => store.getters['preferences/preferences']);
+const updatesEnabled = computed(() => !!_.get(preferences.value, preference, false));
+const updatePossible = computed(() => !!updateState?.configured);
+const hasUpdate = computed(() => updatesEnabled.value && !!updateState?.available);
+const updateReady = computed(() => hasUpdate.value && !!updateState?.downloaded && !updateState?.error);
+
+const statusMessage = computed(() => {
+  if (updateState?.error) {
+    return 'There was an error checking for updates.';
+  }
+  if (!updateState?.info) {
+    return '';
+  }
+
+  const { info, progress } = updateState;
+  const prefix = `An update to version ${ info.version } is available`;
+
+  if (!progress) {
+    return `${ prefix }.`;
+  }
+
+  const percent = Math.floor(progress.percent);
+  const speed = Intl.NumberFormat(locale, {
+    style:       'unit',
+    unit:        'byte-per-second',
+    unitDisplay: 'narrow',
+    notation:    'compact',
+  }).format(progress.bytesPerSecond);
+
+  return `${ prefix }; downloading... (${ percent }%, ${ speed })`;
+});
+
+const detailsMessage = computed(() => {
+  const markdown = updateState?.info?.releaseNotes;
+
+  if (typeof markdown !== 'string') {
+    return undefined;
+  }
+
+  const unsanitized = marked(markdown, { async: false });
+
+  return DOMPurify.sanitize(unsanitized, { USE_PROFILES: { html: true } });
+});
+
+const applyMessage = computed(() => applying.value ? 'Applying update...' : 'Restart Now');
+
+const unsupportedUpdateAvailable = computed(() => !hasUpdate.value && !!updateState?.info?.unsupportedUpdateAvailable);
+
+function applyUpdate() {
+  applying.value = true;
+  emit('apply');
+}
 </script>
 
 <style lang="scss" scoped>

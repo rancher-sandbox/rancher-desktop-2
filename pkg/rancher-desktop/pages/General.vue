@@ -12,97 +12,62 @@
     </div>
     <hr>
     <update-status
-      :enabled="settings.application.updater.enabled"
+      preference="application.updates.enabled"
       :update-state="updateState"
-      :is-auto-update-locked="autoUpdateLocked"
-      @enabled="onUpdateEnabled"
       @apply="onUpdateApply"
     />
     <hr>
+    <!--
     <telemetry-opt-in
-      :telemetry="settings.application.telemetry.enabled"
-      :is-telemetry-locked="telemetryLocked"
-      @update-telemetry="updateTelemetry"
+      preference="application.telemetry.enabled"
     />
     <hr>
+    -->
     <div class="network-status">
       <network-status />
     </div>
   </div>
 </template>
 
-<script>
-
-import _ from 'lodash';
+<script lang="ts" setup>
+import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { useStore } from 'vuex';
 
 import packageJson from '@/package.json' with { type: 'json' };
 import NetworkStatus from '@pkg/components/NetworkStatus.vue';
-import TelemetryOptIn from '@pkg/components/TelemetryOptIn.vue';
 import UpdateStatus from '@pkg/components/UpdateStatus.vue';
-import { defaultSettings } from '@pkg/config/settings';
+import type { UpdateState } from '@pkg/main/update';
 import { ipcRenderer } from '@pkg/utils/ipcRenderer';
 
-export default {
-  name:       'General',
-  title:      'General',
-  components: {
-    NetworkStatus, TelemetryOptIn, UpdateStatus,
-  },
-  data() {
-    return {
-      settings:         defaultSettings,
-      telemetryLocked:  null,
-      autoUpdateLocked: null,
-      /** @type import('@pkg/main/update').UpdateState | null */
-      updateState:      null,
-    };
-  },
+defineOptions({
+  name:  'General',
+  title: 'General',
+});
 
-  mounted() {
-    this.$store.dispatch(
-      'page/setHeader',
-      {
-        title:       this.t('general.title', { productName: packageJson.productName }),
-        description: this.t('general.description'),
-        icon:        'icon icon-rancher-desktop',
-      },
-    );
-    ipcRenderer.on('settings-update', this.onSettingsUpdate);
-    ipcRenderer.on('update-state', this.onUpdateState);
-    ipcRenderer.send('update-state');
-    ipcRenderer.on('settings-read', (event, settings) => {
-      this.$data.settings = settings;
-    });
-    ipcRenderer.send('settings-read');
-    ipcRenderer.invoke('get-locked-fields').then((lockedFields) => {
-      this.$data.telemetryLocked = _.get(lockedFields, 'application.telemetry.enabled');
-      this.$data.autoUpdateLocked = _.get(lockedFields, 'application.updater.enabled');
-    });
-  },
+const store = useStore();
+const updateState = ref<UpdateState | null>(null);
 
-  beforeUnmount() {
-    ipcRenderer.off('settings-update', this.onSettingsUpdate);
-    ipcRenderer.off('update-state', this.onUpdateState);
-  },
+function onUpdateApply() {
+  ipcRenderer.send('update-apply');
+}
 
-  methods: {
-    onSettingsUpdate(event, settings) {
-      this.$data.settings = settings;
-    },
-    onUpdateEnabled(value) {
-      ipcRenderer.invoke('settings-write', { application: { updater: { enabled: value } } });
-    },
-    onUpdateApply() {
-      ipcRenderer.send('update-apply');
-    },
-    onUpdateState(event, state) {
-      this.$data.updateState = state;
-    },
-    updateTelemetry(value) {
-      ipcRenderer.invoke('settings-write', { application: { telemetry: { enabled: value } } });
-    },
-  },
-};
+function onUpdateState(_event: Electron.IpcRendererEvent, state: UpdateState) {
+  updateState.value = state;
+}
+
+onMounted(() => {
+  store.dispatch('page/setHeader', {
+    title:       store.getters['i18n/t']('general.title', { productName: packageJson.productName }),
+    description: store.getters['i18n/t']('general.description'),
+    icon:        'icon icon-rancher-desktop',
+  });
+  ipcRenderer.on('update-state', onUpdateState);
+  ipcRenderer.send('update-state');
+});
+
+onBeforeUnmount(() => {
+  ipcRenderer.removeListener('update-state', onUpdateState);
+});
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
