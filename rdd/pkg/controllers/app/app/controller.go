@@ -18,6 +18,7 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
 	limav1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/app/controllers"
+	k3sversionscontrollers "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/k3sversions/controllers"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/hostinfo"
 	servicecontrollers "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
@@ -35,9 +36,6 @@ var limaImagesWSL2 string
 
 //go:embed lima-template.yaml
 var limaTemplate string
-
-//go:embed k3s-versions.json
-var k3sVersionsData string
 
 func limaTemplateData() string {
 	images := limaImagesUnix
@@ -121,11 +119,13 @@ func (c *controller) GetWebhookManagers() []base.WebhookManager {
 // webhook resolves Kubernetes version channels (e.g. "stable") to concrete
 // versions before the validating webhook checks them.
 func (c *controller) setupWebhook(mgr ctrl.Manager) error {
-	hostInfo := hostinfo.Detect()
-	defaulter, err := controllers.NewAppDefaulter(k3sVersionsData, hostInfo)
+	k3sVersions, err := k3sversionscontrollers.GetVersions()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load Kubernetes version channels: %w", err)
 	}
+
+	hostInfo := hostinfo.Detect()
+	defaulter := controllers.NewAppDefaulter(k3sVersions, hostInfo)
 	mutatingConfig := base.WebhookConfig[*v1alpha1.App]{
 		Name:        appDefaulterConfigName,
 		WebhookName: appDefaulterWebhookName,
@@ -142,11 +142,7 @@ func (c *controller) setupWebhook(mgr ctrl.Manager) error {
 		return err
 	}
 	c.webhookManagers = append(c.webhookManagers, managers...)
-
-	validator, err := controllers.NewAppValidator(k3sVersionsData, hostInfo)
-	if err != nil {
-		return err
-	}
+	validator := controllers.NewAppValidator(k3sVersions, hostInfo)
 	validatingConfig := base.WebhookConfig[*v1alpha1.App]{
 		Name:        appValidatorConfigName,
 		WebhookName: appValidatorWebhookName,
@@ -185,6 +181,7 @@ func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
 	if err := (&controllers.AppReconciler{
 		Client:           mgr.GetClient(),
 		Scheme:           mgr.GetScheme(),
+		Manager:          mgr,
 		LimaTemplateData: limaTemplateData(),
 		Discovery:        discovery,
 	}).SetupWithManager(mgr); err != nil {

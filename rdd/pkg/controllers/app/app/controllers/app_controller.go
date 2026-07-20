@@ -73,6 +73,7 @@ const (
 type AppReconciler struct {
 	client.Client
 	Scheme           *runtime.Scheme
+	Manager          ctrl.Manager
 	LimaTemplateData string
 
 	// Discovery is consulted on each reconcile to determine whether the
@@ -252,6 +253,11 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 			}
 		} else if !apierrors.IsNotFound(cmErr) {
 			return ctrl.Result{}, fmt.Errorf("failed to fetch input ConfigMap during cleanup: %w", cmErr)
+		}
+
+		// Remove any other resources owned by the App.
+		if err := base.DeleteOwnedResources(ctx, r.Client, &app, r.Manager); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to delete owned resources during cleanup: %w", err)
 		}
 
 		// Remove the namespace if it was created by this controller.

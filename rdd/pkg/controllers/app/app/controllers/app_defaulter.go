@@ -15,6 +15,7 @@ import (
 	ctrlwebhookadmission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
+	k3sversionscontrollers "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/k3sversions/controllers"
 )
 
 const (
@@ -36,16 +37,11 @@ type AppDefaulter struct {
 	hostInfo HostInfo
 }
 
-// NewAppDefaulter parses k3sVersionsData once at construction time so that a
-// malformed JSON fixture causes controller startup to fail rather than the
-// first admission request. hostInfo provides the host memory used to default
+// NewAppDefaulter returns a new AppDefaulter using the given k3s channel
+// information.  hostInfo provides the host memory used to default
 // spec.virtualMachine.memory.
-func NewAppDefaulter(k3sVersionsData string, hostInfo HostInfo) (*AppDefaulter, error) {
-	channels, err := parseK3sChannels(k3sVersionsData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load Kubernetes version channels: %w", err)
-	}
-	return &AppDefaulter{channels: channels, hostInfo: hostInfo}, nil
+func NewAppDefaulter(versions k3sversionscontrollers.K3sVersions, hostInfo HostInfo) *AppDefaulter {
+	return &AppDefaulter{channels: versions.Channels, hostInfo: hostInfo}
 }
 
 var _ ctrlwebhookadmission.Defaulter[*v1alpha1.App] = &AppDefaulter{}

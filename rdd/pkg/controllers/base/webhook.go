@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
@@ -63,27 +62,16 @@ func (g *OwnedDeletionGuard[T]) ValidateDelete(ctx context.Context, obj T) (admi
 	return nil, nil
 }
 
-// GenerateWebhookPath generates the webhook path that controller-runtime uses
-// when registering a webhook for a given GroupVersionKind and webhook type.
-// This follows controller-runtime's conventions:
-// - Validating: /validate-{group}-{version}-{kind}
-// - Mutating: /mutate-{group}-{version}-{kind}
-// Dots in the API group are replaced with dashes, and Kind is lowercased.
+// GenerateWebhookPath generates the webhook path that is unique for the webhook
+// and type.  This is used as the custom path for controller-runtime; we do this
+// instead of the default algorithm to ensure we can have multiple webhooks for
+// the same resource type (e.g. multiple ConfigMap validating webhooks) on the
+// same port.
 //
-// Example: GenerateWebhookPath(schema.GroupVersionKind{Group: "lima.rancherdesktop.io", Version: "v1alpha1", Kind: "LimaVM"}, MutatingWebhook)
-// Returns: "/mutate-lima-rancherdesktop-io-v1alpha1-limavm".
-func GenerateWebhookPath(gvk schema.GroupVersionKind, webhookType WebhookType) string {
-	group := strings.ReplaceAll(gvk.Group, ".", "-")
-	kind := strings.ToLower(gvk.Kind)
-
-	var prefix string
-	if webhookType == MutatingWebhook {
-		prefix = "mutate"
-	} else {
-		prefix = "validate"
-	}
-
-	return fmt.Sprintf("/%s-%s-%s-%s", prefix, group, gvk.Version, kind)
+// For more details, see:
+// https://github.com/kubernetes-sigs/controller-runtime/blob/3be3f1bf2b2f/pkg/builder/webhook.go#L121-L131
+func GenerateWebhookPath(name string, webhookType WebhookType) string {
+	return fmt.Sprintf("/%s-%s", webhookType, name)
 }
 
 // WebhookType indicates whether this is a validating or mutating webhook.
@@ -188,7 +176,12 @@ func SetupWebhookForResource[T runtime.Object](mgr ctrl.Manager, obj T, config W
 	gvk := gvks[0]
 
 	// Build webhook registration with controller-runtime
-	builder := ctrl.NewWebhookManagedBy(mgr, obj).WithValidator(config.Validator).WithDefaulter(config.Defaulter)
+	builder := ctrl.
+		NewWebhookManagedBy(mgr, obj).
+		WithValidator(config.Validator).
+		WithDefaulter(config.Defaulter).
+		WithValidatorCustomPath(GenerateWebhookPath(config.Name, ValidatingWebhook)).
+		WithDefaulterCustomPath(GenerateWebhookPath(config.Name, MutatingWebhook))
 	if err := builder.Complete(); err != nil {
 		return nil, err
 	}
@@ -264,7 +257,7 @@ func (wm *webhookManagerImpl[T]) createWebhookConfiguration() error {
 	klog.Infof("Creating %s webhook configuration...", wm.webhookType)
 	ctx := context.Background()
 
-	webhookPath := GenerateWebhookPath(wm.gvk, wm.webhookType)
+	webhookPath := GenerateWebhookPath(wm.config.Name, wm.webhookType)
 	webhookURL := fmt.Sprintf("https://127.0.0.1:%d%s", wm.config.WebhookPort, webhookPath)
 	klog.Infof("Webhook URL: %s", webhookURL)
 

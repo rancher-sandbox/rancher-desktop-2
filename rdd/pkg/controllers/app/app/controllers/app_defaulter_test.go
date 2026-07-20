@@ -13,17 +13,22 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
+	k3sversionscontrollers "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/k3sversions/controllers"
 )
 
-// testK3sVersions is a minimal k3s-versions.json fixture for defaulter tests.
-const testK3sVersions = `{
-  "channels": {
-    "latest": "1.35.3",
-    "stable": "1.34.6",
-    "v1.32": "1.32.13"
-  },
-  "versions": ["v1.32.13+k3s1", "v1.34.6+k3s1", "v1.35.3+k3s1"]
-}`
+// testK3sVersions is a minimal k3s versions fixture for defaulter tests.
+var testK3sVersions = k3sversionscontrollers.K3sVersions{
+	Channels: map[string]string{
+		"latest": "1.35.3",
+		"stable": "1.34.6",
+		"1.32":   "1.32.13",
+	},
+	Versions: map[string]string{
+		"1.32.13": "v1.32.13+k3s1",
+		"1.34.6":  "v1.34.6+k3s1",
+		"1.35.3":  "v1.35.3+k3s1",
+	},
+}
 
 func Test_AppDefaulter_Default(t *testing.T) {
 	t.Parallel()
@@ -90,8 +95,7 @@ func Test_AppDefaulter_Default(t *testing.T) {
 		},
 	}
 
-	d, err := NewAppDefaulter(testK3sVersions, HostInfo{})
-	assert.NilError(t, err)
+	d := NewAppDefaulter(testK3sVersions, HostInfo{})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -166,15 +170,14 @@ func Test_AppDefaulter_defaultsVMCPUs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv(vmCPUsEnv, tt.env)
 
-			d, err := NewAppDefaulter(testK3sVersions, HostInfo{CPUs: tt.hostCPUs})
-			assert.NilError(t, err)
+			d := NewAppDefaulter(testK3sVersions, HostInfo{CPUs: tt.hostCPUs})
 
 			app := &v1alpha1.App{
 				Spec: v1alpha1.AppSpec{
 					VirtualMachine: v1alpha1.VirtualMachineSpec{CPUs: tt.specCPUs},
 				},
 			}
-			err = d.Default(context.Background(), app)
+			err := d.Default(context.Background(), app)
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr)
 				return
@@ -237,15 +240,14 @@ func Test_AppDefaulter_defaultsVMMemory(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			d, err := NewAppDefaulter(testK3sVersions, HostInfo{Memory: tt.hostMemory})
-			assert.NilError(t, err)
+			d := NewAppDefaulter(testK3sVersions, HostInfo{Memory: tt.hostMemory})
 
 			app := &v1alpha1.App{
 				Spec: v1alpha1.AppSpec{
 					VirtualMachine: v1alpha1.VirtualMachineSpec{Memory: tt.specMemory},
 				},
 			}
-			err = d.Default(context.Background(), app)
+			err := d.Default(context.Background(), app)
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr)
 				return

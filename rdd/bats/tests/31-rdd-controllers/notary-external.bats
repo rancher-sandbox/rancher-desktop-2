@@ -64,7 +64,7 @@ assert_process_exited() {
     run -0 rdd ctl get ValidatingWebhookConfiguration notary-validator -o json
     run -0 jq -r '.webhooks[0].clientConfig.url' <<<"${output}"
     assert_output --partial "https://127.0.0.1:"
-    assert_output --partial "/validate-rdd-rancherdesktop-io-v1alpha1-notary"
+    assert_output --partial "/validating-notary-validator"
 
     run -0 rdd ctl get ValidatingWebhookConfiguration notary-validator -o jsonpath='{.webhooks[0].failurePolicy}'
     assert_output "Fail"

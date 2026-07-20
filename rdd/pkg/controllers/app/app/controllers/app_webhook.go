@@ -13,6 +13,7 @@ import (
 	ctrlwebhookadmission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
+	k3sversionscontrollers "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/k3sversions/controllers"
 )
 
 const (
@@ -24,20 +25,14 @@ const (
 
 // AppValidator validates App resources via admission webhook.
 type AppValidator struct {
-	supportedK8sVersions map[string]struct{}
+	supportedK8sVersions map[string]string
 	hostInfo             HostInfo
 }
 
-// NewAppValidator parses k3sVersionsData once at construction time so that a
-// malformed JSON fixture causes controller startup to fail rather than the
-// first admission request. hostInfo provides the upper bounds for CPU and
-// memory validation.
-func NewAppValidator(k3sVersionsData string, hostInfo HostInfo) (*AppValidator, error) {
-	supported, err := parseK3sVersions(k3sVersionsData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load supported Kubernetes versions: %w", err)
-	}
-	return &AppValidator{supportedK8sVersions: supported, hostInfo: hostInfo}, nil
+// NewAppValidator returns a new AppValidator using the given k3s channel
+// information.  hostInfo provides the upper bounds for CPU and memory validation.
+func NewAppValidator(versions k3sversionscontrollers.K3sVersions, hostInfo HostInfo) *AppValidator {
+	return &AppValidator{supportedK8sVersions: versions.Versions, hostInfo: hostInfo}
 }
 
 // ValidateCreate validates a new App resource.
