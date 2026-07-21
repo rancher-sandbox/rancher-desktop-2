@@ -24,7 +24,14 @@ type MutationsPayloadType<M> = {
 type moduleNames = keyof Modules;
 type mutationTypes<MN extends moduleNames> = keyof Modules[MN]['mutations'] & string;
 type fullMutationType<MN extends moduleNames, MT extends mutationTypes<MN>> = `${ MN }/${ MT }`;
-type moduleName<S> = { [MN in moduleNames]: S extends ReturnType<Modules[MN]['state']> ? MN : never }[moduleNames];
+type moduleName<S> = {
+  [MN in moduleNames]:
+  S extends ReturnType<Modules[MN]['state']>
+    ? ReturnType<Modules[MN]['state']> extends S
+      ? MN
+      : never // MN ⊉ S; this is not the right module.
+    : never // S ⊉ MN; this is not the right module.
+}[moduleNames];
 type moduleFor<S> = moduleName<S> extends never ? never : Modules[moduleName<S>];
 type mutationsFor<S> = moduleFor<S> extends { mutations: any } ? moduleFor<S>['mutations'] : MutationsType<S> & MutationTree<S>;
 type gettersFor<S> = moduleFor<S> extends { getters: any } ? moduleFor<S>['getters'] : GetterTree<S, any>;
@@ -60,7 +67,7 @@ export interface Commit<M> {
 }
 
 // Copies from the vuex definition, but using our override ActionContext above.
-type ActionHandler<S, R, M, G> = (this: Store<RootState>, context: ActionContext<S, M, G>, payload?: any) => any;
+type ActionHandler<S, R, M, G> = (this: Store<R>, context: ActionContext<S, M, G>, payload?: any) => any;
 export interface ActionObject<S, R, M, G> {
   root?:   boolean;
   handler: ActionHandler<S, R, M, G>;
