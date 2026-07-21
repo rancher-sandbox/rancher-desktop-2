@@ -329,6 +329,110 @@ describe('actions', () => {
       expect(commit).toHaveBeenCalledWith('SET_ERROR_STATUS', undefined);
       expect(unwatch).toHaveBeenCalled();
     });
+
+    it('should abandon a previous commit if a new commit is started', async() => {
+      const requestCompleted = Latch<void>();
+      const middlewarePreCompleted = Latch<void>();
+
+      const [stuckClient, stuckRequestContext] = makeClient(async(requestContext) => {
+        expect(requestContext.setSignal).toHaveBeenCalled();
+        middlewarePreCompleted.resolve();
+        await requestCompleted;
+        expect(requestContext.signal).toHaveProperty('aborted', true);
+        requestContext.signal?.throwIfAborted();
+      });
+      const [fastClient, _requestContext] = makeClient((requestContext) => {
+        expect(requestContext.setSignal).toHaveBeenCalled();
+        return Promise.resolve();
+      });
+
+      rootGetters['rdd/app'] = { metadata: { name: 'test', namespace: 'default', generation: 0 } };
+      const context = makeContext({ state: _.merge(stateFn(), { changes: { running: true } }) });
+
+      const watch = jest.fn((getter: () => number, callback: (value: number) => void) => {
+        callback(getter());
+        return jest.fn();
+      });
+
+      jest.mocked(rootState['rdd-connection'].config.makeApiClient).mockReturnValueOnce(stuckClient);
+      const first = rawActions.commit.call({ watch } as any, context);
+      await middlewarePreCompleted;
+
+      jest.mocked(rootState['rdd-connection'].config.makeApiClient).mockReturnValueOnce(fastClient);
+      const second = rawActions.commit.call({ watch } as any, context);
+
+      requestCompleted.resolve();
+
+      const [firstResult, secondResult] = await Promise.all([first, second]);
+
+      expect(firstResult).toBe(false);
+      expect(secondResult).toBe(true);
+      expect(fastClient.patchApp).toHaveBeenCalled();
+      expect(stuckRequestContext.setSignal).toHaveBeenCalled();
+      expect(stuckRequestContext.signal?.aborted).toBe(true);
+      expect(dispatch).not.toHaveBeenCalledWith('setError', expect.anything());
+    });
+  });
+
+  describe('writeNow', () => {
+    it('should patch only the requested key and return true on success', async() => {
+      rootGetters['rdd/app'] = { metadata: { name: 'test', namespace: 'default', generation: 0 } };
+      const context = makeContext({ state: _.merge(stateFn(), { changes: { 'kubernetes.version': 'v1.2.3' } }) });
+      client.patchApp.mockResolvedValue({ metadata: { generation: 0 } });
+
+      const watch = jest.fn((getter: () => number, callback: (value: number) => void) => {
+        callback(getter());
+        return jest.fn();
+      });
+
+      const result = await rawActions.writeNow.call({ watch } as any, context, { key: 'running', value: true });
+
+      expect(result).toBe(true);
+      expect(client.patchApp).toHaveBeenCalledWith(
+        expect.objectContaining({ body: generatePatch({ running: true }) }),
+        expect.anything(),
+      );
+      expect(commit).toHaveBeenCalledWith('SET_ERROR_STATUS', undefined);
+    });
+
+    it('should roll back only the failed key when patch fails', async() => {
+      rootGetters['rdd/app'] = { metadata: { name: 'test', namespace: 'default', generation: 0 } };
+      const context = makeContext({ state: _.merge(stateFn(), { changes: { 'kubernetes.version': 'v1.2.3' } }) });
+      const error = new Error('error from unit test');
+      client.patchApp.mockRejectedValue(error);
+
+      const watch = jest.fn((getter: () => number, callback: (value: number) => void) => {
+        callback(getter());
+        return jest.fn();
+      });
+
+      const result = await rawActions.writeNow.call({ watch } as any, context, { key: 'running', value: true });
+
+      expect(result).toBe(false);
+      expect(client.patchApp).toHaveBeenCalledWith(
+        expect.objectContaining({ body: generatePatch({ running: true }) }),
+        expect.anything(),
+      );
+      expect(dispatch).toHaveBeenCalledWith('setError', error);
+      expect(commit).toHaveBeenCalledWith('SET_CHANGES', { 'kubernetes.version': 'v1.2.3' });
+    });
+
+    it('should set missing-app error and roll back local change if app is missing', async() => {
+      rootGetters['rdd/app'] = undefined as any;
+      const context = makeContext({ state: _.merge(stateFn(), { changes: { 'kubernetes.version': 'v1.2.3' } }) });
+
+      const watch = jest.fn((getter: () => number, callback: (value: number) => void) => {
+        callback(getter());
+        return jest.fn();
+      });
+
+      const result = await rawActions.writeNow.call({ watch } as any, context, { key: 'running', value: true });
+
+      expect(result).toBe(false);
+      expect(commit).toHaveBeenCalledWith('SET_ERROR_STATUS', appMissingStatus);
+      expect(client.patchApp).not.toHaveBeenCalled();
+      expect(commit).toHaveBeenCalledWith('SET_CHANGES', { 'kubernetes.version': 'v1.2.3' });
+    });
   });
 
   describe('setError', () => {
