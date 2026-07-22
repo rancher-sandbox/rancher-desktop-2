@@ -1,4 +1,4 @@
-import { preferencesNavItemName, preferencesNavItems } from '@pkg/window/preferenceConstants';
+import { preferencesNavDefaults } from '@pkg/window/preferenceConstants';
 
 /**
  * TransientPreferencesState is the state for the transient preferences; it
@@ -13,13 +13,7 @@ export type TransientPreferencesState = typeof defaultTransientPreferences;
 const defaultTransientPreferences = {
   /** navigation state, e.g. which tab is selected */
   navigation: {
-    preferences: {
-      top:                preferencesNavItems[0].name as preferencesNavItemName,
-      application:        'general' as 'general' | 'behavior' | 'environment',
-      'virtual-machine':  'hardware' as 'hardware' | 'volumes' | 'emulation',
-      wsl:                'integrations' as 'integrations' | 'proxy',
-      'container-engine': 'general' as 'general' | 'allowed-images',
-    },
+    preferences: preferencesNavDefaults,
   },
 };
 

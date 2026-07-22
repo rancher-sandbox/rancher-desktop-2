@@ -58,7 +58,7 @@ export function openPreferences() {
       'Close preferences dialog',
     );
 
-    preferencesNavItems.forEach(({ name }, index) => {
+    for (const [name, { index }] of Object.entries(preferencesNavItems)) {
       Shortcuts.register(
         window,
         {
@@ -68,7 +68,7 @@ export function openPreferences() {
         () => window.webContents.send('route', { name }),
         `switch preferences tabs ${ name }`,
       );
-    });
+    }
 
     Shortcuts.register(
       window,

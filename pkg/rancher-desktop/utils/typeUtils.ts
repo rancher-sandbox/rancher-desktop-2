@@ -33,7 +33,7 @@ type UpperAlpha =
   'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z';
 
 /** Alpha is the set of upper- or lower-case alphabets. */
-type Alpha<T> = T extends UpperAlpha ? T : T extends Lowercase<UpperAlpha> ? T : never;
+export type Alpha<T> = T extends UpperAlpha ? T : T extends Lowercase<UpperAlpha> ? T : never;
 
 type UpperSnakeCaseInner<T extends string> =
   T extends '' ? never :
