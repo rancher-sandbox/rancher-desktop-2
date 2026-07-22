@@ -1,3 +1,5 @@
+import RDCheckbox from './checkbox';
+
 import type { Page, Locator } from '@playwright/test';
 
 export class KubernetesNav {
@@ -11,8 +13,8 @@ export class KubernetesNav {
   constructor(page: Page) {
     this.page = page;
     this.nav = page.locator('[data-test="nav-kubernetes"]');
-    this.kubernetesToggle = page.locator('[data-test="kubernetesToggle"]');
-    this.kubernetesVersion = page.locator('[data-test="kubernetesVersion"]');
+    this.kubernetesToggle = RDCheckbox(page.locator('[data-test="kubernetesToggle"]'));
+    this.kubernetesVersion = page.locator('[data-test="kubernetesVersion"] select');
     this.kubernetesOptions = page.locator('[data-test="kubernetesOptions"]');
     this.kubernetesVersionLockedFields = page.locator('[data-test="kubernetesVersion"] > .select-k8s-version > .icon-lock');
   }

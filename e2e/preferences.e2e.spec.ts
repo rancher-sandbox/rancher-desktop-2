@@ -1,47 +1,48 @@
 import os from 'os';
 
 import { test, expect, _electron } from '@playwright/test';
+import semver from 'semver';
 
 import { NavPage } from './pages/nav-page';
 import { PreferencesPage } from './pages/preferences';
-import { createDefaultSettings, startRancherDesktop, teardown, tool } from './utils/TestUtils';
+import { KubernetesNav } from './pages/preferences/kubernetes';
+import { rdd, startRancherDesktop, teardown } from './utils/TestUtils';
 
-import { reopenLogs } from '@pkg/utils/logging';
+import type { ElectronApplication } from '@playwright/test';
 
-import type { ElectronApplication, Page } from '@playwright/test';
-
-let page: Page;
+let mainNav: NavPage;
 
 /**
  * Using test.describe.serial make the test execute step by step, as described on each `test()` order
  * Playwright executes test in parallel by default and it will not work for our app backend loading process.
  * */
-test.describe.serial('Main App Test', () => {
+test.describe.serial('Preferences Dialog', () => {
   let electronApp: ElectronApplication;
-  let preferencesWindow: Page;
+  let prefPage: PreferencesPage;
 
   test.beforeAll(async({ colorScheme }, testInfo) => {
     electronApp = await startRancherDesktop(testInfo);
 
-    page = await electronApp.firstWindow();
-    await new NavPage(page).preferencesButton.click();
-    preferencesWindow = await electronApp.waitForEvent('window', page => /preferences/i.test(page.url()));
+    mainNav = new NavPage(await electronApp.firstWindow());
   });
 
   test.afterAll(async({ colorScheme }, testInfo) => {
     await teardown(electronApp, testInfo);
   });
 
-  test('should open preferences modal', async() => {
-    expect(preferencesWindow).toBeDefined();
+  test('should finish loading', () => mainNav.waitForAppSettled());
 
-    // Wait for the navigation to appear; this only happens once the current
-    // preferences have been loaded.
-    await expect(preferencesWindow.locator('.preferences-nav')).toBeVisible();
+  test('should open preferences modal', async() => {
+    await mainNav.preferencesButton.click();
+    const prefWindow = await electronApp.waitForEvent('window', page => /preferences/i.test(page.url()));
+    expect(prefWindow).toBeDefined();
+    prefPage = new PreferencesPage(prefWindow);
+
+    await prefPage.waitForLoad();
   });
 
   test.fixme('should show application page and render general tab', async() => {
-    const { application } = new PreferencesPage(preferencesWindow);
+    const { application } = prefPage;
 
     await expect(application.nav).toHaveClass('preferences-nav-item active');
 
@@ -61,7 +62,7 @@ test.describe.serial('Main App Test', () => {
   });
 
   test.fixme('should render behavior tab', async() => {
-    const { application } = new PreferencesPage(preferencesWindow);
+    const { application } = prefPage;
 
     await application.tabBehavior.click();
 
@@ -74,7 +75,7 @@ test.describe.serial('Main App Test', () => {
 
   test.fixme('should render environment tab', async() => {
     test.skip(os.platform() === 'win32', 'Environment tab not available on Windows');
-    const { application } = new PreferencesPage(preferencesWindow);
+    const { application } = prefPage;
 
     await application.tabEnvironment.click();
 
@@ -86,7 +87,7 @@ test.describe.serial('Main App Test', () => {
 
   test.fixme('should navigate to virtual machine and render hardware tab', async() => {
     test.skip(os.platform() === 'win32', 'Virtual Machine not available on Windows');
-    const { virtualMachine, application } = new PreferencesPage(preferencesWindow);
+    const { virtualMachine, application } = prefPage;
 
     await virtualMachine.nav.click();
 
@@ -110,7 +111,7 @@ test.describe.serial('Main App Test', () => {
 
   test.fixme('should render volumes tab', async() => {
     test.skip(os.platform() === 'win32', 'Virtual Machine not available on Windows');
-    const { virtualMachine } = new PreferencesPage(preferencesWindow);
+    const { virtualMachine } = prefPage;
 
     await virtualMachine.tabVolumes.click();
 
@@ -143,7 +144,7 @@ test.describe.serial('Main App Test', () => {
   test.fixme('should render emulation tab on macOS', async() => {
     test.skip(os.platform() !== 'darwin', 'Emulation tab only available on macOS');
 
-    const { virtualMachine } = new PreferencesPage(preferencesWindow);
+    const { virtualMachine } = prefPage;
 
     await virtualMachine.tabEmulation.click();
     await expect(virtualMachine.vmType).toBeVisible();
@@ -166,7 +167,7 @@ test.describe.serial('Main App Test', () => {
   });
 
   test.fixme('should navigate to container engine', async() => {
-    const { containerEngine } = new PreferencesPage(preferencesWindow);
+    const { containerEngine } = prefPage;
 
     await containerEngine.nav.click();
 
@@ -178,7 +179,7 @@ test.describe.serial('Main App Test', () => {
   });
 
   test.fixme('should render allowed images tab after click on allowed images tab', async() => {
-    const { containerEngine } = new PreferencesPage(preferencesWindow);
+    const { containerEngine } = prefPage;
 
     await containerEngine.tabAllowedImages.click();
 
@@ -186,20 +187,68 @@ test.describe.serial('Main App Test', () => {
     await expect(containerEngine.containerEngine).not.toBeVisible();
   });
 
-  test('should navigate to kubernetes', async() => {
-    const { kubernetes } = new PreferencesPage(preferencesWindow);
+  test.describe('Kubernetes', () => {
+    let kubernetes: KubernetesNav;
+    test('should navigate to kubernetes', async() => {
+      kubernetes = prefPage.kubernetes;
 
-    await kubernetes.nav.click();
+      await kubernetes.nav.click();
 
-    await expect(kubernetes.nav).toHaveClass('preferences-nav-item active');
-    await expect(kubernetes.kubernetesToggle).toBeVisible();
-    await expect(kubernetes.kubernetesVersion).toBeVisible();
-    // await expect(kubernetes.kubernetesOptions).toBeVisible();
+      await expect(kubernetes.nav).toHaveClass('preferences-nav-item active');
+      await expect(kubernetes.kubernetesToggle).toBeVisible();
+      await expect(kubernetes.kubernetesVersion).toBeVisible();
+    });
+
+    test('Kubernetes enabled checkbox should exist', async() => {
+      await expect(kubernetes.kubernetesToggle).toBeVisible();
+      await kubernetes.kubernetesToggle.uncheck();
+      await expect(kubernetes.kubernetesToggle).not.toBeChecked();
+      await expect(kubernetes.kubernetesVersion).toBeDisabled();
+      await kubernetes.kubernetesToggle.check();
+      await expect(kubernetes.kubernetesToggle).toBeChecked();
+    });
+
+    test('Kubernetes version dropdown should have the correct versions', async() => {
+      await expect(kubernetes.kubernetesVersion).toBeVisible();
+      await expect(kubernetes.kubernetesVersion).toBeEnabled();
+      const options = kubernetes.kubernetesVersion.locator('option');
+      await expect(options).toContainText(['stable']);
+
+      const namespace = await rdd('ctl', 'get', 'app/app', '--output=jsonpath={.spec.namespace}');
+      const versionsText = await rdd('ctl', 'get', 'configmap/k3s-versions',
+        `--namespace=${ namespace }`, '--output=jsonpath={.data.versions}');
+      const versionMap: Record<string, string> = JSON.parse(versionsText);
+      const channelsText = await rdd('ctl', 'get', 'configmap/k3s-versions',
+        `--namespace=${ namespace }`, '--output=jsonpath={.data.channels}');
+      const channelsMap: Record<string, string> = JSON.parse(channelsText);
+      const versions = Object.keys(versionMap).sort((a, b) => {
+        return semver.compare(b, a); // Newest first.
+      });
+      const recommendedVersions = versions.map(version => {
+        const channels = Object.entries(channelsMap)
+          .filter(([_, v]) => v === version)
+          .map(([k]) => k);
+        return [version, channels.sort()] as const;
+      }).filter(([_, channels]) => channels.length > 0);
+      const recommendedLabels = recommendedVersions.map(([version, channels]) => {
+        const filteredChannels = channels.filter(c => !/^\d+\.\d+/.test(c));
+        if (filteredChannels.length === 0) {
+          return version;
+        }
+        return `${ version } (${ filteredChannels.join(', ') })`;
+      });
+      const otherVersions = versions.filter(version => !recommendedVersions.some(([v]) => v === version));
+      await expect(options).toContainText([...recommendedLabels, ...otherVersions]);
+    });
+
+    test.fixme('Kubernetes options should exist', async() => {
+      await expect(kubernetes.kubernetesOptions).toBeVisible();
+    });
   });
 
   test.fixme('should navigate to WSL and render integrations tab', async() => {
     test.skip(os.platform() !== 'win32', 'WSL nav item not available on macOS & Linux');
-    const { wsl } = new PreferencesPage(preferencesWindow);
+    const { wsl } = prefPage;
 
     await wsl.nav.click();
 
@@ -211,14 +260,14 @@ test.describe.serial('Main App Test', () => {
 
   test.fixme('should not render WSL nav item on macOS and Linux', async() => {
     test.skip(os.platform() === 'win32', 'WSL nav item is only available on Windows');
-    const { wsl } = new PreferencesPage(preferencesWindow);
+    const { wsl } = prefPage;
 
     await expect(wsl.nav).not.toBeVisible();
   });
 
   test.describe.fixme('Preferences State', () => {
     test.beforeAll(async() => {
-      const { application } = new PreferencesPage(preferencesWindow);
+      const { application } = prefPage;
 
       // Start this collection of tests on the environment tab
       await application.nav.click();
@@ -231,28 +280,29 @@ test.describe.serial('Main App Test', () => {
       // This collection of tests is about making sure that we persist state
       // in the preferences window, so we close the preferences window before
       // beginning this test collection.
-      if (preferencesWindow) {
-        await preferencesWindow.close();
+      if (prefPage) {
+        await prefPage.page.close();
       }
     });
 
     test.beforeEach(async() => {
-      await new NavPage(page).preferencesButton.click();
-      preferencesWindow = await electronApp.waitForEvent('window', page => /preferences/i.test(page.url()));
+      await mainNav.preferencesButton.click();
+      const prefWindow = await electronApp.waitForEvent('window', page => /preferences/i.test(page.url()));
+      prefPage = new PreferencesPage(prefWindow);
     });
 
     test.afterEach(async() => {
-      if (preferencesWindow) {
-        await preferencesWindow.close();
+      if (prefPage) {
+        await prefPage.page.close();
       }
     });
 
     test('should render environment tab after close and reopen preferences modal', async() => {
       test.skip(os.platform() === 'win32', 'Environment tab not available on Windows');
 
-      expect(preferencesWindow).toBeDefined();
+      expect(prefPage).toBeDefined();
 
-      const { application, containerEngine } = new PreferencesPage(preferencesWindow);
+      const { application, containerEngine } = prefPage;
 
       await application.tabEnvironment.click();
 
@@ -270,11 +320,9 @@ test.describe.serial('Main App Test', () => {
     });
 
     test('should render container engine page after close and reopen preferences modal', async() => {
-      expect(preferencesWindow).toBeDefined();
-      // Wait for the window to actually load (i.e. transition from
-      // app://index.html/#/preferences to app://index.html/#/Preferences#general)
-      await preferencesWindow.waitForURL(/Preferences#/i);
-      const { containerEngine } = new PreferencesPage(preferencesWindow);
+      expect(prefPage).toBeDefined();
+      await prefPage.waitForLoad();
+      const { containerEngine } = prefPage;
 
       if (os.platform() === 'win32') {
         // We didn't run the previous test which landed on `tabGeneral`, so run that here.
@@ -292,11 +340,9 @@ test.describe.serial('Main App Test', () => {
     });
 
     test('should render allowed image tab in container engine page after close and reopen preferences modal', async() => {
-      expect(preferencesWindow).toBeDefined();
-      // Wait for the window to actually load (i.e. transition from
-      // app://index.html/#/preferences to app://index.html/#/Preferences#general)
-      await preferencesWindow.waitForURL(/Preferences#/i);
-      const { containerEngine } = new PreferencesPage(preferencesWindow);
+      expect(prefPage).toBeDefined();
+      await prefPage.waitForLoad();
+      const { containerEngine } = prefPage;
 
       await expect(containerEngine.nav).toHaveClass('preferences-nav-item active');
       await expect(containerEngine.allowedImages).toBeVisible();

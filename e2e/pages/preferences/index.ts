@@ -1,10 +1,10 @@
+import { expect, Page } from '@playwright/test';
+
 import { ApplicationNav } from './application';
 import { ContainerEngineNav } from './containerEngine';
 import { KubernetesNav } from './kubernetes';
 import { VirtualMachineNav } from './virtualMachine';
 import { WslNav } from './wsl';
-
-import type { Page } from '@playwright/test';
 
 export class PreferencesPage {
   readonly page:            Page;
@@ -21,5 +21,11 @@ export class PreferencesPage {
     this.containerEngine = new ContainerEngineNav(page);
     this.kubernetes = new KubernetesNav(page);
     this.wsl = new WslNav(page);
+  }
+
+  async waitForLoad() {
+    // Wait for the navigation to appear; this only happens once the current
+    // preferences have been loaded.
+    await expect(this.page.locator('.preferences-nav')).toBeVisible();
   }
 }

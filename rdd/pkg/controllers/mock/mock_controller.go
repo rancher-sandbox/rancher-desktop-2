@@ -19,6 +19,7 @@ import (
 
 	appv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
 	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/k3sversions/controllers"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 )
 
@@ -141,6 +142,14 @@ func (c *controller) setupReconciler(ctx context.Context, mgr ctrl.Manager) erro
 	err = (&volumeReconciler{
 		Client:   mgr.GetClient(),
 		Recorder: mgr.GetEventRecorder(controllerLongName),
+	}).SetupWithManager(mgr)
+	if err != nil {
+		return err
+	}
+
+	log.Info("Setting up K3s versions reconciler")
+	err = (&controllers.K3sVersionsReconciler{
+		Client: mgr.GetClient(),
 	}).SetupWithManager(mgr)
 	if err != nil {
 		return err
