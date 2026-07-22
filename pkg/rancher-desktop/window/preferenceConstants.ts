@@ -11,9 +11,17 @@ const prefItemData = [
     name: 'Application',
     tabs: ['general'/* 'behavior', 'environment' */],
   },
+  {
+    // For now, show the Virtual Machine tab on all platforms, per
+    // https://github.com/rancher-sandbox/rancher-desktop-2/issues/581
+    // applicable: () => process.platform === 'darwin' || process.platform === 'linux',
+    name:      'Virtual Machine',
+    tabs:      ['hardware'/*, 'volumes', 'network', 'emulation' */],
+  },
   // {
-  //   name: process.platform === 'win32' ? 'WSL' : 'Virtual Machine',
-  //   tabs: vmTabs,
+  //   applicable: () => process.platform === 'win32',
+  //   name:      'WSL',
+  //   tabs:      ['integrations', 'network', 'proxy'],
   // },
   // {
   //   name: 'Container Engine',
