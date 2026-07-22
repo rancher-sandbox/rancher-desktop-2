@@ -1,0 +1,46 @@
+name: UI E2E Tests
+
+on:
+  workflow_dispatch:
+  push: # We limit this further in the check-paths job.
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check-paths:
+    # On push, on the upstream repository (`rancher-sandbox/*`), limit to `main`
+    # and `release-*` branches.  For forks or pull requests, run on all branches.
+    if: >-
+      github.event_name != 'push' ||
+      github.repository_owner != 'rancher-sandbox' ||
+      github.ref_name == 'main' ||
+      startsWith(github.ref_name, 'release-')
+    uses: ./.github/workflows/paths-ignore.yaml
+  e2e-tests:
+    needs: check-paths
+    if: needs.check-paths.outputs.should-run == 'true'
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/yarn-install
+      - name: Enable kvm access
+        run: sudo chmod a+rwx /dev/kvm
+      - name: Run e2e Tests
+        run: >-
+          xvfb-run --auto-servernum --server-args='-screen 0 1280x960x24'
+          yarn test:e2e
+        env:
+          RD_DEBUG_ENABLED: '1'
+          CI: true
+        timeout-minutes: 20
+      - name: Upload failure reports
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: failure-reports.zip
+          path: ./e2e/reports/*

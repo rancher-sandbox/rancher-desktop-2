@@ -6,9 +6,10 @@
 # Usage:
 #   jobs:
 #     check-paths:
-#        uses: ./.github/workflows/actions/paths-ignore.yaml
+#        uses: ./.github/workflows/paths-ignore.yaml
 #     do_thing:
-#        if: jobs.check-paths.outputs.should-run == 'true'
+#        needs: check-paths
+#        if: needs.check-paths.outputs.should-run == 'true'
 #        # Unfortunately, a string comparison is required.
 
 name: Check for ignored paths
@@ -18,13 +19,13 @@ on:
     inputs:
       paths-ignore-globs:
         description: >
-          Paths to ignore.  Should glob patterns (as a git pathspec glob), one
-          per line.  See
-          https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-glob
+          Paths to ignore.  Should be in .gitignore format.  See
+          https://git-scm.com/docs/gitignore
         type: string
         default: |
-          .github/actions/spelling/**
-          docs/**
+          /.github/actions/spelling/**
+          /docs/**
+          /rdd/docs/**
           **.md
     outputs:
       should-run:
@@ -39,20 +40,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Set baseline result
+      # This is needed in case the event type is not a pull_request.
       run: echo "SHOULD_RUN=true" >> "$GITHUB_ENV"
     - name: Determine paths to ignore
       if: github.event_name == 'pull_request'
-      run: |
-        PATHS_IGNORE="PATHS_IGNORE="
-        while read -r line; do
-          if [[ -n $line ]]; then
-            PATHS_IGNORE="${PATHS_IGNORE} :!/${line}"
-          fi
-        done <<< "$INPUT"
-        echo "$PATHS_IGNORE"
-        echo "$PATHS_IGNORE" >> "$GITHUB_ENV"
-      env:
-        INPUT: ${{ inputs.paths-ignore-globs }}
+      shell: cp {0} PATHS_IGNORE # Copy the input (text) to a file.
+      working-directory: ${{ runner.temp }}
+      run: ${{ inputs.paths-ignore-globs }}
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       if: github.event_name == 'pull_request'
       with:
@@ -62,12 +56,19 @@ jobs:
       if: github.event_name == 'pull_request'
       run: |
         MERGE_BASE=$(git merge-base $BASE $HEAD)
-        diff="$(git diff --name-only $MERGE_BASE $HEAD -- $PATHS_IGNORE)"
-        if [[ -z "$diff" ]]; then
+        # `git check-ignore` returns 1 if no files are ignored.  In that case,
+        # as well as if it fails to run, treat it as success so we run dependent
+        # jobs.
+        if git diff --name-only $MERGE_BASE $HEAD \
+          | { \
+            git -c core.excludesFile=${{ runner.temp }}/PATHS_IGNORE \
+              check-ignore --non-matching --no-index --verbose --stdin \
+            || echo ":: git check-ignore failed with $?"; } \
+          | grep --extended-regexp '^::'; then
+          echo "Modified files found."
+        else
           echo "No modified files found."
           echo "SHOULD_RUN=false" >> "$GITHUB_ENV"
-        else
-          printf "Modified files:\n%s\n" "$diff"
         fi
       env:
         BASE: ${{ github.event.pull_request.base.sha }}

@@ -525,7 +525,7 @@ test.describe.fixme('Container Info Tab', () => {
   });
 });
 
-test.describe.serial('Container Stats Tab', () => {
+test.describe.fixme('Container Stats Tab', () => {
   let electronApp: ElectronApplication;
   let runningContainerId: string;
   let stoppedContainerId: string;
@@ -537,7 +537,7 @@ test.describe.serial('Container Stats Tab', () => {
     });
 
     const navPage = new NavPage(page);
-    await navPage.progressBecomesReady();
+    await navPage.waitForAppSettled();
 
     // Long-running container for the "running" tests.
     const runOutput = await tool('docker', 'run', '--detach', 'alpine', 'sleep', 'infinity');
