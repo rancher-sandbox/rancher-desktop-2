@@ -7,6 +7,7 @@
 package hostagent
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -25,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/guestagent"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/hostswitch"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/process"
 )
 
@@ -160,6 +162,48 @@ func hostagentAction(cmd *cobra.Command, args []string) error {
 		}
 	}()
 	defer srv.Close()
+
+	// Run the WSL2 host-switch virtual network inside this process so the OS
+	// reclaims its vsock listeners, gvisor host ports, and named pipes when the
+	// hostagent (and thus the VM) exits. It is a no-op for non-WSL2 instances.
+	// Started concurrently with ha.Run: the guest's network-setup.service does a
+	// vsock handshake during early boot, and host-switch polls for the VM until
+	// it appears, so there is no ordering requirement between the two.
+	//
+	// Tie host-switch to a context cancelled when hostagentAction returns (i.e.
+	// when ha.Run returns because the VM stopped). cmd.Context() cannot be used
+	// directly: main runs through cli.RunNoErrOutput → cmd.Execute (not
+	// ExecuteContext), so it is an uncancelled context.Background(). Deriving a
+	// cancelled context lets host-switch take its clean-shutdown path instead of
+	// logging a spurious failure as the process exits.
+	hsCtx, hsCancel := context.WithCancel(ctx)
+	defer hsCancel()
+	// A logrus-backed logr sink keeps host-switch's Info/Error levels distinct
+	// (funcr.New would collapse both into one callback), writing to logrus
+	// (stderr, JSON) rather than the stdout event stream the lima event watcher
+	// parses. Enabling V(1) under --debug preserves host-switch's verbose
+	// diagnostics, which the reconciler previously gated on the same debug flag.
+	hsVerbosity := 0
+	if debug {
+		hsVerbosity = 1
+	}
+	hsLogger := newLogrusLogger("host-switch", hsVerbosity)
+	go func() {
+		// Inspect inside the goroutine so it neither blocks ha.Run nor aborts
+		// the hostagent: its only consumer is host-switch's WSL2 check, and on
+		// Windows it can shell out to wsl.exe. A lookup failure degrades only
+		// WSL2 networking; the VM and hostagent keep running.
+		inst, err := store.Inspect(hsCtx, instName)
+		if err != nil {
+			hsLogger.Error(err, "Failed to inspect instance for host-switch; WSL2 guest networking is unavailable", "instance", instName)
+			return
+		}
+		if err := hostswitch.Run(hsCtx, hsLogger, inst); err != nil {
+			// The VM keeps running; only WSL2 guest networking is affected.
+			logrus.WithError(err).Error("host-switch exited")
+		}
+	}()
+
 	return ha.Run(cmd.Context())
 }
 

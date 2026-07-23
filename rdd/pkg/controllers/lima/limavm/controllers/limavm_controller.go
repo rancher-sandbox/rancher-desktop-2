@@ -141,8 +141,6 @@ type LimaVMReconciler struct {
 	instanceStatesMu sync.RWMutex
 	instanceStates   map[string]*instanceState
 	reconcileChan    chan event.TypedGenericEvent[*v1alpha1.LimaVM]
-
-	hostSwitchPlatform
 }
 
 // +kubebuilder:rbac:groups=lima.rancherdesktop.io,resources=limavms,verbs=get;list;watch;create;update;patch;delete
@@ -595,7 +593,6 @@ func (r *LimaVMReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	r.instanceStates = make(map[string]*instanceState)
-	r.initHostSwitch()
 	r.reconcileChan = make(chan event.TypedGenericEvent[*v1alpha1.LimaVM], 1)
 
 	if err := mgr.Add(manager.RunnableFunc(r.waitForShutdown)); err != nil {
@@ -700,6 +697,5 @@ func (r *LimaVMReconciler) shutdownAllHostagents() {
 		r.instanceStatesMu.Lock()
 		delete(r.instanceStates, name)
 		r.instanceStatesMu.Unlock()
-		r.stopHostSwitch(name)
 	}
 }

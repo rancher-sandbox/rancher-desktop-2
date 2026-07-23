@@ -4,10 +4,10 @@ WSL2 VMs run inside a Hyper-V lightweight utility VM that lacks a direct network
 
 ## Architecture
 
-The LimaVM controller runs a host-switch goroutine for each WSL2 instance. The guest-side binaries (`network-setup`, `vm-switch`) are baked into the opensuse distro image.
+The hostagent process runs a host-switch goroutine for each WSL2 instance. Because the host-switch lives inside the per-VM hostagent (rather than the long-lived controller), the OS reclaims all of its host resources — vsock listeners, the gvisor virtual network, and any exposed host ports — automatically when the hostagent exits with the VM. The guest-side binaries (`network-setup`, `vm-switch`) are baked into the opensuse distro image.
 
 ```
-Windows Host (RDD process)                    WSL2 VM (opensuse distro)
+Windows Host (hostagent process)              WSL2 VM (opensuse distro)
 ────────────────────────                      ────────────────────────
 host-switch goroutine                         Default namespace
 ├─ vsock handshake (port 6669) ◄────────────► ├─ network-setup
@@ -62,7 +62,7 @@ sequenceDiagram
     Note over HS: Match found for GUID-A
 ```
 
-The registry is rescanned every second because `startHostSwitch` runs before the hostagent boots the WSL2 VM. On a fresh system where no other WSL2 distro is running, the utility VM may not yet appear in the registry when the first scan runs.
+The registry is rescanned every second because the host-switch starts concurrently with the hostagent booting the WSL2 VM. On a fresh system where no other WSL2 distro is running, the utility VM may not yet appear in the registry when the first scan runs.
 
 The signature phrase is `"github.com/rancher-sandbox/rancher-desktop/src/go/networking"`. This is a fixed protocol constant shared between host-switch and the guest's `network-setup` binary. Because the signature is product-wide rather than per-instance, this discovery assumes only one opensuse WSL2 instance runs at a time.
 
@@ -98,20 +98,20 @@ The host-switch creates a [gvisor-tap-vsock](https://github.com/containers/gviso
 
 ## Lifecycle Integration
 
-The host-switch goroutine ties into the `LimaVM` controller lifecycle. It starts before the hostagent (because the guest blocks on the vsock handshake during boot) and stops after the hostagent and watcher.
+The host-switch goroutine runs inside the hostagent process, so it shares the VM's lifecycle exactly. The hostagent launches it as soon as it starts (concurrently with booting the VM — the guest blocks on the vsock handshake during boot, and the host-switch polls the registry until the VM appears) and it stops when the hostagent process exits. Because the goroutine dies with the process, the OS reclaims every host resource it held; there is no separate teardown step in the reconciler.
 
 ### Normal Start
 
 ```mermaid
 sequenceDiagram
     participant R as Reconciler
-    participant HS as Host-Switch
     participant HA as Hostagent
+    participant HS as Host-Switch
     participant G as Guest (opensuse)
 
-    R->>HS: startHostSwitch()
-    Note over HS: Begin registry scan + handshake loop
     R->>HA: Start hostagent process
+    HA->>HS: go hostswitch.Run()
+    Note over HS: Begin registry scan + handshake loop
     HA->>G: Boot WSL2 distro
     G->>G: network-setup.service starts (listens on 6669)
     HS->>G: Dial port 6669, read signature
@@ -127,44 +127,46 @@ sequenceDiagram
 sequenceDiagram
     participant R as Reconciler
     participant HA as Hostagent
-    participant W as Watcher
     participant HS as Host-Switch
 
     R->>HA: Graceful shutdown (SIGINT)
-    HA->>HA: Exit
-    R->>W: stopWatcher()
-    R->>HS: stopHostSwitch()
-    HS->>HS: Context cancelled, goroutine exits
+    HA->>HA: ha.Run returns (VM stopped)
+    Note over HA,HS: host-switch context cancelled (deferred on return)
+    HS->>HS: Context cancelled, goroutine exits cleanly
+    HA->>HA: Exit (OS reclaims vsock/network/ports)
+    R->>R: stopWatcher()
 ```
+
+### Bridge Failure Recovery
+
+If the bridge's setup or its vsock listener fails while the VM keeps running — for example the AF_VSOCK listener that accepts the guest's data connections drops — `runOnce` returns and `hostswitch.Run` restarts the bridge internally, rate-limited to one attempt per 15 seconds. The VM and hostagent keep running; the reconciler is not involved.
+
+A wedged *data plane* behind a still-live listener is a different failure and is **not** auto-restarted. The accept loop keeps running, because a relay that stalls while the listener still accepts connections is typically a guest-side `vm-switch` problem that restarting the host bridge cannot fix. Instead of looping the bridge, host-switch escalates once at error level with byte-counter diagnostics when data connections keep closing within seconds, pointing at the guest; recovery there is operator- or guest-driven.
 
 ### Crash Recovery
 
-If the hostagent crashes, the watcher detects the exit and triggers a reconcile. The reconciler tears down the stale host-switch, starts a fresh one, and relaunches the hostagent.
+If the hostagent crashes, its host-switch goroutine dies with it and the OS reclaims the host resources. The watcher detects the exit and triggers a reconcile; the reconciler relaunches the hostagent, which starts a fresh host-switch.
 
 ```mermaid
 sequenceDiagram
     participant R as Reconciler
     participant W as Watcher
-    participant HS as Host-Switch
     participant HA as Hostagent
 
-    HA->>HA: Crash
+    HA->>HA: Crash (host-switch dies with it; OS reclaims resources)
     W->>R: Enqueue reconcile (phase=Stopped)
     R->>W: stopWatcher()
-    R->>HS: stopHostSwitch()
-    Note over HS: Goroutine exits
-    R->>HS: startHostSwitch() (fresh goroutine)
-    R->>HA: Start new hostagent
-    Note over HS,HA: New handshake cycle
+    R->>HA: Start new hostagent (starts fresh host-switch)
+    Note over HA: New handshake cycle
 ```
 
 ### Control Plane Restart
 
-When the control plane restarts, the host-switch goroutine is gone. The reconciler detects the orphaned hostagent, kills it, and restarts both the host-switch and the hostagent.
+When the control plane restarts, the hostagent (and its host-switch) keeps running as an orphan. The reconciler detects the orphaned hostagent and kills it so it can start fresh with a watcher; killing the process also tears down its host-switch via OS cleanup.
 
 ### Graceful Shutdown
 
-The `shutdownAllHostagents` runnable stops each host-switch after its hostagent exits.
+The `shutdownAllHostagents` runnable signals each hostagent to exit. The host-switch stops as part of the hostagent process exiting — the OS reclaims its resources without a separate teardown.
 
 ## Implementation
 

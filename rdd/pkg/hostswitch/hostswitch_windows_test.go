@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
-package controllers
+package hostswitch
 
 import (
 	"net"
