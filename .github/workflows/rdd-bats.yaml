@@ -76,6 +76,10 @@ jobs:
     # Run on ubuntu-latest if we don't need to actually run the tests, because
     # they start faster (and are cheaper).
     runs-on: ${{ case(needs.check-paths.outputs.should-run == 'true', matrix.runs-on, 'ubuntu-latest') }}
+    # Cap the job so a wedged setup or build step fails in 2h instead of
+    # inheriting GitHub's 6h default. The slowest real job (macos bats-app) runs
+    # ~90m, so 120m leaves margin.
+    timeout-minutes: 120
     steps:
     - name: "Linux: Install prerequisites"
       if: needs.check-paths.outputs.should-run && runner.os == 'Linux'
@@ -99,7 +103,7 @@ jobs:
         readlink -f bin >> "$GITHUB_PATH"
 
         # Install a newer version of jq
-        wget --output-document=bin/jq https://github.com/jqlang/jq/releases/download/jq-1.8.1/jq-linux-amd64
+        wget --timeout=30 --tries=3 --output-document=bin/jq https://github.com/jqlang/jq/releases/download/jq-1.8.1/jq-linux-amd64
         chmod a+x bin/jq
 
     - name: "macOS: Install prerequisites"
