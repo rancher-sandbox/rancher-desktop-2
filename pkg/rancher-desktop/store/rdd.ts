@@ -28,6 +28,12 @@ const resources = [
     path:       () => '/apis/app.rancherdesktop.io/v1alpha1/apps',
     makeClient: config => config.makeApiClient(RDDClient.AppRancherdesktopIoV1alpha1Api),
   }),
+  defineResource({
+    name:       'hostInfos',
+    type:       'HostInfo',
+    path:       () => '/apis/rdd.rancherdesktop.io/v1alpha1/hostinfos',
+    makeClient: config => config.makeApiClient(RDDClient.RddRancherdesktopIoV1alpha1Api),
+  }),
 ] as const;
 
 export const state = () => ({

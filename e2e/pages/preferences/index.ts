@@ -1,4 +1,4 @@
-import { expect, Page } from '@playwright/test';
+import { expect, Page, Locator } from '@playwright/test';
 
 import { ApplicationNav } from './application';
 import { ContainerEngineNav } from './containerEngine';
@@ -8,6 +8,7 @@ import { WslNav } from './wsl';
 
 export class PreferencesPage {
   readonly page:            Page;
+  readonly body:            Locator;
   readonly application:     ApplicationNav;
   readonly virtualMachine:  VirtualMachineNav;
   readonly containerEngine: ContainerEngineNav;
@@ -16,6 +17,7 @@ export class PreferencesPage {
 
   constructor(page: Page) {
     this.page = page;
+    this.body = page.getByTestId('preferences-body');
     this.application = new ApplicationNav(page);
     this.virtualMachine = new VirtualMachineNav(page);
     this.containerEngine = new ContainerEngineNav(page);

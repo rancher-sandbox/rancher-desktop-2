@@ -1,56 +1,44 @@
-<script lang="ts">
-import os from 'os';
+<script lang="ts" setup>
 
-import { Component, defineComponent } from 'vue';
-import { mapGetters, mapState } from 'vuex';
+import { Component, computed } from 'vue';
+import { useStore } from 'vuex';
 
 import PreferencesVirtualMachineEmulation from '@pkg/components/Preferences/VirtualMachineEmulation.vue';
 import PreferencesVirtualMachineHardware from '@pkg/components/Preferences/VirtualMachineHardware.vue';
 import PreferencesVirtualMachineVolumes from '@pkg/components/Preferences/VirtualMachineVolumes.vue';
 import RdTabbed from '@pkg/components/Tabbed/RdTabbed.vue';
 import Tab from '@pkg/components/Tabbed/Tab.vue';
-import { Settings } from '@pkg/config/settings';
-import type { ServerState } from '@pkg/main/commandServer/httpCommandServer';
+import { preferencesNavItems } from '@pkg/window/preferenceConstants';
 
-import type { PropType } from 'vue';
+import type { ComputedRef } from 'vue';
 
-export default defineComponent({
-  name:       'preferences-body-virtual-machine',
-  components: {
-    RdTabbed,
-    Tab,
-    PreferencesVirtualMachineHardware,
-    PreferencesVirtualMachineVolumes,
-    PreferencesVirtualMachineEmulation,
-  },
-  props: {
-    preferences: {
-      type:     Object as PropType<Settings>,
-      required: true,
-    },
-  },
-  computed: {
-    ...mapGetters('preferences', ['isPlatformWindows']),
-    ...mapGetters('transientSettings', ['getActiveTab']),
-    ...mapState('credentials', ['credentials']),
-    activeTab(): string {
-      return this.getActiveTab || 'hardware';
-    },
-    isPlatformDarwin(): boolean {
-      return os.platform() === 'darwin';
-    },
-  },
-  methods: {
-    async tabSelected({ tab }: { tab: Component }) {
-      if (this.activeTab !== tab.name) {
-        await this.navigate('Virtual Machine', tab.name || '');
-      }
-    },
-    async navigate(navItem: string, tab: string) {
-      // TODO: Implement.
-    },
-  },
+defineOptions({ name: 'preferences-body-virtual-machine' });
+
+type tabName = typeof store.state['transient-preferences']['navigation']['preferences']['virtual-machine'];
+
+const store = useStore();
+const preferences = computed(() => store.getters['preferences/preferences']);
+const navigation = computed(() => store.state['transient-preferences'].navigation);
+const activeTab = computed((): tabName => navigation.value?.preferences?.['virtual-machine'] || 'hardware');
+const tabs = computed(() => preferencesNavItems['Virtual Machine'].tabs);
+
+const componentFromTab: ComputedRef<Component> = computed(() => {
+  return ({
+    hardware:  PreferencesVirtualMachineHardware,
+    volumes:   PreferencesVirtualMachineVolumes,
+    emulation: PreferencesVirtualMachineEmulation,
+  } as const)[activeTab.value];
 });
+
+function tabSelected({ selectedName }: { selectedName: tabName }) {
+  if (activeTab.value !== selectedName) {
+    store.dispatch('transient-preferences/navigate', { 'preferences.virtual-machine': selectedName })
+      // TODO: Actual error handling
+      // https://github.com/rancher-sandbox/rancher-desktop-2/issues/574
+      .catch(console.error);
+  }
+}
+
 </script>
 
 <template>
@@ -64,26 +52,17 @@ export default defineComponent({
   >
     <template #tabs>
       <tab
-        v-if="isPlatformDarwin"
-        label="Emulation"
-        name="emulation"
-        :weight="1"
-      />
-      <tab
-        label="Volumes"
-        name="volumes"
-        :weight="3"
-      />
-      <tab
-        label="Hardware"
-        name="hardware"
-        :weight="4"
+        v-for="([name, label], index) in tabs"
+        :key="name"
+        :label="label"
+        :name="name"
+        :weight="tabs.length - index"
       />
     </template>
     <div class="virtual-machine-content">
       <component
         v-bind="$attrs"
-        :is="`preferences-virtual-machine-${activeTab}`"
+        :is="componentFromTab"
         :preferences="preferences"
       />
     </div>

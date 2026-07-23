@@ -6,17 +6,16 @@ import semver from 'semver';
 import { NavPage } from './pages/nav-page';
 import { PreferencesPage } from './pages/preferences';
 import { KubernetesNav } from './pages/preferences/kubernetes';
+import { VirtualMachineNav } from './pages/preferences/virtualMachine';
 import { rdd, startRancherDesktop, teardown } from './utils/TestUtils';
 
 import type { ElectronApplication } from '@playwright/test';
 
 let mainNav: NavPage;
 
-/**
- * Using test.describe.serial make the test execute step by step, as described on each `test()` order
- * Playwright executes test in parallel by default and it will not work for our app backend loading process.
- * */
-test.describe.serial('Preferences Dialog', () => {
+test.describe.configure({ mode: 'serial' });
+
+test.describe('Preferences Dialog', () => {
   let electronApp: ElectronApplication;
   let prefPage: PreferencesPage;
 
@@ -85,28 +84,36 @@ test.describe.serial('Preferences Dialog', () => {
     await expect(application.pathManagement).toBeVisible();
   });
 
-  test.fixme('should navigate to virtual machine and render hardware tab', async() => {
-    test.skip(os.platform() === 'win32', 'Virtual Machine not available on Windows');
-    const { virtualMachine, application } = prefPage;
+  test.describe('Virtual Machine', () => {
+    let virtualMachine: VirtualMachineNav;
 
-    await virtualMachine.nav.click();
+    test('should navigate to virtual machine', async() => {
+      virtualMachine = prefPage.virtualMachine;
 
-    await expect(application.nav).toHaveClass('preferences-nav-item');
-    await expect(virtualMachine.nav).toHaveClass('preferences-nav-item active');
+      await virtualMachine.nav.click();
 
-    await expect(virtualMachine.tabHardware).toHaveText('Hardware');
-    await expect(virtualMachine.tabVolumes).toBeVisible();
-    await expect(virtualMachine.tabVolumes).toHaveText('Volumes');
+      await expect(virtualMachine.nav).toHaveClass('preferences-nav-item active');
+      await expect(prefPage.body).toHaveAttribute('data-test-component', 'Virtual Machine');
+    });
 
-    if (os.platform() === 'darwin') {
-      await expect(virtualMachine.tabEmulation).toBeVisible();
-      await expect(virtualMachine.tabEmulation).toHaveText('Emulation');
-    } else {
-      await expect(virtualMachine.tabEmulation).not.toBeVisible();
-    }
+    test('should render hardware tab', async() => {
+      await expect(virtualMachine.tabHardware).toBeVisible();
+      await virtualMachine.tabHardware.click();
 
-    await expect(virtualMachine.memory).toBeVisible();
-    await expect(virtualMachine.cpus).toBeVisible();
+      // The max values are from `mock/hostinfo_reconciler.go`.
+
+      await expect(virtualMachine.memory.container).toBeVisible();
+      await expect(virtualMachine.memory.marks.first()).toHaveText('2');
+      await expect(virtualMachine.memory.marks.last()).toHaveText('12');
+      await virtualMachine.memory.marks.getByText('8').click();
+      await expect(virtualMachine.memory.value).toHaveValue('8');
+
+      await expect(virtualMachine.cpus.container).toBeVisible();
+      await expect(virtualMachine.cpus.marks.first()).toHaveText('2');
+      await expect(virtualMachine.cpus.marks.last()).toHaveText('32');
+      await virtualMachine.cpus.marks.getByText('10').click();
+      await expect(virtualMachine.cpus.value).toHaveValue('10');
+    });
   });
 
   test.fixme('should render volumes tab', async() => {
@@ -189,30 +196,39 @@ test.describe.serial('Preferences Dialog', () => {
 
   test.describe('Kubernetes', () => {
     let kubernetes: KubernetesNav;
+
     test('should navigate to kubernetes', async() => {
       kubernetes = prefPage.kubernetes;
 
       await kubernetes.nav.click();
 
       await expect(kubernetes.nav).toHaveClass('preferences-nav-item active');
-      await expect(kubernetes.kubernetesToggle).toBeVisible();
-      await expect(kubernetes.kubernetesVersion).toBeVisible();
+      await expect(prefPage.body).toHaveAttribute('data-test-component', 'Kubernetes');
     });
 
     test('Kubernetes enabled checkbox should exist', async() => {
       await expect(kubernetes.kubernetesToggle).toBeVisible();
+      await expect(kubernetes.kubernetesVersion).toBeVisible();
+
       await kubernetes.kubernetesToggle.uncheck();
       await expect(kubernetes.kubernetesToggle).not.toBeChecked();
       await expect(kubernetes.kubernetesVersion).toBeDisabled();
+
       await kubernetes.kubernetesToggle.check();
       await expect(kubernetes.kubernetesToggle).toBeChecked();
     });
 
     test('Kubernetes version dropdown should have the correct versions', async() => {
+      await kubernetes.kubernetesToggle.check();
+      await expect(kubernetes.kubernetesToggle).toBeChecked();
       await expect(kubernetes.kubernetesVersion).toBeVisible();
       await expect(kubernetes.kubernetesVersion).toBeEnabled();
+
       const options = kubernetes.kubernetesVersion.locator('option');
+      // Check `stable` and `latest` separately, to avoid assuming order.
+      // It is also possible that they are on the same version.
       await expect(options).toContainText(['stable']);
+      await expect(options).toContainText(['latest']);
 
       const namespace = await rdd('ctl', 'get', 'app/app', '--output=jsonpath={.spec.namespace}');
       const versionsText = await rdd('ctl', 'get', 'configmap/k3s-versions',
@@ -231,7 +247,7 @@ test.describe.serial('Preferences Dialog', () => {
         return [version, channels.sort()] as const;
       }).filter(([_, channels]) => channels.length > 0);
       const recommendedLabels = recommendedVersions.map(([version, channels]) => {
-        const filteredChannels = channels.filter(c => !/^\d+\.\d+/.test(c));
+        const filteredChannels = channels.filter(c => !/^v?\d+\.\d+/.test(c));
         if (filteredChannels.length === 0) {
           return version;
         }

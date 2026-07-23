@@ -22,7 +22,7 @@ const store = useStore();
 const navigation = computed(() => store.state['transient-preferences'].navigation);
 const committed = computed(() => store.getters['preferences/committed']);
 const hasPreferences = computed(() => Object.keys(committed.value).length > 0);
-const navItems = computed(() => preferencesNavItems.map(({ name }) => name));
+const navItems = computed(() => Object.keys(preferencesNavItems) as preferencesNavItemName[]);
 const currentNavItem = computed(() => navigation.value.preferences.top);
 
 async function navChanged(current: preferencesNavItemName) {

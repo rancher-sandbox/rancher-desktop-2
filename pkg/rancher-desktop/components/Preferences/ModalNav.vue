@@ -32,7 +32,7 @@ function navToKebab(navItem: preferencesNavItemName): string {
     <nav-item
       v-for="navItem in navItems"
       :key="navItem"
-      :data-test="navToKebab(navItem)"
+      :data-testid="navToKebab(navItem)"
       :name="navItem"
       :active="currentNavItem === navItem"
       @click="navClicked"
