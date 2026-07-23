@@ -16,7 +16,7 @@ require (
 	github.com/k3s-io/kine v1.14.2
 	github.com/lima-vm/lima/v2 v2.1.2
 	github.com/linuxkit/virtsock v0.0.0-20220523201153-1a23e78aa7a2
-	github.com/mattn/go-isatty v0.0.22
+	github.com/mattn/go-isatty v0.0.23
 	github.com/mikefarah/yq/v4 v4.53.3
 	github.com/moby/moby/api v1.55.0
 	github.com/moby/moby/client v0.5.0
