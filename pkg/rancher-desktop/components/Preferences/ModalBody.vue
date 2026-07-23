@@ -31,7 +31,11 @@ const componentFromNavItem: ComputedRef<Component> = computed(() => {
 </script>
 
 <template>
-  <div class="preferences-body">
+  <div
+    class="preferences-body"
+    data-testid="preferences-body"
+    :data-test-component="currentNavItem"
+  >
     <slot>
       <component
         v-bind="$attrs"

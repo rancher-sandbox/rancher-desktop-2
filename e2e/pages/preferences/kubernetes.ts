@@ -12,7 +12,7 @@ export class KubernetesNav {
 
   constructor(page: Page) {
     this.page = page;
-    this.nav = page.locator('[data-test="nav-kubernetes"]');
+    this.nav = page.getByTestId('nav-kubernetes');
     this.kubernetesToggle = RDCheckbox(page.locator('[data-test="kubernetesToggle"]'));
     this.kubernetesVersion = page.locator('[data-test="kubernetesVersion"] select');
     this.kubernetesOptions = page.locator('[data-test="kubernetesOptions"]');

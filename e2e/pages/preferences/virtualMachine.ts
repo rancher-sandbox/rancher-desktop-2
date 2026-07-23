@@ -1,10 +1,20 @@
 import type { Page, Locator } from '@playwright/test';
 
+class RDSlider {
+  readonly value: Locator;
+  readonly marks: Locator;
+
+  constructor(public container: Locator) {
+    this.value = container.locator('input.slider-input');
+    this.marks = container.locator('.vue-slider-mark');
+  }
+}
+
 export class VirtualMachineNav {
   readonly page:            Page;
   readonly nav:             Locator;
-  readonly memory:          Locator;
-  readonly cpus:            Locator;
+  readonly memory:          RDSlider;
+  readonly cpus:            RDSlider;
   readonly mountType:       Locator;
   readonly reverseSshFs:    Locator;
   readonly ninep:           Locator;
@@ -23,9 +33,9 @@ export class VirtualMachineNav {
 
   constructor(page: Page) {
     this.page = page;
-    this.nav = page.locator('[data-test="nav-virtual-machine"]');
-    this.memory = page.locator('#memoryInGBWrapper');
-    this.cpus = page.locator('#numCPUWrapper');
+    this.nav = page.getByTestId('nav-virtual-machine');
+    this.memory = new RDSlider(page.locator('#memoryInGBWrapper'));
+    this.cpus = new RDSlider(page.locator('#numCPUWrapper'));
     this.mountType = page.locator('[data-test="mountType"]');
     this.reverseSshFs = page.locator('[data-test="reverse-sshfs"]');
     this.ninep = page.locator('[data-test="9p"]');
