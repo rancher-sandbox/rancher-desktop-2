@@ -9,7 +9,7 @@ require (
 	github.com/containerd/errdefs v1.0.0
 	github.com/containers/gvisor-tap-vsock v0.8.9
 	github.com/coreos/go-semver v0.3.1
-	github.com/docker/cli v29.6.1+incompatible
+	github.com/docker/cli v29.6.2+incompatible
 	github.com/go-logr/logr v1.4.3
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
