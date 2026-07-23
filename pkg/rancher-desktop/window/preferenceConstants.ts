@@ -9,23 +9,23 @@ import type { Alpha } from '@pkg/utils/typeUtils';
 const prefItemData = [
   {
     name: 'Application',
-    tabs: ['general'/* 'behavior', 'environment' */],
+    tabs: [['general', 'General']/* 'behavior', 'environment' */],
   },
   {
     // For now, show the Virtual Machine tab on all platforms, per
     // https://github.com/rancher-sandbox/rancher-desktop-2/issues/581
     // applicable: () => process.platform === 'darwin' || process.platform === 'linux',
     name:      'Virtual Machine',
-    tabs:      ['hardware'/*, 'volumes', 'network', 'emulation' */],
+    tabs:      [['hardware', 'Hardware']/*, ['volumes', 'Volumes'], ['network', 'Network'], ['emulation', 'Emulation'] */],
   },
   // {
   //   applicable: () => process.platform === 'win32',
   //   name:      'WSL',
-  //   tabs:      ['integrations', 'network', 'proxy'],
+  //   tabs:      [['integrations', 'Integrations'], ['network', 'Network'], ['proxy', 'Proxy']],
   // },
   // {
   //   name: 'Container Engine',
-  //   tabs: ['general'/*, 'allowed-images' */],
+  //   tabs: [['general', 'General']/*, ['allowed-images', 'Allowed Images'] */],
   // },
   { name: 'Kubernetes' },
 ] as const satisfies navItemEntry[];
@@ -36,7 +36,7 @@ const prefItemData = [
 interface navItemEntry {
   applicable?: () => boolean;
   name:        string;
-  tabs?:       readonly string[];
+  tabs?:       readonly [string, string][];
 }
 
 /**
@@ -66,7 +66,7 @@ type KebabCase<T extends string> = T extends `${ infer Head }${ infer Tail }`
 
 type PreferenceNavTabDefaults = {
   [K in keyof typeof preferencesNavItems as KebabCase<K>]:
-  (typeof preferencesNavItems)[K] extends { tabs: readonly (infer T)[] } ? T : never;
+  (typeof preferencesNavItems)[K] extends { tabs: readonly ([infer T, string])[] } ? T : never;
 };
 
 /**
@@ -74,10 +74,10 @@ type PreferenceNavTabDefaults = {
  * window for the tabs of each top level navigation item.
  */
 const preferencesNavTabDefaults = Object.fromEntries(prefItemData
-  .filter((item): item is typeof item & { tabs: readonly string[] } => {
+  .filter((item): item is typeof item & { tabs: readonly ([string, string])[] } => {
     return 'tabs' in item && item.tabs?.length > 0 && !!item.tabs[0];
   }).map(item => {
-    return [_.kebabCase(item.name), item.tabs[0]] as const;
+    return [_.kebabCase(item.name), item.tabs[0][0]] as const;
   })) as PreferenceNavTabDefaults;
 
 /**
