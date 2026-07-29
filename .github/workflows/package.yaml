@@ -155,20 +155,27 @@ jobs:
         name: Rancher Desktop-linux.zip
     - name: Trigger OBS build
       run: |
-        # in pull requests GITHUB_REF_NAME is in the form "<pr_number>/merge";
-        # remove slashes since they aren't valid in filenames
-        no_slash_ref_name="${GITHUB_REF_NAME//\//-}"
-        zip_name="rancher-desktop-2-linux-${no_slash_ref_name}.zip"
+        # The package name is `rancher-desktop-2-release-x.y` for branches and
+        # `rancher-desktop-2-x.y` for tags; we do not keep patch releases around.
+        # `rancher-desktop-2-main` also exists for the main branch.  Note that
+        # we don't encounter tags here; that's `linux-release.yaml`.
+        # The `package_suffix` is just `release-x.y` or `main`.
+        package_suffix=$(
+          grep --only-matching --perl-regexp '^release-\d+\.\d+' <<< "$GITHUB_REF_NAME" \
+          || echo "${GITHUB_REF_NAME}"
+        )
+
+        zip_name="rancher-desktop-2-linux-${package_suffix}.zip"
 
         # Copy zip file to S3
         aws s3 cp \
           rancher-desktop-*-linux.zip \
           "s3://rancher-desktop-assets-for-obs/$zip_name"
 
-        # Trigger OBS services for relevant package in dev channel
+        # Trigger OBS services for relevant package in dev channel.
         curl --request POST --fail-with-body \
           --header "Authorization: Token ${OBS_WEBHOOK_TOKEN}" \
-          "https://build.opensuse.org/trigger/runservice?project=${OBS_DEVEL_PROJECT}&package=rancher-desktop-2-${GITHUB_REF_NAME}"
+          "https://build.opensuse.org/trigger/runservice?project=${OBS_DEVEL_PROJECT}&package=rancher-desktop-2-${package_suffix}"
       env:
         AWS_DEFAULT_REGION: us-east-1
         OBS_DEVEL_PROJECT: ${{ vars.OBS_DEVEL_PROJECT }} # Per-repo, e.g. `isv:Rancher:dev`.
