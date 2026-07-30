@@ -193,9 +193,9 @@ ln -sf "/opt/%{name}/%{name}" "%{buildroot}%{_bindir}/%{name}"
 
 %post
 # debbuild's generated postinst chowns /opt/%{name} recursively, and chown
-# clears the setuid bit that %install set. %post runs after those chowns, so
-# the mode set here sticks. rpm applies the mode from the package header, so
-# the chmod is a no-op there.
+# clears the setuid bit that the install section set. This scriptlet runs
+# after those chowns, so the mode set here sticks. rpm applies the mode from
+# the package header, so the chmod is a no-op there.
 chmod 4755 /opt/%{name}/chrome-sandbox
 
 %files
