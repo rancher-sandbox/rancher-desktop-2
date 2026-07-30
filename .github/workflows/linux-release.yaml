@@ -20,28 +20,6 @@ jobs:
       with:
         persist-credentials: false
         fetch-depth: 0
-    - name: Populate necessary env vars
-      run: |
-        # get the env vars
-        version_with_v=${GITHUB_REF#"refs/tags/"}
-        release_zip_name="rancher-desktop-linux-${version_with_v}.zip"
-        major_minor=$(echo ${version_with_v} | sed -E 's/v([0-9]+\.[0-9]+)\.[0-9]+.*/\1/g')
-        s3_zip_name="rancher-desktop-2-linux-${major_minor}.zip"
-
-        # make variables available in subsequent steps
-        echo "version_with_v=$version_with_v" >> $GITHUB_ENV
-        echo "release_zip_name=$release_zip_name" >> $GITHUB_ENV
-        echo "major_minor=$major_minor" >> $GITHUB_ENV
-        echo "s3_zip_name=$s3_zip_name" >> $GITHUB_ENV
-    - run: mkdir -p dist
-    - name: Fetch the .zip file from release
-      run: >-
-        curl --fail --location -o "dist/${release_zip_name}"
-        "https://github.com/${repository}/releases/download/${version_with_v}/${release_zip_name}"
-      env:
-        repository: ${{ github.repository }}
-        version_with_v: ${{ env.version_with_v }}
-        release_zip_name: ${{ env.release_zip_name }}
     - id: get-vault-secrets
       name: Read vault secrets
       if: github.repository_owner == 'rancher-sandbox'
@@ -61,6 +39,30 @@ jobs:
         OBS_WEBHOOK_TOKEN: ${{ secrets.OBS_WEBHOOK_TOKEN }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    - name: Populate necessary env vars
+      run: |
+        # get the env vars
+        version_with_v=${GITHUB_REF#"refs/tags/"}
+        release_zip_name="rancher-desktop-linux-${version_with_v}.zip"
+        major_minor=$(echo ${version_with_v} | sed -E 's/v([0-9]+\.[0-9]+)\.[0-9]+.*/\1/g')
+        # The stable package's _service in OBS fetches this exact name, so
+        # renaming it here alone breaks the rebuild.
+        s3_zip_name="rancher-desktop-2-linux-${major_minor}.zip"
+
+        # make variables available in subsequent steps
+        echo "version_with_v=$version_with_v" >> $GITHUB_ENV
+        echo "release_zip_name=$release_zip_name" >> $GITHUB_ENV
+        echo "major_minor=$major_minor" >> $GITHUB_ENV
+        echo "s3_zip_name=$s3_zip_name" >> $GITHUB_ENV
+    - run: mkdir -p dist
+    - name: Fetch the .zip file from release
+      run: >-
+        curl --fail --location --output "dist/${release_zip_name}"
+        "https://github.com/${repository}/releases/download/${version_with_v}/${release_zip_name}"
+      env:
+        repository: ${{ github.repository }}
+        version_with_v: ${{ env.version_with_v }}
+        release_zip_name: ${{ env.release_zip_name }}
     - name: Upload zip file to S3
       run: >-
         aws s3 cp
@@ -68,8 +70,10 @@ jobs:
         "s3://rancher-desktop-assets-for-obs/${s3_zip_name}"
       env:
         AWS_DEFAULT_REGION: us-east-1
+    # curl exits 0 on an HTTP error, so without --fail-with-body a wrong
+    # package name would skip the stable rebuild silently.
     - name: Trigger OBS services for relevant package in stable channel
       run: >-
-        curl --fail-with-body -X POST
-        -H "Authorization: Token ${OBS_WEBHOOK_TOKEN}"
+        curl --request POST --fail-with-body
+        --header "Authorization: Token ${OBS_WEBHOOK_TOKEN}"
         "https://build.opensuse.org/trigger/runservice?project=isv:Rancher:stable&package=rancher-desktop-2-${major_minor}"
