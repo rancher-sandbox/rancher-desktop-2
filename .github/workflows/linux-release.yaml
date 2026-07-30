@@ -20,6 +20,25 @@ jobs:
       with:
         persist-credentials: false
         fetch-depth: 0
+    - id: get-vault-secrets
+      name: Read vault secrets
+      if: github.repository_owner == 'rancher-sandbox'
+      uses: rancher-eio/read-vault-secrets@7282bf97898cd1c16c89f837e0bb442e6d384c89 # main
+      with:
+        secrets: |
+          secret/data/github/repo/${{ github.repository }}/obs/webhook-token token | OBS_WEBHOOK_TOKEN;
+          secret/data/github/repo/${{ github.repository }}/aws/credentials AWS_ACCESS_KEY_ID | AWS_ACCESS_KEY_ID;
+          secret/data/github/repo/${{ github.repository }}/aws/credentials AWS_SECRET_ACCESS_KEY | AWS_SECRET_ACCESS_KEY
+    - name: Fall back to GitHub-hosted secrets
+      if: steps.get-vault-secrets.outcome == 'skipped'
+      run: |
+        echo "OBS_WEBHOOK_TOKEN=${OBS_WEBHOOK_TOKEN:?Secret OBS_WEBHOOK_TOKEN not found}" >> "$GITHUB_ENV"
+        echo "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:?Secret AWS_ACCESS_KEY_ID not found}" >> "$GITHUB_ENV"
+        echo "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:?Secret AWS_SECRET_ACCESS_KEY not found}" >> "$GITHUB_ENV"
+      env:
+        OBS_WEBHOOK_TOKEN: ${{ secrets.OBS_WEBHOOK_TOKEN }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     - name: Populate necessary env vars
       run: |
         # get the env vars
@@ -42,25 +61,6 @@ jobs:
         repository: ${{ github.repository }}
         version_with_v: ${{ env.version_with_v }}
         release_zip_name: ${{ env.release_zip_name }}
-    - id: get-vault-secrets
-      name: Read vault secrets
-      if: github.repository_owner == 'rancher-sandbox'
-      uses: rancher-eio/read-vault-secrets@7282bf97898cd1c16c89f837e0bb442e6d384c89 # main
-      with:
-        secrets: |
-          secret/data/github/repo/${{ github.repository }}/obs/webhook-token token | OBS_WEBHOOK_TOKEN;
-          secret/data/github/repo/${{ github.repository }}/aws/credentials AWS_ACCESS_KEY_ID | AWS_ACCESS_KEY_ID;
-          secret/data/github/repo/${{ github.repository }}/aws/credentials AWS_SECRET_ACCESS_KEY | AWS_SECRET_ACCESS_KEY
-    - name: Fall back to GitHub-hosted secrets
-      if: steps.get-vault-secrets.outcome == 'skipped'
-      run: |
-        echo "OBS_WEBHOOK_TOKEN=${OBS_WEBHOOK_TOKEN:?Secret OBS_WEBHOOK_TOKEN not found}" >> "$GITHUB_ENV"
-        echo "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:?Secret AWS_ACCESS_KEY_ID not found}" >> "$GITHUB_ENV"
-        echo "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:?Secret AWS_SECRET_ACCESS_KEY not found}" >> "$GITHUB_ENV"
-      env:
-        OBS_WEBHOOK_TOKEN: ${{ secrets.OBS_WEBHOOK_TOKEN }}
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     - name: Upload zip file to S3
       run: >-
         aws s3 cp
