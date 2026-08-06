@@ -107,12 +107,16 @@ test.describe('Preferences Dialog', () => {
       await expect(virtualMachine.memory.marks.last()).toHaveText('12');
       await virtualMachine.memory.marks.getByText('8').click();
       await expect(virtualMachine.memory.value).toHaveValue('8');
+      await virtualMachine.memory.value.press('ArrowDown');
+      await expect(virtualMachine.memory.value).toHaveValue('7');
 
       await expect(virtualMachine.cpus.container).toBeVisible();
       await expect(virtualMachine.cpus.marks.first()).toHaveText('2');
       await expect(virtualMachine.cpus.marks.last()).toHaveText('32');
       await virtualMachine.cpus.marks.getByText('10').click();
       await expect(virtualMachine.cpus.value).toHaveValue('10');
+      await virtualMachine.cpus.value.press('ArrowDown');
+      await expect(virtualMachine.cpus.value).toHaveValue('9');
     });
   });
 

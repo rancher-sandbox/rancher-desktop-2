@@ -10,6 +10,9 @@ export default defineComponent({
   components: {
     VueSlider, RdFieldset, RdInput,
   },
+  emits: {
+    change: (value: string) => true,
+  },
   props: {
     label: {
       type:    String,
