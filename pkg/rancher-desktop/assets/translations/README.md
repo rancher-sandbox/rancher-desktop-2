@@ -18,7 +18,7 @@ This directory holds the YAML translation files for Rancher Desktop.
 
 ## Architecture
 
-The renderer (Vuex store `store/i18n.js`) and the main process
+The renderer (Vuex store `store/i18n.ts`) and the main process
 (`main/i18n.ts`) both format through `intl-messageformat`, so every key
 speaks the same ICU MessageFormat dialect. Both load YAML through
 webpack's `js-yaml-loader` at build time via the shared

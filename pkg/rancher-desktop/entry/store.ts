@@ -1,4 +1,4 @@
-import { createStore, mapActions, mapGetters, mapMutations, mapState, ModuleTree, Plugin } from 'vuex';
+import { createStore, mapActions, mapGetters, mapMutations, mapState, Plugin } from 'vuex';
 
 import * as ActionMenu from '../store/action-menu';
 import * as ContainerEngine from '../store/container-engine';

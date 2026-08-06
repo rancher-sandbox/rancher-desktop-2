@@ -9,13 +9,9 @@ import RdFieldset from '@pkg/components/form/RdFieldset.vue';
 defineOptions({ name: 'preferences-application-general' });
 
 const store = useStore();
-const preferences = computed(() => store.getters['preferences/preferences']);
 const isPreferenceLocked = computed(() => store.getters['preferences/isPreferenceLocked']);
 const availableLocales = computed(() => store.getters['i18n/availableLocales']);
-const selectedLocale = computed(() => {
-  const locale = 'none'; // preferences.value.application.locale;
-  return (!locale || locale === 'none') ? 'en-us' : locale;
-});
+const selectedLocale = computed(() => store.getters['i18n/current']);
 const showLocaleDisclaimer = computed(() => selectedLocale.value !== 'en-us');
 
 function onLocaleChange(newLocale: string) {
@@ -26,7 +22,6 @@ function onLocaleChange(newLocale: string) {
 <template>
   <div class="application-general">
     <rd-fieldset
-      v-if="(() => false /* temporarily commented out */)()"
       data-test="locale"
       class="width-xs"
       :legend-text="t('application.locale.legendText')"
@@ -37,7 +32,7 @@ function onLocaleChange(newLocale: string) {
         :model-value="selectedLocale"
         :aria-label="t('application.locale.legendText')"
         :is-locked="isPreferenceLocked('application.locale')"
-        @change="onLocaleChange"
+        @input="onLocaleChange"
       >
         <option
           v-for="(label, code) in availableLocales"

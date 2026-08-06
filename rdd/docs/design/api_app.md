@@ -56,6 +56,7 @@ metadata:
 
 spec:
   application:
+    locale: en-zz
     updates:
       enabled: true
   containerEngine:
@@ -88,6 +89,9 @@ status:
     observedGeneration: 1
 ```
 
+- **spec.application.locale**: The display language to be used by the application; this may also
+  affect other text for display.  Defaults to `en-us`.
+
 - **spec.application.updates.enabled**: For use by the Electron front end, to control whether the
   application will attempt to update itself.  Defaults to `true`.
 
@@ -95,7 +99,7 @@ status:
 
 - **spec.running**: Set to `true` to start the LimaVM, `false` to stop it. The App controller propagates this value to `LimaVM.spec.running` on every reconcile.
 
-**spec.containerEngine.name**: The container engine to use inside the VM. Valid values: `moby` (Docker-compatible, default) and `containerd`. Propagated to the `CONTAINER_ENGINE` Lima template param.
+- **spec.containerEngine.name**: The container engine to use inside the VM. Valid values: `moby` (Docker-compatible, default) and `containerd`. Propagated to the `CONTAINER_ENGINE` Lima template param.
 
 - **spec.kubernetes.enabled**: Whether Kubernetes should be enabled in the VM. Defaults to `false`. Propagated to the `KUBERNETES_ENABLED` Lima template param.
 
