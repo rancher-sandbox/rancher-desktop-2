@@ -5,6 +5,7 @@ export class ApplicationNav {
   readonly tabBehavior:              Locator;
   readonly tabEnvironment:           Locator;
   readonly tabGeneral:               Locator;
+  readonly localeSelect:             Locator;
   readonly administrativeAccess:     Locator;
   readonly automaticUpdates:         Locator;
   readonly automaticUpdatesCheckbox: Locator;
@@ -20,6 +21,7 @@ export class ApplicationNav {
     this.tabBehavior = page.getByTestId('btn-behavior');
     this.tabEnvironment = page.getByTestId('btn-environment');
     this.tabGeneral = page.getByTestId('btn-general');
+    this.localeSelect = page.getByTestId('localeSelect');
     this.administrativeAccess = page.getByTestId('administrativeAccess');
     this.automaticUpdates = page.getByTestId('automaticUpdates');
     this.automaticUpdatesCheckbox = page.getByTestId('automaticUpdatesCheckbox');

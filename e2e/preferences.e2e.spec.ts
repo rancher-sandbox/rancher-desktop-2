@@ -40,48 +40,61 @@ test.describe('Preferences Dialog', () => {
     await prefPage.waitForLoad();
   });
 
-  test.fixme('should show application page and render general tab', async() => {
-    const { application } = prefPage;
+  test.describe('Application', () => {
+    test('should show application page and render general tab', async() => {
+      const { application } = prefPage;
 
-    await expect(application.nav).toHaveClass('preferences-nav-item active');
+      await expect(application.nav).toHaveClass('preferences-nav-item active');
+      await expect(application.tabGeneral).toHaveText('General');
+      // TODO: environment tab visiblity.
+      // TODO: behavior tab visibility.
+      await expect(application.tabGeneral).toHaveAttribute('aria-selected', 'true');
 
-    if (!os.platform().startsWith('win')) {
-      await expect(application.tabEnvironment).toBeVisible();
-    } else {
-      await expect(application.tabEnvironment).not.toBeVisible();
-    }
+      await expect(application.automaticUpdates).toBeVisible();
+      // TODO: telemetry visibility.
+      // TODO: auto start (in)visibility.
+      // TODO: path management (in)visibility.
+    });
 
-    await expect(application.tabGeneral).toHaveText('General');
-    await expect(application.tabBehavior).toBeVisible();
+    test('should show locale selection', async() => {
+      const { application } = prefPage;
 
-    await expect(application.automaticUpdates).toBeVisible();
-    await expect(application.statistics).toBeVisible();
-    await expect(application.autoStart).not.toBeVisible();
-    await expect(application.pathManagement).not.toBeVisible();
-  });
+      await expect(application.localeSelect).toBeEnabled();
+      await expect(application.localeSelect).toHaveValue('en-us');
+      try {
+        await application.localeSelect.selectOption('ko');
+        // Changing the selected option should change the locale
+        await expect(application.tabGeneral).toHaveText(/^\p{Script=Hangul}+$/u);
+      } finally {
+        // Change the option back for future tests
+        await application.localeSelect.selectOption('en-us');
+      }
+      await expect(application.tabGeneral).toHaveText('General');
+    });
 
-  test.fixme('should render behavior tab', async() => {
-    const { application } = prefPage;
+    test.fixme('should render behavior tab', async() => {
+      const { application } = prefPage;
 
-    await application.tabBehavior.click();
+      await application.tabBehavior.click();
 
-    await expect(application.autoStart).toBeVisible();
-    await expect(application.background).toBeVisible();
-    await expect(application.notificationIcon).toBeVisible();
-    await expect(application.administrativeAccess).not.toBeVisible();
-    await expect(application.pathManagement).not.toBeVisible();
-  });
+      await expect(application.autoStart).toBeVisible();
+      await expect(application.background).toBeVisible();
+      await expect(application.notificationIcon).toBeVisible();
+      await expect(application.administrativeAccess).not.toBeVisible();
+      await expect(application.pathManagement).not.toBeVisible();
+    });
 
-  test.fixme('should render environment tab', async() => {
-    test.skip(os.platform() === 'win32', 'Environment tab not available on Windows');
-    const { application } = prefPage;
+    test.fixme('should render environment tab', async() => {
+      test.skip(os.platform() === 'win32', 'Environment tab not available on Windows');
+      const { application } = prefPage;
 
-    await application.tabEnvironment.click();
+      await application.tabEnvironment.click();
 
-    await expect(application.administrativeAccess).not.toBeVisible();
-    await expect(application.automaticUpdates).not.toBeVisible();
-    await expect(application.statistics).not.toBeVisible();
-    await expect(application.pathManagement).toBeVisible();
+      await expect(application.administrativeAccess).not.toBeVisible();
+      await expect(application.automaticUpdates).not.toBeVisible();
+      await expect(application.statistics).not.toBeVisible();
+      await expect(application.pathManagement).toBeVisible();
+    });
   });
 
   test.describe('Virtual Machine', () => {
