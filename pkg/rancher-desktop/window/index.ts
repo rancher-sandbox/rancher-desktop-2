@@ -6,7 +6,6 @@ import Electron, {
 } from 'electron';
 
 import { getSettings } from '@pkg/config/settingsImpl';
-import { getLocale } from '@pkg/main/i18n';
 import { IpcRendererEvents } from '@pkg/typings/electron-ipc';
 import { isDevBuild } from '@pkg/utils/environment';
 import Logging from '@pkg/utils/logging';
@@ -96,12 +95,7 @@ export function createWindow(name: string, url: string, options: Electron.Browse
     Logging[`window_${ name }`].error(`Failed to load ${ url }: ${ errorCode } (${ errorDescription })`, event);
   });
   console.debug('createWindow() name:', name, ' url:', url);
-  // Give the renderer its locale in the URL so the first paint is already
-  // localized, without waiting on a settings roundtrip.
-  const localizedUrl = new URL(url);
-
-  localizedUrl.searchParams.set('locale', getLocale());
-  window.loadURL(localizedUrl.toString());
+  window.loadURL(url);
   windowMapping[name] = window.id;
 
   return window;

@@ -17,7 +17,7 @@ export interface IpcMainEvents {
   'factory-reset':         (keepSystemImages: boolean) => void;
   'update-network-status': (status: boolean) => void;
   /** The locale has been changed; also emitted on initialization. */
-  'i18n/locale-change':    (locale: string) => void;
+  'i18n/locale-change':    (locale: import('@pkg/utils/translationLoader').LocaleString) => void;
 
   // #region backend
   /** The app status has changed.  The input is the status conditions on the app. */

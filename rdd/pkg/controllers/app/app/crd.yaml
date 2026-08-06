@@ -54,6 +54,11 @@ spec:
                 description: application specifies the settings for the Rancher Desktop
                   Electron frontend.
                 properties:
+                  locale:
+                    default: en-us
+                    description: locale is the language/locale to use for the Rancher
+                      Desktop App.
+                    type: string
                   updates:
                     default:
                       enabled: true

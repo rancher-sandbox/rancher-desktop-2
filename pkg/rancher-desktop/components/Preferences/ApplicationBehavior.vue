@@ -45,7 +45,7 @@ export default defineComponent({
     <div class="row">
       <div class="col span-6">
         <rd-fieldset
-          data-test="autoStart"
+          data-testid="autoStart"
           :legend-text="t('application.behavior.autoStart.legendText')"
         >
           <rd-checkbox
@@ -56,7 +56,7 @@ export default defineComponent({
           />
         </rd-fieldset>
         <rd-fieldset
-          data-test="background"
+          data-testid="background"
           :legend-text="t('application.behavior.background.legendText')"
           :legend-tooltip="t('application.behavior.background.legendTooltip')"
           class="checkbox-group"
@@ -75,7 +75,7 @@ export default defineComponent({
           />
         </rd-fieldset>
         <rd-fieldset
-          data-test="notificationIcon"
+          data-testid="notificationIcon"
           :legend-text="t('application.behavior.notificationIcon.legendText')"
         >
           <rd-checkbox
@@ -88,7 +88,7 @@ export default defineComponent({
       </div>
       <div class="col span-6 theme-options">
         <rd-fieldset
-          data-test="theme"
+          data-testid="theme"
           :legend-text="t('application.behavior.theme.legendText')"
           :is-locked="isPreferenceLocked('application.theme')"
         >
@@ -109,7 +109,7 @@ export default defineComponent({
                   :value="preferences.application.theme"
                   :val="option.value"
                   :disabled="isDisabled"
-                  :data-test="option.label"
+                  :data-testid="`theme-${option.value}`"
                   @update:value="onChange('application.theme', $event)"
                 >
                   <template #label>

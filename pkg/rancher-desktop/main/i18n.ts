@@ -8,24 +8,25 @@ import get from 'lodash/get.js';
 
 import { getIpcMainProxy } from '@pkg/main/ipcMain';
 import logging from '@pkg/utils/logging';
-import { loadTranslations } from '@pkg/utils/translationLoader';
+import { loadTranslations, LocaleString } from '@pkg/utils/translationLoader';
 
 export { availableLocales } from '@pkg/utils/translationLoader';
 
 type TranslationMap = Record<string, unknown>;
+type TranslationsCache = Partial<Record<LocaleString, TranslationMap>> & { 'en-us': TranslationMap };
 
 const console = logging.i18n;
 const ipcMain = getIpcMainProxy(console);
-let currentLocale = 'en-us';
-const translations: Record<string, TranslationMap> = { 'en-us': loadTranslations('en-us') };
+let currentLocale: LocaleString = 'en-us';
+const translations: TranslationsCache = { 'en-us': loadTranslations('en-us') };
 const localeChangeCallbacks: (() => void)[] = [];
 
 /**
  * Look up a dotted key path, returning the value only when it is a string;
  * a key that resolves to a subtree counts as missing.
  */
-function getByPath(obj: TranslationMap, path: string): string | undefined {
-  const value = get(obj, path);
+function getByPath(obj: TranslationMap | undefined, path: string): string | undefined {
+  const value = get(obj ?? {}, path);
 
   return typeof value === 'string' ? value : undefined;
 }
@@ -33,7 +34,7 @@ function getByPath(obj: TranslationMap, path: string): string | undefined {
 /**
  * Load a locale's translations if not already loaded.
  */
-function loadLocale(locale: string): boolean {
+function loadLocale(locale: LocaleString): boolean {
   if (translations[locale]) {
     return true;
   }
@@ -103,13 +104,6 @@ export function t(key: string, args?: Record<string, string | number>): string {
 }
 
 /**
- * The locale currently in effect.
- */
-export function getLocale(): string {
-  return currentLocale;
-}
-
-/**
  * Register a callback to run after the locale has been loaded.
  * Use this instead of listening to settings-update directly, which
  * would race against the locale loading.
@@ -140,7 +134,8 @@ export function initMainI18n() {
       return; // load failed, stay on current locale
     }
     currentLocale = locale;
-    // We don't bother persisting here; the renderer will put it in the cookie.
+    // The renderer is responsible for persisting the locale (in local storage
+    // as well as app preferences).
     for (const callback of [...localeChangeCallbacks]) {
       try {
         callback();

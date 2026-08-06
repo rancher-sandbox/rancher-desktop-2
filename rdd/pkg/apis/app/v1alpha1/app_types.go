@@ -177,6 +177,10 @@ type ApplicationSpec struct {
 	// +optional
 	// +kubebuilder:default={enabled:true}
 	Updates ApplicationUpdatesSpec `json:"updates,omitempty"`
+	// locale is the language/locale to use for the Rancher Desktop App.
+	// +optional
+	// +kubebuilder:default="en-us"
+	Locale string `json:"locale,omitempty"`
 }
 
 // ApplicationUpdatesSpec defines settings for the Rancher Desktop App's update

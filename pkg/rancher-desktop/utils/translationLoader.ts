@@ -13,9 +13,13 @@ import { fileURLToPath } from 'url';
 
 import yaml from 'js-yaml';
 
+// TODO: generate this list from a script (e.g. as a `prebuild` script in
+// `package.json`).
+export type LocaleString = 'de' | 'en-us' | 'es' | 'fr' | 'it' | 'ja' | 'ko' | 'pt-br' | 'zh-hans';
+
 interface TranslationSource {
-  locales: string[];
-  load(locale: string): Record<string, unknown>;
+  locales: LocaleString[];
+  load(locale: LocaleString): Record<string, unknown>;
 }
 
 function webpackSource(): TranslationSource {
@@ -26,7 +30,7 @@ function webpackSource(): TranslationSource {
   );
 
   return {
-    locales: context.keys().map(p => p.replace(/^.*\/([^\/]+)\.[^.]+$/, '$1')),
+    locales: context.keys().map(p => p.replace(/^.*\/([^\/]+)\.[^.]+$/, '$1') as LocaleString),
     load:    locale => context(`./${ locale }.yaml`) as Record<string, unknown>,
   };
 }
@@ -35,7 +39,7 @@ function filesystemSource(): TranslationSource {
   const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'translations');
 
   return {
-    locales: fs.readdirSync(dir).filter(f => f.endsWith('.yaml')).map(f => f.replace(/\.yaml$/, '')),
+    locales: fs.readdirSync(dir).filter(f => f.endsWith('.yaml')).map(f => f.replace(/\.yaml$/, '') as LocaleString),
     load:    locale => yaml.load(fs.readFileSync(path.join(dir, `${ locale }.yaml`), 'utf8')) as Record<string, unknown>,
   };
 }
@@ -43,9 +47,9 @@ function filesystemSource(): TranslationSource {
 const source = import.meta.webpack ? webpackSource() : filesystemSource();
 
 /** Locale codes derived from the bundled translation files. */
-export const availableLocales: string[] = source.locales;
+export const availableLocales: LocaleString[] = source.locales;
 
 /** Returns the parsed translations for a bundled locale. */
-export function loadTranslations(locale: string): Record<string, unknown> {
+export function loadTranslations(locale: LocaleString): Record<string, unknown> {
   return source.load(locale);
 }

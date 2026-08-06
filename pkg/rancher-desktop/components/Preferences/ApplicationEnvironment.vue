@@ -40,7 +40,7 @@ export default defineComponent({
 
 <template>
   <rd-fieldset
-    data-test="pathManagement"
+    data-testid="pathManagement"
     :legend-text="t('pathManagement.label')"
     :legend-tooltip="t('pathManagement.tooltip')"
     :is-locked="isPreferenceLocked('application.pathManagementStrategy')"

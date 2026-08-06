@@ -25,6 +25,28 @@ function makeState(translations: Record<string, unknown>, selected = 'de') {
   };
 }
 
+/**
+ * Resolves all getters against a state, removing one layer of indirection so
+ * that getters which return functions (t, exists, withFallback, …) can be
+ * called directly, and getters that depend on other getters receive already-
+ * resolved peers.
+ */
+function makeGetters(state: Record<string, unknown>) {
+  let resolved: Record<string, unknown> = {};
+  resolved = Object.create(null, Object.fromEntries(Object.entries(i18n.getters).map(([key, getter]) => {
+    return [key, {
+      get: () => (getter as (...args: any[]) => unknown)(state, resolved),
+    }];
+  })));
+
+  return resolved as {
+    [K in keyof typeof i18n.getters]:
+      typeof i18n.getters[K] extends (...args: any[]) => infer R
+        ? R
+        : never;
+  };
+}
+
 const en = {
   simple:  'Plain text',
   nested:  { child: 'Nested value' },
@@ -39,73 +61,102 @@ const de = {
   greet:  'Hallo {name}',
 };
 
+beforeEach(() => {
+  // Clear the cache so that each test starts with a clean slate.
+  for (const key of Object.keys(i18n._intlCache)) {
+    delete i18n._intlCache[key as keyof typeof i18n._intlCache];
+  }
+});
+
 describe('i18n store getters', () => {
   let state: ReturnType<typeof makeState>;
+  let getters: ReturnType<typeof makeGetters>;
 
   beforeEach(() => {
     state = makeState({ 'en-us': en, de });
+    getters = makeGetters(state);
   });
 
-  const t = (key: string, args?: Record<string, unknown>) => (i18n.getters as any).t(state)(key, args);
-
   it('returns the selected locale translation', () => {
-    expect(t('simple')).toEqual('Einfacher Text');
+    expect(getters.t('simple')).toEqual('Einfacher Text');
   });
 
   it('falls back to en-us per key', () => {
-    expect(t('nested.child')).toEqual('Nested value');
+    expect(getters.t('nested.child')).toEqual('Nested value');
   });
 
   it('returns a visible %key% placeholder for a missing key', () => {
-    expect(t('no.such.key')).toEqual('%no.such.key%');
+    expect(getters.t('no.such.key')).toEqual('%no.such.key%');
   });
 
   it('formats ICU plurals', () => {
-    expect(t('plural', { count: 1 })).toEqual('1 item');
-    expect(t('plural', { count: 3 })).toEqual('3 items');
+    expect(getters.t('plural', { count: 1 })).toEqual('1 item');
+    expect(getters.t('plural', { count: 3 })).toEqual('3 items');
   });
 
   it('interpolates arguments', () => {
-    expect(t('greet', { name: 'Jan' })).toEqual('Hallo Jan');
+    expect(getters.t('greet', { name: 'Jan' })).toEqual('Hallo Jan');
   });
 
   it('injects the product name for {appName}', () => {
-    expect(t('product')).toEqual(`Made by ${ packageJSON.productName }`);
+    expect(getters.t('product')).toEqual(`Made by ${ packageJSON.productName }`);
   });
 
   it('degrades to the raw pattern when an argument is missing', () => {
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    expect(t('plural', {})).toEqual(en.plural);
+    expect(getters.t('plural', {})).toEqual(en.plural);
     spy.mockRestore();
   });
 
   it('degrades to the raw text for malformed ICU patterns', () => {
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    expect(t('invalid')).toEqual('Unbalanced {brace');
+    expect(getters.t('invalid')).toEqual('Unbalanced {brace');
     spy.mockRestore();
   });
 
   it("does not HTML-escape; escaping is the sink's responsibility", () => {
-    expect(t('special')).toEqual('Command & "Args"');
+    expect(getters.t('special')).toEqual('Command & "Args"');
   });
 
   it('reports key existence', () => {
-    const exists = (key: string) => (i18n.getters as any).exists(state)(key);
+    expect(getters.exists('simple')).toBe(true);
+    expect(getters.exists('no.such.key')).toBe(false);
+  });
+});
 
-    expect(exists('simple')).toBe(true);
-    expect(exists('no.such.key')).toBe(false);
+describe('withFallback getter', () => {
+  let state: ReturnType<typeof makeState>;
+  let getters: ReturnType<typeof makeGetters>;
+
+  beforeEach(() => {
+    state = makeState({ 'en-us': en, de });
+    getters = makeGetters(state);
+  });
+
+  it('returns the selected locale translation', () => {
+    expect(getters.withFallback('simple', 'fallback')).toEqual('Einfacher Text');
+  });
+
+  it('falls back to en-us per key', () => {
+    expect(getters.withFallback('nested.child', 'fallback')).toEqual('Nested value');
+  });
+
+  it('returns the fallback string for a missing key', () => {
+    expect(getters.withFallback('no.such.key', {}, 'Default value')).toEqual('Default value');
+  });
+
+  it('returns the fallback translation for a missing key when fallbackIsKey is true', () => {
+    expect(getters.withFallback('no.such.key', {}, 'simple', true)).toEqual('Einfacher Text');
   });
 });
 
 describe('availableLocales getter', () => {
-  const availableLocales = (state: unknown) => (i18n.getters as any).availableLocales(state);
-
   // Codes whose alphabetical order differs from their labels', as in the real
   // locale set: by code ja < ko < pt-br, by label Português < 한국어 < 日本語.
-  function scriptState(selected: string | null) {
-    return {
+  function scriptGetters(selected: string | null) {
+    return makeGetters({
       default:      'en-us',
       selected,
       available:    ['ja', 'ko', 'pt-br'],
@@ -119,12 +170,12 @@ describe('availableLocales getter', () => {
         ko:      { locale: { ko: '한국어' } },
         'pt-br': { locale: { 'pt-br': 'Português (Brasil)' } },
       },
-    };
+    });
   }
 
   // German collates Ä with A, Swedish sorts it after Z.
-  function collationState(selected: string) {
-    return {
+  function collationGetters(selected: string) {
+    return makeGetters({
       default:      'en-us',
       selected,
       available:    ['de', 'sv'],
@@ -133,23 +184,23 @@ describe('availableLocales getter', () => {
         de:      { locale: { de: 'Zebra' } },
         sv:      { locale: { sv: 'Äpfel' } },
       },
-    };
+    });
   }
 
   it('orders locales by label rather than by locale code', () => {
-    expect(Object.keys(availableLocales(scriptState('en-us')))).toEqual(['pt-br', 'ko', 'ja']);
+    expect(Object.keys(scriptGetters('en-us').availableLocales)).toEqual(['pt-br', 'ko', 'ja']);
   });
 
   it('collates in the selected locale', () => {
-    expect(Object.keys(availableLocales(collationState('de')))).toEqual(['sv', 'de']);
-    expect(Object.keys(availableLocales(collationState('sv')))).toEqual(['de', 'sv']);
+    expect(Object.keys(collationGetters('de').availableLocales)).toEqual(['sv', 'de']);
+    expect(Object.keys(collationGetters('sv').availableLocales)).toEqual(['de', 'sv']);
   });
 
   it('collates with the default locale before a selection is made', () => {
-    expect(Object.keys(availableLocales(scriptState(null)))).toEqual(['pt-br', 'ko', 'ja']);
+    expect(Object.keys(scriptGetters(null).availableLocales)).toEqual(['pt-br', 'ko', 'ja']);
   });
 
   it('collates with the default locale when the selection is not a bundled locale', () => {
-    expect(Object.keys(availableLocales(scriptState('none')))).toEqual(['pt-br', 'ko', 'ja']);
+    expect(Object.keys(scriptGetters('none').availableLocales)).toEqual(['pt-br', 'ko', 'ja']);
   });
 });

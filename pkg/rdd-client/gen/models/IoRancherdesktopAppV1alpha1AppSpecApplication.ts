@@ -17,6 +17,10 @@ import { HttpFile } from '../http/http';
 * application specifies the settings for the Rancher Desktop Electron frontend.
 */
 export class IoRancherdesktopAppV1alpha1AppSpecApplication {
+    /**
+    * locale is the language/locale to use for the Rancher Desktop App.
+    */
+    'locale'?: string;
     'updates'?: IoRancherdesktopAppV1alpha1AppSpecApplicationUpdates;
 
     static readonly discriminator: string | undefined = undefined;
@@ -24,6 +28,12 @@ export class IoRancherdesktopAppV1alpha1AppSpecApplication {
     static readonly mapping: {[index: string]: string} | undefined = undefined;
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
+        {
+            "name": "locale",
+            "baseName": "locale",
+            "type": "string",
+            "format": ""
+        },
         {
             "name": "updates",
             "baseName": "updates",
