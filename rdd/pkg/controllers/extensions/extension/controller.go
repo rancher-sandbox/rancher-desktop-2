@@ -9,11 +9,13 @@ import (
 	"context"
 	_ "embed"
 
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/extensions/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/extensions/extension/controllers"
 )
 
 func init() {
@@ -28,6 +30,13 @@ const APIGroup = "extensions"
 
 //go:embed crd.yaml
 var extensionCRD string
+
+const (
+	// extensionValidatorWebhookName is the name used for the Extension validating webhook.
+	extensionValidatorWebhookName = "extension-validator.extensions.rancherdesktop.io"
+	// extensionValidatorConfigName is the name of the Extension ValidatingWebhookConfiguration.
+	extensionValidatorConfigName = "extension-validator"
+)
 
 // controller implements the base.Controller interface for extension.
 type controller struct {
@@ -75,6 +84,27 @@ func (c *controller) GetWebhookManagers() []base.WebhookManager {
 	return c.webhookManagers
 }
 
+// setupWebhook sets up the Extension validating webhook.
+func (c *controller) setupWebhook(mgr ctrl.Manager) error {
+	validatingConfig := base.WebhookConfig[*v1alpha1.Extension]{
+		Name:        extensionValidatorConfigName,
+		WebhookName: extensionValidatorWebhookName,
+		WebhookPort: c.webhookPort,
+		Operations: []admissionregistrationv1.OperationType{
+			admissionregistrationv1.Create,
+			admissionregistrationv1.Update,
+		},
+		Validator: &controllers.ExtensionValidator{Reader: mgr.GetAPIReader()},
+	}
+
+	managers, err := base.SetupWebhookForResource(mgr, &v1alpha1.Extension{}, validatingConfig)
+	if err != nil {
+		return err
+	}
+	c.webhookManagers = append(c.webhookManagers, managers...)
+	return nil
+}
+
 // RegisterWithManager implements the complete controller registration for both
 // embedded and external modes.  It registers the CRD types with the scheme,
 // sets up the reconciler and the validating webhook.
@@ -86,5 +116,5 @@ func (c *controller) RegisterWithManager(ctx context.Context, mgr ctrl.Manager) 
 		return err
 	}
 
-	return nil
+	return c.setupWebhook(mgr)
 }
