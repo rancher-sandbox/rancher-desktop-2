@@ -20,7 +20,7 @@ const entries = [
 
 describe('BlogFeed.vue', () => {
   it('renders every entry', async() => {
-    const wrapper = mount(BlogFeed);
+    const wrapper = mount(BlogFeed, { global: { mocks: { t: (key: string) => key } } });
 
     await wrapper.setData({ entries });
 
@@ -29,7 +29,7 @@ describe('BlogFeed.vue', () => {
   });
 
   it('renders nothing until the feed has entries', () => {
-    const wrapper = mount(BlogFeed);
+    const wrapper = mount(BlogFeed, { global: { mocks: { t: (key: string) => key } } });
 
     expect(wrapper.find('.blog-feed').exists()).toBe(false);
   });
@@ -60,7 +60,7 @@ const feedXML = `<?xml version="1.0" encoding="UTF-8"?>
 </rss>`;
 
 describe('BlogFeed.parseFeed', () => {
-  const parse = (xml: string) => mount(BlogFeed).vm.parseFeed(xml);
+  const parse = (xml: string) => mount(BlogFeed, { global: { mocks: { t: (key: string) => key } } }).vm.parseFeed(xml);
 
   it('extracts the title, link, and first paragraph of each item', () => {
     const parsed = parse(feedXML);

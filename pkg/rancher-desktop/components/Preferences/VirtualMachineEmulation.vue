@@ -86,10 +86,10 @@ export default defineComponent({
         if (this.preferences.virtualMachine.mount.type === MountType.VIRTIOFS) {
           compatiblePrefs.push(
             {
-              title: MountType.REVERSE_SSHFS, navItemName: 'Virtual Machine', tabName: 'volumes',
+              title: MountType.REVERSE_SSHFS, navItemName: 'virtual-machine', tabName: 'volumes',
             },
             {
-              title: MountType.NINEP, navItemName: 'Virtual Machine', tabName: 'volumes',
+              title: MountType.NINEP, navItemName: 'virtual-machine', tabName: 'volumes',
             } );
         }
         break;
@@ -97,10 +97,10 @@ export default defineComponent({
         if (this.preferences.virtualMachine.mount.type === MountType.NINEP) {
           compatiblePrefs.push(
             {
-              title: MountType.REVERSE_SSHFS, navItemName: 'Virtual Machine', tabName: 'volumes',
+              title: MountType.REVERSE_SSHFS, navItemName: 'virtual-machine', tabName: 'volumes',
             },
             {
-              title: MountType.VIRTIOFS, navItemName: 'Virtual Machine', tabName: 'volumes',
+              title: MountType.VIRTIOFS, navItemName: 'virtual-machine', tabName: 'volumes',
             } );
         }
         break;
@@ -131,9 +131,9 @@ export default defineComponent({
               <template
                 v-for="(option, index) in options"
                 #[index]="{ isDisabled }"
+                :key="groupName + '-' + index"
               >
                 <radio-button
-                  :key="groupName + '-' + index"
                   v-tooltip="disabledVmTypeTooltip(option.disabled)"
                   :name="groupName"
                   :value="preferences.virtualMachine.type"

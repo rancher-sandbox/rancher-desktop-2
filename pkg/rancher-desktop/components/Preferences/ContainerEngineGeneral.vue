@@ -5,10 +5,10 @@ import { defineComponent } from 'vue';
 import { mapGetters } from 'vuex';
 
 import EngineSelector from '@pkg/components/EngineSelector.vue';
-import { handleNavigateClick } from '@pkg/components/Preferences/navigateClick';
 import RdCheckbox from '@pkg/components/form/RdCheckbox.vue';
 import RdFieldset from '@pkg/components/form/RdFieldset.vue';
 import { ContainerEngine, Settings } from '@pkg/config/settings';
+import { mapTypedActions } from '@pkg/entry/store';
 import { RecursiveTypes } from '@pkg/utils/typeUtils';
 
 import type { PropType } from 'vue';
@@ -39,9 +39,7 @@ export default defineComponent({
     },
   },
   methods: {
-    onWarningClick(event: MouseEvent) {
-      handleNavigateClick(event, this.$root.navigate);
-    },
+    ...mapTypedActions('transient-preferences', ['navigateByClick']),
     onChangeEngine(desiredEngine: ContainerEngine) {
       this.containerEngine = desiredEngine;
       this.$emit('container-engine-change', desiredEngine);
@@ -87,7 +85,7 @@ export default defineComponent({
         >
           <banner
             color="warning"
-            @click.prevent="onWarningClick"
+            @click.prevent="navigateByClick"
           >
             <!-- v-clean-html: the translated warning embeds a link -->
             <span v-clean-html="t('preferences.containerEngine.webAssembly.warning')" />

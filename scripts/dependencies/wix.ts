@@ -34,9 +34,8 @@ export class Wix extends GlobalDependency(GitHubDependency) {
     // serves every architecture.  Upstream publishes no checksum file, so we
     // rely on the digest recorded in dependencies.yaml at bump time.
     const asset = selectAsset(context, this.name, { platform: 'windows' });
-    const hostDir = path.join(context.resourcesDir, 'host');
-    const wixDir = path.join(hostDir, 'wix');
-    const archivePath = path.join(hostDir, path.basename(new URL(asset.url).pathname));
+    const wixDir = path.join(context.hostDir, 'wix');
+    const archivePath = path.join(context.hostDir, path.basename(new URL(asset.url).pathname));
 
     await fs.promises.mkdir(wixDir, { recursive: true });
     await download(asset.url, archivePath, { expectedChecksum: asset.checksum });

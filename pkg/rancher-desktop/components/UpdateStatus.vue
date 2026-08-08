@@ -102,6 +102,7 @@ const { preference, updateState, locale } = defineProps({
 
 const store = useStore();
 
+const t = computed(() => store.getters['i18n/t']);
 const applying = ref(false);
 const preferences = computed(() => store.getters['preferences/preferences']);
 const updatesEnabled = computed(() => !!_.get(preferences.value, preference, false));
@@ -110,17 +111,16 @@ const updateReady = computed(() => hasUpdate.value && !!updateState?.downloaded 
 
 const statusMessage = computed(() => {
   if (updateState?.error) {
-    return 'There was an error checking for updates.';
+    return t.value('updateStatus.errorChecking');
   }
   if (!updateState?.info) {
     return '';
   }
 
   const { info, progress } = updateState;
-  const prefix = `An update to version ${ info.version } is available`;
 
   if (!progress) {
-    return `${ prefix }.`;
+    return t.value('updateStatus.available', { version: info.version });
   }
 
   const percent = Math.floor(progress.percent);
@@ -131,7 +131,7 @@ const statusMessage = computed(() => {
     notation:    'compact',
   }).format(progress.bytesPerSecond);
 
-  return `${ prefix }; downloading... (${ percent }%, ${ speed })`;
+  return t.value('updateStatus.downloading', { version: info.version, percent: String(percent), speed });
 });
 
 const detailsMessage = computed(() => {
@@ -146,9 +146,13 @@ const detailsMessage = computed(() => {
   return DOMPurify.sanitize(unsanitized, { USE_PROFILES: { html: true } });
 });
 
-const applyMessage = computed(() => applying.value ? 'Applying update...' : 'Restart Now');
+const applyMessage = computed(() =>
+  applying.value
+    ? t.value('updateStatus.applyingUpdate')
+    : t.value('updateStatus.restartNow'));
 
-const unsupportedUpdateAvailable = computed(() => !hasUpdate.value && !!updateState?.info?.unsupportedUpdateAvailable);
+const unsupportedUpdateAvailable = computed(() =>
+  !hasUpdate.value && !!updateState?.info?.unsupportedUpdateAvailable);
 
 function applyUpdate() {
   applying.value = true;

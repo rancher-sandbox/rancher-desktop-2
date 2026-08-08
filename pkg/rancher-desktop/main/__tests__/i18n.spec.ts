@@ -26,8 +26,8 @@ describe('main-process i18n', () => {
   });
 
   it('interpolates arguments', () => {
-    expect(t('mainMenu.help.about', { appName: 'Rancher Desktop' }))
-      .toEqual('&About Rancher Desktop');
+    expect(t('mainMenu.help.about'))
+      .toEqual('&About Rancher Desktop 2');
   });
 
   it('formats ICU plurals', () => {

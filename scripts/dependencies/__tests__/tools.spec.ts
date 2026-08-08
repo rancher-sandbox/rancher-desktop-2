@@ -11,13 +11,19 @@ const sha = (hex: string) => parseSha256Checksum(`sha256:${ hex.padEnd(64, '0') 
 /** A context for a linux/amd64 install, where two credential helpers are expected. */
 function contextFor(manifest: DependencyManifest): DownloadContext {
   return {
-    dependencies: manifest,
-    manifestPath: 'dependencies.yaml',
-    platform:     'linux',
-    goPlatform:   'linux',
-    isM1:         false,
-    binDir:       '/nonexistent/bin',
-  } as DownloadContext;
+    dependencies:       manifest,
+    manifestPath:       'dependencies.yaml',
+    dependencyPlatform: 'linux',
+    platform:           'linux',
+    arch:               'x64',
+    goPlatform:         'linux',
+    goArch:             'amd64',
+    resourcesDir:       '/nonexistent/resources',
+    binDir:             '/nonexistent/bin',
+    internalDir:        '/nonexistent/internal',
+    dockerPluginsDir:   '/nonexistent/docker-plugins',
+    hostDir:            '/nonexistent/host',
+  };
 }
 
 describe('DockerProvidedCredHelpers.download', () => {

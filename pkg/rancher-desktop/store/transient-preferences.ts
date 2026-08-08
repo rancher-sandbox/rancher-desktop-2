@@ -6,6 +6,7 @@ import type { RootState } from '@pkg/entry/store';
 import type { ActionTree, MutationsType } from '@pkg/store/ts-helpers';
 import defaultTransientPreferences, { TransientPreferencesState } from '@pkg/types/transientPreferences';
 import ipcRenderer from '@pkg/utils/ipcRenderer';
+import { kebabCase } from '@pkg/utils/string-utils';
 import { FieldType, RecursiveLeafKeys, RecursiveReadonly } from '@pkg/utils/typeUtils';
 
 export const state = () => { return structuredClone(defaultTransientPreferences) };
@@ -32,15 +33,43 @@ type NavigationInputUnion = {
  * NavigationInput is a type that represents the input to the navigate action.
  * It must be a record with a single key, which must be a dot-separated key of
  * the navigation state, and the value must be the new value for that key.
+ * Optionally, any key may be paired with `preferences.top` to move directly to
+ * a specific tab.
  */
 type NavigationInput = {
-  [K in keyof NavigationInputUnion]: Pick<NavigationInputUnion, K>;
+  [K in keyof NavigationInputUnion]:
+  K extends 'preferences.top'
+    ? { 'preferences.top': NavigationInputUnion['preferences.top'] }
+    : Pick<NavigationInputUnion, K> & {
+      'preferences.top'?: K extends `preferences.${ infer TabName }`
+        ? TabName
+        : NavigationInputUnion['preferences.top'];
+    };
 }[keyof NavigationInputUnion];
 
 export const actions = {
   async navigate({ state, commit }, navigation: NavigationInput) {
     commit('navigate', navigation);
     await ipcRenderer.invoke('transient-preferences/set', toRaw(state));
+  },
+  /**
+   * Click handler for data-navigate attributes in translated HTML strings.
+   * Parses "page,tab" from the attribute and calls the navigate function.
+   */
+  async navigateByClick({ dispatch }, event: MouseEvent) {
+    const target: HTMLElement | null = (event.target as HTMLElement)?.closest('[data-navigate]');
+    const nav = target?.dataset.navigate;
+
+    if (nav) {
+      // data-navigate values from translations are not validated against known
+      // page names; malformed values produce a no-op navigation.
+      const [navItem, tab] = nav.split(',').map(s => kebabCase(s.trim()));
+      const args = Object.fromEntries([
+        ['preferences.top', navItem],
+        [`preferences.${ navItem }`, tab],
+      ].filter(([_, value]) => !!value)) as NavigationInput;
+      await dispatch('navigate', args);
+    }
   },
 } satisfies ActionTree<TransientPreferencesState>;
 

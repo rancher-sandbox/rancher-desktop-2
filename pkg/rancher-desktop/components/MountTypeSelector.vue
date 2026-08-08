@@ -128,14 +128,14 @@ export default defineComponent({
         case MountType.NINEP:
           if (this.preferences.virtualMachine.type === VMType.VZ) {
             compatiblePrefs.push( {
-              title: VMType.QEMU, navItemName: 'Virtual Machine', tabName: 'emulation',
+              title: VMType.QEMU, navItemName: 'virtual-machine', tabName: 'emulation',
             } );
           }
           break;
         case MountType.VIRTIOFS:
           if (this.preferences.virtualMachine.type === VMType.QEMU) {
             compatiblePrefs.push( {
-              title: VMType.VZ, navItemName: 'Virtual Machine', tabName: 'emulation',
+              title: VMType.VZ, navItemName: 'virtual-machine', tabName: 'emulation',
             } );
           }
           break;
@@ -167,9 +167,9 @@ export default defineComponent({
               <template
                 v-for="(option, index) in options"
                 #[index]="{ isDisabled }"
+                :key="groupName + '-' + index"
               >
                 <radio-button
-                  :key="groupName + '-' + index"
                   v-tooltip="disabledVirtIoFsTooltip(option.disabled)"
                   :name="groupName"
                   :value="preferences.virtualMachine.mount.type"

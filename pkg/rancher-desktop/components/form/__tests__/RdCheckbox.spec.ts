@@ -64,10 +64,12 @@ function wrap(
     props,
     attrs,
     global: {
+      mocks: {
+        t: (key: string) => key,
+      },
       plugins:    [store],
       stubs:      {
         TooltipIcon: true,
-        t:           true,
       },
       directives: {
         'clean-tooltip': () => {},

@@ -57,9 +57,10 @@ function errorString(cause: V1StatusCause) {
     .filter((value, index) => index > 0 || value !== 'spec');
   const key = ['preferences', 'validation', ...keyParts, cause.reason].join('.');
   const current = _.get(preferences.value, keyParts.join('.'));
+  const exists = store.getters['i18n/exists'](key);
   const localized = store.getters['i18n/t'](key, { current, message: cause.message });
 
-  return localized ?? `${ cause.field }: ${ cause.message }`;
+  return exists ? localized : `${ cause.field }: ${ cause.message }`;
 }
 </script>
 

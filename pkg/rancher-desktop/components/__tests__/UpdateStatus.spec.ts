@@ -1,6 +1,5 @@
 import { jest } from '@jest/globals';
 import { mount } from '@vue/test-utils';
-import FloatingVue from 'floating-vue';
 import _ from 'lodash';
 import { createStore } from 'vuex';
 
@@ -35,6 +34,7 @@ function wrap(props: PropType, prefs: PrefInputs) {
         }
         return result;
       },
+      'i18n/t': () => tFn,
     },
   });
   return mount(UpdateStatus, {
@@ -43,13 +43,19 @@ function wrap(props: PropType, prefs: PrefInputs) {
       directives: {
         'clean-html': jest.fn(),
       },
-      mocks:   { t: tFn },
       stubs:   {
-        T:          { template: '<span> {{ k }} </span>' },
+        Card: {
+          template: `
+            <div class="card-stub">
+              <slot name="body" />
+              <slot name="actions" />
+            </div>
+          `,
+        },
         RdCheckbox: { template: '<input type="checkbox">' },
         Version:    { template: '<span />' },
       },
-      plugins: [store, FloatingVue],
+      plugins: [store],
     },
   });
 }

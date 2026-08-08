@@ -69,7 +69,7 @@ mainMenu:
   quit: Quit {appName}
 tray:
   # @no-translate Rancher Desktop
-  tooltip: Rancher Desktop
+  tooltip: {appName}
   state:
     # @no-translate Kubernetes
     stopped: Kubernetes is stopped
@@ -89,7 +89,7 @@ tray:
   # @no-translate Kubernetes
   kubernetesContexts: Kubernetes Contexts
   # @no-translate Rancher Desktop
-  quitRancherDesktop: Quit Rancher Desktop
+  quitRancherDesktop: Quit {appName}
   containerEngine: 'Container engine: {name}'
   networkStatus: 'Network status: {status}'
   noneFound: None found
@@ -882,7 +882,7 @@ preferences:
       # @no-translate WebAssembly, Kubernetes, Spin
       # Translators: preserve the <a> tag and its data-navigate attribute exactly.
       # The application code uses data-navigate to handle click navigation.
-      warning: WebAssembly must be enabled for the <a href="#" data-navigate="Kubernetes">Spin Operator</a> to be installed.
+      warning: WebAssembly must be enabled for the <a href="#" data-navigate="kubernetes">Spin Operator</a> to be installed.
   error:
     body: Reload Preferences to try again.
     heading: Unable to fetch preferences
@@ -1035,7 +1035,7 @@ kubernetesPrefs:
     # @no-translate WebAssembly, Spin
     # Translators: preserve the <a> tag and its data-navigate attribute exactly.
     # The application code uses data-navigate to handle click navigation.
-    spinkubeWarning: 'Spin Operator requires <a href="#" data-navigate="Container Engine,general">WebAssembly</a> to be enabled.'
+    spinkubeWarning: 'Spin Operator requires <a href="#" data-navigate="container-engine,general">WebAssembly</a> to be enabled.'
     # @no-translate Traefik
     traefik: Enable Traefik
   port:
@@ -1171,9 +1171,9 @@ systemPreferences:
   memory: Memory (GB)
 updateStatus:
   applyingUpdate: Applying update...
-  available: An update to version {version} is available
+  available: An update to version {version} is available.
   checkForUpdates: Check for updates automatically
-  downloading: downloading... ({percent}%, {speed})
+  downloading: An update to version {version} is available; downloading... ({percent}%, {speed})
   errorChecking: There was an error checking for updates.
   releaseNotes: Release Notes
   restartNow: Restart Now

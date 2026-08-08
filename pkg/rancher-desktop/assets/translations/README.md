@@ -225,13 +225,9 @@ prefer `data()` capture over reactive plumbing for new tables.
 
 ## Known limitations and deferred work
 
-### Validation messages
+### Rancher Desktop Daemon
 
-`settingsValidator.ts` emits localized error strings, and the CLI and
-HTTP API return them directly, so scripts must not parse message text.
-In-process callers classify errors through structured flags
-(`hasLockedFieldError`); add a flag rather than string matching when a
-new category needs classification.
+Strings in Rancher Desktop Daemon do not support translation at this time.
 
 ### HTML in translation strings
 
@@ -257,11 +253,9 @@ leaking callbacks.
 
 ### Scanner gaps
 
-The source scanner (`scan.go`) does not detect translation candidates
-in `showErrorBox` calls (`tray.ts`, `settingsImpl.ts`) or port
-forwarding error messages (`backend/kube/client.ts`). It also skips
-`__tests__` directories, so the `references` report omits test-only
-key usage.
+The source scanner should not rely on regular expression based parsing;
+instead, it should be done as something similar to a ESLint plugin with
+hooks to Vue parsing.
 
 ### Navigation identifiers
 

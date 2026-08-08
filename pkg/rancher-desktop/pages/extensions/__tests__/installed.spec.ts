@@ -46,6 +46,7 @@ describe('extensions installed table', () => {
           $store: {
             dispatch: jest.fn(),
           },
+          t: (key: string) => key,
         },
       },
     });

@@ -11,6 +11,9 @@ function createWrappedPage(props) {
         'clean-tooltip': {},
         tooltip:         {},
       },
+      mocks: {
+        t: (key) => key,
+      },
     },
   });
 }

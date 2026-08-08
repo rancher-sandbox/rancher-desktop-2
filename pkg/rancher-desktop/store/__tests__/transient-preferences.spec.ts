@@ -73,6 +73,39 @@ describe('transient-preferences', () => {
       expect(commit).toHaveBeenCalledWith('navigate', navigation);
       expect(ipcRenderer.invoke).toHaveBeenCalledWith('transient-preferences/set', state);
     });
+
+    describe('navigateByClick', () => {
+      it.each([
+        ['page,tab', { 'preferences.top': 'page', 'preferences.page': 'tab' }],
+        ['page', { 'preferences.top': 'page' }],
+        ['page,tab,extra', { 'preferences.top': 'page', 'preferences.page': 'tab' }],
+        ['', null],
+      ])('should parse data-navigate attribute "%s" into navigation input %o', async(data, expected) => {
+        const dispatch = jest.fn();
+        const event = new MouseEvent('click');
+        const target = document.createElement('div');
+        if (data) {
+          target.dataset.navigate = data;
+        }
+        document.body.appendChild(target);
+        try {
+          target.dispatchEvent(event);
+
+          await actions.navigateByClick.call(null as any, { dispatch } as any, event);
+
+          if (expected) {
+            const tabKey = `preferences.${ expected['preferences.top'] }`;
+            expect(dispatch).toHaveBeenCalledWith('navigate', expected);
+            // It should not have set the tab key to undefined if it was not present in the input.
+            expect(dispatch).not.toHaveBeenCalledWith('navigate', expect.objectContaining({ [tabKey]: undefined }));
+          } else {
+            expect(dispatch).not.toHaveBeenCalled();
+          }
+        } finally {
+          document.body.removeChild(target);
+        }
+      });
+    });
   });
 
   describe('plugins', () => {

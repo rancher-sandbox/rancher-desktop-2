@@ -2,15 +2,17 @@
 import { Banner } from '@rancher/components';
 import { PropType, defineComponent } from 'vue';
 
-import type { preferencesNavItemName as NavItemName } from '@pkg/window/preferenceConstants';
+import { mapTypedActions } from '@pkg/entry/store';
+import type { preferencesNavItem as NavItem } from '@pkg/window/preferenceConstants';
 
 export type CompatiblePrefs = {
   /** title is the string to display to the user to describe the preference. */
   title:       string,
   /** navItemName is the nav item (top level navigation) to switch to. */
-  navItemName: NavItemName;
+  navItemName: NavItem['name'];
   /** tabName is the tab to switch to, if any */
-  tabName?:    string,
+  // Just use string until all the tabs exist again, for type checking reasons.
+  tabName?:    string // Extract<NavItem, { tabs: unknown }>['tabs'][number][0];
 }[];
 
 export default defineComponent({
@@ -39,9 +41,7 @@ export default defineComponent({
     },
   },
   methods: {
-    navigate(info: CompatiblePrefs[number]) {
-      (this.$root as any).navigate(info.navItemName, info.tabName);
-    },
+    ...mapTypedActions('transient-preferences', ['navigateByClick']),
   },
 });
 </script>
@@ -58,7 +58,8 @@ export default defineComponent({
     >
       <a
         href="#"
-        @click.prevent="navigate(pref)"
+        :data-navigate="pref.tabName ? `${pref.navItemName},${pref.tabName}` : pref.navItemName"
+        @click.prevent="navigateByClick"
       >
         {{ pref.title }}
       </a>

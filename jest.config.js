@@ -31,9 +31,6 @@ export default {
     '^@rdd-client$':      '<rootDir>/pkg/rdd-client',
     '^@/(.*)$':           '<rootDir>/$1',
   },
-  setupFiles: [
-    '<rootDir>/pkg/rancher-desktop/utils/testUtils/setupVue.ts',
-  ],
   testEnvironment:        'jsdom',
   testEnvironmentOptions: {
     customExportConditions: [

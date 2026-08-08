@@ -284,7 +284,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  store.dispatch('page/setHeader', { action: '' });
+  store.dispatch('page/setAction', { action: '' });
   store.dispatch('container-engine/unwatchResources', ['containers']).catch(err =>
     console.error(err));
 

@@ -6,6 +6,7 @@
 import { IntlMessageFormat } from 'intl-messageformat';
 import get from 'lodash/get.js';
 
+import packageJson from '@/package.json' with { type: 'json' };
 import { getIpcMainProxy } from '@pkg/main/ipcMain';
 import logging from '@pkg/utils/logging';
 import { loadTranslations } from '@pkg/utils/translationLoader';
@@ -87,7 +88,7 @@ export function t(key: string, args?: Record<string, string | number>): string {
   }
   // Numbers stay numbers for plural rules; everything else formats as a
   // string, so a non-primitive value cannot make ICU emit an array of parts.
-  const stringArgs = args && Object.fromEntries(Object.entries(args)
+  const stringArgs = Object.fromEntries(Object.entries({ ...args, appName: packageJson.productName })
     .map(([name, value]) => [name, typeof value === 'number' ? value : String(value)]));
 
   try {
