@@ -83,6 +83,20 @@ spec:
                 required:
                 - name
                 type: object
+              gpu:
+                description: gpu specifies experimental GPU passthrough configuration.
+                properties:
+                  enabled:
+                    description: enabled specifies whether GPU passthrough should
+                      be provisioned in the VM.
+                    type: boolean
+                  source:
+                    description: |-
+                      source is an optional host directory containing librocdxg.so (a versioned
+                      name such as librocdxg.so.1.2.2 is accepted) and dids.conf. When set,
+                      these files are used instead of fetching AMD's published package.
+                    type: string
+                type: object
               kubernetes:
                 description: kubernetes specifies the Kubernetes configuration.
                 properties:

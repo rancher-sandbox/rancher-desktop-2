@@ -156,6 +156,40 @@ provision:
 
     # rancher-desktop.target is restarted by the EXIT trap above.
 
+# Stage or remove the AMD ROCm-on-WSL bridge files based on GPU passthrough
+# state. librocdxg.so + dids.conf ship only with ROCm-on-WSL; they are not
+# projected by WSL, not in the Windows driver store, and not in ROCm container
+# images, so a privileged workload pod must bind-mount them from the guest's
+# /opt/rocm. RDD stages them on the host into GPU_LIB_SOURCE (under the mounted
+# host home) before this runs. This step is idempotent and runs on every boot:
+# when enabled it (re)installs them; when disabled it removes them so the toggle
+# is symmetric. Missing staged files log a warning and never fail provisioning.
+- mode: system
+  script: |
+    #!/bin/bash
+
+    set -o errexit -o nounset -o pipefail -o xtrace
+
+    LIB_DST=/opt/rocm/lib/librocdxg.so
+    DIDS_DST=/opt/rocm/share/rocdxg/dids.conf
+
+    if [[ $PARAM_GPU_ENABLED != "true" ]]; then
+        rm -f "$LIB_DST" "$DIDS_DST"
+        exit 0
+    fi
+
+    SRC=$PARAM_GPU_LIB_SOURCE
+    LIB=$SRC/librocdxg.so
+    DIDS=$SRC/dids.conf
+    if [[ ! -f $LIB || ! -f $DIDS ]]; then
+        echo "GPU passthrough enabled but staged ROCm-on-WSL files not found" \
+             "under $SRC; skipping install." >&2
+        exit 0
+    fi
+
+    install -D -m 0755 "$LIB"  "$LIB_DST"
+    install -D -m 0644 "$DIDS" "$DIDS_DST"
+
 probes:
 - description: Write k3s kubeconfig to instance config path
   script: |
