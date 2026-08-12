@@ -1,0 +1,48 @@
+# vLLM serving on AMD gfx1151 (Strix Halo / Radeon 8060S) through RDD's k3s
+# over WSL /dev/dxg. Uses the locally-built image that bakes in the amdsmi shim.
+#
+# The proven /dev/dxg contract:
+#   - privileged + hostIPC (vLLM wants a large /dev/shm)
+#   - host mounts of the WSL GPU libs + librocdxg.so + dids.conf
+#   - LD_LIBRARY_PATH points at the WSL libs first
+#   - NO nvidia.com/gpu / amd.com/gpu resource request (there is no device
+#     plugin; the GPU reaches the container purely via the host mounts)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vllm-gfx1151
+  labels: { app: vllm-gfx1151 }
+spec:
+  restartPolicy: Never
+  hostIPC: true
+  containers:
+  - name: vllm
+    image: vllm-gfx1151:local          # built from ./Dockerfile (imagePullPolicy Never = use local)
+    imagePullPolicy: Never
+    command: ["bash", "-lc"]
+    args:
+    - |
+      vllm serve Qwen/Qwen2.5-0.5B-Instruct \
+        --dtype float16 \
+        --max-model-len 4096 \
+        --gpu-memory-utilization 0.85 \
+        --host 0.0.0.0 --port 8000
+    ports:
+    - { containerPort: 8000 }
+    securityContext: { privileged: true }
+    env:
+    # Only needed on ROCm < 7.13; harmless on 7.13. Kept for portability.
+    - { name: HSA_ENABLE_DXG_DETECTION, value: "1" }
+    - { name: LD_LIBRARY_PATH, value: /usr/lib/wsl/lib:/opt/rocm/lib }
+    # - { name: HF_TOKEN, value: "hf_..." }   # only if you switch to a gated model
+    volumeMounts:
+    - { name: wsl-lib, mountPath: /usr/lib/wsl/lib,                 readOnly: true }
+    - { name: rocdxg,  mountPath: /opt/rocm/lib/librocdxg.so,       readOnly: true }
+    - { name: dids,    mountPath: /opt/rocm/share/rocdxg/dids.conf, readOnly: true }
+  volumes:
+  - name: wsl-lib
+    hostPath: { path: /usr/lib/wsl/lib, type: Directory }
+  - name: rocdxg
+    hostPath: { path: /opt/rocm/lib/librocdxg.so, type: File }
+  - name: dids
+    hostPath: { path: /opt/rocm/share/rocdxg/dids.conf, type: File }
