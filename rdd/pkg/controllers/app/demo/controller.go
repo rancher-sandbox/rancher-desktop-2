@@ -9,6 +9,7 @@
 package demo
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"io"
@@ -109,7 +110,7 @@ func (c *controller) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 }
 
 // RegisterWithManager implements the complete controller registration for both embedded and external modes.
-func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
+func (c *controller) RegisterWithManager(_ context.Context, mgr ctrl.Manager) error {
 	// Register the CRD types with the scheme
 	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return err

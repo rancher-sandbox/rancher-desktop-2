@@ -31,8 +31,10 @@ type Controller interface {
 	// GetCRDData returns the embedded CRD YAML data
 	GetCRDData() string
 
-	// RegisterWithManager provides complete controller registration including scheme and setup
-	RegisterWithManager(mgr ctrl.Manager) error
+	// RegisterWithManager provides complete controller registration including
+	// scheme and setup.  The provided context must last for the lifetime of the
+	// controller, and must be cancelled to signal controller shut down.
+	RegisterWithManager(ctx context.Context, mgr ctrl.Manager) error
 }
 
 // WebhookController is an optional interface that controllers can implement

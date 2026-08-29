@@ -229,7 +229,7 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 			webhookController.SetWebhookPort(scm.webhookPort)
 		}
 
-		if err := registration.RegisterWithManager(mgr); err != nil {
+		if err := registration.RegisterWithManager(ctx, mgr); err != nil {
 			return fmt.Errorf("failed to register controller %s: %w", registration.GetName(), err)
 		}
 	}

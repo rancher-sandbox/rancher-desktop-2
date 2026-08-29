@@ -9,6 +9,8 @@
 package kubernetes
 
 import (
+	"context"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	appv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
@@ -39,7 +41,7 @@ func (c *controller) GetCRDData() string {
 	return ""
 }
 
-func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
+func (c *controller) RegisterWithManager(_ context.Context, mgr ctrl.Manager) error {
 	if err := appv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return err
 	}

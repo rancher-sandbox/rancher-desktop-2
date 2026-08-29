@@ -196,9 +196,8 @@ func (c *controller) createNamespace(ctx context.Context, mgr ctrl.Manager) erro
 }
 
 // RegisterWithManager implements [base.Controller].
-func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
+func (c *controller) RegisterWithManager(ctx context.Context, mgr ctrl.Manager) error {
 	mgr.GetLogger().Info("Registering Mock Controller with Manager")
-	ctx := context.Background()
 	c.mgr = mgr
 
 	if err := appv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {

@@ -7,6 +7,8 @@
 package k3sversions
 
 import (
+	"context"
+
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1apply "k8s.io/client-go/applyconfigurations/meta/v1"
@@ -104,7 +106,7 @@ func (c *controller) setupWebhook(mgr ctrl.Manager) error {
 
 // RegisterWithManager implements the complete controller registration for both
 // embedded and external modes.  It sets up the controller with the manager.
-func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
+func (c *controller) RegisterWithManager(_ context.Context, mgr ctrl.Manager) error {
 	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return err
 	}

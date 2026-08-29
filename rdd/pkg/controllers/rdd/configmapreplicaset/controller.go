@@ -8,6 +8,7 @@
 package configmapreplicaset
 
 import (
+	"context"
 	_ "embed"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -52,7 +53,7 @@ func (c *controller) GetCRDData() string {
 }
 
 // RegisterWithManager implements the complete controller registration for both embedded and external modes.
-func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
+func (c *controller) RegisterWithManager(_ context.Context, mgr ctrl.Manager) error {
 	// Register the CRD types with the scheme
 	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return err

@@ -178,7 +178,7 @@ func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 }
 
 // RegisterWithManager implements the complete controller registration for both embedded and external modes.
-func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
+func (c *controller) RegisterWithManager(_ context.Context, mgr ctrl.Manager) error {
 	// Set LIMA_HOME for the Lima library to use the correct instance directory.
 	// This must be set before any Lima operations are performed.
 	if err := os.Setenv("LIMA_HOME", instance.LimaHome()); err != nil {
