@@ -345,10 +345,8 @@ func createConfigMap(ctx context.Context, c client.Client, name, namespace, temp
 
 	// Create the ConfigMap with the template content
 	configMap = &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Data: map[string]string{
 			limav1alpha1.TemplateConfigMapKey: string(content),
 		},
@@ -410,10 +408,8 @@ func limaVMCreateAction(ctx context.Context, name, template, namespace string, d
 
 	// Create the LimaVM resource with the template reference
 	limaVM := &limav1alpha1.LimaVM{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Spec: limav1alpha1.LimaVMSpec{
 			TemplateRef: limav1alpha1.TemplateReference{
 				Name: configMapName,

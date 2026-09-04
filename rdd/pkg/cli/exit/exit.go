@@ -58,8 +58,7 @@ func Timeout(err error) *Error {
 // [context.DeadlineExceeded]. Already-classified errors and unrelated
 // errors pass through unchanged, so callers may Classify repeatedly.
 func Classify(err error) error {
-	var exitErr *Error
-	if errors.As(err, &exitErr) {
+	if _, ok := errors.AsType[*Error](err); ok {
 		return err
 	}
 	if errors.Is(err, context.DeadlineExceeded) {

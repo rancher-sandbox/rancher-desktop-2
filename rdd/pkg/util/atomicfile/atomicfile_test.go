@@ -317,9 +317,7 @@ func TestWriteNeverExposesPartialFile(t *testing.T) {
 	stop := make(chan struct{})
 	bad := make(chan string, 1)
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			select {
 			case <-stop:
@@ -336,7 +334,7 @@ func TestWriteNeverExposesPartialFile(t *testing.T) {
 				return
 			}
 		}
-	}()
+	})
 
 	for i := range 500 {
 		content := long

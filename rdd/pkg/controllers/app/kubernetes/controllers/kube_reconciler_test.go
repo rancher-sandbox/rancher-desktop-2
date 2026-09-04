@@ -91,7 +91,7 @@ func clientKeyPEM(t *testing.T, srv *httptest.Server) []byte {
 // set to True so Reconcile reaches the probe path.
 func newAppRunning() *appv1alpha1.App {
 	return &appv1alpha1.App{
-		ObjectMeta: metav1.ObjectMeta{Name: appName, Generation: 1},
+		Name: appName, Generation: 1,
 		Spec: appv1alpha1.AppSpec{
 			Running:    true,
 			Kubernetes: appv1alpha1.KubernetesSpec{Enabled: true, Version: "1.32.0"},
@@ -139,7 +139,7 @@ func newAppNotRunning() *appv1alpha1.App {
 // readyNode returns a Node carrying a Ready condition set to True.
 func readyNode() *corev1.Node {
 	return &corev1.Node{
-		ObjectMeta: metav1.ObjectMeta{Name: "lima-rd"},
+		Name: "lima-rd",
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{{Type: corev1.NodeReady, Status: corev1.ConditionTrue}},
 		},
@@ -206,7 +206,7 @@ func Test_Reconcile_KubernetesReady_Ready(t *testing.T) {
 	// still be reading tempdir state after the test returns.
 	t.Cleanup(func() { r.removeKubeContext(context.Background()) })
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 	result, err := r.Reconcile(context.Background(), req)
 	assert.NilError(t, err)
 	assert.Equal(t, result.RequeueAfter, kubeHealthyRequeue,
@@ -264,7 +264,7 @@ func Test_Reconcile_KubernetesReady_GatedUntilNodeReady(t *testing.T) {
 			}
 			t.Cleanup(func() { r.removeKubeContext(context.Background()) })
 
-			req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+			req := ctrl.Request{Name: appName}
 			result, err := r.Reconcile(context.Background(), req)
 			assert.NilError(t, err)
 			assert.Equal(t, result.RequeueAfter, kubeProbeRequeue,
@@ -307,7 +307,7 @@ func Test_Reconcile_KubernetesReady_AnyReadyNodeSuffices(t *testing.T) {
 	}
 	t.Cleanup(func() { r.removeKubeContext(context.Background()) })
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 	result, err := r.Reconcile(context.Background(), req)
 	assert.NilError(t, err)
 	assert.Equal(t, result.RequeueAfter, kubeHealthyRequeue)
@@ -348,7 +348,7 @@ func Test_Reconcile_KubernetesReady_StaysReadyDespiteNodeBlip(t *testing.T) {
 	}
 	t.Cleanup(func() { r.removeKubeContext(context.Background()) })
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 	result, err := r.Reconcile(context.Background(), req)
 	assert.NilError(t, err)
 	assert.Equal(t, result.RequeueAfter, kubeHealthyRequeue)
@@ -386,7 +386,7 @@ func Test_Reconcile_InstanceKubeConfig_WrittenOnReady_RemovedOnDisable(t *testin
 	// finishes before the test returns even if an assertion below fails.
 	t.Cleanup(func() { r.removeKubeContext(context.Background()) })
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 
 	// A healthy reconcile publishes the standalone kubeconfig that rdd run reads.
 	_, err := r.Reconcile(context.Background(), req)
@@ -432,7 +432,7 @@ func Test_Reconcile_KubernetesReady_MergeFailed(t *testing.T) {
 		InstanceKubeConfigPath: filepath.Join(dir, "kube.config"),
 	}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 	result, err := r.Reconcile(context.Background(), req)
 	assert.NilError(t, err)
 	assert.Equal(t, result.RequeueAfter, kubeProbeRequeue,
@@ -463,7 +463,7 @@ func Test_Reconcile_KubernetesReady_NotApplicable(t *testing.T) {
 
 	r := &KubernetesReconciler{Client: c}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 	result, err := r.Reconcile(context.Background(), req)
 	assert.NilError(t, err)
 	assert.Equal(t, result.RequeueAfter, time.Duration(0),
@@ -492,7 +492,7 @@ func Test_Reconcile_KubernetesReady_NotRunning(t *testing.T) {
 
 	r := &KubernetesReconciler{Client: c}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 	result, err := r.Reconcile(context.Background(), req)
 	assert.NilError(t, err)
 	assert.Equal(t, result.RequeueAfter, time.Duration(0),
@@ -527,7 +527,7 @@ func Test_Reconcile_KubernetesReady_Probing_ProbeError(t *testing.T) {
 		InstanceKubeConfigPath: filepath.Join(dir, "kube.config"),
 	}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 	result, err := r.Reconcile(context.Background(), req)
 	assert.NilError(t, err)
 	assert.Equal(t, result.RequeueAfter, kubeProbeRequeue,
@@ -563,7 +563,7 @@ func Test_Reconcile_KubernetesReady_Probing_Unhealthy(t *testing.T) {
 		InstanceKubeConfigPath: filepath.Join(dir, "kube.config"),
 	}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 	result, err := r.Reconcile(context.Background(), req)
 	assert.NilError(t, err)
 	assert.Equal(t, result.RequeueAfter, kubeProbeRequeue,
@@ -601,7 +601,7 @@ func Test_Reconcile_KubernetesReady_Unhealthy_FromReady_ImmediateFlip(t *testing
 		InstanceKubeConfigPath: filepath.Join(dir, "kube.config"),
 	}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 	_, err := r.Reconcile(context.Background(), req)
 	assert.NilError(t, err)
 
@@ -631,7 +631,7 @@ func Test_Reconcile_KubernetesReady_Unreachable_ImmediateProbing(t *testing.T) {
 		probeFn: func(context.Context) (probeResult, error) { return probeUnreachable, nil },
 	}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 	result, err := r.Reconcile(context.Background(), req)
 	assert.NilError(t, err)
 	assert.Equal(t, result.RequeueAfter, kubeProbeRequeue)
@@ -661,7 +661,7 @@ func Test_Reconcile_KubernetesReady_Ambiguous_TolerateWhileReady(t *testing.T) {
 		probeFn: func(context.Context) (probeResult, error) { return probeAmbiguous, nil },
 	}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 	for i := 1; i < probeFailureThreshold; i++ {
 		result, err := r.Reconcile(context.Background(), req)
 		assert.NilError(t, err)
@@ -694,7 +694,7 @@ func Test_Reconcile_KubernetesReady_Ambiguous_ReachThresholdFlipsToProbing(t *te
 		probeFn: func(context.Context) (probeResult, error) { return probeAmbiguous, nil },
 	}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 	for i := 1; i <= probeFailureThreshold; i++ {
 		_, err := r.Reconcile(context.Background(), req)
 		assert.NilError(t, err)
@@ -746,7 +746,7 @@ func Test_Reconcile_KubernetesReady_Ambiguous_HealthyResetsCounter(t *testing.T)
 	}
 	t.Cleanup(func() { r.removeKubeContext(context.Background()) })
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 	// Run ambiguous streak just under threshold, then a healthy reconcile.
 	for range probeFailureThreshold {
 		_, err := r.Reconcile(context.Background(), req)
@@ -785,7 +785,7 @@ func Test_Reconcile_KubernetesReady_Ambiguous_DuringStartupIsImmediate(t *testin
 		probeFn: func(context.Context) (probeResult, error) { return probeAmbiguous, nil },
 	}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 	result, err := r.Reconcile(context.Background(), req)
 	assert.NilError(t, err)
 	assert.Equal(t, result.RequeueAfter, kubeProbeRequeue)

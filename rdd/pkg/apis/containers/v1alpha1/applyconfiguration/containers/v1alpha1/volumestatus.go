@@ -12,21 +12,29 @@ import (
 // VolumeStatus describes the configuration the volume was created with.
 type VolumeStatusApplyConfiguration struct {
 	// Name of the volume.
+	//
 	Name *string `json:"name,omitempty"`
 	// Namespace of the volume; refers to a `ContainerNamespace` object in the
 	// same Kubernetes namespace.
+	//
 	Namespace *string `json:"namespace,omitempty"`
 	// CreatedAt is the time the volume was created.
+	//
 	CreatedAt *v1.Time `json:"createdAt,omitempty"`
 	// Driver the volume uses.
+	//
 	Driver *string `json:"driver,omitempty"`
 	// MountPoint is where on the host the volume is mounted.
+	//
 	MountPoint *string `json:"mountpoint,omitempty"`
 	// Labels for the volume.
+	//
 	Labels map[string]string `json:"labels,omitempty"`
 	// Scope of the volume.
+	//
 	Scope *string `json:"scope,omitempty"`
 	// Options for the volume driver.
+	//
 	Options map[string]string `json:"options,omitempty"`
 }
 

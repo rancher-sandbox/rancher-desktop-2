@@ -10,7 +10,6 @@ import (
 	"maps"
 
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -72,10 +71,8 @@ func (r *K3sVersionsReconciler) Reconcile(ctx context.Context, req reconcile.Req
 	}
 
 	cm := v1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: app.Spec.Namespace,
-			Name:      k3sVersionsConfigMapName,
-		},
+		Namespace: app.Spec.Namespace,
+		Name:      k3sVersionsConfigMapName,
 	}
 
 	if base.IsBeingDeleted(&app) {

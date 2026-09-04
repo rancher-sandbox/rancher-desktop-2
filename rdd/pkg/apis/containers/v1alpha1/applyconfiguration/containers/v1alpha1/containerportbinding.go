@@ -8,8 +8,10 @@ package v1alpha1
 // ContainerPortBinding describes one host port for the container to bind to.
 type ContainerPortBindingApplyConfiguration struct {
 	// HostIP is the host IP address that the container's port is mapped to.
+	//
 	HostIP *string `json:"hostIP,omitempty"`
 	// HostPort is the host port number that the container's port is mapped to.
+	//
 	HostPort *string `json:"hostPort,omitempty"`
 }
 

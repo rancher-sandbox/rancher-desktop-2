@@ -17,6 +17,7 @@ type VolumeApplyConfiguration struct {
 	// Metadata is a standard object metadata
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	// Status describes the observed state of the volume.
+	//
 	Status *VolumeStatusApplyConfiguration `json:"status,omitempty"`
 }
 

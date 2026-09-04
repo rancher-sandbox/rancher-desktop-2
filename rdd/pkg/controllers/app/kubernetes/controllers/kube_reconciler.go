@@ -458,11 +458,9 @@ func (r *KubernetesReconciler) manageKubeContext(ctx context.Context) error {
 	r.contextProbeCancel = cancel
 	r.contextMu.Unlock()
 
-	r.contextProbeWg.Add(1)
-	go func() {
+	r.contextProbeWg.Go(func() {
 		// Done fires after the kubeconfig write below, so removeKubeContext.Wait()
 		// covers that write instead of racing it.
-		defer r.contextProbeWg.Done()
 		defer func() {
 			// Both paths that replace contextProbeCancel cancel probeCtx first, so
 			// an uncancelled probeCtx means the field still holds our cancel func.
@@ -488,7 +486,7 @@ func (r *KubernetesReconciler) manageKubeContext(ctx context.Context) error {
 				log.Error(err, "Failed to set current Kubernetes context", "context", contextName)
 			}
 		}
-	}()
+	})
 	return nil
 }
 

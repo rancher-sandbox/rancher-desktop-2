@@ -73,10 +73,8 @@ func TestK3sVersionsReconciler(t *testing.T) {
 	const appName = "app-name"
 	const targetNamespace = "target-namespace"
 	app := &v1alpha1.App{
-		ObjectMeta: metav1.ObjectMeta{
-			// Apps are not namespaced
-			Name: appName,
-		},
+		// Apps are not namespaced
+		Name: appName,
 		Spec: v1alpha1.AppSpec{
 			Namespace: targetNamespace,
 		},
@@ -85,9 +83,7 @@ func TestK3sVersionsReconciler(t *testing.T) {
 	// Create a new request to reconcile the app.
 	newReq := func() reconcile.Request {
 		return reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Name: appName,
-			},
+			Name: appName,
 		}
 	}
 	// Create a new object meta for the config map.

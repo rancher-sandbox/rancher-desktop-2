@@ -20,8 +20,10 @@ type ContainerApplyConfiguration struct {
 	// Spec is reserved for future use. The Container API has no
 	// desired-state fields today: actions are requested via the
 	// AnnotationAction annotation on metadata instead.
+	//
 	Spec *containersv1alpha1.ContainerSpec `json:"spec,omitempty"`
 	// Status defines the observed state of Container
+	//
 	Status *ContainerStatusApplyConfiguration `json:"status,omitempty"`
 }
 

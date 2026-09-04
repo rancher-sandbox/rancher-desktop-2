@@ -83,10 +83,8 @@ func TestDeleteOwnedResources(t *testing.T) {
 		t.Run(fmt.Sprintf("delete owned config map %s", tc.name), func(t *testing.T) {
 			// Create a new config map that will be the owner
 			owner := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("owner-%d", i),
-					Namespace: metav1.NamespaceDefault,
-				},
+				Name:      fmt.Sprintf("owner-%d", i),
+				Namespace: metav1.NamespaceDefault,
 			}
 			assert.NilError(t, c.Create(t.Context(), owner), "failed to create owner config map")
 			ownerSchemes, _, err := scheme.Scheme.ObjectKinds(owner)
@@ -94,10 +92,8 @@ func TestDeleteOwnedResources(t *testing.T) {
 
 			// Create a new config map that will be owned by the owner
 			owned := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("owned-%d", i),
-					Namespace: metav1.NamespaceDefault,
-				},
+				Name:      fmt.Sprintf("owned-%d", i),
+				Namespace: metav1.NamespaceDefault,
 			}
 			owned.SetOwnerReferences([]metav1.OwnerReference{
 				{
@@ -111,10 +107,8 @@ func TestDeleteOwnedResources(t *testing.T) {
 			assert.NilError(t, c.Create(t.Context(), owned), "failed to create owned config map")
 
 			unrelated := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("unrelated-%d", i),
-					Namespace: metav1.NamespaceDefault,
-				},
+				Name:      fmt.Sprintf("unrelated-%d", i),
+				Namespace: metav1.NamespaceDefault,
 			}
 			assert.NilError(t, c.Create(t.Context(), unrelated), "failed to create unrelated config map")
 			unrelatedSchemes, _, err := scheme.Scheme.ObjectKinds(unrelated)
@@ -187,7 +181,7 @@ func TestOwnedFinalizerOwner(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			obj := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "test"}}
+			obj := &corev1.ConfigMap{Name: "test"}
 			obj.SetFinalizers(tc.finalizers)
 			got := OwnedFinalizerOwner(obj)
 			assert.Equal(t, got, tc.wantOwner)
@@ -199,17 +193,17 @@ func TestOwnedDeletionGuardValidateDelete(t *testing.T) {
 	guard := &OwnedDeletionGuard[*corev1.ConfigMap]{}
 
 	t.Run("allows delete without owned finalizer", func(t *testing.T) {
-		obj := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "test"}}
+		obj := &corev1.ConfigMap{Name: "test"}
 		warnings, err := guard.ValidateDelete(t.Context(), obj)
 		assert.NilError(t, err)
 		assert.Assert(t, warnings == nil)
 	})
 
 	t.Run("rejects delete with owned finalizer", func(t *testing.T) {
-		obj := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+		obj := &corev1.ConfigMap{
 			Name:       "my-config",
 			Finalizers: []string{OwnedFinalizerFor("App")},
-		}}
+		}
 		warnings, err := guard.ValidateDelete(t.Context(), obj)
 		assert.Assert(t, warnings == nil)
 		assert.ErrorContains(t, err, `cannot delete "my-config"`)
@@ -218,10 +212,10 @@ func TestOwnedDeletionGuardValidateDelete(t *testing.T) {
 	})
 
 	t.Run("no-ops for create and update", func(t *testing.T) {
-		obj := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+		obj := &corev1.ConfigMap{
 			Name:       "test",
 			Finalizers: []string{OwnedFinalizerFor("App")},
-		}}
+		}
 		warnings, err := guard.ValidateCreate(t.Context(), obj)
 		assert.NilError(t, err)
 		assert.Assert(t, warnings == nil)

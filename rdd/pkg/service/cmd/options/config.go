@@ -70,10 +70,8 @@ func (c *Config) Complete() (CompletedConfig, error) {
 // NewConfig creates all the self-contained pieces making up the controlplane server.
 func NewConfig(opts CompletedOptions) (*Config, error) {
 	c := &Config{
-		Options: opts,
-		ExtraConfig: ExtraConfig{
-			Controllers: opts.Controllers,
-		},
+		Options:     opts,
+		Controllers: opts.Controllers,
 	}
 
 	genericConfig, versionedInformers, storageFactory, err := controlplaneapiserver.BuildGenericConfig(

@@ -14,27 +14,37 @@ import (
 type ImageStatusApplyConfiguration struct {
 	// Namespace is the container namespace; refers to a `ContainerNamespace`
 	// object in the same Kubernetes namespace.
+	//
 	Namespace *string `json:"namespace,omitempty"`
 	// ID is the image ID, as reported by the container runtime.
+	//
 	ID *string `json:"id,omitempty"`
 	// RepoTag is the tag of the image.  Images with multiple tags will have
 	// multiple Image objects.  Images without tags will have this unset, but
 	// only one Image object should exist in that case.
+	//
 	RepoTag *string `json:"repoTag,omitempty"`
 	// RepoDigests are the signed digests of the image.
+	//
 	RepoDigests []string `json:"repoDigests,omitempty"`
 	// CreatedAt is the time the image was created.
+	//
 	CreatedAt *v1.Time `json:"createdAt,omitempty"`
 	// Architecture associated with the image.
+	//
 	Architecture *string `json:"architecture,omitempty"`
 	// OS associated with the image.
+	//
 	OS *string `json:"os,omitempty"`
 	// Size of the image.
+	//
 	Size *int64 `json:"size,omitempty"`
 	// Labels of the image.
+	//
 	Labels map[string]string `json:"labels,omitempty"`
 	// Conditions represent the state of the image.
 	// There are currently no defined condition types.
+	//
 	Conditions []metav1.ConditionApplyConfiguration `json:"conditions,omitempty"`
 }
 

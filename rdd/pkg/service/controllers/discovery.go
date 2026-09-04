@@ -89,11 +89,9 @@ func NewControllerManagerDiscoveryGroup(config *rest.Config, apiGroupName string
 	}
 
 	return &ControllerManagerDiscoveryGroup{
-		ControllerManagerDiscovery: ControllerManagerDiscovery{
-			client:    client,
-			namespace: RDDSystemNamespace,
-		},
-		name: apiGroupName,
+		client:    client,
+		namespace: RDDSystemNamespace,
+		name:      apiGroupName,
 	}, nil
 }
 
@@ -151,13 +149,11 @@ func (d *ControllerManagerDiscoveryGroup) registerControllerManagerImpl(ctx cont
 
 	// Create the config map
 	configMap := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      ControllerManagerConfigMapName,
-			Namespace: d.namespace,
-			Labels: map[string]string{
-				"app.kubernetes.io/name":      "rancher-desktop-daemon",
-				"app.kubernetes.io/component": "controller-manager",
-			},
+		Name:      ControllerManagerConfigMapName,
+		Namespace: d.namespace,
+		Labels: map[string]string{
+			"app.kubernetes.io/name":      "rancher-desktop-daemon",
+			"app.kubernetes.io/component": "controller-manager",
 		},
 		Data: map[string]string{
 			d.name: string(serializedInfo),
@@ -342,11 +338,9 @@ func (d *ControllerManagerDiscovery) isControllerManagerHealthy(ctx context.Cont
 // ensureNamespace creates the rdd-system namespace if it doesn't exist.
 func (d *ControllerManagerDiscovery) ensureNamespace(ctx context.Context) error {
 	namespace := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: d.namespace,
-			Labels: map[string]string{
-				"app.kubernetes.io/name": "rancher-desktop-daemon",
-			},
+		Name: d.namespace,
+		Labels: map[string]string{
+			"app.kubernetes.io/name": "rancher-desktop-daemon",
 		},
 	}
 
@@ -377,13 +371,11 @@ func InitDiscovery(ctx context.Context, client kubernetes.Interface) error {
 	}
 
 	cm := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      ControllerManagerConfigMapName,
-			Namespace: RDDSystemNamespace,
-			Labels: map[string]string{
-				"app.kubernetes.io/name":      "rancher-desktop-daemon",
-				"app.kubernetes.io/component": "controller-manager",
-			},
+		Name:      ControllerManagerConfigMapName,
+		Namespace: RDDSystemNamespace,
+		Labels: map[string]string{
+			"app.kubernetes.io/name":      "rancher-desktop-daemon",
+			"app.kubernetes.io/component": "controller-manager",
 		},
 	}
 	if _, err := client.CoreV1().ConfigMaps(RDDSystemNamespace).Create(ctx, cm, metav1.CreateOptions{}); err != nil {

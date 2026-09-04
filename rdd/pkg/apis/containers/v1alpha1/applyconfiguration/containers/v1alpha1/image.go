@@ -17,6 +17,7 @@ type ImageApplyConfiguration struct {
 	// Metadata is a standard object metadata
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	// Status defines the immutable properties of an Image.
+	//
 	Status *ImageStatusApplyConfiguration `json:"status,omitempty"`
 }
 

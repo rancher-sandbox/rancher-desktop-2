@@ -53,8 +53,8 @@ func parseInstanceFlag() {
 	if len(os.Args) < 2 {
 		return
 	}
-	if strings.HasPrefix(os.Args[1], "--instance=") {
-		instance := strings.TrimPrefix(os.Args[1], "--instance=")
+	if after, ok := strings.CutPrefix(os.Args[1], "--instance="); ok {
+		instance := after
 		if instance != "" {
 			_ = os.Setenv("RDD_INSTANCE", instance)
 		}
@@ -175,8 +175,7 @@ func main() {
 	)
 	if err := cli.RunNoErrOutput(cmd); err != nil {
 		// *cliexit.Error lets a subcommand opt into a specific exit code; everything else gets exit 1.
-		var exitErr *cliexit.Error
-		if errors.As(err, &exitErr) {
+		if exitErr, ok := errors.AsType[*cliexit.Error](err); ok {
 			if _, ok := logrus.StandardLogger().Formatter.(*logrus.JSONFormatter); ok {
 				// If we're logging to JSON, include the exit code.
 				logrus.WithField("exit-code", exitErr.Code).Error(err)

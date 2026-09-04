@@ -9,10 +9,10 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -181,19 +181,15 @@ func (r *ConfigMapReplicaSetReconciler) configMapForController(m *v1alpha1.Confi
 
 	data := make(map[string]string)
 	if m.Spec.Data != nil {
-		for k, v := range m.Spec.Data {
-			data[k] = v
-		}
+		maps.Copy(data, m.Spec.Data)
 	}
 	data["index"] = fmt.Sprintf("%d", index)
 
 	configMap := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      configMapName,
-			Namespace: m.Namespace,
-			Labels:    labels,
-		},
-		Data: data,
+		Name:      configMapName,
+		Namespace: m.Namespace,
+		Labels:    labels,
+		Data:      data,
 	}
 
 	if err := ctrl.SetControllerReference(m, configMap, r.Scheme); err != nil {

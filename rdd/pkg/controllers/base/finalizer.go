@@ -262,8 +262,8 @@ func HasOwnedFinalizer(obj client.Object) bool {
 // or "" if no owned finalizer is present.
 func OwnedFinalizerOwner(obj client.Object) string {
 	for _, f := range obj.GetFinalizers() {
-		if strings.HasPrefix(f, ownedFinalizerPrefix) {
-			return strings.TrimPrefix(f, ownedFinalizerPrefix)
+		if after, ok := strings.CutPrefix(f, ownedFinalizerPrefix); ok {
+			return after
 		}
 	}
 	return ""

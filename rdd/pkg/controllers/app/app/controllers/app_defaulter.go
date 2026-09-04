@@ -122,10 +122,7 @@ func defaultVMMemory(vm *v1alpha1.VirtualMachineSpec, hostInfo HostInfo) error {
 		hostQ := resource.NewQuantity(hostInfo.Memory, resource.BinarySI)
 		return fmt.Errorf("host memory %v is below the %v minimum", hostQ, minQ)
 	}
-	memBytes := hostInfo.Memory / 4
-	if memBytes > maxDefaultMemoryBytes {
-		memBytes = maxDefaultMemoryBytes
-	}
+	memBytes := min(hostInfo.Memory/4, maxDefaultMemoryBytes)
 	if memBytes < minMemoryBytes {
 		memBytes = minMemoryBytes
 	}

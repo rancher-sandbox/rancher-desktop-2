@@ -47,8 +47,8 @@ func TestReconcileWritesReadyCondition(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "xdg-config-home"))
 
 	app := &appv1alpha1.App{
-		ObjectMeta: metav1.ObjectMeta{Name: appName, Generation: 3},
-		Spec:       appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
+		Name: appName, Generation: 3,
+		Spec: appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
 	}
 	scheme := reconcilerTestScheme(t)
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app).WithStatusSubresource(app).Build()
@@ -76,8 +76,8 @@ func TestReconcileWritesFailureCondition(t *testing.T) {
 	assert.NilError(t, os.Mkdir(filepath.Join(home, ".zshrc"), 0o755))
 
 	app := &appv1alpha1.App{
-		ObjectMeta: metav1.ObjectMeta{Name: appName, Generation: 5},
-		Spec:       appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
+		Name: appName, Generation: 5,
+		Spec: appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
 	}
 	scheme := reconcilerTestScheme(t)
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app).WithStatusSubresource(app).Build()
@@ -105,8 +105,8 @@ func TestReconcileStampsAppliedGeneration(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "xdg-config-home"))
 
 	app := &appv1alpha1.App{
-		ObjectMeta: metav1.ObjectMeta{Name: appName, Generation: 1},
-		Spec:       appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
+		Name: appName, Generation: 1,
+		Spec: appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
 	}
 	scheme := reconcilerTestScheme(t)
 
@@ -158,8 +158,8 @@ func TestReconcileAddsFinalizer(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "xdg-config-home"))
 
 	app := &appv1alpha1.App{
-		ObjectMeta: metav1.ObjectMeta{Name: appName, Generation: 1},
-		Spec:       appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
+		Name: appName, Generation: 1,
+		Spec: appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
 	}
 	scheme := reconcilerTestScheme(t)
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app).WithStatusSubresource(app).Build()
@@ -187,13 +187,11 @@ func TestReconcileUnwindsOnDeletion(t *testing.T) {
 
 	now := metav1.NewTime(time.Now())
 	app := &appv1alpha1.App{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              appName,
-			Generation:        1,
-			DeletionTimestamp: &now,
-			Finalizers:        []string{pathManagementFinalizer},
-		},
-		Spec: appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
+		Name:              appName,
+		Generation:        1,
+		DeletionTimestamp: &now,
+		Finalizers:        []string{pathManagementFinalizer},
+		Spec:              appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
 	}
 	scheme := reconcilerTestScheme(t)
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app).Build()
@@ -226,13 +224,11 @@ func TestReconcileReleasesFinalizerWhenUnwindFails(t *testing.T) {
 
 	now := metav1.NewTime(time.Now())
 	app := &appv1alpha1.App{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              appName,
-			Generation:        1,
-			DeletionTimestamp: &now,
-			Finalizers:        []string{pathManagementFinalizer},
-		},
-		Spec: appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
+		Name:              appName,
+		Generation:        1,
+		DeletionTimestamp: &now,
+		Finalizers:        []string{pathManagementFinalizer},
+		Spec:              appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
 	}
 	scheme := reconcilerTestScheme(t)
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app).Build()
@@ -267,13 +263,11 @@ func TestReconcileRetriesFinalizerWhenUnwindRepairable(t *testing.T) {
 	// Deletion requested just now, so we're inside the grace window.
 	now := metav1.NewTime(time.Now())
 	app := &appv1alpha1.App{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              appName,
-			Generation:        1,
-			DeletionTimestamp: &now,
-			Finalizers:        []string{pathManagementFinalizer},
-		},
-		Spec: appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
+		Name:              appName,
+		Generation:        1,
+		DeletionTimestamp: &now,
+		Finalizers:        []string{pathManagementFinalizer},
+		Spec:              appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
 	}
 	scheme := reconcilerTestScheme(t)
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app).Build()
@@ -307,13 +301,11 @@ func TestReconcileReleasesFinalizerAfterUnwindGrace(t *testing.T) {
 	// Deletion was requested well before the grace window; the retries are spent.
 	old := metav1.NewTime(time.Now().Add(-2 * pathUnwindRetryGrace))
 	app := &appv1alpha1.App{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              appName,
-			Generation:        1,
-			DeletionTimestamp: &old,
-			Finalizers:        []string{pathManagementFinalizer},
-		},
-		Spec: appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
+		Name:              appName,
+		Generation:        1,
+		DeletionTimestamp: &old,
+		Finalizers:        []string{pathManagementFinalizer},
+		Spec:              appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
 	}
 	scheme := reconcilerTestScheme(t)
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app).Build()
@@ -339,15 +331,13 @@ func TestReconcileDoesNotReapplyWhileDeleting(t *testing.T) {
 
 	now := metav1.NewTime(time.Now())
 	app := &appv1alpha1.App{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              appName,
-			Generation:        1,
-			DeletionTimestamp: &now,
-			// A second finalizer keeps the App around after we drop ours, so we
-			// can still observe that no block was written.
-			Finalizers: []string{pathManagementFinalizer, "rdd.rancherdesktop.io/cleanup"},
-		},
-		Spec: appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
+		Name:              appName,
+		Generation:        1,
+		DeletionTimestamp: &now,
+		// A second finalizer keeps the App around after we drop ours, so we
+		// can still observe that no block was written.
+		Finalizers: []string{pathManagementFinalizer, "rdd.rancherdesktop.io/cleanup"},
+		Spec:       appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathFront}},
 	}
 	scheme := reconcilerTestScheme(t)
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app).Build()

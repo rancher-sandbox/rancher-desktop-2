@@ -13,7 +13,6 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -102,7 +101,7 @@ func (r *HostInfoReconciler) Start(ctx context.Context) error {
 // as success so it is safe to call from both Start and Reconcile.
 func (r *HostInfoReconciler) bootstrapSingleton(ctx context.Context) error {
 	hi := &rddv1alpha1.HostInfo{
-		ObjectMeta: metav1.ObjectMeta{Name: SingletonName},
+		Name: SingletonName,
 	}
 	if err := r.Create(ctx, hi); err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to bootstrap HostInfo singleton: %w", err)

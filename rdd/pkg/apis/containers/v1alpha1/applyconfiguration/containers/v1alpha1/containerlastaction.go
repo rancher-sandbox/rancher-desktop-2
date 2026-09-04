@@ -14,16 +14,21 @@ import (
 // AnnotationAction annotation and its outcome.
 type ContainerLastActionApplyConfiguration struct {
 	// Action is the action that was requested.
+	//
 	Action *containersv1alpha1.ContainerAction `json:"action,omitempty"`
 	// State is the outcome of the action.
+	//
 	State *containersv1alpha1.ContainerActionState `json:"state,omitempty"`
 	// Error is the error message if the action failed.
+	//
 	Error *string `json:"error,omitempty"`
 	// ObservedAt is when the reconciler began processing the action annotation.
 	// Backlog may delay this relative to the user's write time, and dispatch
 	// (especially restart's grace period) extends the gap to CompletedAt.
+	//
 	ObservedAt *v1.Time `json:"observedAt,omitempty"`
 	// CompletedAt is when the action completed, regardless of outcome.
+	//
 	CompletedAt *v1.Time `json:"completedAt,omitempty"`
 }
 

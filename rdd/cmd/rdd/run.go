@@ -169,8 +169,7 @@ func execCommand(ctx context.Context, args []string) error {
 	console.Repair()
 
 	err := command.Run()
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
+	if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 		// A signal-killed child has no exit code: ExitCode() returns -1, which
 		// os.Exit maps to 255 rather than the shell's 128+signal. Wiring up
 		// signal handling (see above) would let us propagate 128+signal.

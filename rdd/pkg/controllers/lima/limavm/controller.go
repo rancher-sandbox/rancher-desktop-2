@@ -12,7 +12,6 @@ import (
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	metav1apply "k8s.io/client-go/applyconfigurations/meta/v1"
 	"k8s.io/klog/v2"
@@ -226,15 +225,13 @@ func (d *defaulter) Default(ctx context.Context, limavm *v1alpha1.LimaVM) error 
 
 	// Create template ConfigMap with label
 	templateConfigMap := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      limavm.GetTemplateConfigMapName(),
-			Namespace: limavm.Namespace,
-			Labels: map[string]string{
-				controllers.TemplateConfigMapLabel: "true",
-			},
-			Finalizers: []string{
-				base.OwnedFinalizerFor(v1alpha1.LimaVMKind),
-			},
+		Name:      limavm.GetTemplateConfigMapName(),
+		Namespace: limavm.Namespace,
+		Labels: map[string]string{
+			controllers.TemplateConfigMapLabel: "true",
+		},
+		Finalizers: []string{
+			base.OwnedFinalizerFor(v1alpha1.LimaVMKind),
 		},
 		Data: map[string]string{
 			v1alpha1.TemplateConfigMapKey: templateData,

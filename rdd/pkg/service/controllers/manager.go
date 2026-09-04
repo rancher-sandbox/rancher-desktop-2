@@ -246,14 +246,12 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 					continue
 				}
 				name := registration.GetName()
-				webhookWaitGroup.Add(1)
-				go func() {
-					defer webhookWaitGroup.Done()
+				webhookWaitGroup.Go(func() {
 					klog.Infof("Starting webhook setup for controller %s (webhook %d)", name, i)
 					if err := manager.Setup(); err != nil {
 						webhookErrors <- fmt.Errorf("controller %s webhook %d: %w", name, i, err)
 					}
-				}()
+				})
 			}
 		}
 	}

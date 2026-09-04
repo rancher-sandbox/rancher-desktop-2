@@ -391,7 +391,7 @@ func waitForWebhookConfigurations(ctx context.Context, config *rest.Config, cont
 func unreadyComponentsFromError(err error) sets.Set[string] {
 	innerErr := strings.TrimPrefix(strings.TrimSuffix(err.Error(), `") has prevented the request from succeeding`), `an error on the server ("`)
 	unreadyComponents := sets.New[string]()
-	for _, line := range strings.Split(innerErr, `\n`) {
+	for line := range strings.SplitSeq(innerErr, `\n`) {
 		if name := strings.TrimPrefix(strings.TrimSuffix(line, ` failed: reason withheld`), `[-]`); name != line {
 			// NB: sometimes the error we get is truncated (server-side?) to something like:
 			// `\n[-]poststar") has prevented the request from succeeding` # spellchecker:ignore
@@ -410,23 +410,19 @@ func isCertificateError(err error) bool {
 	}
 
 	// Check for x509 certificate verification errors
-	var x509Err x509.CertificateInvalidError
-	if errors.As(err, &x509Err) {
+	if _, ok := errors.AsType[x509.CertificateInvalidError](err); ok {
 		return true
 	}
 
-	var unknownAuthorityErr x509.UnknownAuthorityError
-	if errors.As(err, &unknownAuthorityErr) {
+	if _, ok := errors.AsType[x509.UnknownAuthorityError](err); ok {
 		return true
 	}
 
-	var hostNameErr x509.HostnameError
-	if errors.As(err, &hostNameErr) {
+	if _, ok := errors.AsType[x509.HostnameError](err); ok {
 		return true
 	}
 
-	var constraintErr x509.ConstraintViolationError
-	if errors.As(err, &constraintErr) {
+	if _, ok := errors.AsType[x509.ConstraintViolationError](err); ok {
 		return true
 	}
 

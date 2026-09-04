@@ -14,33 +14,47 @@ import (
 // ContainerStatus defines the observed state of the container.
 type ContainerStatusApplyConfiguration struct {
 	// Name of the container; this is distinct from the container ID.
+	//
 	Name *string `json:"name,omitempty"`
 	// Namespace is the container namespace; refers to a `ContainerNamespace`
 	// object in the same Kubernetes namespace.
+	//
 	Namespace *string `json:"namespace,omitempty"`
 	// Path to the executable (within the image) for the process.
+	//
 	Path *string `json:"path,omitempty"`
 	// Args is the arguments to the executable.
+	//
 	Args []string `json:"args,omitempty"`
 	// Image is the image the container was created with.
+	//
 	Image *string `json:"image,omitempty"`
 	// Ports describes the exposed ports of the container.
+	//
 	Ports []ContainerPortApplyConfiguration `json:"ports,omitempty"`
 	// Labels are the container labels.
+	//
 	Labels map[string]string `json:"labels,omitempty"`
 	// Status of the container.
+	//
 	Status *containersv1alpha1.ContainerStatusValue `json:"status,omitempty"`
 	// Pid is the process identifier for the main process in the container.
+	//
 	Pid *int32 `json:"pid,omitempty"`
 	// ExitCode is the exit status of the main process in the container.
+	//
 	ExitCode *int32 `json:"exitCode,omitempty"`
 	// Error message if the container has failed to start.
+	//
 	Error *string `json:"error,omitempty"`
 	// CreatedAt is the time this container was initially created.
+	//
 	CreatedAt *v1.Time `json:"createdAt,omitempty"`
 	// StartedAt is the time this container was started; unset if the container is stopped.
+	//
 	StartedAt *v1.Time `json:"startedAt,omitempty"`
 	// FinishedAt is the time this container was last stopped; unset if the container never ran.
+	//
 	FinishedAt *v1.Time `json:"finishedAt,omitempty"`
 	// Conditions represent the calculated state of the container.
 	// Each condition has a unique type and reflects the status of a specific aspect of the resource.
@@ -54,10 +68,12 @@ type ContainerStatusApplyConfiguration struct {
 	// - "Dead": the container is dead.
 	//
 	// The status of each condition is one of True, False, or Unknown.
+	//
 	Conditions []metav1.ConditionApplyConfiguration `json:"conditions,omitempty"`
 	// LastAction records the most recent action requested via the
 	// AnnotationAction annotation and its outcome. Persists after the
 	// action completes until overwritten by the next action.
+	//
 	LastAction *ContainerLastActionApplyConfiguration `json:"lastAction,omitempty"`
 }
 

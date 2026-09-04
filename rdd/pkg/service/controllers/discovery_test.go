@@ -74,11 +74,9 @@ func TestControllerManagerDiscoveryGroup(t *testing.T) {
 	info, err := d1.DiscoverControllerManager(t.Context())
 	assert.NilError(t, err, "failed to discover controller manager")
 	assert.DeepEqual(t, &ControllerManagerInfo{
-		ControllerManagerInput: ControllerManagerInput{
-			HealthPort:         1234,
-			MetricsPort:        5678,
-			EnabledControllers: nil,
-		},
+		HealthPort:          1234,
+		MetricsPort:         5678,
+		EnabledControllers:  nil,
 		StartTime:           info.StartTime,
 		HealthEndpoint:      info.HealthEndpoint,
 		MetricsEndpoint:     info.MetricsEndpoint,
@@ -115,12 +113,10 @@ func TestControllerManagerDiscoveryGroup(t *testing.T) {
 	info, err = d2.DiscoverControllerManager(t.Context())
 	assert.NilError(t, err, "failed to discover second controller manager")
 	assert.DeepEqual(t, &ControllerManagerInfo{
-		ControllerManagerInput: ControllerManagerInput{
-			HealthPort:          port,
-			MetricsPort:         8765,
-			EnabledControllers:  []string{"hello"},
-			EnabledPassthroughs: map[string][]string{"hello": {"foo", "bar"}},
-		},
+		HealthPort:          port,
+		MetricsPort:         8765,
+		EnabledControllers:  []string{"hello"},
+		EnabledPassthroughs: map[string][]string{"hello": {"foo", "bar"}},
 		StartTime:           info.StartTime,
 		HealthEndpoint:      info.HealthEndpoint,
 		MetricsEndpoint:     info.MetricsEndpoint,

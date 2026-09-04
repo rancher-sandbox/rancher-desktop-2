@@ -612,8 +612,8 @@ func shouldEnableController(controller base.Controller, spec string) bool {
 	var included bool
 	var excluded bool
 
-	parts := strings.Split(spec, ",")
-	for _, part := range parts {
+	parts := strings.SplitSeq(spec, ",")
+	for part := range parts {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
@@ -900,9 +900,7 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 			return fmt.Errorf("failed to mark control plane as ready: %w", err)
 		}
 	} else {
-		mgrWg.Add(1)
-		go func() {
-			defer mgrWg.Done()
+		mgrWg.Go(func() {
 			klog.InfoS("Starting shared controller manager", "controllers", len(enabledControllers))
 
 			// Each instance reserves 4 consecutive ports starting at 8080:
@@ -936,7 +934,7 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 			if err := sharedManager.Start(ctx); err != nil {
 				klog.Error(err, "Failed to start shared controller manager")
 			}
-		}()
+		})
 	}
 
 	<-ctx.Done()

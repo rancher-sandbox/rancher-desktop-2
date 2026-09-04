@@ -47,7 +47,7 @@ func Test_computeSettledCondition(t *testing.T) {
 	// values have room below.
 	makeApp := func(generation int64, running bool, conditions ...metav1.Condition) *v1alpha1.App {
 		return &v1alpha1.App{
-			ObjectMeta: metav1.ObjectMeta{Generation: generation},
+			Generation: generation,
 			Spec:       v1alpha1.AppSpec{Running: running},
 			Status: v1alpha1.AppStatus{
 				Conditions: conditions,
@@ -723,7 +723,7 @@ func Test_Reconcile_resolvesKubernetesPort(t *testing.T) {
 	scheme := newTestScheme(t)
 
 	app := &v1alpha1.App{
-		ObjectMeta: metav1.ObjectMeta{Name: appName},
+		Name: appName,
 		Spec: v1alpha1.AppSpec{
 			Running:    false,
 			Kubernetes: v1alpha1.KubernetesSpec{Enabled: true, Version: "1.32.0"},
@@ -742,7 +742,7 @@ func Test_Reconcile_resolvesKubernetesPort(t *testing.T) {
 		LimaTemplateData: "",
 	}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 
 	// First reconcile: adds the cleanup finalizer and returns early.
 	_, err := r.Reconcile(context.Background(), req)
@@ -766,7 +766,7 @@ func Test_Reconcile_clearsKubernetesPortOnDisable(t *testing.T) {
 
 	// App starts with Kubernetes disabled but a stale port from a previous enable.
 	app := &v1alpha1.App{
-		ObjectMeta: metav1.ObjectMeta{Name: appName},
+		Name: appName,
 		Spec: v1alpha1.AppSpec{
 			Running:    false,
 			Kubernetes: v1alpha1.KubernetesSpec{Enabled: false},
@@ -789,7 +789,7 @@ func Test_Reconcile_clearsKubernetesPortOnDisable(t *testing.T) {
 		LimaTemplateData: "",
 	}
 
-	req := ctrl.Request{NamespacedName: client.ObjectKey{Name: appName}}
+	req := ctrl.Request{Name: appName}
 
 	// First reconcile: adds the cleanup finalizer and returns early.
 	_, err := r.Reconcile(context.Background(), req)

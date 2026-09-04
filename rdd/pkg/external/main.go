@@ -90,15 +90,13 @@ func RunControllers(apiGroupName string) int {
 	// Start control plane monitoring in background
 	var shutdownStartTime atomic.Int64
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		monitorControlPlane(monitorCtx, apiGroupName, config, setupLog, func() {
 			// Track when shutdown is initiated for timing logs
 			shutdownStartTime.Store(time.Now().UnixNano())
 			cancelMonitor()
 		})
-	}()
+	})
 
 	// Create shared controller manager for this API group.
 	// Start() resolves ports to available ones immediately before binding.

@@ -18,7 +18,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -346,9 +345,7 @@ func (r *EngineReconciler) manageDockerContext(endpointURL string) {
 	r.contextProbeCancel = cancel
 	r.contextMu.Unlock()
 
-	r.contextProbeWg.Add(1)
-	go func() {
-		defer r.contextProbeWg.Done()
+	r.contextProbeWg.Go(func() {
 		defer func() {
 			// A superseding probe or removeDockerContext cancels probeCtx before
 			// replacing contextProbeCancel, so err == nil means we still own it.
@@ -393,7 +390,7 @@ func (r *EngineReconciler) manageDockerContext(endpointURL string) {
 				log.Error(err, "Failed to set current Docker context", "context", contextName)
 			}
 		}
-	}()
+	})
 }
 
 // removeDockerContext cancels any in-flight probe, waits for it to finish,
@@ -837,7 +834,7 @@ func (r *EngineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Map any Container/Image/Volume event to a reconcile of the App singleton.
 	enqueueApp := handler.EnqueueRequestsFromMapFunc(
 		func(_ context.Context, _ client.Object) []reconcile.Request {
-			return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: appName}}}
+			return []reconcile.Request{{Name: appName}}
 		},
 	)
 

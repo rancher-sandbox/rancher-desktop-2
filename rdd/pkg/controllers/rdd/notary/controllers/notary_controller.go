@@ -14,7 +14,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -150,13 +149,11 @@ func (r *NotaryReconciler) recordValueChange(ctx context.Context, notary *v1alph
 		if errors.IsNotFound(err) {
 			// Create a new ConfigMap
 			configMap = &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      configMapName,
-					Namespace: notary.Namespace,
-					Labels: map[string]string{
-						"app.kubernetes.io/managed-by": "notary-controller",
-						"app.kubernetes.io/instance":   notary.Name,
-					},
+				Name:      configMapName,
+				Namespace: notary.Namespace,
+				Labels: map[string]string{
+					"app.kubernetes.io/managed-by": "notary-controller",
+					"app.kubernetes.io/instance":   notary.Name,
 				},
 				Data: make(map[string]string),
 			}
