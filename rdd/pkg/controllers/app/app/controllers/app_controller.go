@@ -33,6 +33,7 @@ import (
 	limav1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/predicates"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/gpu"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
 )
@@ -115,6 +116,12 @@ func (r *AppReconciler) kubernetesEnabled(ctx context.Context) bool {
 	return slices.Contains(enabled, v1alpha1.KubernetesControllerName)
 }
 
+// gpuWindowsHostSupported reports whether the host OS can provide AMD GPU
+// passthrough. This is currently WSL2 on Windows only, since the passthrough
+// relies on the DirectX Graphics kernel device (/dev/dxg) that WSL exposes. It
+// is a var so we can test the enabled path on any platform.
+var gpuWindowsHostSupported = func() bool { return goruntime.GOOS == "windows" }
+
 func applySpecToTemplate(baseTemplate string, spec v1alpha1.AppSpec, kubernetesPort int) (string, error) {
 	hostHome, err := os.UserHomeDir()
 	if err != nil {
@@ -150,6 +157,8 @@ func applySpecToTemplate(baseTemplate string, spec v1alpha1.AppSpec, kubernetesP
 		fmt.Sprintf("  KUBERNETES_ENABLED: %v", spec.Kubernetes.Enabled),
 		fmt.Sprintf("  KUBERNETES_VERSION: %s", spec.Kubernetes.Version),
 		fmt.Sprintf("  KUBERNETES_PORT: %d", kubernetesPort),
+		fmt.Sprintf("  GPU_ENABLED: %v", spec.GPU.Enabled && gpuWindowsHostSupported()),
+		fmt.Sprintf("  GPU_LIB_SOURCE: %q", toLinuxPath(instance.GPUDir())),
 		"",
 	)
 	return strings.Join(lines, "\n"), nil
@@ -197,6 +206,24 @@ func toLinuxPath(hostPath string) string {
 		return "/mnt/" + drive + rest
 	}
 	return hostPath
+}
+
+// reconcileGPUFiles keeps the host-side GPU staging directory in sync with the
+// spec. On a GPU-capable host it stages librocdxg.so + dids.conf when GPU
+// passthrough is enabled (fetching AMD's package or copying from spec.gpu.source)
+// and removes them when it is disabled. On other hosts it is a no-op. Errors are
+// returned so the caller can log them; staging is best-effort and must not wedge
+// reconciliation, because provisioning already degrades gracefully when the
+// files are absent.
+func (r *AppReconciler) reconcileGPUFiles(ctx context.Context, spec v1alpha1.AppSpec) error {
+	if !gpuWindowsHostSupported() {
+		return nil
+	}
+	dir := instance.GPUDir()
+	if !spec.GPU.Enabled {
+		return gpu.Unstage(dir)
+	}
+	return gpu.Stage(ctx, dir, spec.GPU.Source)
 }
 
 // Reconcile implements a singleton app reconciliation loop.
@@ -302,6 +329,15 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 		}
 	} else if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to fetch namespace: %w", err)
+	}
+
+	// Stage or clean the host-side GPU support files to match the spec before
+	// the template (which points provisioning at the staging directory) is
+	// applied. Best-effort: a failure here (e.g. a transient download error)
+	// is logged but does not block reconciliation, since provisioning skips
+	// GPU setup when the files are absent.
+	if err := r.reconcileGPUFiles(ctx, app.Spec); err != nil {
+		log.Error(err, "Failed to reconcile GPU support files; continuing without GPU passthrough")
 	}
 
 	// Check whether the LimaVM already exists. If not, create the input ConfigMap and LimaVM.

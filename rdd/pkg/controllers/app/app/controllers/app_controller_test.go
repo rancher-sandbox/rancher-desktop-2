@@ -462,6 +462,48 @@ func Test_applySpecToTemplate(t *testing.T) {
 
 // Test_applySpecToTemplate_VMResources checks that cpus and memory are appended
 // only when set, since they are no longer part of the base template.
+func Test_applySpecToTemplate_GPU(t *testing.T) {
+	tests := []struct {
+		name          string
+		spec          v1alpha1.AppSpec
+		hostSupported bool
+		wantEnabled   string
+	}{
+		{
+			name:          "enabled on a supported host emits GPU_ENABLED true",
+			spec:          v1alpha1.AppSpec{GPU: v1alpha1.GPUSpec{Enabled: true}},
+			hostSupported: true,
+			wantEnabled:   "GPU_ENABLED: true",
+		},
+		{
+			name:          "enabled on an unsupported host emits GPU_ENABLED false",
+			spec:          v1alpha1.AppSpec{GPU: v1alpha1.GPUSpec{Enabled: true}},
+			hostSupported: false,
+			wantEnabled:   "GPU_ENABLED: false",
+		},
+		{
+			name:          "disabled emits GPU_ENABLED false",
+			spec:          v1alpha1.AppSpec{GPU: v1alpha1.GPUSpec{Enabled: false}},
+			hostSupported: true,
+			wantEnabled:   "GPU_ENABLED: false",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			orig := gpuWindowsHostSupported
+			gpuWindowsHostSupported = func() bool { return tt.hostSupported }
+			t.Cleanup(func() { gpuWindowsHostSupported = orig })
+
+			got, err := applySpecToTemplate("base", tt.spec, 0)
+			assert.NilError(t, err)
+			assert.Assert(t, strings.Contains(got, tt.wantEnabled),
+				"expected output to contain %q, got:\n%s", tt.wantEnabled, got)
+			assert.Assert(t, strings.Contains(got, "GPU_LIB_SOURCE:"),
+				"expected a GPU_LIB_SOURCE line, got:\n%s", got)
+		})
+	}
+}
+
 func Test_applySpecToTemplate_VMResources(t *testing.T) {
 	t.Parallel()
 

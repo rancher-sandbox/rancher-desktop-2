@@ -64,6 +64,8 @@ spec:
   kubernetes:
     enabled: false
     version: 1.32.2
+  gpu:
+    enabled: false
   running: true
   namespace: rancher-desktop
 
@@ -104,6 +106,10 @@ status:
 - **spec.kubernetes.enabled**: Whether Kubernetes should be enabled in the VM. Defaults to `false`. Propagated to the `KUBERNETES_ENABLED` Lima template param.
 
 - **spec.kubernetes.version**: The Kubernetes version to use (e.g. `"1.30.2"`). Defaults to `"1.30.2"`. Propagated to the `KUBERNETES_VERSION` Lima template param.
+
+- **spec.gpu.enabled**: Whether experimental AMD GPU passthrough should be provisioned in the VM. Defaults to `false`. **WSL2 (Windows) only** — the toggle is ignored on other host platforms. When enabled on a supported host, the App controller stages the ROCm-on-WSL bridge files (`librocdxg.so` + `dids.conf`) into the guest's `/opt/rocm` (see `GPU_ENABLED` / `GPU_LIB_SOURCE` Lima template params), so that a privileged workload pod can bind-mount them and reach the host GPU via `/dev/dxg`. See [GPU passthrough](gpu_passthrough.md) for the full pod contract and limitations. Disabling removes the staged files on the next VM restart.
+
+- **spec.gpu.source**: Optional host directory containing `librocdxg.so` (a versioned name such as `librocdxg.so.1.2.2` is accepted) and `dids.conf`. When set, these files are used instead of fetching AMD's published `librocdxg` package. Intended for air-gapped hosts or an existing ROCm-on-WSL install. Could also be used to override the librocdxg's version, by manually installing desired version.
 
 - **status.kubernetesPort**: The host TCP port allocated for the k3s API server (`7441 + instance.Index()` by default). Set by the App reconciler on the first reconcile after `spec.kubernetes.enabled` becomes `true`, and cleared when `spec.kubernetes.enabled` is set back to `false` so that a fresh port is resolved on the next enable. The `KUBERNETES_PORT` Lima template param is set to this value; Lima's identity port-forward rule binds the same port on the host and forwards it to the guest.
 

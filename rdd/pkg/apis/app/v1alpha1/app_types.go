@@ -152,6 +152,26 @@ type VirtualMachineSpec struct {
 	Memory *resource.Quantity `json:"memory,omitempty"`
 }
 
+// GPUSpec defines the desired GPU passthrough configuration.
+//
+// GPU support is experimental and currently targets AMD ROCm on WSL2
+// (Windows) only; on other host platforms the toggle is ignored. When
+// enabled, RDD stages the ROCm-on-WSL bridge files (librocdxg.so + dids.conf)
+// into the guest's /opt/rocm so that privileged workload pods can bind-mount
+// them and reach the host GPU via /dev/dxg. By default the files are fetched
+// from AMD's official librocdxg release; set source to copy them from a host
+// directory instead (for air-gapped hosts or an existing ROCm-on-WSL install).
+type GPUSpec struct {
+	// enabled specifies whether GPU passthrough should be provisioned in the VM.
+	// +optional
+	Enabled bool `json:"enabled,omitempty"`
+	// source is an optional host directory containing librocdxg.so (a versioned
+	// name such as librocdxg.so.1.2.2 is accepted) and dids.conf. When set,
+	// these files are used instead of fetching AMD's published package.
+	// +optional
+	Source string `json:"source,omitempty"`
+}
+
 // ContainerEngineSpec defines the desired container engine configuration.
 type ContainerEngineSpec struct {
 	// name specifies the container engine to use.
@@ -215,6 +235,9 @@ type AppSpec struct {
 	// virtualMachine specifies the VM resource allocation (CPUs and memory).
 	// +optional
 	VirtualMachine VirtualMachineSpec `json:"virtualMachine,omitempty"`
+	// gpu specifies experimental GPU passthrough configuration.
+	// +optional
+	GPU GPUSpec `json:"gpu,omitempty"`
 	// application specifies the settings for the Rancher Desktop Electron frontend.
 	// +optional
 	// +kubebuilder:default={updates:{enabled:true}}
