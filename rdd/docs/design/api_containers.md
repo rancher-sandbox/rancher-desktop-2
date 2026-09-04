@@ -452,3 +452,131 @@ Delete the `Volume` object; finalizers will cause deletion of the container
 engine side volume.
 Webhooks will be needed for validation to reject deleting volumes that are in
 use.
+
+## Compose Projects
+
+`Compose` objects do not reflect actual container engine objects; instead, they
+reflect `docker compose` projects.
+
+```yaml
+apiVersion: containers.rancherdesktop.io/v1alpha1
+kind: Compose
+metadata:
+  name: foo
+  namespace: rancher-desktop
+status:
+  namespace: k8s.io
+  name: my-project
+  workingDir: /opt/foo/project-dir
+  configs: []
+  members:
+  - name: Container/8eb6f2cf72b6616aa743cf9187f350af84c9749dab65474db2530f26745d2ef3
+    uid: 239ef6a0-63bd-4e87-9a7e-c5d4435ddcd4
+  conditions: []
+```
+
+- **metadata.name**: This name must be constructed by the following:
+  - Take `status.namespace` followed by a literal slash (`/`), then lower-cased
+    `status.name`.
+  - Take the SHA256 of the above string, as a lower case hexadecimal string.
+- **status.namespace**: The container namespace; refers to a
+  [`ContainerNamespace`](#namespaces) object.
+- **status.name**: The compose project name.
+- **status.workingDir**: Optional; the compose project directory on the host
+  (i.e. relative to where the RDD process runs).
+- **status.configs**: Optional; the list of compose files used to create the
+  project.  Relative to `status.workingDir`, which means it's also a path on the
+  host.
+- **status.members**: A list of objects that are part of this project.  The
+  `name` is the resource type (`Container`, `Volume`, `Image`), followed by a
+  slash (`/`), followed by the object name (i.e. `.metadata.name`).  Each `name`
+  must be unique.  The `uid` is the object UID (i.e. `.metadata.uid`), used to
+  track when the object has been recreated.
+- **status.conditions**: The normal status conditions; see [below](#status-conditions)
+
+`Compose` objects cannot be manually created; they can ony be created using the
+[`ComposeUpRequest`](#composeuprequest) mechanism, or by the reconciler noticing
+compose project references in resources (containers, volumes, etc.) via the
+`com.docker.compose.project` label on the resources.  In the latter case, the
+`status.members` field would be updated to indicate which resources were found.
+The `HasMembers` status condition would also be set to `True` to indicate that
+resources have been detected.  However, in that case `status.workingDir` and
+`status.configs` may be unset.
+
+Associated resources being deleted would similarly update `status.members`; once
+the last item has been removed, `HasMembers` would be set to `False`.  The
+`Compose` object will eventually be deleted after `HasMembers` transitions to
+`False`.
+
+### Status Conditions
+
+The following status conditions are defined:
+
+<table>
+<tr><th>Type<th>Reason<th>Status<th>Description
+<tr><td rowspan=3>HasMembers
+    <td>Found<td>True<td>Objects matching this project were found.
+<tr><td>Deleted<td>False<td>The last object for this project was deleted; this project will be reaped.
+<tr><td>Calculating<td>Unknown<td>Action is being processed.
+</table>
+
+### Compose Actions
+
+#### `ComposeUpRequest`
+
+```yaml
+apiVersion: containers.rancherdesktop.io/v1alpha1
+kind: ComposeUpRequest
+metadata:
+  name: foo
+  namespace: rancher-desktop
+spec:
+  namespace: k8s.io
+  name: my-project
+  workingDir: /opt/foo/project-dir
+  configs: []
+status:
+  conditions: []
+```
+
+Creating a `ComposeUpRequest` will trigger `docker compose up` and creation of
+a `Compose`.
+
+- **metadata.name**: The name must be constructed in the same was as a
+  [`Compose`](#compose-projects) resource, based on `spec.namespace` and
+  `spec.name`.  That is, the resulting `Compose` object will have the same name
+  as the `ComposeUpRequest`.
+- **spec.namespace**: Reference to a [`ContainerNamespace`](#namespaces).
+- **spec.name**: The compose project name.
+- **spec.workingDir**: The compose project directory on the host (i.e. relative
+  to where the RDD process runs).  Used to look up any files needed.
+- **spec.configs**: Optional; the list of compose files used to create the
+  project.  Relative to `spec.workingDir`, which means it's also a path on the
+  host.  Defaults to `Composefile`.
+- **status.conditions**: The normal status conditions; see [below](#status-conditions-1)
+
+##### Status Conditions
+
+The following status conditions are defined:
+
+<table>
+<tr><th>Type<th>Reason<th>Status<th>Description
+<tr><td rowspan=3>Settled
+    <td>Running<td>False<td><tt>docker compose up</tt> is running.
+<tr><td>Errored<td>True<td>Error encountered running <tt>docker compose up</tt>.
+<tr><td>Succeeded<td>True<td><tt>docker compose up</tt> succeeded.
+</table>
+
+The `ComposeUpRequest` object will be automatically reaped some time after the
+`Settled` status condition transitions to `True` (whether it was successful or
+not).
+
+#### Delete `Compose`
+
+Deleting the `Compose` object will cause `docker compose down` to be run.
+Because `status.workingDir` and `status.configs` may not be available, this will
+only be able to delete resources with the correct labels.  The `Compose` object
+itself will be deleted once that succeeds (because `HasMembers` will become
+`False` at that point).
+
+Note: this may leave behind resources created by `docker swarm`.
