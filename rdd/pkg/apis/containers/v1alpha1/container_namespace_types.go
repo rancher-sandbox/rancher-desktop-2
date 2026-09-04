@@ -8,6 +8,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// ContainerNamespaceKind is the Kind string for ContainerNamespace resources.
+const ContainerNamespaceKind = "ContainerNamespace"
+
 // +kubebuilder:object:root=true
 // +kubebuilder:ac:generate=true
 // +kubebuilder:resource:shortName=cns,categories="all"

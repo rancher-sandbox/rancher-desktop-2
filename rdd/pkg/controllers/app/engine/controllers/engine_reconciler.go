@@ -11,28 +11,20 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"sync"
-	"time"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	appv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
 	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
-	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 )
 
 const (
@@ -54,6 +46,14 @@ const (
 	// NotApplicable.
 	engineMoby = "moby"
 )
+
+// engineRequest is the typed reconcile request for EngineReconciler.
+// It carries both the originating kind and the target namespaced name.
+type engineRequest struct {
+	Kind string
+	types.NamespacedName
+	types.UID
+}
 
 // engineLogOptionsData holds the options for fetching container logs.
 type engineLogOptionsData struct {
@@ -98,6 +98,8 @@ type engine interface {
 	hasTTY(ctx context.Context, c *containersv1alpha1.Container) (bool, error)
 	// getLogs returns a reader for the container's logs.
 	getLogs(ctx context.Context, c *containersv1alpha1.Container, opts ...engineLogOptions) (io.ReadCloser, error)
+	// pullImage pulls an image from its repository tag and reports progress.
+	pullImage(ctx context.Context, repoTag string, onProgress func(start, current, total int64, units string), onComplete func(error)) error
 	// deleteContainer removes a container from the engine.
 	deleteContainer(ctx context.Context, c *containersv1alpha1.Container) error
 	// deleteImage removes an image from the engine.
@@ -122,17 +124,20 @@ type EngineReconciler struct {
 	// at cleanup time, even if the informer cache hasn't caught up yet.
 	apiReader client.Reader
 
-	// reconcileChan receives events from the engine watcher goroutine.
-	reconcileChan chan event.GenericEvent
+	// reconcileAppChan receives events from the engine watcher goroutine.
+	reconcileAppChan chan event.GenericEvent
+	// reconcileImagePullRequestChan triggers when the engine is connected.
+	reconcileImagePullRequestChan chan event.GenericEvent
 
 	// apiNamespace mirrors App.spec.namespace (immutable). Reconcile
-	// populates it before any mirror operation.
+	// populates it before any mirror operation.  Must be accessed while holding
+	// engineMu.
 	apiNamespace string
 
-	// watcherMu guards r.watcher; note that this may be held for a long time
-	// during initialization.
-	watcherMu sync.Mutex
-	watcher   engine
+	// engineMu guards r.engine and r.apiNamespace; note that this may be held for
+	// a long time during initialization.
+	engineMu sync.Mutex
+	engine   engine
 
 	// watcherCtx is the parent context for every engine watcher the
 	// reconciler starts. A manager.RunnableFunc cancels it on
@@ -152,669 +157,42 @@ type EngineReconciler struct {
 	// goroutine to finish before deleting the context directory, ensuring
 	// the goroutine cannot write currentContext after the directory is gone.
 	contextProbeWg sync.WaitGroup
+
+	// imagePullRequestMu guards imagePullRequestState
+	imagePullRequestMu sync.Mutex
+	// imagePullRequestState maps image pull request UIDs to their state.
+	imagePullRequestState map[types.UID]imagePullRequestState
 }
 
-// Reconcile handles App condition changes, Docker watcher lifecycle,
-// Container action annotations, and finalizer processing for mirror
-// resources.
-func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Result, error) {
-	log := logf.FromContext(ctx)
-
-	var app appv1alpha1.App
-	if err := r.Get(ctx, client.ObjectKey{Name: appName}, &app); err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-	r.apiNamespace = app.GetResourceNamespace()
-
-	running := meta.IsStatusConditionTrue(app.Status.Conditions, appv1alpha1.AppConditionRunning)
-	engineIsDocker := app.Spec.ContainerEngine.Name == engineMoby
-
-	// Treat a dead watcher as a transient disconnect and fall through.
-	// The watcher's run goroutine closes the Docker client in its own
-	// deferred cleanup, so Reconcile only needs to forget the
-	// reference. If wantWatcher is still true below, a fresh watcher's
-	// fullSync reconciles drift in place — existing mirror resources
-	// keep their identity, so downstream clients see no churn. The
-	// !wantWatcher branch below handles an actual stop or backend
-	// change by sweeping the mirrors.
-	var watcherDied bool
-	r.watcherMu.Lock()
-	watcherRunning := r.watcher != nil
-	if watcherRunning && !r.watcher.alive() {
-		r.watcher = nil
-		watcherRunning = false
-		watcherDied = true
-	}
-	r.watcherMu.Unlock()
-	if watcherDied {
-		log.Info("Docker watcher died, will attempt to reconnect")
-	}
-
-	// The watcher runs only when the App is Running on the moby
-	// backend. Any other state stops the watcher and sweeps mirror
-	// resources. Skip the sweep once ContainerEngineReady already
-	// reflects the terminal state, to avoid four empty List calls per
-	// unrelated reconcile; a failed sweep leaves the condition pending
-	// and the next requeue retries.
-	wantWatcher := running && engineIsDocker
-	if !wantWatcher {
-		if watcherRunning {
-			log.Info("Stopping Docker watcher",
-				"running", running, "engine", app.Spec.ContainerEngine.Name)
-			r.stopWatcher()
-		} else {
-			// The watcher was never started or died on its own (e.g. the VM
-			// socket closed). stopWatcher was not called, so clean up the
-			// Docker context directly.
-			r.removeDockerContext()
+// Reconcile dispatches requests by source kind.
+func (r *EngineReconciler) Reconcile(ctx context.Context, req engineRequest) (ctrl.Result, error) {
+	switch req.Kind {
+	case appv1alpha1.AppKind:
+		var app appv1alpha1.App
+		if err := r.Get(ctx, client.ObjectKey{Name: appName}, &app); err != nil {
+			return ctrl.Result{}, client.IgnoreNotFound(err)
 		}
-		terminalReason := appv1alpha1.EngineReasonStopped
-		terminalStatus := metav1.ConditionFalse
-		terminalMessage := "Container engine stopped"
-		if running && !engineIsDocker {
-			// Report NotApplicable as Status=True so `rdd set
-			// running=true containerEngine.name=containerd` stops
-			// waiting on ContainerEngineReady. UI consumers that
-			// expect Container/Image/Volume mirrors must gate on
-			// Reason, not Status alone. The condition will be renamed
-			// when containerd mirroring lands.
-			terminalReason = appv1alpha1.EngineReasonNotApplicable
-			terminalStatus = metav1.ConditionTrue
-			terminalMessage = "Engine mirroring is only supported with the moby backend"
-		}
-		current := meta.FindStatusCondition(app.Status.Conditions, appv1alpha1.AppConditionContainerEngineReady)
-		// alreadyClean skips the four List calls when ContainerEngineReady
-		// already reflects the final state for the current generation.
-		// We require ObservedGeneration >= app.Generation to ensure that
-		// any new spec change always triggers cleanup instead of relying
-		// on a stale condition from a previous reconcile.
-		alreadyClean := !watcherDied && current != nil &&
-			current.Reason == terminalReason &&
-			current.Status == terminalStatus &&
-			current.ObservedGeneration >= app.Generation
-		if !alreadyClean {
-			if err := r.cleanupMirrorResources(ctx); err != nil {
-				log.Error(err, "Failed to clean up mirror resources")
-				return ctrl.Result{}, err
-			}
-		}
-		return ctrl.Result{}, r.setEngineCondition(ctx, &app, terminalStatus, terminalReason, terminalMessage)
+		return r.reconcileWatcher(ctx, &app)
+	case containersv1alpha1.ImagePullRequestKind:
+		return r.reconcileImagePullRequest(ctx, req)
+	default:
+		logf.FromContext(ctx).Error(
+			errors.New("unsupported reconcile request kind"),
+			"Ignoring reconcile request",
+			"kind", req.Kind,
+			"name", req.Name,
+			"namespace", req.Namespace,
+		)
+		return ctrl.Result{}, nil
 	}
-
-	if !watcherRunning {
-		log.Info("App is running, starting Docker watcher")
-		if err := r.startWatcherAndSync(ctx); err != nil {
-			log.Error(err, "Failed to start Docker watcher")
-			if condErr := r.setEngineCondition(ctx, &app, metav1.ConditionFalse, appv1alpha1.EngineReasonConnectFailed, err.Error()); condErr != nil {
-				log.Error(condErr, "Failed to update ContainerEngineReady to ConnectFailed")
-			}
-			return ctrl.Result{}, err
-		}
-	}
-
-	// Re-assert Connected on every steady-state reconcile so its
-	// observedGeneration tracks the current App generation. When the
-	// spec is patched without cycling the watcher (e.g. `rdd set
-	// running=true kubernetes.enabled=true`), this is the only place
-	// that stamps the new generation into ContainerEngineReady, and
-	// rdd set's wait predicate depends on it. setEngineCondition
-	// no-ops when nothing changed, so stable reconciles pay nothing.
-	if err := r.setEngineCondition(ctx, &app, metav1.ConditionTrue, appv1alpha1.EngineReasonConnected, "Container engine synced"); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// Two passes run per Reconcile: reconcileContainerActions drives
-	// Docker actions from the action annotation, and
-	// processFinalizers forwards K8s-side deletes to Docker for any
-	// mirror still carrying the mirror finalizer.
-	//
-	// Both passes issue List calls per reconcile, and every
-	// Container/Image/Volume watch event triggers a reconcile — so
-	// cost is O(N) per child event. The long-term fix is to split
-	// these into per-resource reconcilers with watch predicates
-	// (deletionTimestamp set, action annotation present).
-	//
-	// Run both passes unconditionally and join their errors. Early
-	// return on actionsErr would stall every mirror's finalizer behind
-	// a single stuck container action: the next reconcile would hit
-	// the same broken container first and skip finalizers again.
-	var actionsErr, finErr error
-	if err := r.reconcileContainerActions(ctx); err != nil {
-		actionsErr = fmt.Errorf("failed to reconcile container actions: %w", err)
-	}
-	if err := r.processFinalizers(ctx); err != nil {
-		finErr = fmt.Errorf("failed to process finalizers: %w", err)
-	}
-	return ctrl.Result{}, errors.Join(actionsErr, finErr)
-}
-
-// startWatcherAndSync creates a Docker watcher and blocks until its
-// initial fullSync has completed; only then does it publish the
-// watcher on r.watcher. The watcher inherits watcherCtx, which
-// cancels only on manager shutdown, so startWatcherAndSync
-// deliberately drops Reconcile's ctx: a future ReconciliationTimeout
-// or per-request deadline must not kill the watcher the moment
-// Reconcile returns.
-func (r *EngineReconciler) startWatcherAndSync(_ context.Context) error {
-	r.watcherMu.Lock()
-	defer r.watcherMu.Unlock()
-
-	if r.watcher != nil {
-		return nil
-	}
-
-	e, err := newDockerWatcher(r.watcherCtx, r.Client, r.apiNamespace, r.reconcileChan)
-	if err != nil {
-		return err
-	}
-	r.watcher = e
-	r.manageDockerContext(instance.DockerEndpoint())
-	return nil
-}
-
-// stopWatcher stops the Docker watcher goroutine and waits for it to finish.
-func (r *EngineReconciler) stopWatcher() {
-	r.watcherMu.Lock()
-	e := r.watcher
-	r.watcher = nil
-	r.watcherMu.Unlock()
-
-	if e != nil {
-		e.stop()
-	}
-	r.removeDockerContext()
-}
-
-// manageDockerContext creates the instance Docker context and, in a goroutine,
-// probes the user's current context; if it is absent or unhealthy, switches
-// the default to the new context. At most one probe runs at a time.
-func (r *EngineReconciler) manageDockerContext(endpointURL string) {
-	contextName := instance.Name()
-	log := logf.FromContext(r.watcherCtx).WithName("docker-context")
-
-	if err := createReplaceDockerContext(contextName, endpointURL); err != nil {
-		log.Error(err, "Failed to create Docker context", "context", contextName)
-		return
-	}
-
-	r.contextMu.Lock()
-	// Cancel any in-flight probe from a previous transition.
-	if r.contextProbeCancel != nil {
-		r.contextProbeCancel()
-	}
-	probeCtx, cancel := context.WithCancel(r.watcherCtx)
-	r.contextProbeCancel = cancel
-	r.contextMu.Unlock()
-
-	r.contextProbeWg.Add(1)
-	go func() {
-		defer r.contextProbeWg.Done()
-		defer func() {
-			// A superseding probe or removeDockerContext cancels probeCtx before
-			// replacing contextProbeCancel, so err == nil means we still own it.
-			r.contextMu.Lock()
-			if probeCtx.Err() == nil {
-				r.contextProbeCancel = nil
-			}
-			r.contextMu.Unlock()
-			cancel()
-		}()
-
-		current, err := getCurrentDockerContext()
-		if err != nil {
-			// An error here means the config file exists but could not be
-			// read or parsed. Do not proceed — writing currentContext now
-			// would overwrite a file we cannot safely round-trip.
-			log.Error(err, "Failed to read current Docker context")
-			return
-		}
-
-		// DOCKER_HOST and DOCKER_CONTEXT take precedence over config.json
-		// in the Docker CLI's resolution order. Both are shell-local env
-		// vars: the daemon inherits them frozen from the shell that ran
-		// rdd svc start and they may not reflect the user's global
-		// preference. Rewriting config.json based on them could clobber a
-		// correct currentContext for sessions that don't have those vars
-		// set. Skip the probe-and-set entirely when either is present.
-		if os.Getenv("DOCKER_HOST") != "" || os.Getenv("DOCKER_CONTEXT") != "" {
-			return
-		}
-
-		var healthy bool
-		if current != "" && current != "default" {
-			healthy = probeNamedDockerContext(probeCtx, current)
-		} else {
-			healthy = probeDockerContext(probeCtx)
-		}
-		// Guard against writing currentContext after removeDockerContext has
-		// already cancelled probeCtx and deleted the context directory.
-		if !healthy && probeCtx.Err() == nil {
-			if err := setCurrentDockerContext(contextName); err != nil {
-				log.Error(err, "Failed to set current Docker context", "context", contextName)
-			}
-		}
-	}()
-}
-
-// removeDockerContext cancels any in-flight probe, waits for it to finish,
-// then resets the current context if it points at our instance and deletes
-// the instance's Docker context directory.
-func (r *EngineReconciler) removeDockerContext() {
-	r.contextMu.Lock()
-	if r.contextProbeCancel != nil {
-		r.contextProbeCancel()
-		r.contextProbeCancel = nil
-	}
-	r.contextMu.Unlock()
-
-	// Wait for any in-flight probe goroutines to finish before deleting the
-	// context directory. Each probe's context was cancelled above (or by an
-	// earlier manageDockerContext call), so each Ping returns within
-	// dockerContextProbeTimeout (3s). Multiple goroutines can be outstanding
-	// if manageDockerContext was called while a prior probe was still running;
-	// Wait blocks until all of them have exited.
-	r.contextProbeWg.Wait()
-
-	contextName := instance.Name()
-	log := logf.FromContext(r.watcherCtx).WithName("docker-context")
-	if err := clearCurrentDockerContext(contextName); err != nil {
-		log.Error(err, "Failed to clear current Docker context", "context", contextName)
-	}
-	if err := deleteDockerContext(contextName); err != nil {
-		log.Error(err, "Failed to delete Docker context", "context", contextName)
-	}
-}
-
-// setEngineCondition updates the ContainerEngineReady condition on the App.
-func (r *EngineReconciler) setEngineCondition(ctx context.Context, app *appv1alpha1.App, status metav1.ConditionStatus, reason, message string) error {
-	// The App controller also writes App.Status.Conditions (to
-	// mirror LimaVM conditions), and controller-runtime runs
-	// reconciles across controllers in parallel, so a naive Update
-	// races and 409s. Retry on conflict with a re-Get.
-	//
-	// Use client-go Update rather than SSA: ObservedGeneration must
-	// reflect the specific generation this call's Get observed, and
-	// meta.SetStatusCondition expects the read-modify-write pattern.
-	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		latest := &appv1alpha1.App{}
-		if err := r.Get(ctx, client.ObjectKey{Name: app.Name}, latest); err != nil {
-			// Concurrent `rdd svc delete` can remove the App mid-reconcile.
-			// NotFound is a no-op, not an error to requeue on.
-			if apierrors.IsNotFound(err) {
-				return nil
-			}
-			return err
-		}
-		// The caller decided status and reason from its earlier App read,
-		// but this re-Get stamps ObservedGeneration. So the condition can
-		// advertise a generation the engine has not reconciled: its status
-		// reflects the earlier read while ObservedGeneration jumps to the
-		// latest. Settled and rdd set treat engineCond.ObservedGeneration
-		// >= app.Generation as "the engine has caught up", so on its own
-		// this stamp could let Settled report True before the engine
-		// reconciles the newer spec — a premature settle.
-		//
-		// That gap is safe today because another gate holds Settled until
-		// the engine actually reconciles the new generation. Changing
-		// containerEngine.name rewrites the Lima template, so Settled waits
-		// at ApplyingTemplate while the VM restarts and the engine
-		// re-derives ContainerEngineReady. Setting running=false hits the
-		// stop path, which waits for the engine's Stopped reason — written
-		// only after cleanup — so a stale Connected cannot settle it.
-		//
-		// A future spec field that changes engine behavior without one of
-		// those gates would break this. It must force ContainerEngineReady
-		// to be re-derived at the new generation — e.g. cycle the watcher
-		// so the next Connected follows a real sync, or gate Settled on the
-		// field — rather than rely on this stamp alone.
-		changed := meta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
-			Type:               appv1alpha1.AppConditionContainerEngineReady,
-			Status:             status,
-			Reason:             reason,
-			Message:            message,
-			ObservedGeneration: latest.Generation,
-		})
-		if !changed {
-			return nil
-		}
-		return r.Status().Update(ctx, latest)
-	})
-}
-
-// cleanupMirrorResources removes every mirror resource the engine
-// controller owns. After deleting all resources it polls the API
-// server until they are gone from the watch cache, so that the
-// ContainerEngineReady condition is only stamped once callers (e.g.
-// `rdd set running=false`) can observe a clean state.
-func (r *EngineReconciler) cleanupMirrorResources(ctx context.Context) error {
-	log := logf.FromContext(ctx)
-	log.Info("Cleaning up all mirror resources")
-
-	var errs []error
-	if err := r.deleteAllOfType(ctx, &containersv1alpha1.ContainerList{}); err != nil {
-		errs = append(errs, fmt.Errorf("failed to delete Containers: %w", err))
-	}
-	if err := r.deleteAllOfType(ctx, &containersv1alpha1.VolumeList{}); err != nil {
-		errs = append(errs, fmt.Errorf("failed to delete Volumes: %w", err))
-	}
-	if err := r.deleteAllOfType(ctx, &containersv1alpha1.ImageList{}); err != nil {
-		errs = append(errs, fmt.Errorf("failed to delete Images: %w", err))
-	}
-	if err := r.deleteAllOfType(ctx, &containersv1alpha1.ContainerNamespaceList{}); err != nil {
-		errs = append(errs, fmt.Errorf("failed to delete ContainerNamespaces: %w", err))
-	}
-	if err := errors.Join(errs...); err != nil {
-		return err
-	}
-	// Block until the API server's watch cache reflects the deletions.
-	// The Kubernetes watch cache is updated asynchronously: DELETE
-	// requests commit to etcd synchronously, but the cache event is
-	// processed in a separate goroutine. On slower systems (e.g.
-	// Windows CI with SQLite I/O) there is an observable window where
-	// `kubectl get` returns a just-deleted resource. Polling here
-	// ensures that ContainerEngineReady is only stamped — and `rdd set
-	// running=false` only returns — after the cache reflects the clean
-	// state, so the immediately-following test assertion passes.
-	return r.waitMirrorResourcesGone(ctx)
-}
-
-// waitMirrorResourcesGone polls the informer cache until all four mirror
-// resource types are empty or the 30-second timeout expires. r.List is
-// used (not r.apiReader) so the poll drains the watch cache, not etcd.
-func (r *EngineReconciler) waitMirrorResourcesGone(ctx context.Context) error {
-	log := logf.FromContext(ctx)
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	for {
-		remaining, err := r.countMirrorResources(ctx)
-		if err != nil {
-			return fmt.Errorf("error verifying mirror resources gone: %w", err)
-		}
-		if remaining == 0 {
-			return nil
-		}
-		log.V(1).Info("Waiting for mirror resources to disappear from watch cache",
-			"remaining", remaining)
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("timed out waiting for %d mirror resources to be deleted: %w",
-				remaining, ctx.Err())
-		case <-time.After(200 * time.Millisecond):
-		}
-	}
-}
-
-// countMirrorResources returns the total number of mirror resources in
-// the informer cache. All four types must be registered in Watches.
-func (r *EngineReconciler) countMirrorResources(ctx context.Context) (int, error) {
-	lists := []client.ObjectList{
-		&containersv1alpha1.ContainerList{},
-		&containersv1alpha1.VolumeList{},
-		&containersv1alpha1.ImageList{},
-		&containersv1alpha1.ContainerNamespaceList{},
-	}
-	var total int
-	for _, list := range lists {
-		if err := r.List(ctx, list, client.InNamespace(r.apiNamespace)); err != nil {
-			return 0, err
-		}
-		items, err := meta.ExtractList(list)
-		if err != nil {
-			return 0, err
-		}
-		total += len(items)
-	}
-	return total, nil
-}
-
-// deleteAllOfType lists and removes every resource of the given kind
-// in r.apiNamespace. Engine is authoritative for Container, Image, and
-// Volume in the App's namespace: this loop deletes every object, not
-// just engine-owned mirrors. Coexistence with another writer to these
-// kinds requires an engine-owned label and matching filters here and
-// in the sync_*.go full-sync prune paths. Finalizer removal retries
-// on conflict; per-item errors are collected so one stuck object does
-// not block the rest.
-//
-// The list is fetched via apiReader (direct API server, not the
-// informer cache) so that resources created by the watcher goroutine
-// immediately before it was stopped are visible even if the cache
-// hasn't reflected the creation yet.
-func (r *EngineReconciler) deleteAllOfType(ctx context.Context, list client.ObjectList) error {
-	if err := r.apiReader.List(ctx, list, client.InNamespace(r.apiNamespace)); err != nil {
-		return err
-	}
-
-	items, err := meta.ExtractList(list)
-	if err != nil {
-		return err
-	}
-
-	var errs []error
-	for _, item := range items {
-		obj := item.(client.Object)
-		key := client.ObjectKeyFromObject(obj)
-		// meta.ExtractList leaves each item's TypeMeta empty (GVK is
-		// only on the list), so format the Go type with %T instead of
-		// obj.GetObjectKind().
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			latest := obj.DeepCopyObject().(client.Object)
-			// Use apiReader here too: if the informer cache hasn't reflected
-			// a just-created resource yet, r.Get would return NotFound and
-			// we would skip the finalizer removal, leaving the resource in
-			// Terminating state after the subsequent Delete call.
-			if err := r.apiReader.Get(ctx, key, latest); err != nil {
-				if apierrors.IsNotFound(err) {
-					return nil
-				}
-				return err
-			}
-			if !controllerutil.RemoveFinalizer(latest, mirrorFinalizer) {
-				return nil
-			}
-			return r.Update(ctx, latest)
-		})
-		if retryErr != nil {
-			errs = append(errs, fmt.Errorf("failed to remove finalizer from %T %s: %w",
-				obj, obj.GetName(), retryErr))
-			continue
-		}
-		// Delete uses the stale list item, not latest from the retry
-		// closure: Delete keys off name+namespace and does not send
-		// resourceVersion, so staleness cannot trigger a 409.
-		if err := client.IgnoreNotFound(r.Delete(ctx, obj)); err != nil {
-			errs = append(errs, fmt.Errorf("failed to delete %T %s: %w",
-				obj, obj.GetName(), err))
-		}
-	}
-	return errors.Join(errs...)
-}
-
-// reconcileContainerActions processes the AnnotationAction annotation on
-// every container that carries one. Per-container errors are joined and
-// returned; a patch failure re-queues the reconcile so the caller retries.
-// Containers without the annotation are skipped.
-func (r *EngineReconciler) reconcileContainerActions(ctx context.Context) error {
-	r.watcherMu.Lock()
-	e := r.watcher
-	r.watcherMu.Unlock()
-	if e == nil {
-		return nil
-	}
-
-	var containers containersv1alpha1.ContainerList
-	if err := r.List(ctx, &containers, client.InNamespace(r.apiNamespace)); err != nil {
-		return err
-	}
-
-	var errs []error
-	for i := range containers.Items {
-		c := &containers.Items[i]
-		if c.DeletionTimestamp != nil {
-			continue
-		}
-		if _, ok := c.Annotations[containersv1alpha1.AnnotationAction]; !ok {
-			continue
-		}
-		if err := e.processContainerAction(ctx, c); err != nil {
-			errs = append(errs, fmt.Errorf("container %s: %w", c.Name, err))
-		}
-	}
-	return errors.Join(errs...)
-}
-
-// processFinalizers handles resources with a deletion timestamp by deleting
-// the corresponding Docker object and removing the finalizer.
-func (r *EngineReconciler) processFinalizers(ctx context.Context) error {
-	r.watcherMu.Lock()
-	e := r.watcher
-	r.watcherMu.Unlock()
-	if e == nil {
-		return nil
-	}
-
-	// Join errors across all three types so a stuck Container or
-	// Image finalizer does not starve pending Volume finalizers.
-	return errors.Join(
-		r.processContainerFinalizers(ctx, e),
-		r.processImageFinalizers(ctx, e),
-		r.processVolumeFinalizers(ctx, e),
-	)
-}
-
-// processContainerFinalizers deletes the Docker-side container for
-// every Container pending deletion. The mirror finalizer is only
-// stripped when the Docker delete succeeds, so a stuck container keeps
-// retrying on later reconciles.
-func (r *EngineReconciler) processContainerFinalizers(ctx context.Context, e engine) error {
-	var containers containersv1alpha1.ContainerList
-	if err := r.List(ctx, &containers, client.InNamespace(r.apiNamespace)); err != nil {
-		return err
-	}
-	var errs []error
-	for i := range containers.Items {
-		c := &containers.Items[i]
-		if c.DeletionTimestamp == nil || !controllerutil.ContainsFinalizer(c, mirrorFinalizer) {
-			continue
-		}
-		if err := e.deleteContainer(ctx, c); err != nil {
-			errs = append(errs, fmt.Errorf("failed to delete container %s from Docker: %w", c.Name, err))
-			continue
-		}
-		// Retry on conflict so a stale cache does not force a
-		// whole-reconcile requeue just to repeat the idempotent
-		// deleteContainer call. NotFound is benign: a concurrent
-		// Docker destroy event may already have cleaned up.
-		key := client.ObjectKeyFromObject(c)
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			latest := &containersv1alpha1.Container{}
-			if err := r.Get(ctx, key, latest); err != nil {
-				if apierrors.IsNotFound(err) {
-					return nil
-				}
-				return err
-			}
-			if !controllerutil.RemoveFinalizer(latest, mirrorFinalizer) {
-				return nil
-			}
-			return r.Update(ctx, latest)
-		})
-		if retryErr != nil {
-			errs = append(errs, fmt.Errorf("failed to remove finalizer from Container %s: %w", c.Name, retryErr))
-		}
-	}
-	return errors.Join(errs...)
-}
-
-func (r *EngineReconciler) processImageFinalizers(ctx context.Context, e engine) error {
-	var images containersv1alpha1.ImageList
-	if err := r.List(ctx, &images, client.InNamespace(r.apiNamespace)); err != nil {
-		return err
-	}
-	var errs []error
-	for i := range images.Items {
-		img := &images.Items[i]
-		if img.DeletionTimestamp == nil || !controllerutil.ContainsFinalizer(img, mirrorFinalizer) {
-			continue
-		}
-		// An Image mirror with empty status.id and status.repoTag has
-		// no Docker reference to forward the delete to (bare-skeleton
-		// user create, or the startup race before applyImage ran).
-		// Strip the finalizer and let the Delete proceed — symmetric
-		// with processVolumeFinalizers' empty-status.name guard.
-		if img.Status.ID != "" || img.Status.RepoTag != "" {
-			if err := e.deleteImage(ctx, img); err != nil {
-				errs = append(errs, fmt.Errorf("failed to delete image %s from Docker: %w", img.Name, err))
-				continue
-			}
-		}
-		key := client.ObjectKeyFromObject(img)
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			latest := &containersv1alpha1.Image{}
-			if err := r.Get(ctx, key, latest); err != nil {
-				if apierrors.IsNotFound(err) {
-					return nil
-				}
-				return err
-			}
-			if !controllerutil.RemoveFinalizer(latest, mirrorFinalizer) {
-				return nil
-			}
-			return r.Update(ctx, latest)
-		})
-		if retryErr != nil {
-			errs = append(errs, fmt.Errorf("failed to remove finalizer from Image %s: %w", img.Name, retryErr))
-		}
-	}
-	return errors.Join(errs...)
-}
-
-func (r *EngineReconciler) processVolumeFinalizers(ctx context.Context, e engine) error {
-	var volumes containersv1alpha1.VolumeList
-	if err := r.List(ctx, &volumes, client.InNamespace(r.apiNamespace)); err != nil {
-		return err
-	}
-	var errs []error
-	for i := range volumes.Items {
-		v := &volumes.Items[i]
-		if v.DeletionTimestamp == nil || !controllerutil.ContainsFinalizer(v, mirrorFinalizer) {
-			continue
-		}
-		// A Volume mirror with empty Status.Name has no Docker-side
-		// name to forward a delete to (bare-skeleton user create, or
-		// the startup race before applyVolume ran). Strip the
-		// finalizer and let the Delete proceed.
-		if v.Status.Name != "" {
-			if err := e.deleteVolume(ctx, v); err != nil {
-				errs = append(errs, fmt.Errorf("failed to delete volume %s from Docker: %w", v.Name, err))
-				continue
-			}
-		}
-		key := client.ObjectKeyFromObject(v)
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			latest := &containersv1alpha1.Volume{}
-			if err := r.Get(ctx, key, latest); err != nil {
-				if apierrors.IsNotFound(err) {
-					return nil
-				}
-				return err
-			}
-			if !controllerutil.RemoveFinalizer(latest, mirrorFinalizer) {
-				return nil
-			}
-			return r.Update(ctx, latest)
-		})
-		if retryErr != nil {
-			errs = append(errs, fmt.Errorf("failed to remove finalizer from Volume %s: %w", v.Name, retryErr))
-		}
-	}
-	return errors.Join(errs...)
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *EngineReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	r.reconcileChan = make(chan event.GenericEvent, 1)
+	r.reconcileAppChan = make(chan event.GenericEvent, 1)
+	r.reconcileImagePullRequestChan = make(chan event.GenericEvent, 1)
 	r.apiReader = mgr.GetAPIReader()
+	r.imagePullRequestState = make(map[types.UID]imagePullRequestState)
 
 	// Create the watcher-scoped context and register a shutdown
 	// hook that cancels it and stops the active watcher. The hook
@@ -834,20 +212,44 @@ func (r *EngineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return fmt.Errorf("failed to register watcher shutdown hook: %w", err)
 	}
 
-	// Map any Container/Image/Volume event to a reconcile of the App singleton.
-	enqueueApp := handler.EnqueueRequestsFromMapFunc(
-		func(_ context.Context, _ client.Object) []reconcile.Request {
-			return []reconcile.Request{{NamespacedName: types.NamespacedName{Name: appName}}}
-		},
-	)
+	// When an ImagePullRequest changes, enqueue a reconcile request for that object.
+	enqueueRequestsForImagePullRequest := handler.TypedEnqueueRequestsFromMapFunc(
+		func(_ context.Context, obj client.Object) []engineRequest {
+			return []engineRequest{{
+				Kind:           containersv1alpha1.ImagePullRequestKind,
+				NamespacedName: client.ObjectKeyFromObject(obj),
+				UID:            obj.GetUID(),
+			}}
+		})
+	// When an App, Container, Image, Volume, or ContainerNamespace changes,
+	// enqueue a reconcile request for the App so the watcher can update.
+	enqueueRequestsForApp := handler.TypedEnqueueRequestsFromMapFunc(
+		func(_ context.Context, _ client.Object) []engineRequest {
+			return []engineRequest{{
+				Kind:           appv1alpha1.AppKind,
+				NamespacedName: types.NamespacedName{Name: appName},
+			}}
+		})
+	// enqueueRawRequest returns a handler that enqueues a reconcile request for
+	// the specified kind.
+	enqueueRawRequest := func(kind string) handler.TypedEventHandler[client.Object, engineRequest] {
+		return handler.TypedEnqueueRequestsFromMapFunc(func(_ context.Context, _ client.Object) []engineRequest {
+			return []engineRequest{{
+				Kind:           kind,
+				NamespacedName: types.NamespacedName{Name: appName},
+			}}
+		})
+	}
 
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&appv1alpha1.App{}).
+	return builder.TypedControllerManagedBy[engineRequest](mgr).
 		Named("engine-reconciler").
-		WatchesRawSource(source.Channel(r.reconcileChan, enqueueApp)).
-		Watches(&containersv1alpha1.Container{}, enqueueApp).
-		Watches(&containersv1alpha1.Image{}, enqueueApp).
-		Watches(&containersv1alpha1.Volume{}, enqueueApp).
-		Watches(&containersv1alpha1.ContainerNamespace{}, enqueueApp).
+		WatchesRawSource(source.TypedChannel(r.reconcileAppChan, enqueueRawRequest(appv1alpha1.AppKind))).
+		WatchesRawSource(source.TypedChannel(r.reconcileImagePullRequestChan, enqueueRawRequest(containersv1alpha1.ImagePullRequestKind))).
+		Watches(&appv1alpha1.App{}, enqueueRequestsForApp).
+		Watches(&containersv1alpha1.Container{}, enqueueRequestsForApp).
+		Watches(&containersv1alpha1.Image{}, enqueueRequestsForApp).
+		Watches(&containersv1alpha1.ImagePullRequest{}, enqueueRequestsForImagePullRequest).
+		Watches(&containersv1alpha1.Volume{}, enqueueRequestsForApp).
+		Watches(&containersv1alpha1.ContainerNamespace{}, enqueueRequestsForApp).
 		Complete(r)
 }

@@ -8,6 +8,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// ContainerKind is the Kind string for Container resources.
+const ContainerKind = "Container"
+
 // +kubebuilder:validation:Enum=created;running;pausing;paused;restarting;removing;exited;dead;unknown
 
 // ContainerStatusValue describes the status of a container.
@@ -308,7 +311,7 @@ type ContainerCreateRequestStatus struct {
 
 	// Conditions represent the state of the container creation request.
 	// Current known condition types include:
-	// - "Complete": the container creation request has successfully completed.
+	// - "Settled": the container creation request has reached a terminal state.
 	// - "Failed": the container creation request has failed.
 	// The status of each condition is one of True, False, or Unknown.
 	//

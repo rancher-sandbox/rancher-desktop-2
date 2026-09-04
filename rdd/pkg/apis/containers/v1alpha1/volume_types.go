@@ -8,6 +8,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// VolumeKind is the Kind string for Volume resources.
+const VolumeKind = "Volume"
+
 // VolumeStatus describes the configuration the volume was created with.
 type VolumeStatus struct {
 	// Name of the volume.
@@ -100,7 +103,7 @@ type VolumeCreateSpec struct {
 type VolumeCreateStatus struct {
 	// Conditions represent the state of the volume creation request.
 	// Current known condition types include:
-	//  - "Complete": the volume creation request has successfully completed.
+	//  - "Settled": the volume creation request has reached a terminal state.
 	//  - "Failed": the volume creation request has failed.
 	// The status of each condition is one of True, False, or Unknown.
 	//

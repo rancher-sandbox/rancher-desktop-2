@@ -10,6 +10,7 @@ package image
 import (
 	_ "embed"
 
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
@@ -31,11 +32,15 @@ var controllerCRD string
 
 // controller implements the base.Controller interface for image.
 // This effectively only exists to store the CRD data.
-type controller struct{}
+type controller struct {
+	webhookPort     int
+	webhookManagers []base.WebhookManager
+}
 
 // Verify that controller implements base.Controller and base.WebhookController interfaces.
 var (
-	_ base.Controller = &controller{}
+	_ base.Controller        = &controller{}
+	_ base.WebhookController = &controller{}
 )
 
 // GetName returns the controller name.
@@ -48,13 +53,57 @@ func (c *controller) GetAPIGroup() string {
 	return APIGroup
 }
 
+// SetWebhookPort implements [base.WebhookController].
+func (c *controller) SetWebhookPort(port int) {
+	c.webhookPort = port
+}
+
+// GetWebhookServiceName implements [base.WebhookController].
+func (c *controller) GetWebhookServiceName() string {
+	return ControllerName + "-webhook"
+}
+
+// GetWebhookManagers implements [base.WebhookController].
+func (c *controller) GetWebhookManagers() []base.WebhookManager {
+	return c.webhookManagers
+}
+
 // GetCRDData returns the embedded CRD YAML data.
 func (c *controller) GetCRDData() string {
 	return controllerCRD
 }
 
+// setupWebhookWithRuntimeConfig sets up validating webhooks for ImagePullRequest.
+func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
+	mgr.GetLogger().Info("Setting up image webhooks")
+	validatingConfig := base.WebhookConfig[*v1alpha1.ImagePullRequest]{
+		Name:        "image-pull-request-validating",
+		WebhookName: "image-pull-request-validating.containers.rancherdesktop.io",
+		WebhookPort: c.webhookPort,
+		Operations: []admissionregistrationv1.OperationType{
+			admissionregistrationv1.Create,
+			admissionregistrationv1.Update,
+		},
+		Validator: &imagePullRequestValidator{
+			reader: mgr.GetAPIReader(),
+		},
+	}
+
+	managers, err := base.SetupWebhookForResource(mgr, &v1alpha1.ImagePullRequest{}, validatingConfig)
+	if err != nil {
+		return err
+	}
+	c.webhookManagers = append(c.webhookManagers, managers...)
+
+	return nil
+}
+
 // RegisterWithManager implements the complete controller registration for both embedded and external modes.
 func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
 	// Register the CRD types with the scheme
-	return v1alpha1.AddToScheme(mgr.GetScheme())
+	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
+		return err
+	}
+
+	return c.setupWebhookWithRuntimeConfig(mgr)
 }

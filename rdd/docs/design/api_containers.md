@@ -1,9 +1,5 @@
 # Rancher Desktop Containers API
 
-> [!CAUTION]
-> The Rancher Desktop Containers API is still in the concept stage and the details
-will need to be ironed out.
-
 The Rancher Desktop Containers API mirrors the container engine state into
 Kubernetes resources.  The engine controller connects to the container engine,
 performs a full sync of containers, images, and volumes, then watches the engine
@@ -34,12 +30,15 @@ When running `containerd`, the containerd namespace is listed as the `namespace`
 label rather than re-using the Kubernetes namespace.  When running `dockerd`,
 namespaces are not supported and we always use `moby` as the value for that label.
 
-For the `*Request` resources, they use the `Complete` and `Failed` conditions to
-express state; those are mutually exclusive (only one of the two can be set to
-`True` at once).  Once either is set to `True`, the request object is considered
-to be in a terminal state and will be removed after some timeout.  This will be
-at least one minute (so the caller can read any data), but the precise timing is
-unspecified.
+For the `*Request` resources, they use the `Settled` and `Failed` conditions to
+express state.  `Settled` will become `True` when the request object has reached
+a terminal state (it will not produce any more actions).  Once a request object
+has reached such a terminal state, unless it has an owning reference set, it
+will be automatically removed after some timeout.  This will be at least one
+minute (so the caller can read any data), but the precise timing is unspecified.
+If the `Settled` condition is set to `True` but it is not successful, then the
+`Failed` condition will exist and set to `True`, with the reason and message
+describing what the error is.
 
 This API is mainly for use by the Rancher Desktop front end; all other users are
 strongly urged to use the relevant CLI or other API instead.
@@ -206,8 +205,9 @@ status:
   # same Kubernetes namespace as the ContainerCreateRequest.
   name: 8eb6f2cf72b6616aa743cf9187f350af84c9749dab65474db2530f26745d2ef3
   conditions:
-  - type: Complete
+  - type: Settled
     status: True
+    reason: ContainerCreated
   - type: Failed
     status: False
 ```
@@ -326,15 +326,45 @@ metadata:
   name: image-fetch-12345
   namespace: rancher-desktop
 spec:
-  namespace: moby # Refers to a `ContainerNamespace` object
+  namespace: moby
   repoTag: 'registry.opensuse.org/opensuse/leap:latest'
 status:
+  lastUpdateTime: "2025-11-17T03:14:16Z"
+  start: 0
+  current: 10
+  total: 100
+  units: bytes
   conditions:
-  - type: Complete
+  - type: Settled
     status: True
+    reason: ImagePulled
   - type: Failed
     status: False
 ```
+
+- **spec.namespace**: Refers to a [`ContainerNamespace`](#namespaces) object
+- **spec.repoTag**: Reference to image to pull.
+- **status.lastUpdateTime**: The last time any progress has been made.
+- **status.start**: Initial value of the progress
+- **status.current**: Current progress value
+- **status.total**: Total progress value
+- **status.units**: Units for start/current/total
+
+Status conditions:
+
+<table>
+<tr><th>Type<th>Reason<th>Status<th>Description
+<tr><td rowspan=3>Settled
+    <td>ImagePulled<td>True<td>image has been pulled
+<tr><td>Pulling<td>False<td>image is being pulled
+<tr><td>Errored<td>True<td>image pull has failed
+<tr><td rowspan=5>Failed
+    <td>Succeeded<td>False<td>image has been pulled
+<tr><td>PullFailed<td>True<td>image pull has failed; see `message`
+<tr><td>InvalidArgument<td>True<td>image specification was not accepted
+<tr><td>Unauthorized<td>True<td>authentication issue pulling image
+<tr><td>PullTimeout<td>True<td>the image pull has timed out
+</table>
 
 #### Build image
 Not sure; do something with the `Resource` API maybe?
@@ -355,8 +385,9 @@ spec:
   imageRef: img-2b0d7f4e7d2f2e2d3c6f0a8a4b5a6c7d8e9f0a1b2c3d4e5f607182a3b4c5d6e7
 status:
   conditions:
-  - type: Complete
+  - type: Settled
     status: True
+    reason: ImagePushed
   - type: Failed
     status: False
 ```
@@ -374,8 +405,9 @@ spec:
   imageRef: img-2b0d7f4e7d2f2e2d3c6f0a8a4b5a6c7d8e9f0a1b2c3d4e5f607182a3b4c5d6e7
 status:
   conditions:
-  - type: Complete
+  - type: Settled
     status: True
+    reason: Finished
   - type: Failed
     status: False
   result:
@@ -439,8 +471,9 @@ spec:
   driver: local
 status:
   conditions:
-  - type: Complete
+  - type: Settled
     status: True
+    reason: VolumeCreated
   - type: Failed
     status: False
 ```

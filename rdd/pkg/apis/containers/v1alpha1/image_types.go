@@ -8,6 +8,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// ImageKind is the Kind string for Image resources.
+const ImageKind = "Image"
+
+// ImagePullRequestKind is the Kind string for ImagePullRequest resources.
+const ImagePullRequestKind = "ImagePullRequest"
+
 // ImageStatus defines the observed state of the image.
 type ImageStatus struct {
 	// Namespace is the container namespace; refers to a `ContainerNamespace`
@@ -94,6 +100,14 @@ type ImageList struct {
 	Items           []Image `json:"items"`
 }
 
+// ImagePullRequest condition types.
+const (
+	// ImagePullRequestConditionSettled indicates the request has reached a terminal state.
+	ImagePullRequestConditionSettled = "Settled"
+	// ImagePullRequestConditionFailed indicates the request failed.
+	ImagePullRequestConditionFailed = "Failed"
+)
+
 // ImagePullRequestSpec defines the parameters for pulling an image.
 type ImagePullRequestSpec struct {
 	// Namespace is the container namespace; refers to a `ContainerNamespace`
@@ -110,14 +124,40 @@ type ImagePullRequestSpec struct {
 
 // ImagePullRequestStatus reports the progress of an image pull request.
 type ImagePullRequestStatus struct {
+	// LastUpdateTime is the time the status was last updated.
+	//
+	// +optional
+	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
+	// Start is the initial progress of the image pull request.
+	//
+	// +optional
+	Start int64 `json:"start,omitempty"`
+
+	// Current is the current progress of the image pull request.
+	//
+	// +optional
+	Current int64 `json:"current,omitempty"`
+
+	// Total is the total amount of work for the image pull request.
+	//
+	// +optional
+	Total int64 `json:"total,omitempty"`
+
+	// Units is the unit of measurement for the progress fields, including Start,
+	// Current, and Total.
+	//
+	// +optional
+	Units string `json:"units,omitempty"`
+
 	// Conditions represent the state of the image pull request.
 	// Current known condition types include:
-	//  - "Complete": the image pull request has successfully completed.
+	//  - "Settled": the image pull request has reached a terminal state.
 	//  - "Failed": the image pull request has failed.
 	// The status of each condition is one of True, False, or Unknown.
 	//
 	// +listType=map
 	// +listMapKey=type
+	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
@@ -170,7 +210,7 @@ type ImagePushRequestSpec struct {
 type ImagePushRequestStatus struct {
 	// Conditions represent the state of the image push request.
 	// Current known condition types include:
-	//  - "Complete": the image push request has successfully completed.
+	//  - "Settled": the image push request has reached a terminal state.
 	//  - "Failed": the image push request has failed.
 	// The status of each condition is one of True, False, or Unknown.
 	//
@@ -225,7 +265,7 @@ type ImageScanRequestSpec struct {
 type ImageScanRequestStatus struct {
 	// Conditions represent the state of the image scan request.
 	// Current known condition types include:
-	//  - "Complete": the image scan request has successfully completed.
+	//  - "Settled": the image scan request has reached a terminal state.
 	//  - "Failed": the image scan request has failed.
 	// The status of each condition is one of True, False, or Unknown.
 	//

@@ -513,7 +513,7 @@ spec:
                 description: |-
                   Conditions represent the state of the container creation request.
                   Current known condition types include:
-                  - "Complete": the container creation request has successfully completed.
+                  - "Settled": the container creation request has reached a terminal state.
                   - "Failed": the container creation request has failed.
                   The status of each condition is one of True, False, or Unknown.
                 items:
@@ -983,7 +983,7 @@ spec:
                 description: |-
                   Conditions represent the state of the image pull request.
                   Current known condition types include:
-                   - "Complete": the image pull request has successfully completed.
+                   - "Settled": the image pull request has reached a terminal state.
                    - "Failed": the image pull request has failed.
                   The status of each condition is one of True, False, or Unknown.
                 items:
@@ -1044,6 +1044,28 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              current:
+                description: Current is the current progress of the image pull request.
+                format: int64
+                type: integer
+              lastUpdateTime:
+                description: LastUpdateTime is the time the status was last updated.
+                format: date-time
+                type: string
+              start:
+                description: Start is the initial progress of the image pull request.
+                format: int64
+                type: integer
+              total:
+                description: Total is the total amount of work for the image pull
+                  request.
+                format: int64
+                type: integer
+              units:
+                description: |-
+                  Units is the unit of measurement for the progress fields, including Start,
+                  Current, and Total.
+                type: string
             type: object
         required:
         - spec
@@ -1111,7 +1133,7 @@ spec:
                 description: |-
                   Conditions represent the state of the image push request.
                   Current known condition types include:
-                   - "Complete": the image push request has successfully completed.
+                   - "Settled": the image push request has reached a terminal state.
                    - "Failed": the image push request has failed.
                   The status of each condition is one of True, False, or Unknown.
                 items:
@@ -1407,7 +1429,7 @@ spec:
                 description: |-
                   Conditions represent the state of the image scan request.
                   Current known condition types include:
-                   - "Complete": the image scan request has successfully completed.
+                   - "Settled": the image scan request has reached a terminal state.
                    - "Failed": the image scan request has failed.
                   The status of each condition is one of True, False, or Unknown.
                 items:
@@ -1550,7 +1572,7 @@ spec:
                 description: |-
                   Conditions represent the state of the volume creation request.
                   Current known condition types include:
-                   - "Complete": the volume creation request has successfully completed.
+                   - "Settled": the volume creation request has reached a terminal state.
                    - "Failed": the volume creation request has failed.
                   The status of each condition is one of True, False, or Unknown.
                 items:

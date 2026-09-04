@@ -64,6 +64,20 @@ wait_for_resource_status() {
     try --max 30 --delay 1 -- assert_resource_status "${resource_type}" "${name}" "${field}" "${expected}"
 }
 
+# Wait for a specific condition status field on a resource.
+# Example:
+# wait_for_resource_condition ImagePullRequest request-1 Failed reason PullFailed
+wait_for_resource_condition() {
+    local resource_type=$1
+    local name=$2
+    local condition_type=$3
+    local field=$4
+    local expected=$5
+
+    wait_for_resource_status "${resource_type}" "${name}" \
+        "conditions[?(@.type==\"${condition_type}\")].${field}" "${expected}"
+}
+
 patch_resource() {
     local resource_type=$1
     local name=$2
