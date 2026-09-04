@@ -13,7 +13,7 @@ import (
 //
 // Notary is the Schema for the notaries API.
 type NotaryApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration    `json:",inline"`
+	v1.TypeMetaApplyConfiguration    `json:""`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	Spec                             *NotarySpecApplyConfiguration   `json:"spec,omitempty"`
 	Status                           *NotaryStatusApplyConfiguration `json:"status,omitempty"`

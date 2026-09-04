@@ -12,6 +12,7 @@ package tokengetter
 import (
 	"context"
 
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1listers "k8s.io/client-go/listers/core/v1"
@@ -26,7 +27,7 @@ type clientGetter struct {
 
 // NewGetterFromClient returns a ServiceAccountTokenGetter that
 // uses the specified client to retrieve service accounts, secrets and
-// return errors for nodes and pods.
+// return errors for nodes, pods and webhook configurations.
 func NewGetterFromClient(secretLister v1listers.SecretLister, serviceAccountLister v1listers.ServiceAccountLister) serviceaccount.ServiceAccountTokenGetter {
 	return clientGetter{secretLister, serviceAccountLister}
 }
@@ -45,4 +46,12 @@ func (c clientGetter) GetSecret(_ context.Context, namespace, name string) (*v1.
 
 func (c clientGetter) GetNode(_ context.Context, name string) (*v1.Node, error) {
 	return nil, apierrors.NewNotFound(v1.Resource("nodes"), name)
+}
+
+func (c clientGetter) GetValidatingWebhookConfiguration(_ context.Context, name string) (*admissionregistrationv1.ValidatingWebhookConfiguration, error) {
+	return nil, apierrors.NewNotFound(admissionregistrationv1.Resource("validatingwebhookconfigurations"), name)
+}
+
+func (c clientGetter) GetMutatingWebhookConfiguration(_ context.Context, name string) (*admissionregistrationv1.MutatingWebhookConfiguration, error) {
+	return nil, apierrors.NewNotFound(admissionregistrationv1.Resource("mutatingwebhookconfigurations"), name)
 }

@@ -17,7 +17,7 @@ import (
 // valid ranges for VM resource settings without inspecting the host directly.
 // The controller creates and maintains exactly one instance named "system".
 type HostInfoApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration    `json:",inline"`
+	v1.TypeMetaApplyConfiguration    `json:""`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	Spec                             *rddv1alpha1.HostInfoSpec         `json:"spec,omitempty"`
 	Status                           *HostInfoStatusApplyConfiguration `json:"status,omitempty"`

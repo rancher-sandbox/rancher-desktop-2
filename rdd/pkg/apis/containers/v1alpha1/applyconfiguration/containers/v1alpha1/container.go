@@ -14,7 +14,7 @@ import (
 //
 // Container is the Schema for the containers API.
 type ContainerApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration `json:",inline"`
+	v1.TypeMetaApplyConfiguration `json:""`
 	// Metadata is a standard object metadata
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	// Spec is reserved for future use. The Container API has no

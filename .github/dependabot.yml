@@ -69,11 +69,6 @@ updates:
   cooldown:
     default-days: 7
   ignore:
-  - # etcd 3.7 regenerated its protobuf API, which kine and the embedded k8s
-    # apiserver do not yet implement, so the build breaks. Allow 3.6.x patch
-    # updates; drop this once kine and k8s move to 3.7.
-    dependency-name: go.etcd.io/etcd/*
-    update-types: [version-update:semver-minor, version-update:semver-major]
   - { dependency-name: k8s.io/api }
   - { dependency-name: k8s.io/apiextensions-apiserver }
   - { dependency-name: k8s.io/apimachinery }
