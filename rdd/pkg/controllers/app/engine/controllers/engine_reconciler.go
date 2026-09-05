@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
-// Package controllers implements the engine reconciler, which mirrors Docker
-// engine state into Kubernetes resources.
+// Package controllers implements the engine reconciler, which mirrors
+// container-engine state into Kubernetes resources.
 package controllers
 
 import (
@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -50,10 +51,19 @@ const (
 	mirrorFinalizer = "engine.rancherdesktop.io/mirror"
 
 	// engineMoby is the App.spec.containerEngine.name value that selects
-	// the Docker backend. Containerd has no watcher yet and reports
-	// NotApplicable.
+	// the Docker backend.
 	engineMoby = "moby"
+
+	// engineContainerd is the App.spec.containerEngine.name value that
+	// selects the containerd backend.
+	engineContainerd = "containerd"
 )
+
+// errLogsNotSupported is returned by an engine backend that cannot serve
+// container logs at all, as opposed to failing to read them for a particular
+// container. HandleLogs reports it as 501 so the caller can tell a backend
+// that serves no logs from a read that merely failed.
+var errLogsNotSupported = errors.New("container logs are not supported with the current container engine")
 
 // engineLogOptionsData holds the options for fetching container logs.
 type engineLogOptionsData struct {
@@ -81,9 +91,8 @@ func engineLogWithFollow(follow bool) engineLogOptions {
 }
 
 // engine is the reconciler-facing contract every container-engine
-// implementation must satisfy. dockerWatcher is the only current
-// implementation; a forthcoming containerd implementation will provide a
-// second. Methods that the reconciler does not call (event handlers,
+// implementation must satisfy; dockerWatcher and containerdWatcher
+// implement it. Methods that the reconciler does not call (event handlers,
 // full-sync internals) stay off the interface.
 type engine interface {
 	// alive reports whether the engine is still running.
@@ -133,6 +142,10 @@ type EngineReconciler struct {
 	// during initialization.
 	watcherMu sync.Mutex
 	watcher   engine
+	// watcherEngine is the App.spec.containerEngine.name the current
+	// watcher was created for, so a spec change to another backend is
+	// distinguishable from a reconcile that changed nothing.
+	watcherEngine string
 
 	// watcherCtx is the parent context for every engine watcher the
 	// reconciler starts. A manager.RunnableFunc cancels it on
@@ -154,7 +167,7 @@ type EngineReconciler struct {
 	contextProbeWg sync.WaitGroup
 }
 
-// Reconcile handles App condition changes, Docker watcher lifecycle,
+// Reconcile handles App condition changes, engine watcher lifecycle,
 // Container action annotations, and finalizer processing for mirror
 // resources.
 func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Result, error) {
@@ -167,40 +180,64 @@ func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 	r.apiNamespace = app.GetResourceNamespace()
 
 	running := meta.IsStatusConditionTrue(app.Status.Conditions, appv1alpha1.AppConditionRunning)
-	engineIsDocker := app.Spec.ContainerEngine.Name == engineMoby
+	engineName := app.Spec.ContainerEngine.Name
+	engineIsDocker := engineName == engineMoby
+	// On Windows nothing serves the containerd named pipe yet (no socket
+	// bridge like the Docker one), so containerd keeps the NotApplicable
+	// path there — otherwise ContainerEngineReady would sit at ConnectFailed
+	// and `rdd set` would never settle.
+	engineSupported := engineIsDocker ||
+		(engineName == engineContainerd && runtime.GOOS != "windows")
 
 	// Treat a dead watcher as a transient disconnect and fall through.
-	// The watcher's run goroutine closes the Docker client in its own
+	// The watcher's run goroutine closes the engine client in its own
 	// deferred cleanup, so Reconcile only needs to forget the
 	// reference. If wantWatcher is still true below, a fresh watcher's
 	// fullSync reconciles drift in place — existing mirror resources
 	// keep their identity, so downstream clients see no churn. The
-	// !wantWatcher branch below handles an actual stop or backend
-	// change by sweeping the mirrors.
+	// !wantWatcher branch below handles an actual stop by sweeping the
+	// mirrors.
 	var watcherDied bool
+	var previousEngine string
 	r.watcherMu.Lock()
 	watcherRunning := r.watcher != nil
-	if watcherRunning && !r.watcher.alive() {
+	switch {
+	case watcherRunning && !r.watcher.alive():
 		r.watcher = nil
 		watcherRunning = false
 		watcherDied = true
+	case watcherRunning && r.watcherEngine != engineName:
+		// The spec selected a different backend. Stop the watcher here
+		// rather than relying on the VM restart a template change
+		// triggers, so the mirrors and the condition never describe an
+		// engine other than the one running.
+		previousEngine = r.watcherEngine
 	}
 	r.watcherMu.Unlock()
 	if watcherDied {
-		log.Info("Docker watcher died, will attempt to reconnect")
+		log.Info("Engine watcher died, will attempt to reconnect")
+	}
+	if previousEngine != "" {
+		log.Info("Container engine changed, restarting the watcher",
+			"from", previousEngine, "to", engineName)
+		r.stopWatcher()
+		if err := r.cleanupMirrorResources(ctx); err != nil {
+			return ctrl.Result{}, err
+		}
+		watcherRunning = false
 	}
 
-	// The watcher runs only when the App is Running on the moby
+	// The watcher runs only when the App is Running on a supported
 	// backend. Any other state stops the watcher and sweeps mirror
 	// resources. Skip the sweep once ContainerEngineReady already
 	// reflects the terminal state, to avoid four empty List calls per
 	// unrelated reconcile; a failed sweep leaves the condition pending
 	// and the next requeue retries.
-	wantWatcher := running && engineIsDocker
+	wantWatcher := running && engineSupported
 	if !wantWatcher {
 		if watcherRunning {
-			log.Info("Stopping Docker watcher",
-				"running", running, "engine", app.Spec.ContainerEngine.Name)
+			log.Info("Stopping engine watcher",
+				"running", running, "engine", engineName)
 			r.stopWatcher()
 		} else {
 			// The watcher was never started or died on its own (e.g. the VM
@@ -211,16 +248,16 @@ func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 		terminalReason := appv1alpha1.EngineReasonStopped
 		terminalStatus := metav1.ConditionFalse
 		terminalMessage := "Container engine stopped"
-		if running && !engineIsDocker {
+		if running && !engineSupported {
 			// Report NotApplicable as Status=True so `rdd set
-			// running=true containerEngine.name=containerd` stops
+			// running=true containerEngine.name=<engine>` stops
 			// waiting on ContainerEngineReady. UI consumers that
 			// expect Container/Image/Volume mirrors must gate on
-			// Reason, not Status alone. The condition will be renamed
-			// when containerd mirroring lands.
+			// Reason, not Status alone.
 			terminalReason = appv1alpha1.EngineReasonNotApplicable
 			terminalStatus = metav1.ConditionTrue
-			terminalMessage = "Engine mirroring is only supported with the moby backend"
+			terminalMessage = fmt.Sprintf(
+				"Engine mirroring is not supported for container engine %q on this platform", engineName)
 		}
 		current := meta.FindStatusCondition(app.Status.Conditions, appv1alpha1.AppConditionContainerEngineReady)
 		// alreadyClean skips the four List calls when ContainerEngineReady
@@ -242,9 +279,9 @@ func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 	}
 
 	if !watcherRunning {
-		log.Info("App is running, starting Docker watcher")
-		if err := r.startWatcherAndSync(ctx); err != nil {
-			log.Error(err, "Failed to start Docker watcher")
+		log.Info("App is running, starting engine watcher", "engine", engineName)
+		if err := r.startWatcherAndSync(ctx, engineName); err != nil {
+			log.Error(err, "Failed to start engine watcher")
 			if condErr := r.setEngineCondition(ctx, &app, metav1.ConditionFalse, appv1alpha1.EngineReasonConnectFailed, err.Error()); condErr != nil {
 				log.Error(condErr, "Failed to update ContainerEngineReady to ConnectFailed")
 			}
@@ -288,14 +325,14 @@ func (r *EngineReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.
 	return ctrl.Result{}, errors.Join(actionsErr, finErr)
 }
 
-// startWatcherAndSync creates a Docker watcher and blocks until its
-// initial fullSync has completed; only then does it publish the
+// startWatcherAndSync creates the engine watcher for engineName and blocks
+// until its initial fullSync has completed; only then does it publish the
 // watcher on r.watcher. The watcher inherits watcherCtx, which
 // cancels only on manager shutdown, so startWatcherAndSync
 // deliberately drops Reconcile's ctx: a future ReconciliationTimeout
 // or per-request deadline must not kill the watcher the moment
 // Reconcile returns.
-func (r *EngineReconciler) startWatcherAndSync(_ context.Context) error {
+func (r *EngineReconciler) startWatcherAndSync(_ context.Context, engineName string) error {
 	r.watcherMu.Lock()
 	defer r.watcherMu.Unlock()
 
@@ -303,12 +340,27 @@ func (r *EngineReconciler) startWatcherAndSync(_ context.Context) error {
 		return nil
 	}
 
-	e, err := newDockerWatcher(r.watcherCtx, r.Client, r.apiNamespace, r.reconcileChan)
-	if err != nil {
-		return err
+	switch engineName {
+	case engineMoby:
+		e, err := newDockerWatcher(r.watcherCtx, r.Client, r.apiNamespace, r.reconcileChan)
+		if err != nil {
+			return err
+		}
+		r.watcher = e
+		r.watcherEngine = engineName
+		r.manageDockerContext(instance.DockerEndpoint())
+	case engineContainerd:
+		e, err := newContainerdWatcher(r.watcherCtx, r.Client, r.apiNamespace, r.reconcileChan)
+		if err != nil {
+			return err
+		}
+		r.watcher = e
+		r.watcherEngine = engineName
+	default:
+		// Defensive: Reconcile's wantWatcher gate already excludes
+		// unsupported engines before calling this.
+		return fmt.Errorf("no engine watcher for container engine %q", engineName)
 	}
-	r.watcher = e
-	r.manageDockerContext(instance.DockerEndpoint())
 	return nil
 }
 
@@ -317,6 +369,7 @@ func (r *EngineReconciler) stopWatcher() {
 	r.watcherMu.Lock()
 	e := r.watcher
 	r.watcher = nil
+	r.watcherEngine = ""
 	r.watcherMu.Unlock()
 
 	if e != nil {
@@ -474,6 +527,21 @@ func (r *EngineReconciler) setEngineCondition(ctx context.Context, app *appv1alp
 			Message:            message,
 			ObservedGeneration: latest.Generation,
 		})
+		// supportsNamespaces tracks the selected engine so the UI can hide
+		// its container-namespace selector for engines without the concept.
+		// A pointer keeps the field absent until this first write; a plain
+		// bool would let another status writer materialize a zero-valued
+		// false next to a stale ContainerEngineReady after a restart.
+		//
+		// A backend that mirrors nothing reports false whatever engine is
+		// selected: there are no ContainerNamespace mirrors to select from,
+		// so a consumer reading this field alone would offer an empty list.
+		supportsNamespaces := latest.Spec.ContainerEngine.Name == engineContainerd &&
+			reason != appv1alpha1.EngineReasonNotApplicable
+		if latest.Status.SupportsNamespaces == nil || *latest.Status.SupportsNamespaces != supportsNamespaces {
+			latest.Status.SupportsNamespaces = &supportsNamespaces
+			changed = true
+		}
 		if !changed {
 			return nil
 		}
@@ -698,7 +766,7 @@ func (r *EngineReconciler) processContainerFinalizers(ctx context.Context, e eng
 			continue
 		}
 		if err := e.deleteContainer(ctx, c); err != nil {
-			errs = append(errs, fmt.Errorf("failed to delete container %s from Docker: %w", c.Name, err))
+			errs = append(errs, fmt.Errorf("failed to delete container %s from the container engine: %w", c.Name, err))
 			continue
 		}
 		// Retry on conflict so a stale cache does not force a
@@ -744,7 +812,7 @@ func (r *EngineReconciler) processImageFinalizers(ctx context.Context, e engine)
 		// with processVolumeFinalizers' empty-status.name guard.
 		if img.Status.ID != "" || img.Status.RepoTag != "" {
 			if err := e.deleteImage(ctx, img); err != nil {
-				errs = append(errs, fmt.Errorf("failed to delete image %s from Docker: %w", img.Name, err))
+				errs = append(errs, fmt.Errorf("failed to delete image %s from the container engine: %w", img.Name, err))
 				continue
 			}
 		}
@@ -786,7 +854,7 @@ func (r *EngineReconciler) processVolumeFinalizers(ctx context.Context, e engine
 		// finalizer and let the Delete proceed.
 		if v.Status.Name != "" {
 			if err := e.deleteVolume(ctx, v); err != nil {
-				errs = append(errs, fmt.Errorf("failed to delete volume %s from Docker: %w", v.Name, err))
+				errs = append(errs, fmt.Errorf("failed to delete volume %s from the container engine: %w", v.Name, err))
 				continue
 			}
 		}

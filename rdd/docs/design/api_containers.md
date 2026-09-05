@@ -57,9 +57,15 @@ the controller:
    corresponding `Container`, `Image`, and `Volume` mirrors.
 4. Watches the Docker event stream for create, update, and delete events.
 
-Containerd mirroring is not implemented yet; with `containerEngine.name=containerd`
-the controller sets `ContainerEngineReady` to `True` with reason `NotApplicable`
-and takes no mirroring action.
+With `containerEngine.name=containerd` the controller runs a containerd watcher
+instead, mirroring each containerd namespace along with its containers and
+images.  A namespace whose name is not a valid Kubernetes object name gets no
+`ContainerNamespace` mirror, though its containers are still mirrored under
+hashed names.  containerd has no volume concept, so it creates no `Volume`
+mirrors.
+Windows is the exception, since nothing serves the containerd named pipe there
+yet; the controller sets `ContainerEngineReady` to `True` with reason
+`NotApplicable` and takes no mirroring action.
 
 The controller sets the `ContainerEngineReady` condition on the `App` resource
 to `True` after the initial sync completes.  Scripts can wait for readiness:
@@ -82,6 +88,26 @@ so the mirror can be garbage-collected.
 An engine-side delete (for example, `docker rm`) goes the other way:
 the engine controller strips the finalizer and deletes the mirror
 directly, without calling back into the engine.
+
+### containerd state the controller does not maintain
+
+On containerd the controller drives the engine over its API, while
+`nerdctl` keeps some of a container's state outside containerd: the
+container name reservation, its state directory, and the
+`containerd.io/restart.*` labels. Actions taken through the mirror
+therefore leave that state untouched, with two consequences today.
+
+Restart policies do not survive a mirror-driven stop. containerd's
+restart monitor decides from `containerd.io/restart.explicitly-stopped`,
+which only `nerdctl stop` sets, so stopping an `unless-stopped`
+container through the action annotation lets the monitor start it again
+even though `status.lastAction` reports success.
+
+Deleting the mirror of a container that was created but never started
+leaves its name reserved. `nerdctl` releases a name either from
+`nerdctl rm` or from the container's post-stop hook, and a container
+with no task has run neither, so `nerdctl create --name` rejects that
+name afterwards.
 
 ## Namespaces
 
@@ -110,7 +136,7 @@ container through the action annotation described below.
 apiVersion: containers.rancherdesktop.io/v1alpha1
 kind: Container
 metadata:
-  name: 8eb6f2cf72b6616aa743cf9187f350af84c9749dab65474db2530f26745d2ef3 # container ID
+  name: 8eb6f2cf72b6616aa743cf9187f350af84c9749dab65474db2530f26745d2ef3 # container ID, or `ctr-` plus hex SHA-256 when that ID is not a valid object name
   namespace: rancher-desktop
   annotations:
     # Request a one-shot action. See "Container actions" below.
@@ -223,8 +249,8 @@ An admission controller will ensure that we cannot have multiple
 
 Set the `containers.rancherdesktop.io/action` annotation on the
 `Container` to request a one-shot action. The engine reconciler reads
-the annotation, dispatches the matching Docker call, records the
-outcome in `status.lastAction`, and removes the annotation.
+the annotation, dispatches the matching call to the container engine,
+records the outcome in `status.lastAction`, and removes the annotation.
 
 Valid values: `start`, `stop`, `pause`, `unpause`, `restart`.
 
@@ -286,16 +312,17 @@ at which point the `Container` object will actually be deleted.
 `Image` objects reflect images in the container engine.  Each tag is represented
 as a new `Image` object; therefore, there may be multiple `Image` objects for
 the same image ID (one per tag).  If an image without any tags exists, that will
-be represented by an `Image` object without `.status.repoTag` and
-`.status.namespace`.
+be represented by an `Image` object without `.status.repoTag`.
 
 ```yaml
 apiVersion: containers.rancherdesktop.io/v1alpha1
 kind: Image
 metadata:
-  # `img-` plus hex SHA-256. A tagged image hashes `id + "\0" + tag`;
-  # a dangling image (no tags) hashes the id alone. The raw id is
-  # kept in `.status.id` and the tag in `.status.repoTag`.
+  # `img-` plus hex SHA-256. On moby, a tagged image hashes
+  # `id + "\0" + tag` and a dangling image hashes the id alone; on
+  # containerd, every record hashes `namespace + "\0" + record name`,
+  # never the id. Look mirrors up by `.status.id` or `.status.repoTag`
+  # rather than recomputing the name.
   name: img-2b0d7f4e7d2f2e2d3c6f0a8a4b5a6c7d8e9f0a1b2c3d4e5f607182a3b4c5d6e7
   namespace: rancher-desktop # not the containerd namespace
 status:
