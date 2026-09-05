@@ -7,10 +7,37 @@
 #      Rancher Desktop version; either major.minor (`1.20`) or the tag (`v1.20.0`).
 #   OBS_PROJECT
 #      The openSUSE Build Service project to use, in the form `isv:Rancher:dev`.
+#   RD_COMMIT
+#      Full commit sha of the release under test, used to reject a stale
+#      package. The check is skipped when this is empty.
 
 set -o errexit -o nounset
 
 PACKAGE_NAME="rancher-desktop-2"
+
+# OBS publishes only the newest successful build of a package, so a failed
+# rebuild leaves the previous one in the repository and every version matcher
+# still selects it. The version ends in the commit OBS built from, which is the
+# only way to tell that apart from the release.
+# shellcheck disable=2329 # Called from the dynamically invoked install functions
+verify_package_commit() {
+    local version=$1 built_from
+    if [[ -z "${RD_COMMIT:-}" ]]; then
+        return
+    fi
+    built_from=${version%%-*}    # drop the packaging release suffix
+    built_from=${built_from##*.} # the commit is the last version component
+    if [[ ! "$built_from" =~ ^[0-9a-f]{7,}$ ]]; then
+        printf "Found no commit at the end of version '%s'\n" "$version" >&2
+        exit 1
+    fi
+    if [[ "$RD_COMMIT" != "$built_from"* ]]; then
+        printf "%s %s was built from %s, but the release is %s\n" \
+            "$PACKAGE_NAME" "$version" "$built_from" "$RD_COMMIT" >&2
+        printf "The repository is serving an older build than the release.\n" >&2
+        exit 1
+    fi
+}
 
 # shellcheck disable=2329 # The function is invoked dynamically
 install_linux_debian() {
@@ -35,6 +62,7 @@ install_linux_debian() {
         apt-cache show --quiet "${PACKAGE_NAME}" | sed 's@^@    @' >&2
         exit 1
     fi
+    verify_package_commit "${version}"
     apt-get install -y "${PACKAGE_NAME}=${version}"
 }
 
@@ -50,6 +78,7 @@ install_linux_opensuse() {
         zypper --non-interactive search --details --match-exact "${PACKAGE_NAME}" | sed 's@^@    @' >&2
         exit 1
     fi
+    verify_package_commit "${version}"
     zypper --non-interactive install "${PACKAGE_NAME}=${version}"
 }
 
@@ -65,6 +94,7 @@ install_linux_fedora() {
         dnf --quiet info --showduplicates "${PACKAGE_NAME}.$(uname -m)" | sed 's@^@    @' >&2
         exit 1
     fi
+    verify_package_commit "${version}"
     dnf --assumeyes install "${PACKAGE_NAME}-${version}"
 }
 
