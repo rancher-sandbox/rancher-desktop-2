@@ -24,6 +24,14 @@ local_setup_file() {
     export RDD_NAMESPACE
 }
 
+# nerdctl runs the given command inside the VM; host-side nerdctl wiring
+# is out of scope in v1. sudo is required because non-root nerdctl
+# insists on rootless mode, even with an explicit --address.
+nerdctl() {
+    rdd limavm shell "${VM_NAME}" sudo nerdctl \
+        --address /run/k3s/containerd/containerd.sock "$@"
+}
+
 @test "containerd engine reports ContainerEngineReady with reason Connected" {
     rdd ctl wait --for=condition=ContainerEngineReady app/app --timeout=60s
     run -0 rdd ctl get app app \
@@ -53,4 +61,43 @@ assert_containerd_socket_open() {
     # A broken forward or unreachable guest socket exits nonzero instead.
     curl --unix-socket "${socket_path}" --http0.9 --max-time 5 --silent \
         --output /dev/null http://localhost/
+}
+
+@test "running a container creates a Container mirror" {
+    run_e -0 nerdctl run --detach --name mirror-smoke busybox sleep inf
+    cid=${output}
+
+    rdd ctl wait --for=jsonpath='{.status.status}'=running \
+        --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=60s
+
+    run -0 rdd ctl get container "${cid}" --namespace="${RDD_NAMESPACE}" \
+        -o jsonpath='{.status.name} {.status.namespace}'
+    assert_output "mirror-smoke default"
+}
+
+@test "ContainerNamespace mirror exists for the default namespace" {
+    # The default namespace exists only once something was created in it;
+    # the mirror-smoke container above guarantees that.
+    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" \
+        ContainerNamespace/default --timeout=30s
+}
+
+@test "stopping the container updates the mirror status" {
+    run_e -0 nerdctl inspect --format '{{.Id}}' mirror-smoke
+    cid=${output}
+
+    nerdctl stop mirror-smoke
+
+    rdd ctl wait --for=jsonpath='{.status.status}'=exited \
+        --namespace="${RDD_NAMESPACE}" container/"${cid}" --timeout=60s
+}
+
+@test "removing the container removes the mirror" {
+    run_e -0 nerdctl inspect --format '{{.Id}}' mirror-smoke
+    cid=${output}
+
+    nerdctl rm mirror-smoke
+
+    rdd ctl wait --for=delete --namespace="${RDD_NAMESPACE}" \
+        container/"${cid}" --timeout=30s
 }

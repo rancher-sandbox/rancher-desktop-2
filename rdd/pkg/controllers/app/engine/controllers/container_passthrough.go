@@ -11,7 +11,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +21,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
@@ -34,7 +34,14 @@ const (
 	pingTimeout    = time.Minute
 )
 
-var containerIDValidator = regexp.MustCompile(`^[0-9a-fA-F]+$`)
+// validContainerMirrorName reports whether the path segment can name a
+// Container mirror. Every backend derives that name to be a valid Kubernetes
+// object name, so the object-name rule is both the widest check that rejects
+// a path traversal and the narrowest one that accepts every mirror: moby's
+// hex ID, containerd's "ctr-" hash, and a containerd ID kept verbatim.
+func validContainerMirrorName(name string) bool {
+	return len(validation.IsDNS1123Subdomain(name)) == 0
+}
 
 // websocketWriter implements [io.Writer] writing to a websocket connection,
 // with each Write call resulting in a separate [websocket.BinaryMessage].
@@ -60,7 +67,7 @@ func (w *websocketWriter) Write(p []byte) (int, error) {
 func (r *EngineReconciler) HandleLogs(w http.ResponseWriter, req *http.Request) {
 	log := ctrl.LoggerFrom(req.Context())
 	containerID, _, _ := strings.Cut(strings.TrimLeft(req.URL.Path, "/"), "/")
-	if !containerIDValidator.MatchString(containerID) {
+	if !validContainerMirrorName(containerID) {
 		log.V(5).Info("Invalid container ID", "container", containerID)
 		http.Error(w, "Invalid container ID", http.StatusBadRequest)
 		return
@@ -103,8 +110,8 @@ func (r *EngineReconciler) HandleLogs(w http.ResponseWriter, req *http.Request) 
 	watcher := r.watcher
 	r.watcherMu.Unlock()
 	if watcher == nil {
-		log.V(5).Info("Docker watcher not running")
-		http.Error(w, "Docker watcher not running", http.StatusServiceUnavailable)
+		log.V(5).Info("Engine watcher not running")
+		http.Error(w, "Engine watcher not running", http.StatusServiceUnavailable)
 		return
 	}
 
