@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"runtime/debug"
+	"sync"
 	"time"
 
 	apievents "github.com/containerd/containerd/api/events"
@@ -17,6 +18,7 @@ import (
 	"github.com/containerd/containerd/v2/core/events"
 	typeurl "github.com/containerd/typeurl/v2"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -36,6 +38,13 @@ type containerdWatcher struct {
 
 	cancel context.CancelFunc
 	done   chan struct{}
+
+	// startsMu guards starts.
+	startsMu sync.Mutex
+	// starts holds the start time of every task this watcher saw start, keyed
+	// by mirror name. containerd reports no start time, so an observed
+	// TaskStart is the only source for one.
+	starts map[string]metav1.Time
 
 	// reconcileChan is used to trigger reconciliation in the engine reconciler.
 	reconcileChan chan<- event.GenericEvent
@@ -69,6 +78,7 @@ func newContainerdWatcher(ctx context.Context, k8s client.Client, apiNamespace s
 		cli:           cli,
 		cancel:        watchCancel,
 		done:          make(chan struct{}),
+		starts:        make(map[string]metav1.Time),
 		reconcileChan: reconcileChan,
 	}
 
@@ -205,13 +215,15 @@ func (w *containerdWatcher) handleEvent(ctx context.Context, e *events.Envelope)
 		return w.syncContainer(ctx, e.Namespace, ev.ID)
 	case *apievents.ContainerDelete:
 		log.V(1).Info("Container deleted", "namespace", e.Namespace, "id", ev.ID)
-		return w.removeMirrorResource(ctx, &containersv1alpha1.Container{},
-			containerdMirrorName(e.Namespace, ev.ID))
+		mirrorName := containerdMirrorName(e.Namespace, ev.ID)
+		w.forgetTaskStart(mirrorName)
+		return w.removeMirrorResource(ctx, &containersv1alpha1.Container{}, mirrorName)
 	case *apievents.TaskCreate:
 		log.V(1).Info("Task created", "namespace", e.Namespace, "id", ev.ContainerID)
 		return w.syncContainer(ctx, e.Namespace, ev.ContainerID)
 	case *apievents.TaskStart:
 		log.V(1).Info("Task started", "namespace", e.Namespace, "id", ev.ContainerID)
+		w.recordTaskStart(containerdMirrorName(e.Namespace, ev.ContainerID), e.Timestamp)
 		return w.syncContainer(ctx, e.Namespace, ev.ContainerID)
 	case *apievents.TaskExit:
 		log.V(1).Info("Task exited", "namespace", e.Namespace, "id", ev.ContainerID)
