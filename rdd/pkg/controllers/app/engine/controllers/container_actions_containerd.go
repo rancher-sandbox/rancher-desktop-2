@@ -6,16 +6,21 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	containerdclient "github.com/containerd/containerd/v2/client"
+	"github.com/containerd/containerd/v2/core/containers"
 	"github.com/containerd/containerd/v2/core/images"
 	"github.com/containerd/containerd/v2/pkg/cio"
 	"github.com/containerd/containerd/v2/pkg/namespaces"
+	"github.com/containerd/containerd/v2/pkg/oci"
 	"github.com/containerd/errdefs"
 	"github.com/go-logr/logr"
 
@@ -182,15 +187,13 @@ func (w *containerdWatcher) startContainer(nsCtx context.Context, log logr.Logge
 // label; recreating the task with it keeps `nerdctl logs` working, and NullIO
 // covers containers created without it (e.g. via ctr).
 func (w *containerdWatcher) startTask(nsCtx context.Context, log logr.Logger, ctr containerdclient.Container) error {
-	creator := cio.NullIO
 	info, err := ctr.Info(nsCtx)
 	if err != nil {
 		return fmt.Errorf("failed to get container info: %w", err)
 	}
-	if raw := info.Labels["nerdctl/log-uri"]; raw != "" {
-		if u, err := url.Parse(raw); err == nil {
-			creator = cio.LogURI(u)
-		}
+	creator, err := containerdIOCreator(log, info)
+	if err != nil {
+		return err
 	}
 
 	task, err := ctr.NewTask(nsCtx, creator)
@@ -208,11 +211,62 @@ func (w *containerdWatcher) startTask(nsCtx context.Context, log logr.Logger, ct
 	return nil
 }
 
-// stopTask sends SIGTERM to the container's task and waits Docker's default
-// 10-second grace period before escalating to SIGKILL. Shared by stop and
-// restart. The stopped task is left in place: nerdctl derives the Exited
-// state from it.
-func (w *containerdWatcher) stopTask(nsCtx context.Context, _ logr.Logger, ctr containerdclient.Container) error {
+// containerdIOCreator picks the IO for a task being recreated. The creator
+// carries the terminal flag into CreateTaskRequest, and the shim only
+// allocates a console when it is set, so a container whose OCI spec requests
+// a terminal must get a terminal-aware creator or the runtime refuses to
+// create it.
+func containerdIOCreator(log logr.Logger, info containers.Container) (cio.Creator, error) {
+	var logURI *url.URL
+	// nerdctl writes the literal "none" for `--log-driver none`, which parses
+	// as a relative URL and would reach the shim as a fifo path it cannot
+	// open. Treat it, like an unparsable value, as no log driver at all.
+	if raw := info.Labels["nerdctl/log-uri"]; raw != "" && raw != "none" {
+		u, err := url.Parse(raw)
+		if err != nil {
+			log.V(1).Info("Ignoring unparsable log URI",
+				"id", info.ID, "uri", raw, "error", err)
+		} else {
+			logURI = u
+		}
+	}
+
+	if !containerdWantsTerminal(log, info) {
+		if logURI != nil {
+			return cio.LogURI(logURI), nil
+		}
+		return cio.NullIO, nil
+	}
+	if logURI == nil {
+		// Every creator that allocates a console is driven by the log
+		// driver, so without one there is nothing to attach the console to.
+		// Say so here, rather than let the runtime refuse the task with a
+		// console-socket error that names none of this.
+		return nil, errors.New("cannot start a terminal container that records no log driver")
+	}
+	return cio.TerminalLogURI(logURI), nil
+}
+
+// containerdWantsTerminal reports whether the container's OCI spec asks for a
+// terminal. An unreadable spec falls back to false, matching the behaviour of
+// a container that never requested one.
+func containerdWantsTerminal(log logr.Logger, info containers.Container) bool {
+	if info.Spec == nil {
+		return false
+	}
+	var spec oci.Spec
+	if err := json.Unmarshal(info.Spec.GetValue(), &spec); err != nil {
+		log.V(1).Info("Assuming no terminal", "id", info.ID, "error", err)
+		return false
+	}
+	return spec.Process != nil && spec.Process.Terminal
+}
+
+// stopTask asks the container's task to exit, waiting the container's grace
+// period before escalating to SIGKILL. The first signal is the image's stop
+// signal, defaulting to SIGTERM. Shared by stop and restart. The stopped task
+// is left in place: nerdctl derives the Exited state from it.
+func (w *containerdWatcher) stopTask(nsCtx context.Context, log logr.Logger, ctr containerdclient.Container) error {
 	task, err := ctr.Task(nsCtx, nil)
 	if errdefs.IsNotFound(err) {
 		// No task: nothing to stop, matching Docker's no-op semantics.
@@ -231,28 +285,108 @@ func (w *containerdWatcher) stopTask(nsCtx context.Context, _ logr.Logger, ctr c
 		return nil
 	}
 
+	// A paused task cannot act on a signal, so thaw it before asking it to
+	// exit; otherwise the grace period always expires and the task is killed.
+	// An unpause landing between the status read and here leaves Resume
+	// rejecting a task that is already running, which costs only the
+	// shortcut: the signal and the grace period still run.
+	if st.Status == containerdclient.Paused || st.Status == containerdclient.Pausing {
+		if err := task.Resume(nsCtx); err != nil {
+			log.V(1).Info("Signaling a task that could not be resumed",
+				"id", ctr.ID(), "error", err)
+		}
+	}
+
 	// Wait must be armed before Kill so the exit is observed.
 	exitCh, err := task.Wait(nsCtx)
 	if err != nil {
 		return fmt.Errorf("failed to wait for task: %w", err)
 	}
-	if err := task.Kill(nsCtx, syscall.SIGTERM); err != nil {
+	if err := task.Kill(nsCtx, stopSignal(nsCtx, log, ctr)); err != nil {
 		return fmt.Errorf("failed to signal task: %w", err)
 	}
 	select {
-	case <-exitCh:
-		return nil
-	case <-time.After(10 * time.Second):
+	case status := <-exitCh:
+		// A failed Wait RPC arrives as an exit status carrying the error, so
+		// dropping it would report a container that never exited as stopped.
+		return status.Error()
+	case <-time.After(stopTimeout(nsCtx, log, ctr)):
 	}
-	if err := task.Kill(nsCtx, syscall.SIGKILL); err != nil {
+	if err := task.Kill(nsCtx, linuxSIGKILL); err != nil {
 		return fmt.Errorf("failed to kill task: %w", err)
 	}
 	select {
-	case <-exitCh:
-		return nil
+	case status := <-exitCh:
+		return status.Error()
 	case <-nsCtx.Done():
 		return nsCtx.Err()
 	}
+}
+
+// linuxSignals maps the signal names an image's STOPSIGNAL can carry to the
+// numbers the guest kernel uses. The numbers must come from a table rather
+// than the host's syscall constants: the daemon runs on macOS and Windows but
+// signals a Linux container, and the two disagree above SIGTERM. macOS numbers
+// SIGUSR1 30, where Linux numbers it 10 and reserves 30 for SIGPWR, so passing
+// the host's value through delivers a different signal than the image asked
+// for. Signals through SIGTERM share their numbers, which is why the default
+// path works and hides this.
+var linuxSignals = map[string]syscall.Signal{
+	"SIGHUP": 1, "SIGINT": 2, "SIGQUIT": 3, "SIGILL": 4, "SIGTRAP": 5,
+	"SIGABRT": 6, "SIGIOT": 6, "SIGBUS": 7, "SIGFPE": 8, "SIGKILL": 9,
+	"SIGUSR1": 10, "SIGSEGV": 11, "SIGUSR2": 12, "SIGPIPE": 13,
+	"SIGALRM": 14, "SIGTERM": 15, "SIGSTKFLT": 16, "SIGCHLD": 17,
+	"SIGCONT": 18, "SIGSTOP": 19, "SIGTSTP": 20, "SIGTTIN": 21,
+	"SIGTTOU": 22, "SIGURG": 23, "SIGXCPU": 24, "SIGXFSZ": 25,
+	"SIGVTALRM": 26, "SIGPROF": 27, "SIGWINCH": 28, "SIGIO": 29,
+	"SIGPOLL": 29, "SIGPWR": 30, "SIGSYS": 31,
+}
+
+// linuxSIGTERM and linuxSIGKILL are the guest's numbers for the two signals
+// the stop sequence always sends.
+const (
+	linuxSIGTERM = syscall.Signal(15)
+	linuxSIGKILL = syscall.Signal(9)
+)
+
+// parseLinuxSignal resolves an image STOPSIGNAL value, which is a name with or
+// without the SIG prefix, or a number the image author wrote directly.
+func parseLinuxSignal(raw string) (syscall.Signal, bool) {
+	if n, err := strconv.Atoi(raw); err == nil {
+		if n > 0 && n <= 31 {
+			return syscall.Signal(n), true
+		}
+		return 0, false
+	}
+	name := strings.ToUpper(raw)
+	if !strings.HasPrefix(name, "SIG") {
+		name = "SIG" + name
+	}
+	sig, ok := linuxSignals[name]
+	return sig, ok
+}
+
+// stopSignal returns the signal to send first when stopping a container.
+// containerd stores an image's STOPSIGNAL in a well-known label, which both
+// nerdctl and Docker honor, so a container built with one gets it rather than
+// SIGTERM. An unreadable or unrecognised value falls back to SIGTERM.
+func stopSignal(nsCtx context.Context, log logr.Logger, ctr containerdclient.Container) syscall.Signal {
+	labels, err := ctr.Labels(nsCtx)
+	if err != nil {
+		log.V(1).Info("Using default stop signal", "id", ctr.ID(), "error", err)
+		return linuxSIGTERM
+	}
+	raw, ok := labels[containerdclient.StopSignalLabel]
+	if !ok {
+		return linuxSIGTERM
+	}
+	sig, ok := parseLinuxSignal(raw)
+	if !ok {
+		log.V(1).Info("Ignoring unusable stop signal label",
+			"id", ctr.ID(), "value", raw)
+		return linuxSIGTERM
+	}
+	return sig
 }
 
 // pauseContainer pauses the container's task. Pausing an already-paused
@@ -369,12 +503,24 @@ func (w *containerdWatcher) deleteImage(ctx context.Context, img *containersv1al
 	if ns == "" {
 		return nil
 	}
-	// Dangling records are named by their digest.
+	nsCtx := namespaces.WithNamespace(ctx, ns)
+	// A tagged mirror stores the record name verbatim in repoTag. An
+	// untagged one stands for a record named by a digest, and that digest is
+	// not status.id: status.id is the manifest digest, while the CRI plugin
+	// names its record by the image config digest. Recover the name the
+	// mirror was built from instead of guessing a digest.
 	ref := img.Status.RepoTag
 	if ref == "" {
-		ref = img.Status.ID
+		found, err := w.resolveImageRecord(nsCtx, ns, img.Name)
+		if err != nil {
+			return err
+		}
+		if found == "" {
+			// No record maps to this mirror, so there is nothing to delete.
+			return nil
+		}
+		ref = found
 	}
-	nsCtx := namespaces.WithNamespace(ctx, ns)
 	err := w.cli.ImageService().Delete(nsCtx, ref, images.SynchronousDelete())
 	if errdefs.IsNotFound(err) {
 		return nil
@@ -383,4 +529,51 @@ func (w *containerdWatcher) deleteImage(ctx context.Context, img *containersv1al
 		return fmt.Errorf("failed to delete image %s: %w", ref, err)
 	}
 	return nil
+}
+
+// resolveImageRecord returns the containerd record this mirror was built
+// from, or an empty string when the record is gone. Matching on the mirror
+// name is exact, the way resolveContainer matches a hashed container name:
+// one pull registers the same image under several names, so anything keyed on
+// the target digest alone could pick a sibling record that belongs to another
+// mirror still in use.
+func (w *containerdWatcher) resolveImageRecord(nsCtx context.Context, ns, mirrorName string) (string, error) {
+	imgs, err := w.cli.ListImages(nsCtx)
+	if err != nil {
+		return "", fmt.Errorf("failed to list images: %w", err)
+	}
+	for _, candidate := range imgs {
+		if containerdImageMirrorName(ns, candidate.Name()) == mirrorName {
+			return candidate.Name(), nil
+		}
+	}
+	return "", nil
+}
+
+// defaultStopTimeout matches Docker's grace period between the stop signal
+// and SIGKILL, used when the container records none.
+const defaultStopTimeout = 10 * time.Second
+
+// stopTimeout returns how long to wait for a container to exit on the stop
+// signal before escalating to SIGKILL.
+// nerdctl records `--stop-timeout` in a label, the way Docker keeps
+// StopTimeout on the container, so honor it rather than always waiting the
+// default. An unreadable or nonsensical value falls back to the default.
+func stopTimeout(nsCtx context.Context, log logr.Logger, ctr containerdclient.Container) time.Duration {
+	info, err := ctr.Info(nsCtx)
+	if err != nil {
+		log.V(1).Info("Using default stop timeout", "id", ctr.ID(), "error", err)
+		return defaultStopTimeout
+	}
+	raw, ok := info.Labels["nerdctl/stop-timeout"]
+	if !ok {
+		return defaultStopTimeout
+	}
+	seconds, err := strconv.Atoi(raw)
+	if err != nil || seconds <= 0 {
+		log.V(1).Info("Ignoring unusable stop timeout label",
+			"id", ctr.ID(), "value", raw)
+		return defaultStopTimeout
+	}
+	return time.Duration(seconds) * time.Second
 }
