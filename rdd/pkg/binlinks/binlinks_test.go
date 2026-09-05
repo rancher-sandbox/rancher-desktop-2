@@ -135,14 +135,16 @@ func TestLinkBinaries(t *testing.T) {
 				assertLink(t, filepath.Join(binDir, name), filepath.Join(srcDir, name), tc.useSymlink)
 			}
 
-			// kubectl is linked to the rdd executable.
-			assertLink(t, filepath.Join(binDir, "kubectl"+tc.exe), execPath, tc.useSymlink)
+			// Each multicall name is linked to the rdd executable.
+			for _, name := range multiCallLinks {
+				assertLink(t, filepath.Join(binDir, name+tc.exe), execPath, tc.useSymlink)
+			}
 
 			// The subdirectory is not linked.
 			_, err = os.Lstat(filepath.Join(binDir, "subdir"))
 			assert.Assert(t, os.IsNotExist(err), "subdir was linked: %v", err)
 
-			// Only the bundled files plus kubectl are present.
+			// Only the bundled files plus the multicall links are present.
 			entries, err := os.ReadDir(binDir)
 			assert.NilError(t, err)
 			var got []string
@@ -150,7 +152,7 @@ func TestLinkBinaries(t *testing.T) {
 				got = append(got, e.Name())
 			}
 			slices.Sort(got)
-			want := append([]string{"kubectl" + tc.exe}, bundled...)
+			want := append([]string{"kubectl" + tc.exe, "nerdctl" + tc.exe}, bundled...)
 			slices.Sort(want)
 			assert.Assert(t, slices.Equal(got, want), "binDir contents = %v, want %v", got, want)
 		})
@@ -188,6 +190,8 @@ func TestEnsureSelfLinks(t *testing.T) {
 	assertSymlink(t, filepath.Join(binDir, "rdd"), appRdd)
 	// The dangling kubectl link now points at the running executable.
 	assertSymlink(t, filepath.Join(binDir, "kubectl"), execPath)
+	// The missing nerdctl link is created.
+	assertSymlink(t, filepath.Join(binDir, "nerdctl"), execPath)
 	// The unrelated working link is left as it was.
 	assertSymlink(t, docker, dockerTarget)
 }
@@ -205,8 +209,9 @@ func TestEnsureSelfLinksCreatesDir(t *testing.T) {
 			binDir := filepath.Join(t.TempDir(), "bin")
 			assert.NilError(t, ensureSelfLinks(execPath, binDir, tc.exe, tc.useSymlink))
 
-			assertLink(t, filepath.Join(binDir, "rdd"+tc.exe), execPath, tc.useSymlink)
-			assertLink(t, filepath.Join(binDir, "kubectl"+tc.exe), execPath, tc.useSymlink)
+			for _, name := range append([]string{"rdd"}, multiCallLinks...) {
+				assertLink(t, filepath.Join(binDir, name+tc.exe), execPath, tc.useSymlink)
+			}
 		})
 	}
 }
@@ -237,9 +242,10 @@ func TestEnsureSelfLinksPrunesDangling(t *testing.T) {
 	// The dangling docker link is pruned, not repaired: rdd does not provide it.
 	_, err := os.Lstat(filepath.Join(binDir, "docker"))
 	assert.Assert(t, os.IsNotExist(err), "dangling docker link survived: %v", err)
-	// rdd and kubectl are repaired to the running standalone rdd.
+	// rdd and the multicall links are repaired to the running standalone rdd.
 	assertSymlink(t, filepath.Join(binDir, "rdd"), execPath)
 	assertSymlink(t, filepath.Join(binDir, "kubectl"), execPath)
+	assertSymlink(t, filepath.Join(binDir, "nerdctl"), execPath)
 	// The working link and the plain file survive.
 	assertSymlink(t, filepath.Join(binDir, "helm"), tool)
 	_, err = os.Lstat(filepath.Join(binDir, "notes"))
@@ -280,4 +286,22 @@ func assertHardlink(t *testing.T, path, want string) {
 	wantInfo, err := os.Stat(want)
 	assert.NilError(t, err, "stat %q", want)
 	assert.Assert(t, os.SameFile(pathInfo, wantInfo), "%q is not a hardlink to %q", path, want)
+}
+
+// TestLinkBinariesBundledMulticallWins checks that a bundled binary sharing a
+// multicall name keeps its own link; the multicall link to rdd steps aside.
+func TestLinkBinariesBundledMulticallWins(t *testing.T) {
+	srcDir := t.TempDir()
+	for _, name := range []string{"rdd", "nerdctl"} {
+		assert.NilError(t, os.WriteFile(filepath.Join(srcDir, name), []byte("binary"), 0o755))
+	}
+	execPath := filepath.Join(srcDir, "rdd")
+	binDir := filepath.Join(t.TempDir(), "bin")
+
+	assert.NilError(t, linkBinaries(execPath, binDir, "", true))
+
+	// nerdctl links to the bundled nerdctl, not to rdd.
+	assertSymlink(t, filepath.Join(binDir, "nerdctl"), filepath.Join(srcDir, "nerdctl"))
+	// kubectl is not bundled, so it links to rdd.
+	assertSymlink(t, filepath.Join(binDir, "kubectl"), execPath)
 }
