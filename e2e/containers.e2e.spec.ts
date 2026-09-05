@@ -651,3 +651,97 @@ test.describe.fixme('Container Stats Tab', () => {
     await expect(statsPage.cpuChart).not.toBeVisible();
   });
 });
+
+test.describe.fixme('Container Compose Group Actions', () => {
+  let electronApp: ElectronApplication;
+  let composeContainerId1: string;
+  let composeContainerId2: string;
+  const composeProjectName = `test-compose-project-${ Date.now() }`;
+
+  test.beforeAll(async({ colorScheme }, testInfo) => {
+    [electronApp, page] = await startSlowerDesktop(testInfo);
+
+    const navPage = new NavPage(page);
+    await navPage.waitForAppSettled();
+
+    // A shared label fakes a compose project, so these tests need no
+    // docker-compose CLI plugin.
+    const output1 = await tool(
+      'docker', 'run', '--detach',
+      '--label', `com.docker.compose.project=${ composeProjectName }`,
+      '--name', `${ composeProjectName }-app`,
+      'alpine', 'sleep', 'infinity',
+    );
+
+    composeContainerId1 = output1.trim();
+
+    const output2 = await tool(
+      'docker', 'run', '--detach',
+      '--label', `com.docker.compose.project=${ composeProjectName }`,
+      '--name', `${ composeProjectName }-db`,
+      'alpine', 'sleep', 'infinity',
+    );
+
+    composeContainerId2 = output2.trim();
+  });
+
+  test.afterAll(async({ colorScheme }, testInfo) => {
+    for (const id of [composeContainerId1, composeContainerId2]) {
+      if (id) {
+        try {
+          await tool('docker', 'rm', '-f', id);
+        } catch {}
+      }
+    }
+    await teardown(electronApp, testInfo);
+  });
+
+  test('compose project group shows a select-all checkbox', async() => {
+    const navPage = new NavPage(page);
+    const containersPage = await navPage.navigateTo('Containers');
+
+    await containersPage.waitForTableToLoad();
+    await containersPage.waitForContainerToAppear(composeContainerId1);
+    await containersPage.waitForContainerToAppear(composeContainerId2);
+    await containersPage.waitForGroupToAppear(composeProjectName);
+
+    await expect(containersPage.getGroupCheckbox(composeProjectName)).toBeVisible();
+  });
+
+  test('group checkbox selects every container in the project for bulk actions', async() => {
+    const navPage = new NavPage(page);
+    const containersPage = await navPage.navigateTo('Containers');
+
+    await containersPage.waitForTableToLoad();
+    await containersPage.waitForContainerToAppear(composeContainerId1);
+    await containersPage.waitForContainerToAppear(composeContainerId2);
+    await containersPage.waitForGroupToAppear(composeProjectName);
+    await containersPage.selectGroup(composeProjectName);
+
+    // The row checkboxes do not set the native `checked` DOM property, so
+    // assert on the table's own selection count label.
+    await expect(containersPage.getSelectionCount(2)).toBeVisible();
+
+    await containersPage.clickBulkStop();
+
+    for (const id of [composeContainerId1, composeContainerId2]) {
+      await expect(containersPage.getContainerRow(id).getByText('exited')).toBeVisible({ timeout: 15_000 });
+    }
+  });
+
+  test('group checkbox plus the regular delete button removes every container in the project', async() => {
+    const navPage = new NavPage(page);
+    const containersPage = await navPage.navigateTo('Containers');
+
+    await containersPage.waitForTableToLoad();
+    await containersPage.waitForContainerToAppear(composeContainerId1);
+    await containersPage.waitForContainerToAppear(composeContainerId2);
+    await containersPage.waitForGroupToAppear(composeProjectName);
+    await containersPage.selectGroup(composeProjectName);
+    await containersPage.clickBulkDelete();
+
+    for (const id of [composeContainerId1, composeContainerId2]) {
+      await expect(containersPage.getContainerRow(id)).not.toBeVisible({ timeout: 15_000 });
+    }
+  });
+});

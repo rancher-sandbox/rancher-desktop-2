@@ -1836,12 +1836,14 @@ export default {
           margin-top: 20px;
         }
 
-        td {
+        // Zero padding lets .group-tab hug its cell, but the checkbox cell
+        // keeps the column's own padding to stay aligned with the rows below.
+        td:not(.row-check) {
           padding: 0;
+        }
 
-          &:first-of-type {
-            border-left: 1px solid var(--sortable-table-accent-bg);
-          }
+        td:first-of-type {
+          border-left: 1px solid var(--sortable-table-accent-bg);
         }
 
         .group-tab {
