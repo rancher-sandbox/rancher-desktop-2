@@ -23,6 +23,8 @@ func TestMultiCallArgs(t *testing.T) {
 		{"kubectl with path", []string{"/usr/local/bin/kubectl", "get"}, []string{"/usr/local/bin/kubectl", "kubectl", "get"}},
 		{"kubectl.exe", []string{"kubectl.exe", "version"}, []string{"kubectl.exe", "kubectl", "version"}},
 		{"kubectl no args", []string{"kubectl"}, []string{"kubectl", "kubectl"}},
+		{"nerdctl symlink", []string{"nerdctl", "run", "-it"}, []string{"nerdctl", "nerdctl", "run", "-it"}},
+		{"nerdctl.exe", []string{"nerdctl.exe", "images"}, []string{"nerdctl.exe", "nerdctl", "images"}},
 		{"yq symlink", []string{"yq", ".foo"}, []string{"yq", "yq", ".foo"}},
 		{"yq with extra extensions", []string{"yq.rdd.exe", ".foo"}, []string{"yq.rdd.exe", "yq", ".foo"}},
 		{"name only contains kubectl", []string{"kubectllike", "get"}, []string{"kubectllike", "get"}},

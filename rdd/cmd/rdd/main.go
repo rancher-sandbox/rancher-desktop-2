@@ -166,6 +166,7 @@ func main() {
 	cmd.AddCommand(
 		hostagent.NewCommand(),
 		newKubectlCommand(),
+		newNerdctlCommand(),
 		newRunCommand(),
 		newServiceCommand(context.Background()),
 		newSetCommand(),
