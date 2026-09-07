@@ -21,6 +21,7 @@
       :loading="containers === null"
       group-by="projectGroup"
       :group-sort="['projectGroup']"
+      @selection="onSelectionChange"
     >
       <template #header-middle>
         <div class="header-middle">
@@ -103,12 +104,25 @@
           </div>
         </td>
       </template>
-      <template #group-row="{ group }">
+      <template #group-row="{ group, fullColspan }">
         <tr
           class="group-row"
           :aria-expanded="!collapsed[group.ref]"
+          :data-testid="`container-group-${group.ref}`"
         >
-          <td :colspan="headers.length + 1">
+          <td
+            class="row-check"
+            align="middle"
+          >
+            <Checkbox
+              class="group-select-checkbox"
+              :value="isGroupSelected(group)"
+              :indeterminate="isGroupIndeterminate(group)"
+              @update:value="setGroupSelected(group, $event)"
+              @click.stop
+            />
+          </td>
+          <td :colspan="fullColspan - 1">
             <div class="group-tab">
               <i
                 data-title="Toggle Expand"
@@ -130,10 +144,10 @@
 </template>
 
 <script lang="ts">
-import { Banner } from '@rancher/components';
+import { Banner, Checkbox } from '@rancher/components';
 import dayjs from 'dayjs';
 import { shell } from 'electron';
-import { defineComponent } from 'vue';
+import { defineComponent, markRaw } from 'vue';
 
 import ContainerStatusBadge from '@pkg/components/ContainerStatusBadge.vue';
 import SortableTable from '@pkg/components/SortableTable';
@@ -165,15 +179,24 @@ type RowItem = Container & {
   portList:          (readonly [number, number])[];
 };
 
+interface RowGroup {
+  ref:  string;
+  rows: { row: RowItem }[];
+}
+
 export default defineComponent({
   name:       'Containers',
-  components: { SortableTable, ContainerStatusBadge, Banner },
+  components: { SortableTable, ContainerStatusBadge, Banner, Checkbox },
   data() {
     return {
       // The type cast is necessary to correctly type `collapsed`.
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-      collapsed: {} as Record<string, boolean>,
-      headers:   [
+      collapsed:    {} as Record<string, boolean>,
+      selectedRows: [] as RowItem[],
+      // markRaw keeps the cache out of the reactivity system. `rows` both
+      // reads and writes it while computing, which would otherwise recurse.
+      rowCache:     markRaw<Record<string, RowItem | undefined>>({}),
+      headers:      [
         {
           name:  'containerState',
           label: this.t('containers.manage.table.header.state'),
@@ -211,7 +234,7 @@ export default defineComponent({
     },
     rows(): RowItem[] {
       const StatusRunning = 'running';
-      return (this.containers ?? [])
+      const result = (this.containers ?? [])
         .filter(hasField('metadata'))
         .filter(hasField('status'))
         .filter(container => {
@@ -229,10 +252,11 @@ export default defineComponent({
         })
         .map<RowItem>(container => {
           const portList = this.getPortList(container);
-          return {
+          const id = container.metadata.name!;
+          const fresh: RowItem = {
             ...container,
             uptime:           container.status.startedAt ? dayjs(container.status.startedAt).toNow(true) : '',
-            id:               container.metadata.name!,
+            id,
             imageName: (() => {
               const image = this.images?.find(image => image.status?.id === container.status?.image);
               return image?.status?.repoTag ?? container.status?.image;
@@ -260,7 +284,30 @@ export default defineComponent({
             portList,
             portsSortKey:     portList.map(([hostPort]) => hostPort).sort((a, b) => a - b),
           };
+
+          // SortableTable tracks the selection by object identity, and this
+          // computed re-runs whenever any container changes, so handing out a
+          // fresh object per recompute would drop the selection.
+          const cached = this.rowCache[id];
+
+          if (!cached) {
+            this.rowCache[id] = fresh;
+
+            return fresh;
+          }
+
+          return Object.assign(cached, fresh);
         });
+
+      const liveIds = new Set(result.map(row => row.id));
+
+      for (const id of Object.keys(this.rowCache)) {
+        if (!liveIds.has(id)) {
+          delete this.rowCache[id];
+        }
+      }
+
+      return result;
     },
     errorMessage(): string | null {
       if (['containers', 'images', 'namespaces'].includes(this.error?.source ?? '')) {
@@ -432,6 +479,35 @@ export default defineComponent({
       shell.openExternal(url);
     },
 
+    /** SortableTable's displayRows() wraps each row as { row, key, ... }. */
+    groupContainers(group: RowGroup): RowItem[] {
+      return group.rows.map(r => r.row);
+    },
+    onSelectionChange(rows: RowItem[]) {
+      this.selectedRows = rows;
+    },
+    isGroupSelected(group: RowGroup): boolean {
+      const containers = this.groupContainers(group);
+
+      return containers.length > 0 && containers.every(c => this.selectedRows.includes(c));
+    },
+    isGroupIndeterminate(group: RowGroup): boolean {
+      const containers = this.groupContainers(group);
+      const selectedCount = containers.filter(c => this.selectedRows.includes(c)).length;
+
+      return selectedCount > 0 && selectedCount < containers.length;
+    },
+    setGroupSelected(group: RowGroup, selected: boolean) {
+      const containers = this.groupContainers(group);
+      const tableRef: any = this.$refs.sortableTableRef;
+
+      if (selected) {
+        tableRef.update(containers, []);
+      } else {
+        tableRef.update([], containers);
+      }
+    },
+
     toggleExpand(group: string) {
       this.collapsed[group] = !this.collapsed[group];
     },
@@ -454,8 +530,11 @@ export default defineComponent({
 
   .group-row {
     .group-tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       font-weight: bold;
-      .icon {
+      > .icon {
         cursor: pointer;
       }
     }
