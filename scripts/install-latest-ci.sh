@@ -42,6 +42,16 @@ get_platform() {
     esac
 }
 
+# The architecture as it is spelled in the CI artifact names.
+get_arch() {
+    case "$(uname -m)" in
+    arm64|aarch64)
+        echo aarch64;;
+    *)
+        echo x86_64;;
+    esac
+}
+
 # Get the run ID and store it into the global environment variable $ID.
 # May also update $BRANCH for pull requests.
 determine_run_id() {
@@ -102,26 +112,24 @@ install_application() {
         echo "Failed to create temporary directory" >&2
         exit 1
     fi
+    local arch
+    arch=$(get_arch)
     case "$(get_platform)" in
     darwin)
-        ARCH=x86_64
-        if [ "$(uname -m)" = "arm64" ]; then
-            ARCH=aarch64
-        fi
-        archive="Rancher Desktop-mac.$ARCH.zip"
+        archive="Rancher Desktop-mac.$arch.zip"
         ;;
     win32)
         case $INSTALL_MODE in
         zip)
-            archive="Rancher Desktop-win.zip"
+            archive="Rancher Desktop-win.$arch.zip"
             ;;
         installer)
-            archive="Rancher Desktop Setup.msi"
+            archive="Rancher Desktop Setup.$arch.msi"
             ;;
         esac
         ;;
     linux)
-        archive="Rancher Desktop-linux.zip"
+        archive="Rancher Desktop-linux.$arch.zip"
         ;;
     esac
     gh run download --repo "$OWNER/$REPO" "$ID" --dir "$workdir" --name "$archive"

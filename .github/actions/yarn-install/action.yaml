@@ -26,16 +26,17 @@ runs:
       go-version-file: rdd/go.mod
       cache-dependency-path: src/go/**/go.sum
 
-  - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-    with:
-      python-version: '3.x'
-  - run: pip install setuptools
-    shell: bash
-
   - name: Install Windows dependencies
     if: runner.os == 'Windows'
     shell: powershell
-    run: .\scripts\windows-setup.ps1 -SkipVisualStudio -SkipTools
+    run: .\scripts\windows-setup.ps1 -SkipTools
+
+  # The mingw gcc on the Windows arm64 runners targets x86_64, so cgo cannot
+  # assemble Go's own arm64 runtime with it.  The bundled clang targets arm64.
+  - name: Select the arm64 C compiler
+    if: runner.os == 'Windows' && inputs.GOARCH == 'arm64'
+    shell: bash
+    run: echo "CC=clang" >> "${GITHUB_ENV}"
 
   - name: Build RDD
     shell: bash

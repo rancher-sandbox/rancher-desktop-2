@@ -55,7 +55,6 @@
     "intl-messageformat": "11.2.12",
     "jsonpath-plus": "10.4.0",
     "lodash": "4.18.1",
-    "native-reg": "1.1.1",
     "node-forge": "1.4.0",
     "proxy-agent": "^8.0.2",
     "semver": "7.8.5",
@@ -132,8 +131,6 @@
     "mustache": "4.2.0",
     "node-abi": "^4.33.0",
     "node-addon-api": "8",
-    "node-gyp": "13.0.1",
-    "node-gyp-build": "4.8.4",
     "node-loader": "^2.1.0",
     "octokit": "5.0.5",
     "plist": "5.0.0",
@@ -157,9 +154,6 @@
   },
   "dependenciesMeta": {
     "esbuild": {
-      "built": true
-    },
-    "native-reg": {
       "built": true
     },
     "unrs-resolver": {

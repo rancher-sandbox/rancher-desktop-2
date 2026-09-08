@@ -181,6 +181,18 @@ class Builder {
       _.set(config, 'dmg.title', `Install Rancher Desktop ${ version }-${ buildUtils.arch }`);
     }
 
+    // electron-builder suffixes the names it picks itself with the architecture
+    // for everything but x64.  The Linux zip overrides that name, so apply the
+    // same suffix by hand; otherwise both architectures write the same file.
+    const linuxArtifactName = config.linux?.artifactName;
+
+    if (electronPlatform === 'linux' && linuxArtifactName) {
+      const extension = path.extname(linuxArtifactName);
+      const stem = linuxArtifactName.slice(0, -extension.length);
+
+      _.set(config, 'linux.artifactName', `${ stem }${ buildUtils.archSuffix }${ extension }`);
+    }
+
     await fs.promises.writeFile(configPath, yaml.stringify(config), 'utf-8');
 
     config.afterPack = this.afterPack.bind(this);
@@ -209,7 +221,7 @@ class Builder {
   }
 
   async buildInstaller(config: CliOptions) {
-    const appDir = path.join(buildUtils.distDir, 'win-unpacked');
+    const appDir = path.join(buildUtils.distDir, `win${ buildUtils.archSuffix }-unpacked`);
 
     if (config.win && !process.argv.includes('--zip')) {
       // Only build installer if we're not asked not to.

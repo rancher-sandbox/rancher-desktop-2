@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import path from 'path';
 
 import { AllPublishOptions, newError } from 'builder-util-runtime';
@@ -8,7 +8,6 @@ import { ElectronHttpExecutor } from 'electron-updater/out/electronHttpExecutor'
 import { findFile } from 'electron-updater/out/providers/Provider';
 import { verifySignature } from 'electron-updater/out/windowsExecutableCodeSignatureVerifier';
 import { Lazy } from 'lazy-val';
-import * as reg from 'native-reg';
 
 import mainEvents from '@pkg/main/mainEvents';
 import paths from '@pkg/utils/paths';
@@ -140,27 +139,16 @@ export default class MsiUpdater extends NsisUpdater {
    * shouldElevate indicates whether we need elevation to install the update.
    */
   protected get shouldElevate(): boolean {
-    let key: any = null;
-    let isAdmin = false;
+    // An administrative install records this value; a per-user install does not.
+    const { error, status } = spawnSync(
+      'reg.exe',
+      ['query', 'HKLM\\SOFTWARE\\SUSE\\RancherDesktop', '/v', 'AdminInstall'],
+      { stdio: 'ignore', windowsHide: true });
 
-    try {
-      key = reg.openKey(reg.HKLM, 'SOFTWARE', reg.Access.READ);
-
-      if (key) {
-        const parsedValue = reg.getValue(key, 'SUSE\\RancherDesktop', 'AdminInstall');
-
-        isAdmin = parsedValue !== null;
-
-        return isAdmin;
-      } else {
-        this._logger.debug?.(`Failed to open registry key: HKEY_LOCAL_MACHINE\SOFTWARE: ${ key }/${ isAdmin }`);
-      }
-    } catch (error) {
+    if (error) {
       this._logger.error(`Error accessing registry: ${ error }`);
-    } finally {
-      reg.closeKey(key);
     }
 
-    return isAdmin;
+    return status === 0;
   }
 }
