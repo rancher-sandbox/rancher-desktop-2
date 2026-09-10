@@ -89,22 +89,28 @@ jobs:
         path: |
           *.x86_64.dmg
           *.x86_64.dmg.sha512sum
-    - name: Upload Windows artifacts
+    # The aarch64 exclusions keep an arm64 asset out of the x86_64 bundle once
+    # releases carry both.  `smoke-test.sh` installs the first archive it finds,
+    # and `aarch64` sorts first, so without them the x86_64 legs would install
+    # the arm64 build.  Add aarch64 bundles here when releases publish them.
+    - name: Upload Windows x86_64 artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: application-win32.zip
+        name: application-win32-x86_64.zip
         if-no-files-found: error
         path: |
           *.msi
           *.msi.sha512sum
-    - name: Upload Linux artifacts
+          !*aarch64*
+    - name: Upload Linux x86_64 artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: application-linux.zip
+        name: application-linux-x86_64.zip
         if-no-files-found: error
         path: |
           rancher-desktop-linux-*.zip
           rancher-desktop-linux-*.zip.sha512sum
+          !*aarch64*
 
   download-appimage:
     name: Download Linux AppImage
@@ -146,8 +152,8 @@ jobs:
         include:
         - { platform: macos-aarch64, runs-on: macos-14 }
         - { platform: macos-x86_64, runs-on: macos-15-intel }
-        - { platform: win32, runs-on: windows-latest }
-        - { platform: linux, runs-on: ubuntu-latest }
+        - { platform: win32-x86_64, runs-on: windows-latest }
+        - { platform: linux-x86_64, runs-on: ubuntu-latest }
     runs-on: ${{ matrix.runs-on }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
