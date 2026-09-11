@@ -124,17 +124,26 @@ name afterwards.
 `ContainerNamespace` objects reflect the container engine namespaces.  This is
 only useful when using the `containerd` backend; when using `dockerd`, the only
 valid instance will have a name of `moby`, and it cannot be modified in any way.
-
-`ContainerNamespace` objects only have the default metadata, since they
-currently do not need anything else.
+There is currently no API defined to create them.
 
 ```yaml
 apiVersion: containers.rancherdesktop.io/v1alpha1
 kind: ContainerNamespace
 metadata:
-  name: k8s.io # `moby` when using the dockerd engine.
+  name: cns-c6142cdbbd05b7f761a73a0e6e74bcf2fa20e936985f036e0279faf6016f0104
   namespace: rancher-desktop
+status:
+  name: moby
+  labels: {}
 ```
+
+- **metadata.namespace**: the Kubernetes namespace; this must be the same value
+  as the [App](api_app.md#app-object) resources's `spec.namespace` field.
+- **metadata.name**: As container namespaces may not be valid Kubernetes object
+  names, this is `cns-` followed by the lower case SHA-256 hash of the container
+  namespace name.
+- **status.name**: The container namespace.
+- **status.labels**: Containerd labels for namespaces.  Does not apply to moby.
 
 ## Containers
 
@@ -146,18 +155,16 @@ container through the action annotation described below.
 apiVersion: containers.rancherdesktop.io/v1alpha1
 kind: Container
 metadata:
-  name: 8eb6f2cf72b6616aa743cf9187f350af84c9749dab65474db2530f26745d2ef3 # container ID, or `ctr-` plus hex SHA-256 when that ID is not a valid object name
+  name: 8eb6f2cf72b6616aa743cf9187f350af84c9749dab65474db2530f26745d2ef3
   namespace: rancher-desktop
   annotations:
-    # Request a one-shot action. See "Container actions" below.
     containers.rancherdesktop.io/action: pause
 spec: {}
 status:
   name: magical_gates
-  namespace: k8s.io # engine namespace; a `ContainerNamespace` mirror exists when the name is a valid object name
+  namespace: k8s.io
   path: /bin/sh
   args: [-c, 'sleep inf']
-  # Image ID; corresponds to `Image` object's `.status.id` field.
   image: "sha256:999adf320e40662dc96119a14f07459af9959a081d10ccab7c405257030ab96b"
   ports:
     - name: 80/tcp
@@ -172,7 +179,7 @@ status:
   pid: 5059
   exitCode: 0
   error: ""
-  createdAt: "2025-11-22T00:34:07.153640108Z" # Time
+  createdAt: "2025-11-22T00:34:07.153640108Z"
   startedAt: "2025-12-09T22:05:27.774478174Z"
   finishedAt: "2025-11-29T00:35:49.155454569Z"
   conditions:
@@ -186,16 +193,48 @@ status:
     status: False
   - type: Dead
     status: False
-  # Outcome of the most recent action. Persists until the next action
-  # overwrites it, regardless of any observable state changes (e.g. a
-  # direct `docker stop`) in between. The `error` field is set only
-  # when `state` is `Failed`.
   lastAction:
     action: pause
     state: Succeeded
     observedAt: "2026-04-15T10:30:00Z"
     completedAt: "2026-04-15T10:30:00Z"
 ```
+
+- **metadata.namespace**: the Kubernetes namespace; this must be the same value
+  as the [App](api_app.md#app-object) resources's `spec.namespace` field.
+- **metadata.name**: The container ID, in lower case hexidecimal.  This is
+  always a valid Kubernetes object name.
+- **metadata.annotations[containers.rancherdesktop.io/action]**: request a
+  one-shot action; see [Container Actions](#container-actions) below.
+- **status.name**: The container name.
+- **status.namespace**: The containerd namespace; same as the `status.name` of a
+  [`ContainerNamespace`](#namespaces) object.
+- **status.path**: The path to the executable for PID 1 in the container.
+- **status.args**: The arguments to the executable for PID 1 in the container.
+- **status.image**: Image ID; corresponds to [`Image`](#images) object's
+  `.status.id` field.
+- **status.ports**: Exposed ports, similar to moby engine API.
+- **status.labels**: Container labels.
+- **status.status**: One of `created`, `running`, `pausing`, `restarting`,
+  `removing`, `exited`, `dead`, or `unknown` (the default).
+- **status.pid**: The pid of the container process.
+- **status.exitCode**: Last exit code of the container.
+- **status.error**: Error message when running the container.
+- **status.createdAt**: Time when the container was created.
+- **status.startedAt**: Time when the container started.
+- **status.finishedAt**: Time when the container exited.
+- **status.lastAction**: Outcome of the most recent action; persists until the
+  next action overwrites it, regardless of any observable state changes (e.g. a
+  direct `docker stop`) in between.
+- **status.lastAction.action**: The last observed action.
+- **status.lastAction.state**: The result of the last action; either `Succeeded`,
+  `Failed`, or an empty string if it is still in progress.
+- **status.lastAction.error**: The error message; only set if `state` is
+  `Failed`.
+- **status.lastAction.observedAt**: The timestamp when the action was initially
+  observed.
+- **status.lastAction.completedAt**: The timestamp when the action was completed.
+- **status.conditions**: Status conditions; to be documented.
 
 ### Container state
 
@@ -222,24 +261,22 @@ metadata:
   name: whatever-12345
   namespace: rancher-desktop
 spec:
-  name: magical_gates # If unset, generate one randomly
-  namespace: k8s.io # engine namespace; a `ContainerNamespace` mirror exists when the name is a valid object name
-  state: running # Default to `running`
-  path: /bin/sh # defaults to image entry point / command
-  args: [-c, 'sleep inf'] # defaults to image entry point / command
-  image: "sha256:999adf320e40662dc96119a14f07459af9959a081d10ccab7c405257030ab96b" # accepts image tag
-  ports: # merged with image defaults
+  name: magical_gates
+  namespace: k8s.io
+  state: running
+  path: /bin/sh
+  args: [-c, 'sleep inf']
+  image: "sha256:999adf320e40662dc96119a14f07459af9959a081d10ccab7c405257030ab96b"
+  ports:
     - name: 80/tcp
       bindings:
       - hostIP: 0.0.0.0
         hostPort: 32768
       - hostIP: '::'
         hostPort: 32768
-  labels: # merged with image labels
+  labels:
     org.opensuse.base.vendor: openSUSE Project
 status:
-  # Resulting .metadata.name, which is the container ID.  It must be in the
-  # same Kubernetes namespace as the ContainerCreateRequest.
   name: 8eb6f2cf72b6616aa743cf9187f350af84c9749dab65474db2530f26745d2ef3
   conditions:
   - type: Settled
@@ -249,7 +286,28 @@ status:
     status: False
 ```
 
-If `.spec.namespace` / `.spec.name` duplicates an existing container, a
+- **metadata.namespace**: the Kubernetes namespace; this must be the same value
+  as the [App](api_app.md#app-object) resources's `spec.namespace` field.
+- **metadata.name**: No restrictions on the name; clients may use the
+  `generateName` functionality if desired.
+- **spec.name**: The desired container name; if unset, a random container name
+  will be generated.
+- **spec.namespace**: The containerd namespace; same as the `status.name` of a
+  [`ContainerNamespace`](#namespaces) object.
+- **spec.state**: Desired container state; defaults to `running`.
+- **spec.path**: The path to the executable for PID 1 in the container; defaults
+  to image entry point / command.
+- **spec.args**: The arguments to the executable for PID 1 in the container;
+  defaults to image entry point / command.
+- **spec.image**: The image reference; can be a tag (`leap:16`) or an image hash.
+- **spec.ports**: The ports to expose; merged with image defaults.
+- **spec.labels**: Container labels to set; merged with image labels.
+- **status.name**: The resulting `metadata.name` of the container object, which
+  is the same as the container ID.  It must be in the same Kubernetes namespace
+  as the `ContainerCreateRequest`.
+- **status.conditions**: Status conditions.
+
+If `spec.namespace` / `spec.name` duplicates an existing container, a
 `CreateFailed` status is set with some details.
 
 An admission controller will ensure that we cannot have multiple
@@ -347,20 +405,13 @@ across a backend switch.
 apiVersion: containers.rancherdesktop.io/v1alpha1
 kind: Image
 metadata:
-  # `img-` plus hex SHA-256. On moby, a tagged image hashes
-  # `id + "\0" + tag` and a dangling image hashes the id alone; on
-  # containerd, every record hashes `namespace + "\0" + record name`,
-  # never the id. Look mirrors up by `.status.id` or `.status.repoTag`
-  # rather than recomputing the name.
+  namespace: rancher-desktop
   name: img-2b0d7f4e7d2f2e2d3c6f0a8a4b5a6c7d8e9f0a1b2c3d4e5f607182a3b4c5d6e7
-  namespace: rancher-desktop # not the containerd namespace
 status:
-  namespace: moby # engine namespace; a `ContainerNamespace` mirror exists when the name is a valid object name
-  # Image ID, in the raw form.
+  namespace: moby
   id: 'sha256:999adf320e40662dc96119a14f07459af9959a081d10ccab7c405257030ab96b'
   repoDigests:
   - registry.opensuse.org/opensuse/leap@sha256:999adf320e40662dc96119a14f07459af9959a081d10ccab7c405257030ab96b
-  # repoTag is unset if the image is not tagged
   repoTag: 'registry.opensuse.org/opensuse/leap:latest'
   createdAt: "2025-11-17T03:14:16Z"
   architecture: arm64
@@ -370,6 +421,30 @@ status:
     org.opensuse.base.vendor: openSUSE Project
   conditions: []
 ```
+
+- **metadata.namespace**: the Kubernetes namespace; this must be the same value
+  as the [App](api_app.md#app-object) resources's `spec.namespace` field.
+- **metadata.name**: A `img-` prefix followed by a SHA-256 hash.  If the image
+  has a tag, it is the hash over the image id (`status.id`), followed by a null
+  byte, followed by the tag (`status.repoTag`).  If the image is dangling (i.e.
+  no tags), it is the hash of the image id (`status.id`) by itself.
+- **status.namespace**: The containerd namespace; same as the `status.name` of a
+  [`ContainerNamespace`](#namespaces) object.
+- **status.id**: The raw image ID, including the `sha256:` prefix (or whichever
+  is correct for the image).
+- **status.repoDigests**: The digests emitted by the repository.
+- **status.repoTag**: The tag of the image; as described above, if the image has
+  multiple tags, then multiple `Image` objects would be generated.  If this is a
+  dangling image (no tags), this is unset.
+- **status.createdAt**: The time the image was created; may be unset.
+- **status.architecture**: The architecture of this image; if a tag contains
+  multiple architectures, each has a unique image ID, and therefore multiple
+  `Image`s.
+- **status.os**: The OS of the image; as with `status.architecture`, images with
+  multiple OSes have multiple `Image`s.
+- **status.size**: The size of the image in bytes; required.
+- **status.labels**: Any labels set on the image.
+- **status.conditions**: Status conditions; none are defined at this time.
 
 ### Image Actions
 
@@ -508,15 +583,11 @@ mirror on the next full sync.
 apiVersion: containers.rancherdesktop.io/v1alpha1
 kind: Volume
 metadata:
-  # `vol-` plus hex SHA-256 of the original Docker volume name.
-  # Docker allows uppercase and underscores, which are invalid in
-  # RFC 1123 subdomains; the controller hashes the name and keeps
-  # the original in `.status.name`.
   name: vol-d404559327842434dee6f7a10d8998594be5b49a7ef9a91a42ca2b3d0174ab9d
   namespace: rancher-desktop
 status:
+  namespace: moby
   name: volume-name
-  namespace: moby # engine namespace; the only one Docker has
   createdAt: "2025-11-17T03:14:16Z"
   driver: local
   mountpoint: /var/lib/docker/volumes/volume-name/_data
@@ -524,6 +595,20 @@ status:
   scope: local
   options: {}
 ```
+
+- **metadata.namespace**: the Kubernetes namespace; this must be the same value
+  as the [App](api_app.md#app-object) resources's `spec.namespace` field.
+- **metadata.name**: A `vol-` prefix, followed by the SHA-256 hash of the
+  original Docker/containerd volume name.
+- **status.namespace**: The containerd namespace; same as the `status.name` of a
+  [`ContainerNamespace`](#namespaces) object.
+- **status.name**: The docker / nerdctl volume name.  This may contain uppercase
+  and underscores, which would not be valid in Kubernetes object names.
+- **status.createdAt**: The time the volume was created; unset if this is not
+  available.
+- **status.driver**, **status.mountpoint**, **status.scope**, **status.options**:
+  Various information reported by the container engine.
+- **status.labels**: Labels for the volume.
 
 ### Volume Actions
 
@@ -555,3 +640,148 @@ Delete the `Volume` object; finalizers will cause deletion of the container
 engine side volume.
 Webhooks will be needed for validation to reject deleting volumes that are in
 use.
+
+## Compose Projects
+
+`ComposeProject` objects do not reflect actual container engine objects; instead, they
+reflect `docker compose` projects.
+
+```yaml
+apiVersion: containers.rancherdesktop.io/v1alpha1
+kind: ComposeProject
+metadata:
+  name: moby.my-project
+  namespace: rancher-desktop
+status:
+  namespace: moby
+  name: my-project
+  workingDir: /opt/foo/project-dir
+  configs: []
+  containers:
+  - name: 8eb6f2cf72b6616aa743cf9187f350af84c9749dab65474db2530f26745d2ef3
+    uid: 239ef6a0-63bd-4e87-9a7e-c5d4435ddcd4
+  conditions: []
+```
+
+- **metadata.name**: This name must be constructed by the following:
+  - The candidate name is the `status.namespace`, followed by a dot, followed by
+    the compose project name (i.e. `status.name`).
+  - If the candidate name is a valid Kubernetes name (that is, runs of
+    lower-case alphanumeric characters or dash, but does not start or end with
+    dash; each run is joined by a dot), then use it as `metadata.name`.
+  - Otherwise, this is `cmp-` followed by the lower-case SHA-256 hash of the
+    candidate name.
+- **status.namespace**: The containerd namespace; same as the `status.name` of a
+  [`ContainerNamespace`](#namespaces) object.
+- **status.name**: The compose project name.
+- **status.workingDir**: Optional; the compose project directory on the host on
+  which the RDD process runs, as an absolute path.
+- **status.configs**: Optional; the list of compose files used to create the
+  project.  Relative to `status.workingDir`, which means it's also a path on the
+  host.
+- **status.containers**: A list of containers that are part of this project.  The
+  `name` is the `metadata.name` of the object (i.e. the container ID).  Each
+  `name` must be unique.  The `uid` is the object UID (i.e. `.metadata.uid`),
+  used to track when the object has been recreated.
+- **status.conditions**: The normal status conditions; see [below](#status-conditions)
+
+`ComposeProject`s should not be manually created; they should only be created by
+the reconciler, when it detects a container with the normal compose labels.  To
+create `ComposeProject`s, the user may create a
+[`ComposeUpRequest`](#composeuprequest) object.
+
+When containers are detected to be part of a project, the `status.containers`
+field would be updated to indicate which containers were found.  The
+`HasMembers` status condition would also be set to `True` to indicate that
+containers have been detected.
+
+Both `status.workingDir` and `status.configs` are set from observed containers;
+if multiple containers are part of the same project, but they disagree on such
+fields, it is undefined which will be used.  As such, these are informational
+only.
+
+Associated containers being deleted would similarly update `status.containers`;
+once the last item has been removed, `HasMembers` would be set to `False`.  The
+`ComposeProject` will eventually be deleted after `HasMembers` transitions to
+`False`.
+
+### Status Conditions
+
+The following status conditions are defined:
+
+<table>
+<tr><th>Type<th>Reason<th>Status<th>Description
+<tr><td rowspan=3>HasMembers
+    <td>Found<td>True<td>Objects matching this project were found.
+<tr><td>Deleted<td>False<td>The last object for this project was deleted; this project will be reaped.
+<tr><td>Calculating<td>Unknown<td>Action is being processed.
+</table>
+
+### Delete `ComposeProject`
+
+The `engine.rancherdesktop.io/mirror` finalizer as described above is used to
+monitor `ComposeProject` objects being deleted.  Deleting the `ComposeProject`
+will cause `docker compose down --remove-orphans` to be run.  Any associated
+volumes and images will also be deleted (i.e. using the equivalent of
+`docker compose down --rmi all --volumes`).  Because `status.workingDir` and
+`status.configs` may not be available, this will only be able to delete
+resources with the correct labels.  The `ComposeProject` itself will be deleted
+once that succeeds (because `HasMembers` will become `False` at that point).
+If the `docker compose down` fails, it may be retried later.
+
+Note: `docker swarm` may create compose projects as part of their mechanism;
+deleting projects created this way is likely to leave behind non-compose
+resources.
+
+### Compose Actions
+
+#### `ComposeUpRequest`
+
+```yaml
+apiVersion: containers.rancherdesktop.io/v1alpha1
+kind: ComposeUpRequest
+metadata:
+  name: moby.my-project
+  namespace: rancher-desktop
+spec:
+  namespace: moby
+  name: my-project
+  workingDir: /opt/foo/project-dir
+  configs: []
+status:
+  conditions: []
+```
+
+Creating a `ComposeUpRequest` will trigger `docker compose up` and creation of
+a `ComposeProject`.
+
+- **metadata.name**: The name must be constructed in the same way as a
+  [`ComposeProject`](#compose-projects) resource, based on `spec.namespace` and
+  `spec.name`.  That is, the resulting `ComposeProject` object will have the
+  same name as the `ComposeUpRequest`.
+- **spec.namespace**: The containerd namespace; same as the `status.name` of a
+  [`ContainerNamespace`](#namespaces) object.
+- **spec.name**: The compose project name.
+- **spec.workingDir**: The compose project directory on the host (i.e. relative
+  to where the RDD process runs).  Used to look up any files needed.
+- **spec.configs**: Optional; the list of compose files used to create the
+  project.  Relative to `spec.workingDir`, which means it's also a path on the
+  host.  Defaults to the `docker compose` defaults.
+- **status.conditions**: The normal status conditions; see [below](#status-conditions-1)
+
+##### Status Conditions
+
+The following status conditions are defined:
+
+<table>
+<tr><th>Type<th>Reason<th>Status<th>Description
+<tr><td rowspan="3">Settled
+    <td>Succeeded<td>True<td><tt>docker compose up</tt> succeeded.
+<tr><td>Failed<td>True<td><tt>docker compose up</tt> failed.
+<tr><td>Running<td>False<td><tt>docker compose up</tt> is still running.
+<tr><td>Failed<td>Failed<td>True<td><tt>docker compose up</tt> failed.
+</table>
+
+The `ComposeUpRequest` object will be automatically reaped some time after the
+`Settled` status condition has been set to `True`, whether it has succeeded or
+not.
