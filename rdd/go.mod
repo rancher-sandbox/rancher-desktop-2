@@ -7,8 +7,10 @@ require (
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/containerd/errdefs v1.0.0
+	github.com/containerd/errdefs/pkg v0.3.0
 	github.com/containers/gvisor-tap-vsock v0.8.9
 	github.com/coreos/go-semver v0.3.1
+	github.com/distribution/reference v0.6.0
 	github.com/docker/cli v29.7.2+incompatible
 	github.com/go-logr/logr v1.4.4
 	github.com/gofrs/flock v0.13.1
@@ -19,7 +21,7 @@ require (
 	github.com/linuxkit/virtsock v0.0.0-20220523201153-1a23e78aa7a2
 	github.com/mattn/go-isatty v0.0.24
 	github.com/mikefarah/yq/v4 v4.53.6
-	github.com/moby/moby/api v1.55.0
+	github.com/moby/moby/api v1.56.0
 	github.com/moby/moby/client v0.5.1
 	github.com/muesli/reflow v0.3.0
 	github.com/nxadm/tail v1.4.11
@@ -129,7 +131,6 @@ require (
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/containerd/continuity v0.5.0 // indirect
-	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/ltag v0.3.0 // indirect
 	github.com/coreos/go-oidc v2.5.0+incompatible // indirect
@@ -144,7 +145,6 @@ require (
 	github.com/digitalocean/go-qemu v0.0.0-20221209210016-f035778c97f7 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/diskfs/go-diskfs v1.9.3 // indirect
-	github.com/distribution/reference v0.6.0 // indirect
 	github.com/djherbis/times v1.6.0 // indirect
 	github.com/dlclark/regexp2/v2 v2.2.1 // indirect
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect
