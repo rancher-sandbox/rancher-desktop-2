@@ -12,9 +12,9 @@ import {
 const ARCHES: readonly GoArch[] = ['amd64', 'arm64'];
 
 /**
- * nerdctl, baked into the guest image via the distro overlay.  rddepman tracks
- * it like any other GitHub dependency; the Go downloader fetches it at build
- * time, so there is no host install.
+ * nerdctl, which the distro overlay will bake into the guest image.  rddepman
+ * tracks it like any other GitHub dependency, so there is no host install.
+ * The Go downloader stages only the distro until the overlay work lands.
  */
 export class Nerdctl extends GlobalDependency(GitHubDependency) {
   readonly name = 'nerdctl';
@@ -23,7 +23,7 @@ export class Nerdctl extends GlobalDependency(GitHubDependency) {
   readonly manifestPath = GUEST_DEP_VERSIONS_PATH;
 
   download(_context: DownloadContext): Promise<void> {
-    return Promise.reject(new Error('nerdctl is staged by the build, not by postinstall'));
+    return Promise.reject(new Error('nerdctl is a guest-only dependency and is not installed by postinstall'));
   }
 
   async getAssets(version: string): Promise<DependencyAsset[]> {
