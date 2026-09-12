@@ -41,6 +41,14 @@ TAGS := sqlite_omit_load_extension
 GUESTAGENT_BINARY := pkg/guestagent/lima-guestagent
 GUESTAGENT_GZ := $(GUESTAGENT_BINARY).gz
 
+# DISTRO_IMAGE is the guest distro image bin/rdd embeds under the with_distro
+# tag. `go env` reports the build target, including the GOARCH that CI sets to
+# cross-build. WSL2 imports a rootfs tarball, and Lima's other drivers boot a
+# raw disk image.
+TARGET_OS := $(shell go$(EXE) env GOOS)
+TARGET_ARCH := $(shell go$(EXE) env GOARCH)
+DISTRO_IMAGE := pkg/embedded/distro.$(if $(filter windows,$(TARGET_OS)),tar,raw).xz
+
 default: build-rdd
 .PHONY: default
 
@@ -78,10 +86,22 @@ $(GUESTAGENT_GZ): $(GUESTAGENT_BINARY)
 
 .INTERMEDIATE: $(GUESTAGENT_BINARY)
 
-bin/rdd$(EXE): $(GOLANG_SOURCES) $(EMBEDDED_SOURCES) $(GUESTAGENT_GZ)
+# The downloader runs on every build, because the staged file name has no
+# architecture in it and only a rerun notices a build for a different one. It
+# leaves an up-to-date file untouched, so make does not relink bin/rdd.
+# Clearing GOOS and GOARCH makes `go run` build the tool for this machine.
+$(DISTRO_IMAGE): FORCE
+	GOOS= GOARCH= go$(EXE) run ./cmd/download-guest-deps --os $(TARGET_OS) --arch $(TARGET_ARCH)
+
+FORCE:
+.PHONY: FORCE
+
+# Only bin/rdd embeds the distro. Tests, lint and the standalone controllers
+# build without with_distro and need no image.
+bin/rdd$(EXE): $(GOLANG_SOURCES) $(EMBEDDED_SOURCES) $(GUESTAGENT_GZ) $(DISTRO_IMAGE)
 	WSLENV=${WSLENV}:CGO_CFLAGS:CGO_ENABLED \
 	CGO_CFLAGS="-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_USE_ALLOCA=1" CGO_ENABLED=1 \
-	go$(EXE) build -tags="$(TAGS)" -gcflags="all=${GCFLAGS}" -ldflags="$(LDFLAGS)" -o $@ ./cmd/rdd
+	go$(EXE) build -tags="$(TAGS) with_distro" -gcflags="all=${GCFLAGS}" -ldflags="$(LDFLAGS)" -o $@ ./cmd/rdd
 	$(call ATTACH_ENTITLEMENTS,$@)
 	ls -lh $@
 build-rdd: bin/rdd$(EXE)
@@ -193,7 +213,10 @@ $(BATS_TARGETS): bin/rdd$(EXE)
 check: test lint check-ltag
 .PHONY: check
 
+# clean's distro.*.xz* pattern also matches the .tmp-* file a killed
+# downloader leaves beside the staged image.
 clean:
 	-rm -r bin
 	-rm $(GUESTAGENT_BINARY) $(GUESTAGENT_GZ)
+	-rm pkg/embedded/distro.*.xz*
 .PHONY: clean

@@ -1,9 +1,5 @@
 vmType: wsl2
+# Lima's WSL2 driver requires "tar" in the image location.
 images:
-- location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.2.8/distro.v0.2.8.amd64.tar.xz
-  arch: x86_64
-  digest: sha256:3d356fc196a5b929de075d132a3f46688fd881fadad16219172bde392a3a82e0
-- location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.2.8/distro.v0.2.8.arm64.tar.xz
-  arch: aarch64
-  digest: sha256:cd8d237c230bebc04dd1b77c5597302f68195de25b063b5f2876d6377ecafa79
+- location: embedded:///distro.tar.xz
 mountType: wsl2

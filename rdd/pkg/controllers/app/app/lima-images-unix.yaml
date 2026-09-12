@@ -1,7 +1,2 @@
 images:
-- location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.2.8/distro.v0.2.8.amd64.raw.xz
-  arch: x86_64
-  digest: sha256:a589e020df983d6b971fbbe73d1b378fb3dfaaa6c0a6056ac48a168f646e9007
-- location: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.2.8/distro.v0.2.8.arm64.raw.xz
-  arch: aarch64
-  digest: sha256:64136a49ecebdf09e88d5026e942595e0c8b5c92d21f9d4e5e6bdfa85c2673dd
+- location: embedded:///distro.raw.xz

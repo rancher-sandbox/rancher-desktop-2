@@ -26,7 +26,8 @@ import (
 
 // Embedded Lima template split into platform-specific images and shared
 // configuration. The two parts are concatenated at runtime so the VM gets
-// an image type compatible with the host (qcow2 on Unix, tarball on WSL2).
+// an image type compatible with the host (a raw disk image on Unix, a rootfs
+// tarball on WSL2).
 //
 //go:embed lima-images-unix.yaml
 var limaImagesUnix string

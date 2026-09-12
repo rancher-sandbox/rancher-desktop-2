@@ -39,6 +39,7 @@ import (
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/embedded"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/process"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/xz"
@@ -339,8 +340,9 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	// When no system xz is on PATH, decompress the image in-process; Prepare
-	// then finds the ready image and skips its own xz shell-out.
+	// Decompress the image in-process where Lima cannot (an embedded image, or
+	// an .xz image on a host without xz); Prepare then finds it ready and skips
+	// its own download.
 	if err := ensureImageDecompressed(ctx, inst); err != nil {
 		logger.Error(err, "Failed to decompress instance image")
 		if delErr := limainstance.Delete(ctx, inst, true); delErr != nil {
@@ -395,9 +397,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 }
 
 // ensureImageDecompressed pre-produces the decompressed distro image with the
-// in-process xz decoder when no system xz is on PATH, so provisioning works on a
-// host without xz (base macOS, a clean Windows). When xz is present rdd leaves
-// the image alone and Lima uses xz, whose threaded decode is faster.
+// in-process xz decoder, for the images decompressImage takes over from Lima.
 //
 // Lima reads the image under two names: the vz/qemu path (Prepare) reads
 // <inst.Dir>/image, while the WSL2 driver (EnsureFs) reads <inst.Dir>/basedisk.
@@ -409,9 +409,6 @@ func ensureImageDecompressed(ctx context.Context, inst *limatype.Instance) error
 	if _, err := os.Stat(diskPath); err == nil {
 		return nil
 	}
-	if _, err := exec.LookPath("xz"); err == nil {
-		return nil
-	}
 
 	if _, err := os.Stat(imagePath); err != nil {
 		if err := decompressImage(ctx, inst, imagePath); err != nil {
@@ -421,10 +418,12 @@ func ensureImageDecompressed(ctx context.Context, inst *limatype.Instance) error
 	return linkWSL2BaseDisk(inst, imagePath)
 }
 
-// decompressImage downloads the arch-matching xz image through Lima's verified
-// downloader and decompresses it to imagePath. It returns nil without writing
-// imagePath when no xz image matches the host arch, leaving Prepare to handle
-// that case with its own decompressor.
+// decompressImage decompresses the arch-matching image to imagePath. An
+// embedded: image comes from the rdd binary. Any other .xz image goes through
+// Lima's verified downloader, but only on a host without a system xz; with xz
+// present, rdd leaves the image to Prepare, whose threaded xz decode is faster.
+// decompressImage returns nil without writing imagePath when it leaves the
+// image to Prepare, or when no image matches the host arch.
 func decompressImage(ctx context.Context, inst *limatype.Instance, imagePath string) error {
 	logger := log.FromContext(ctx)
 	arch := *inst.Config.Arch
@@ -432,9 +431,17 @@ func decompressImage(ctx context.Context, inst *limatype.Instance, imagePath str
 		if img.File.Arch != arch {
 			continue
 		}
-		// rdd's templates point at .xz images. A location without an .xz
-		// suffix falls through to Prepare, which runs its own decompressor.
+		// Lima cannot fetch an embedded: location, so rdd extracts it even on
+		// a host with xz.
+		if strings.HasPrefix(img.File.Location, "embedded:") {
+			return decompressEmbeddedImage(ctx, imagePath)
+		}
+		// A location without an .xz suffix falls through to Prepare, which
+		// runs its own decompressor.
 		if !strings.HasSuffix(img.File.Location, ".xz") {
+			return nil
+		}
+		if _, err := exec.LookPath("xz"); err == nil {
 			return nil
 		}
 		cached, err := fileutils.DownloadFile(ctx, "", img.File, false, "the image", arch)
@@ -443,13 +450,23 @@ func decompressImage(ctx context.Context, inst *limatype.Instance, imagePath str
 		}
 		logger.Info("Decompressing image with in-process xz decoder (no system xz found)",
 			"location", img.File.Location)
-		// rdd's templates list one .xz image per arch; this skips Prepare's
-		// mirror fallback and kernel/initrd sidecars, which no current template
-		// needs.
+		// The templates in this repo list one .xz image per arch; this skips
+		// Prepare's mirror fallback and kernel/initrd sidecars, which none of
+		// them needs.
 		return xz.DecompressFile(ctx, cached, imagePath)
 	}
 	// No image matched this arch; let Prepare surface its usual error.
 	return nil
+}
+
+// decompressEmbeddedImage decompresses the distro image embedded in the rdd
+// binary to imagePath.
+func decompressEmbeddedImage(ctx context.Context, imagePath string) error {
+	if embedded.Distro == "" {
+		return errors.New("this rdd binary has no embedded distro image; build it with make build-rdd")
+	}
+	log.FromContext(ctx).Info("Decompressing the embedded distro image")
+	return xz.DecompressReader(ctx, strings.NewReader(embedded.Distro), imagePath)
 }
 
 // linkWSL2BaseDisk hardlinks <inst.Dir>/basedisk to imagePath for WSL2
