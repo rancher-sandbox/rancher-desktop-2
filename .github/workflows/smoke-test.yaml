@@ -27,6 +27,13 @@ on:
           Skip signature checks on downloaded artifacts (fails the tests).
         type: boolean
         default: false
+      package-run:
+        description: >
+          Smoke test the build from this Package workflow run, given by its run
+          id, rather than from a release.  Signature checks are skipped, since
+          CI builds are unsigned, and the repository and AppImage tests are
+          too, since those install from OBS.
+        type: string
 
 jobs:
   find-release:
@@ -40,7 +47,7 @@ jobs:
       release-tag: ${{ steps.set-release-tag.outputs.release-tag }}
     steps:
     - name: Find release
-      if: inputs.tag == ''
+      if: inputs.tag == '' && inputs.package-run == ''
       run: |
         set -o xtrace
         gh api repos/${{ github.repository }}/releases --jq 'map(select(.draft))[0].tag_name' > release-tag
@@ -60,8 +67,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # Needed to download from draft releases
+      actions: read # Needed to download Package workflow artifacts
     steps:
-    - run: |
+    - name: Download release artifacts
+      if: inputs.package-run == ''
+      run: |
         gh release download "$RELEASE_TAG" \
           --repo ${{ github.repository }} \
           --pattern '*.dmg' \
@@ -73,6 +83,37 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
         RELEASE_TAG: ${{ needs.find-release.outputs.release-tag }}
+    - name: Download Package workflow artifacts
+      if: inputs.package-run != ''
+      run: |
+        set -o xtrace
+        # Everything downstream expects release asset names, so rename each
+        # artifact's one file to match.  A CI build ships no checksum, so make
+        # one: it says nothing about provenance, but `smoke-test.sh` locates
+        # the archive by its `.sha512sum`.
+        fetch() {
+          local artifact=$1 target=$2 files
+          rm -rf download
+          gh run download "$PACKAGE_RUN" --repo "$GITHUB_REPOSITORY" \
+            --dir download --name "$artifact"
+          mapfile -t files < <(find download -type f)
+          if [[ ${#files[@]} -ne 1 ]]; then
+            printf 'Expected one file in %s, found %d: %s\n' \
+              "$artifact" "${#files[@]}" "${files[*]}" >&2
+            exit 1
+          fi
+          mv "${files[0]}" "$target"
+          sha512sum "$target" > "$target.sha512sum"
+        }
+        fetch 'Rancher Desktop.x86_64.dmg'       Rancher.Desktop.x86_64.dmg
+        fetch 'Rancher Desktop.aarch64.dmg'      Rancher.Desktop.aarch64.dmg
+        fetch 'Rancher Desktop Setup.x86_64.msi' Rancher.Desktop.Setup.msi
+        fetch 'Rancher Desktop-linux.x86_64.zip' rancher-desktop-linux-package.zip
+        rm -rf download
+        ls -l
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PACKAGE_RUN: ${{ inputs.package-run }}
     - name: Upload macOS aarch-64 artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
@@ -89,26 +130,33 @@ jobs:
         path: |
           *.x86_64.dmg
           *.x86_64.dmg.sha512sum
-    - name: Upload Windows artifacts
+    # The aarch64 exclusions keep an arm64 asset out of the x86_64 bundle once
+    # releases carry both.  `smoke-test.sh` installs the first archive it finds,
+    # and `aarch64` sorts first, so without them the x86_64 legs would install
+    # the arm64 build.  Add aarch64 bundles here when releases publish them.
+    - name: Upload Windows x86_64 artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: application-win32.zip
+        name: application-win32-x86_64.zip
         if-no-files-found: error
         path: |
           *.msi
           *.msi.sha512sum
-    - name: Upload Linux artifacts
+          !*aarch64*
+    - name: Upload Linux x86_64 artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: application-linux.zip
+        name: application-linux-x86_64.zip
         if-no-files-found: error
         path: |
           rancher-desktop-linux-*.zip
           rancher-desktop-linux-*.zip.sha512sum
+          !*aarch64*
 
   download-appimage:
     name: Download Linux AppImage
     needs: find-release
+    if: inputs.package-run == ''
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -146,8 +194,8 @@ jobs:
         include:
         - { platform: macos-aarch64, runs-on: macos-14 }
         - { platform: macos-x86_64, runs-on: macos-15-intel }
-        - { platform: win32, runs-on: windows-latest }
-        - { platform: linux, runs-on: ubuntu-latest }
+        - { platform: win32-x86_64, runs-on: windows-latest }
+        - { platform: linux-x86_64, runs-on: ubuntu-latest }
     runs-on: ${{ matrix.runs-on }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -190,7 +238,7 @@ jobs:
     - run: ${{ env.EXEC_COMMAND }} .github/workflows/smoke-test/smoke-test.sh
       shell: bash
       env:
-        RD_SKIP_SIGNING_CHECKS: ${{ inputs.skip-signing-checks }}
+        RD_SKIP_SIGNING_CHECKS: ${{ inputs.skip-signing-checks || inputs.package-run != '' }}
         RDD_KEEP_LOGS: '1'
     - name: Collect Lima Logs
       if: always()
@@ -220,6 +268,7 @@ jobs:
   smoke-test-repository:
     name: Smoke test repository
     needs: find-release
+    if: inputs.package-run == ''
     strategy:
       fail-fast: false
       matrix:
@@ -324,6 +373,7 @@ jobs:
   smoke-test-appimage:
     name: Smoke test AppImage
     needs: download-appimage
+    if: inputs.package-run == ''
     strategy:
       fail-fast: false
       matrix:
@@ -443,7 +493,7 @@ jobs:
     name: Flag that signing checks were skipped
     needs: [smoke-test-installer, smoke-test-repository, smoke-test-appimage]
     runs-on: ubuntu-latest
-    if: inputs.skip-signing-checks
+    if: inputs.skip-signing-checks && inputs.package-run == ''
     steps:
     - run: |
         echo "Force failing smoke tests because signature checks were skipped." >&2
