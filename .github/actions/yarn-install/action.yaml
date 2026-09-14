@@ -31,6 +31,13 @@ runs:
     shell: powershell
     run: .\scripts\windows-setup.ps1 -SkipTools
 
+  # The mingw gcc on the Windows arm64 runners targets x86_64, so cgo cannot
+  # assemble Go's own arm64 runtime with it.  The bundled clang targets arm64.
+  - name: Select the arm64 C compiler
+    if: runner.os == 'Windows' && inputs.GOARCH == 'arm64'
+    shell: bash
+    run: echo "CC=clang" >> "${GITHUB_ENV}"
+
   - name: Build RDD
     shell: bash
     run: make build-rdd

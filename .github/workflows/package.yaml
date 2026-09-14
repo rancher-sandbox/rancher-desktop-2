@@ -39,6 +39,7 @@ jobs:
     needs: check-paths
     if: needs.check-paths.outputs.should-run == 'true'
     strategy:
+      fail-fast: false
       matrix:
         include:
         - platform: mac
@@ -48,9 +49,17 @@ jobs:
           arch: aarch64
           runs-on: macos-latest
         - platform: win
+          arch: x86_64
           runs-on: windows-latest
+        - platform: win
+          arch: aarch64
+          runs-on: windows-11-arm
         - platform: linux
+          arch: x86_64
           runs-on: ubuntu-22.04
+        - platform: linux
+          arch: aarch64
+          runs-on: ubuntu-22.04-arm
     runs-on: ${{ matrix.runs-on }}
     steps:
     - name: Set GOARCH
@@ -58,7 +67,7 @@ jobs:
         case '${{ matrix.arch }}' in
           'aarch64') echo "GOARCH=arm64" >> "${GITHUB_ENV}" ;;
           'x86_64')  echo "GOARCH=amd64" >> "${GITHUB_ENV}" ;;
-          *)         echo "GOARCH=amd64" >> "${GITHUB_ENV}" ;;
+          *)         echo "Unknown architecture '${{ matrix.arch }}'" >&2 ; exit 1 ;;
         esac
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -73,7 +82,7 @@ jobs:
     - name: Upload RDD
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: RDD.${{ matrix.platform }}${{ case(matrix.arch != '', format('.{0}', matrix.arch), '') }}.zip
+        name: RDD.${{ matrix.platform }}.${{ matrix.arch }}.zip
         path: |
           rdd/bin/rdd
           rdd/bin/rdd.exe
@@ -96,22 +105,22 @@ jobs:
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: matrix.platform == 'win'
       with:
-        name: Rancher Desktop Setup.msi
+        name: Rancher Desktop Setup.${{ matrix.arch }}.msi
         path: dist/Rancher.Desktop*.msi
         if-no-files-found: error
     - name: Upload Windows zip
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: matrix.platform == 'win'
       with:
-        name: Rancher Desktop-win.zip
+        name: Rancher Desktop-win.${{ matrix.arch }}.zip
         path: dist/Rancher Desktop*-win.zip
         if-no-files-found: error
     - name: Upload Linux zip
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: matrix.platform == 'linux'
       with:
-        name: Rancher Desktop-linux.zip
-        path: dist/rancher-desktop-*-linux.zip
+        name: Rancher Desktop-linux.${{ matrix.arch }}.zip
+        path: dist/rancher-desktop-*-linux*.zip
         if-no-files-found: error
 
   trigger-obs:
@@ -152,7 +161,7 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
-        name: Rancher Desktop-linux.zip
+        name: Rancher Desktop-linux.x86_64.zip
     - name: Trigger OBS build
       run: |
         # in pull requests GITHUB_REF_NAME is in the form "<pr_number>/merge";
@@ -192,7 +201,7 @@ jobs:
     - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       name: Download artifact
       with:
-        name: Rancher Desktop-win.zip
+        name: Rancher Desktop-win.x86_64.zip
     - name: Generate test signing certificate
       shell: powershell
       run: |

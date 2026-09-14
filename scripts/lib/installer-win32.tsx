@@ -80,7 +80,8 @@ export default async function buildInstaller(workDir: string, appDir: string, ou
   const { productName } = electronBuilderConfig;
   // Strip any versions, to avoid `Rancher Desktop 2 Setup 1.2.3.msi`.
   const unversionedName = productName.replace(/\s*[\d.]+$/, '');
-  const installerName = `${ unversionedName.replace(/\s+/g, '.') }.Setup.${ appVersion }.msi`;
+  const installerName =
+    `${ unversionedName.replace(/\s+/g, '.') }.Setup.${ appVersion }${ buildUtils.archSuffix }.msi`;
   const outFile = path.join(outDir, installerName);
 
   await writeUpdateConfig(appDir);
@@ -104,7 +105,7 @@ export default async function buildInstaller(workDir: string, appDir: string, ou
   await Promise.all(inputs.map(input => simpleSpawn(
     path.join(wixDir, 'candle.exe'),
     [
-      '-arch', 'x64',
+      '-arch', buildUtils.arch,
       `-d${ '' }appDir=${ appDir }`,
       `-d${ '' }appName=${ productName }`,
       `-d${ '' }appId=${ electronBuilderConfig.appId }`,
