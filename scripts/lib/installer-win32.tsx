@@ -18,6 +18,7 @@ import buildUtils from './build-utils';
 import generateFileList from './installer-win32-gen';
 
 import { simpleSpawn } from '@/scripts/simple_process';
+import { appArtifactName } from '@pkg/utils/releaseArtifacts';
 
 /**
  * Return the contents of package.json embedded in the application.
@@ -78,10 +79,7 @@ export default async function buildInstaller(workDir: string, appDir: string, ou
   const productVersion = getProductVersion(appVersion);
   const electronBuilderConfig = await getElectronBuilderConfig(appDir);
   const { productName } = electronBuilderConfig;
-  // Strip any versions, to avoid `Rancher Desktop 2 Setup 1.2.3.msi`.
-  const unversionedName = productName.replace(/\s*[\d.]+$/, '');
-  const installerName = `${ unversionedName.replace(/\s+/g, '.') }.Setup.${ appVersion }.msi`;
-  const outFile = path.join(outDir, installerName);
+  const outFile = path.join(outDir, appArtifactName(appVersion, 'win32', buildUtils.arch, 'msi'));
 
   await writeUpdateConfig(appDir);
   const fileList = await generateFileList(appDir);

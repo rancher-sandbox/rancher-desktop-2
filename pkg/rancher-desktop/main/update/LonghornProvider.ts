@@ -12,6 +12,7 @@ import semver from 'semver';
 import Logging from '@pkg/utils/logging';
 import { getMacOsVersion } from '@pkg/utils/osVersion';
 import paths from '@pkg/utils/paths';
+import { appArtifactSuffix } from '@pkg/utils/releaseArtifacts';
 import getWSLVersion from '@pkg/utils/wslVersion';
 
 import type { AppUpdater, ResolvedUpdateFileInfo, UpdateInfo } from 'electron-updater';
@@ -367,6 +368,21 @@ export async function queryUpgradeResponder(url: string, currentVersion: semver.
 }
 
 /**
+ * Pick the release asset to install on this platform and architecture.
+ */
+export function findUpdateAsset(assets: GitHubReleaseAsset[], platform: ProviderPlatform, arch: string): GitHubReleaseAsset | undefined {
+  switch (platform) {
+  case 'darwin':
+    return assets.find(asset => asset.name.endsWith(appArtifactSuffix(platform, arch, 'zip')));
+  case 'win32':
+    return assets.find(asset => asset.name.endsWith(appArtifactSuffix(platform, arch, 'msi')));
+  case 'linux':
+    // AppImages come from OBS, which names them itself.
+    return assets.find(asset => asset.name.endsWith('AppImage'));
+  }
+}
+
+/**
  * LonghornProvider is a Provider that interacts with Longhorn's
  * [Upgrade Responder](https://github.com/longhorn/upgrade-responder) server to
  * determine which versions are available. It assumes that the versions are
@@ -460,22 +476,7 @@ export default class LonghornProvider extends Provider<LonghornUpdateInfo> {
     const releaseInfoRaw = await net.fetch(infoURL,
       { headers: { Accept: 'application/vnd.github.v3+json' } });
     const releaseInfo = await releaseInfoRaw.json() as GitHubReleaseInfo;
-    const assetFilter: (asset: GitHubReleaseAsset) => boolean = (() => {
-      switch (this.platform) {
-      case 'darwin': {
-        const isArm64 = process.arch === 'arm64';
-        const suffix = isArm64 ? '-mac.aarch64.zip' : '-mac.x86_64.zip';
-
-        return (asset: GitHubReleaseAsset) => asset.name.endsWith(suffix);
-      }
-      case 'linux':
-        return (asset: GitHubReleaseAsset) => asset.name.endsWith('AppImage');
-      case 'win32': {
-        return (asset: GitHubReleaseAsset) => asset.name.endsWith('.msi');
-      }
-      }
-    })();
-    const wantedAsset = releaseInfo.assets.find(assetFilter);
+    const wantedAsset = findUpdateAsset(releaseInfo.assets, this.platform, process.arch);
 
     if (!wantedAsset) {
       console.log(`Rejecting release ${ releaseInfo.name } - could not find usable asset.`);

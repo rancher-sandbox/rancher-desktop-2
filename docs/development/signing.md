@@ -19,7 +19,10 @@ In general, the process involves:
     yarn sign path/to/archive.zip
     ```
 
-4. Look in `dist/` for the signed files (`Rancher.Desktop.Setup.msi`, etc.).
+4. Look in `dist/` for the signed files, such as
+   `rancher-desktop-<version>.windows.x86_64.msi`.  They already have their
+   release names, so upload them as they are.  A signed macOS zip has the same
+   name as the unsigned one, so signing a zip from `dist/` replaces it.
 
 ## Windows
 

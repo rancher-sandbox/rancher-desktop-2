@@ -21,7 +21,7 @@ jobs:
       run: |
         # get the env vars
         version_with_v=${GITHUB_REF#"refs/tags/"}
-        release_zip_name="rancher-desktop-linux-${version_with_v}.zip"
+        release_zip_name="rancher-desktop-${version_with_v#v}.linux.x86_64.zip"
         major_minor=$(echo ${version_with_v} | sed -E 's/v([0-9]+\.[0-9]+)\.[0-9]+.*/\1/g')
         s3_zip_name="rancher-desktop-linux-${major_minor}.zip"
 
@@ -33,7 +33,7 @@ jobs:
     - run: mkdir -p dist
     - name: Fetch the .zip file from release
       run: >-
-        curl -L -o "dist/${release_zip_name}"
+        curl --fail --location --output "dist/${release_zip_name}"
         "https://github.com/${repository}/releases/download/${version_with_v}/${release_zip_name}"
       env:
         repository: ${{ github.repository }}

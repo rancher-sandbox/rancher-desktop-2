@@ -17,6 +17,7 @@ import yaml from 'yaml';
 
 import buildUtils from '@/scripts/lib/build-utils';
 import { spawnFile } from '@pkg/utils/childProcess';
+import { appArtifactName, EXT_MACRO, rddArtifactName } from '@pkg/utils/releaseArtifacts';
 
 interface SigningConfig {
   entitlements: {
@@ -161,9 +162,8 @@ export async function sign(workDir: string): Promise<string[]> {
 
   log.info('Building disk image and update archive...');
   const arch = buildUtils.arch === 'arm64' ? Arch.arm64 : Arch.x64;
-  const productFileName = config.productName?.replace(/\s*\d+$/, '')?.replace(/\s+/g, '.');
-  const productArch = arch === Arch.arm64 ? 'aarch64' : 'x86_64';
-  const artifactName = `${ productFileName }-\${version}-mac.${ productArch }.\${ext}`;
+  const { version } = config.extraMetadata;
+  const artifactName = appArtifactName(version, 'darwin', buildUtils.arch, EXT_MACRO);
   const formats = ['dmg', 'zip'];
 
   // Build the dmg, explicitly _not_ using an identity; we just signed
@@ -185,9 +185,6 @@ export async function sign(workDir: string): Promise<string[]> {
     },
   });
 
-  // The .dmg and the .zip have slightly different file names, so we need to
-  // deal with them separately.
-
   const dmgFile = results.find(f => f.endsWith('.dmg'));
   const zipFile = results.find(f => f.endsWith('.zip'));
 
@@ -198,18 +195,15 @@ export async function sign(workDir: string): Promise<string[]> {
     throw new Error(`Could not find build zip file`);
   }
 
-  const dmgRenamedFile = dmgFile.replace('-mac.', '.');
-
-  await fs.promises.rename(dmgFile, dmgRenamedFile);
-  await Promise.all([dmgRenamedFile, zipFile].map((f) => {
+  await Promise.all([dmgFile, zipFile].map((f) => {
     return spawnFile('codesign', ['--sign', certFingerprint, '--timestamp', f], { stdio: 'inherit' });
   }));
 
   const rddSource = path.join(appDir, 'Contents/Resources/darwin/bin/rdd');
-  const rddTarget = path.join(process.cwd(), 'dist', `rdd.${ config.extraMetadata.version }.${ process.platform }.${ productArch }`);
+  const rddTarget = path.join(process.cwd(), 'dist', rddArtifactName(version, 'darwin', buildUtils.arch));
   await fs.promises.copyFile(rddSource, rddTarget, fs.constants.COPYFILE_FICLONE);
 
-  return [dmgRenamedFile, zipFile, rddTarget];
+  return [dmgFile, zipFile, rddTarget];
 }
 
 /**

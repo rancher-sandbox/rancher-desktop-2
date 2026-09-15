@@ -22,6 +22,7 @@ import buildUtils from './lib/build-utils';
 import buildInstaller, { buildCustomAction } from './lib/installer-win32';
 
 import { spawnFile } from '@pkg/utils/childProcess';
+import { appArtifactName, EXT_MACRO, rddArtifactName } from '@pkg/utils/releaseArtifacts';
 import { ReadWrite } from '@pkg/utils/typeUtils';
 
 class Builder {
@@ -176,6 +177,8 @@ class Builder {
     }
 
     _.set(config, 'extraMetadata.version', version);
+    _.set(config, `${ electronPlatform }.artifactName`,
+      appArtifactName(version, process.platform, buildUtils.arch, EXT_MACRO));
 
     if (electronPlatform === 'mac') {
       _.set(config, 'dmg.title', `Install Rancher Desktop ${ version }-${ buildUtils.arch }`);
@@ -204,6 +207,13 @@ class Builder {
     }
 
     await build(options);
+
+    // Releases also publish rdd by itself.
+    const rdd = process.platform === 'win32' ? 'rdd.exe' : 'rdd';
+
+    await fs.promises.copyFile(
+      path.join(buildUtils.rootDir, 'rdd', 'bin', rdd),
+      path.join(buildUtils.distDir, rddArtifactName(version, process.platform, buildUtils.arch)));
 
     return options;
   }

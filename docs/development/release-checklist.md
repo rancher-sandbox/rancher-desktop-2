@@ -4,11 +4,10 @@
 - [ ] Tag release branch. Wait for the CI to build artifacts.
 - [ ] Sign windows installer.
 
-### Sign mac installer (As there's an issue with the zip produced by the build script, we need to manually build and zip, rename the file to replace space with dot etc )
+### Sign mac installer (As there's an issue with the zip produced by the build script, we need to manually build and zip)
 - [ ] Make sure the required env variables are set for the notarize, signing process.
 - [ ] git clean, reset to make sure a clean (CI equivalent) build.
 - [ ] Manually zip the installer.
-- [ ] Rename installer filename to replace space with dot.
 
 ### Release Documentation
 - [ ] Release notes. Update on the GitHub draft Release page.

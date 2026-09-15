@@ -28,13 +28,15 @@ const tag = `v${ version }`;
  * arm64 host offers one the application will not accept.
  */
 function assetName() {
+  const arch = process.arch === 'arm64' ? 'aarch64' : 'x86_64';
+
   switch (process.platform) {
   case 'darwin':
-    return `Rancher.Desktop-${ version }-mac.${ process.arch === 'arm64' ? 'aarch64' : 'x86_64' }.zip`;
+    return `rancher-desktop-${ version }.darwin.${ arch }.zip`;
   case 'linux':
     return `rancher-desktop-linux-${ version }.AppImage`;
   case 'win32':
-    return `Rancher.Desktop.Setup.${ version }.msi`;
+    return `rancher-desktop-${ version }.windows.${ arch }.msi`;
   }
   throw new Error(`No asset name for platform ${ process.platform }`);
 }

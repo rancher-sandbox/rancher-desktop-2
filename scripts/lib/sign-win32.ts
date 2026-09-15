@@ -10,7 +10,9 @@ import defaults from 'lodash/defaultsDeep';
 import merge from 'lodash/merge';
 import yaml from 'yaml';
 
+import buildUtils from '@/scripts/lib/build-utils';
 import { simpleSpawn } from '@/scripts/simple_process';
+import { rddArtifactName } from '@pkg/utils/releaseArtifacts';
 
 /** signFileFn is a function that signs a single file. */
 type signFileFn = (...filePath: string[]) => Promise<void>;
@@ -114,7 +116,7 @@ export async function sign(workDir: string, outDir: string): Promise<string[]> {
   const signedInstaller = await buildWiX(workDir, unpackedDir, outDir, signFn);
 
   const rddSource = path.join(unpackedDir, 'resources', 'win32', 'bin', 'rdd.exe');
-  const rddDest = path.join(outDir, 'rdd.exe');
+  const rddDest = path.join(outDir, rddArtifactName(config.extraMetadata.version, 'win32', buildUtils.arch));
   await fs.promises.copyFile(rddSource, rddDest, fs.constants.COPYFILE_FICLONE);
 
   return [signedInstaller, rddDest];

@@ -64,12 +64,12 @@ jobs:
     - run: |
         gh release download "$RELEASE_TAG" \
           --repo ${{ github.repository }} \
-          --pattern '*.dmg' \
-          --pattern '*.dmg.sha512sum' \
-          --pattern '*.msi' \
-          --pattern '*.msi.sha512sum' \
-          --pattern 'rancher-desktop-linux-*.zip' \
-          --pattern 'rancher-desktop-linux-*.zip.sha512sum'
+          --pattern 'rancher-desktop-*.darwin.*.dmg' \
+          --pattern 'rancher-desktop-*.darwin.*.dmg.sha512sum' \
+          --pattern 'rancher-desktop-*.windows.x86_64.msi' \
+          --pattern 'rancher-desktop-*.windows.x86_64.msi.sha512sum' \
+          --pattern 'rancher-desktop-*.linux.x86_64.zip' \
+          --pattern 'rancher-desktop-*.linux.x86_64.zip.sha512sum'
       env:
         GH_TOKEN: ${{ github.token }}
         RELEASE_TAG: ${{ needs.find-release.outputs.release-tag }}
@@ -79,32 +79,32 @@ jobs:
         name: application-macos-aarch64.zip
         if-no-files-found: error
         path: |
-          *.aarch64.dmg
-          *.aarch64.dmg.sha512sum
+          rancher-desktop-*.darwin.aarch64.dmg
+          rancher-desktop-*.darwin.aarch64.dmg.sha512sum
     - name: Upload macOS x86_64 artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: application-macos-x86_64.zip
         if-no-files-found: error
         path: |
-          *.x86_64.dmg
-          *.x86_64.dmg.sha512sum
+          rancher-desktop-*.darwin.x86_64.dmg
+          rancher-desktop-*.darwin.x86_64.dmg.sha512sum
     - name: Upload Windows artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: application-win32.zip
         if-no-files-found: error
         path: |
-          *.msi
-          *.msi.sha512sum
+          rancher-desktop-*.windows.x86_64.msi
+          rancher-desktop-*.windows.x86_64.msi.sha512sum
     - name: Upload Linux artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: application-linux.zip
         if-no-files-found: error
         path: |
-          rancher-desktop-linux-*.zip
-          rancher-desktop-linux-*.zip.sha512sum
+          rancher-desktop-*.linux.x86_64.zip
+          rancher-desktop-*.linux.x86_64.zip.sha512sum
 
   download-appimage:
     name: Download Linux AppImage

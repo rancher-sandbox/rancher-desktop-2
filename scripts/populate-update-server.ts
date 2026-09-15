@@ -31,6 +31,7 @@ import yaml from 'yaml';
 
 import { simpleSpawn } from './simple_process';
 
+import { appArtifactName } from '@pkg/utils/releaseArtifacts';
 import { defined } from '@pkg/utils/typeUtils';
 
 /** Read input from the environment; throws an error if unset. */
@@ -124,10 +125,11 @@ async function getOctokit(): Promise<Octokit> {
 }
 
 async function updateRelease(octokit: Octokit, owner: string, repo: string, tag: string) {
+  const version = tag.replace(/^v/, '');
   const files = {
-    msi:    await getChecksum('RD_SETUP_MSI', `Rancher.Desktop.Setup.${ tag }.msi`),
-    macx86: await getChecksum('RD_MACX86_ZIP', `Rancher.Desktop-${ tag }-mac.x86_64.zip`),
-    macarm: await getChecksum('RD_MACARM_ZIP', `Rancher.Desktop-${ tag }-mac.aarch64.zip`),
+    msi:    await getChecksum('RD_SETUP_MSI', appArtifactName(version, 'win32', 'x64', 'msi')),
+    macx86: await getChecksum('RD_MACX86_ZIP', appArtifactName(version, 'darwin', 'x64', 'zip')),
+    macarm: await getChecksum('RD_MACARM_ZIP', appArtifactName(version, 'darwin', 'arm64', 'zip')),
   };
 
   console.log(`Updating release with files:\n${ yaml.stringify(files) }`);
