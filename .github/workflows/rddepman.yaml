@@ -1,6 +1,6 @@
 name: Update external dependencies
-# When run upstream, this workflow gets its token from vault; elsewhere it
-# needs the RUN_WORKFLOW_FROM_WORKFLOW secret, and skips when that is unset.
+# A pull request or issue created with github.token triggers no other
+# workflow, so this uses vault (upstream) or RUN_WORKFLOW_FROM_WORKFLOW.
 on:
   schedule:
     - cron: '23 8 * * *'
@@ -10,7 +10,20 @@ permissions:
   contents: read
 
 jobs:
+  check-for-token:
+    outputs:
+      has-token: ${{ steps.calc.outputs.HAS_TOKEN }}
+    runs-on: ubuntu-latest
+    steps:
+    - id: calc
+      run: echo "HAS_TOKEN=${HAS_TOKEN}" >> "${GITHUB_OUTPUT}"
+      env:
+        HAS_TOKEN: ${{ github.repository_owner == 'rancher-sandbox'
+          || secrets.RUN_WORKFLOW_FROM_WORKFLOW != '' }}
+
   check-update-versions:
+    needs: check-for-token
+    if: needs.check-for-token.outputs.has-token == 'true'
     permissions:
       contents: read
       id-token: write # Required for $/.github/actions/get-token
