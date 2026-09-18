@@ -52,7 +52,7 @@ func (c *controller) GetCRDData() string {
 	return ""
 }
 
-func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
+func (c *controller) RegisterWithManager(_ context.Context, mgr ctrl.Manager) error {
 	if err := appv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return err
 	}

@@ -7,6 +7,7 @@
 package hostinfo
 
 import (
+	"context"
 	_ "embed"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -38,7 +39,7 @@ func (c *controller) GetAPIGroup() string { return APIGroup }
 func (c *controller) GetCRDData() string  { return hostInfoCRD }
 
 // RegisterWithManager registers the CRD scheme and the HostInfo reconciler.
-func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
+func (c *controller) RegisterWithManager(_ context.Context, mgr ctrl.Manager) error {
 	if err := rddv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return err
 	}

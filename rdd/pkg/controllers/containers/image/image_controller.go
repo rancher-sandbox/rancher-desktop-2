@@ -8,6 +8,7 @@
 package image
 
 import (
+	"context"
 	_ "embed"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
@@ -99,7 +100,7 @@ func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 }
 
 // RegisterWithManager implements the complete controller registration for both embedded and external modes.
-func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
+func (c *controller) RegisterWithManager(_ context.Context, mgr ctrl.Manager) error {
 	// Register the CRD types with the scheme
 	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return err

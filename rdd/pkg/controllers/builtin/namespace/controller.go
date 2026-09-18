@@ -9,6 +9,8 @@
 package namespace
 
 import (
+	"context"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -49,7 +51,7 @@ func (c *controller) GetCRDData() string {
 }
 
 // RegisterWithManager implements the complete controller registration.
-func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
+func (c *controller) RegisterWithManager(_ context.Context, mgr ctrl.Manager) error {
 	klog.InfoS("Setting up namespace controller watch", "controller", ControllerName)
 
 	// Register the controller

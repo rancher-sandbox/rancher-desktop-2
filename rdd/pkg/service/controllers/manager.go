@@ -209,6 +209,9 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to add pass through server to manager: %w", err)
 	}
 
+	mgrCtx, mgrCancel := context.WithCancel(ctx)
+	defer mgrCancel()
+
 	// Register all controllers before launching webhook goroutines.
 	// RegisterWithManager calls AddToScheme, which writes to the scheme map.
 	// Webhook setup reads the scheme via client.Apply. Running both concurrently
@@ -222,7 +225,7 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 			webhookController.SetWebhookPort(scm.webhookPort)
 		}
 
-		if err := registration.RegisterWithManager(mgr); err != nil {
+		if err := registration.RegisterWithManager(mgrCtx, mgr); err != nil {
 			return fmt.Errorf("failed to register controller %s: %w", registration.GetName(), err)
 		}
 	}
@@ -271,8 +274,6 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 		"metricsPort", scm.metricsPort,
 		"healthPort", scm.healthPort)
 
-	mgrCtx, mgrCancel := context.WithCancel(ctx)
-	defer mgrCancel()
 	mgrResult := make(chan error, 1)
 	go func() { mgrResult <- mgr.Start(mgrCtx) }()
 

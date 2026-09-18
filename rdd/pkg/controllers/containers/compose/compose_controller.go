@@ -2,13 +2,12 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
-package containernamespace
+package compose
 
 import (
 	"context"
 	_ "embed"
 
-	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
@@ -20,7 +19,7 @@ func init() {
 }
 
 // ControllerName is the name of this controller.
-const ControllerName = "containernamespace"
+const ControllerName = "compose"
 
 // APIGroup is the API group this controller belongs to.
 const APIGroup = "containers"
@@ -28,7 +27,8 @@ const APIGroup = "containers"
 //go:embed crd.yaml
 var controllerCRD string
 
-// controller implements the base.Controller interface for container.
+// controller implements [base.Controller] for compose.
+// It only registers a validating webhook; there is no reconciler yet.
 type controller struct {
 	webhookPort     int
 	webhookManagers []base.WebhookManager
@@ -70,20 +70,21 @@ func (c *controller) GetWebhookManagers() []base.WebhookManager {
 	return c.webhookManagers
 }
 
-// set up the container controller with a webhook which prevents all modification.
+// setupWebhookWithRuntimeConfig registers a validating webhook that enforces
+// spec.namespace/spec.name-derived naming on ComposeUpRequest create.
 func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
-	mgr.GetLogger().Info("Setting up container namespace webhook")
-	mutatingConfig := base.WebhookConfig[*v1alpha1.ContainerNamespace]{
-		Name:        "container-namespace-deleting",
-		WebhookName: "container-namespace-deleting.containers.rancherdesktop.io",
+	mgr.GetLogger().Info("Setting up compose project webhook")
+	validatingConfig := base.WebhookConfig[*v1alpha1.ComposeUpRequest]{
+		Name:        "compose-up-request-validating",
+		WebhookName: "compose-up-request-validating.containers.rancherdesktop.io",
 		WebhookPort: c.webhookPort,
-		Operations: []admissionregistrationv1.OperationType{
-			admissionregistrationv1.Delete,
+		Validator: &composeUpRequestValidator{
+			Client: mgr.GetClient(),
+			Reader: mgr.GetAPIReader(),
 		},
-		Validator: &deleteValidator{},
 	}
 
-	managers, err := base.SetupWebhookForResource(mgr, &v1alpha1.ContainerNamespace{}, mutatingConfig)
+	managers, err := base.SetupWebhookForResource(mgr, &v1alpha1.ComposeUpRequest{}, validatingConfig)
 	if err != nil {
 		return err
 	}
@@ -92,12 +93,17 @@ func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 	return nil
 }
 
-// RegisterWithManager implements the complete controller registration for both embedded and external modes.
+// RegisterWithManager implements [base.Controller].
 func (c *controller) RegisterWithManager(_ context.Context, mgr ctrl.Manager) error {
 	// Register the CRD types with the scheme
 	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return err
 	}
 
-	return c.setupWebhookWithRuntimeConfig(mgr)
+	if err := c.setupWebhookWithRuntimeConfig(mgr); err != nil {
+		mgr.GetLogger().Error(err, "Failed to set up compose project webhook")
+		return err
+	}
+
+	return nil
 }

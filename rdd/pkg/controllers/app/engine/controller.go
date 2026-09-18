@@ -15,6 +15,7 @@
 package engine
 
 import (
+	"context"
 	"maps"
 	"net/http"
 	"slices"
@@ -80,7 +81,7 @@ func (c *controller) GetPassthroughHandler(endpoint string) http.Handler {
 	return c.passthroughs[endpoint]
 }
 
-func (c *controller) RegisterWithManager(mgr ctrl.Manager) error {
+func (c *controller) RegisterWithManager(_ context.Context, mgr ctrl.Manager) error {
 	if err := appv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return err
 	}

@@ -765,7 +765,8 @@ a `ComposeProject`.
   to where the RDD process runs).  Used to look up any files needed.
 - **spec.configs**: Optional; the list of compose files used to create the
   project.  Relative to `spec.workingDir`, which means it's also a path on the
-  host.  Defaults to the `docker compose` defaults.
+  host.  Must be inside `spec.workingDir` if given.  Defaults to the
+  `docker compose` defaults.
 - **status.conditions**: The normal status conditions; see [below](#status-conditions-1)
 
 ##### Status Conditions
@@ -783,7 +784,8 @@ The following status conditions are defined:
 
 The `ComposeUpRequest` object will be automatically reaped some time after the
 `Settled` status condition has been set to `True`, whether it has succeeded or
-not.
+not.  The `Failed` type will not be set when the request succeeds; it will
+simply be removed instead of being set to `False`.
 
 Updating the `spec` of the `ComposeUpRequest` will cause reaping to be postponed
 until `docker compose up` has completed for the updated `spec`.

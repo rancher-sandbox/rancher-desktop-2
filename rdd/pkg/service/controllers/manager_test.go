@@ -44,12 +44,15 @@ type probeController struct {
 	webhookManager *probeWebhookManager
 }
 
-func (c *probeController) GetName() string                        { return "probe" }
-func (c *probeController) GetAPIGroup() string                    { return "probe.test" }
-func (c *probeController) GetCRDData() string                     { return "" }
-func (c *probeController) RegisterWithManager(ctrl.Manager) error { return nil }
-func (c *probeController) SetWebhookPort(port int)                { c.webhookPort = port }
-func (c *probeController) GetWebhookServiceName() string          { return "probe-webhook-service" }
+func (c *probeController) GetName() string { return "probe" }
+
+func (c *probeController) GetAPIGroup() string                                     { return "probe.test" }
+func (c *probeController) GetCRDData() string                                      { return "" }
+func (c *probeController) RegisterWithManager(context.Context, ctrl.Manager) error { return nil }
+func (c *probeController) SetWebhookPort(port int)                                 { c.webhookPort = port }
+
+func (c *probeController) GetWebhookServiceName() string { return "probe-webhook-service" }
+
 func (c *probeController) GetWebhookManagers() []base.WebhookManager {
 	return []base.WebhookManager{c.webhookManager}
 }
