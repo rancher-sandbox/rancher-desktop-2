@@ -6,7 +6,6 @@ package controllers
 
 import (
 	"context"
-	"crypto/sha256"
 	"errors"
 	"fmt"
 	"time"
@@ -21,17 +20,10 @@ import (
 
 	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
 	containersv1alpha1apply "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1/applyconfiguration/containers/v1alpha1"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/api"
 )
 
-// volumeMirrorName returns a deterministic RFC 1123 subdomain name
-// for a Docker volume. Docker permits uppercase and underscores,
-// which are invalid in K8s object names, so the Docker name is
-// hashed with a "vol-" prefix. The original is preserved in
-// status.name.
-func volumeMirrorName(dockerName string) string {
-	sum := sha256.Sum256([]byte(dockerName))
-	return fmt.Sprintf("vol-%x", sum)
-}
+const volumeMirrorPrefix = "vol"
 
 // syncAllVolumes lists all Docker volumes, creates or updates their
 // Volume mirrors, and prunes stale ones.
@@ -52,7 +44,7 @@ func (w *dockerWatcher) syncAllVolumes(ctx context.Context) error {
 	// errors below are still fatal.
 	var errs []error
 	for _, v := range volumeList.Items {
-		mirrorName := volumeMirrorName(v.Name)
+		mirrorName := api.MirrorName(volumeMirrorPrefix, v.Name)
 		activeNames[mirrorName] = true
 		if err := w.applyVolume(ctx, v); err != nil {
 			log.Error(err, "Skipping volume during full sync", "name", v.Name)
@@ -95,7 +87,7 @@ func (w *dockerWatcher) syncVolume(ctx context.Context, name string) error {
 // applyVolume creates or updates a `Volume` mirror from a Docker volume.
 func (w *dockerWatcher) applyVolume(ctx context.Context, vol mobyvolume.Volume) error {
 	log := logf.FromContext(ctx).WithName("docker-watcher")
-	mirrorName := volumeMirrorName(vol.Name)
+	mirrorName := api.MirrorName(volumeMirrorPrefix, vol.Name)
 
 	applyConfig := containersv1alpha1apply.Volume(mirrorName, w.apiNamespace).
 		WithFinalizers(mirrorFinalizer)
