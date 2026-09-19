@@ -80,10 +80,11 @@ func validateSubnet(subnet string) (*hostSwitchSubnet, error) {
 }
 
 // Vsock port assignments. These are protocol constants shared with the
-// guest-side network-setup binary.
+// guest-side network-setup binary. They differ from Rancher Desktop 1.x's
+// so a 1.x VM on the same machine cannot answer our handshake.
 const (
-	vsockHandshakePort = 6669
-	vsockListenPort    = 6656
+	vsockHandshakePort = 6670
+	vsockListenPort    = 6657
 	handshakeTimeout   = 5 * time.Minute
 
 	// relayMinDuration is how long a vsock data connection must last before we
@@ -99,7 +100,7 @@ const (
 	// signaturePhrase identifies our distro among all running Hyper-V VMs.
 	// This value is a protocol contract with the guest-side network-setup
 	// binary and must not be changed independently.
-	signaturePhrase = "github.com/rancher-sandbox/rancher-desktop/src/go/networking"
+	signaturePhrase = "github.com/rancher-sandbox/rancher-desktop-opensuse/src/go/networking"
 	readySignal     = "READY"
 
 	gatewayMacAddr = "5a:94:ef:e4:0c:dd"
