@@ -83,6 +83,7 @@ func TestDecompressReader(t *testing.T) {
 }
 
 func TestDecompressReaderLeavesHoles(t *testing.T) {
+	t.Skip("this branch decodes without punching holes, to measure what the holes cost the guest")
 	want := sparsePlaintext()
 
 	dst := filepath.Join(t.TempDir(), "image")

@@ -16,8 +16,6 @@ import (
 	"path/filepath"
 
 	ulikunitz "github.com/ulikunitz/xz"
-
-	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/sparse"
 )
 
 // bufSize is the input read buffer size. ulikunitz/xz issues many small reads;
@@ -71,11 +69,7 @@ func DecompressReader(ctx context.Context, in io.Reader, dst string) (err error)
 		}
 	}()
 
-	w := sparse.NewWriter(tmp)
-	if err = Decompress(ctx, in, w); err != nil {
-		return err
-	}
-	if err = w.Finish(); err != nil {
+	if err = Decompress(ctx, in, tmp); err != nil {
 		return err
 	}
 	// os.CreateTemp creates the file 0o600. Match Lima's 0o644 for decompressed
