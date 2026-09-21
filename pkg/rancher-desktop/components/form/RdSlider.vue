@@ -10,6 +10,9 @@ export default defineComponent({
   components: {
     VueSlider, RdFieldset, RdInput,
   },
+  emits: {
+    change: (value: number) => true,
+  },
   props: {
     label: {
       type:    String,
@@ -49,7 +52,7 @@ export default defineComponent({
     },
   },
   methods: {
-    updatedVal(value: string) {
+    updatedVal(value: number) {
       this.$emit('change', value);
     },
   },
@@ -66,8 +69,12 @@ export default defineComponent({
         type="number"
         class="slider-input"
         :value="value"
+        :min="min"
+        :max="max"
+        :step="interval"
+        :disabled="disabled || isLocked"
         :is-locked="isLocked"
-        @input="updatedVal($event.target.value)"
+        @input="updatedVal(parseInt($event.target.value))"
       >
         <template #after>
           <div class="empty-content" />
