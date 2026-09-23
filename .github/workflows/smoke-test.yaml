@@ -38,6 +38,7 @@ jobs:
       RELEASE_TAG: ${{ inputs.tag }}
     outputs:
       release-tag: ${{ steps.set-release-tag.outputs.release-tag }}
+      release-commit: ${{ steps.set-release-tag.outputs.release-commit }}
     steps:
     - name: Find release
       if: inputs.tag == ''
@@ -52,8 +53,28 @@ jobs:
         echo "RELEASE_TAG=$RELEASE_TAG" >>"$GITHUB_ENV"
       env:
         GH_TOKEN: ${{ github.token }}
+    - name: Resolve the release commit
+      run: |
+        set -o xtrace
+        # OBS builds from the release branch head, so a draft compares against
+        # its target branch. A published release's target has moved on, so use its tag.
+        commitish=$(gh api "repos/${GITHUB_REPOSITORY}/releases" --paginate \
+          --jq '.[] | select(.tag_name == env.RELEASE_TAG)
+                    | if .draft then .target_commitish else .tag_name end')
+        commitish=${commitish%%$'\n'*} # drafts can share a tag name; take the first
+        RELEASE_COMMIT=$(gh api \
+          "repos/${GITHUB_REPOSITORY}/commits/${commitish:-$RELEASE_TAG}" --jq .sha)
+        if [[ -z "$RELEASE_COMMIT" ]]; then
+          echo "Failed to resolve a commit for $RELEASE_TAG" >&2
+          exit 1
+        fi
+        echo "RELEASE_COMMIT=$RELEASE_COMMIT" >>"$GITHUB_ENV"
+      env:
+        GH_TOKEN: ${{ github.token }}
     - id: set-release-tag
-      run: printf "release-tag=%s\n" "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+      run: |
+        printf "release-tag=%s\n" "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+        printf "release-commit=%s\n" "$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
   download-installer:
     name: Download Installers
     needs: find-release
@@ -264,6 +285,7 @@ jobs:
       run: .github/workflows/smoke-test/install-from-repo.sh
       env:
         RD_VERSION: ${{ needs.find-release.outputs.release-tag }}
+        RD_COMMIT: ${{ needs.find-release.outputs.release-commit }}
         OBS_PROJECT: ${{ inputs.obs-project }}
     - name: Run smoke test
       shell: bash
