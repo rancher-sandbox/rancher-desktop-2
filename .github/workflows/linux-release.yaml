@@ -12,7 +12,34 @@ defaults:
 jobs:
   linux-release:
     runs-on: ubuntu-latest
+    # `vars.OBS_RELEASE_PROJECT` is set in the repository settings; for
+    # `rancher-sandbox/rancher-desktop-2`, it is `isv:Rancher:stable`.
+    # This job is skipped if it is not set, which should be the default case
+    # for forks.
+    if: vars.OBS_RELEASE_PROJECT != ''
+    permissions:
+      contents: read
+      id-token: write # Needed for read-value-secrets
     steps:
+    - id: get-vault-secrets
+      name: Read vault secrets
+      if: github.repository_owner == 'rancher-sandbox'
+      uses: rancher-eio/read-vault-secrets@dfae8acd43a9e170fca5f90168da22f814fe4e9a # main
+      with:
+        secrets: |
+          secret/data/github/repo/${{ github.repository }}/obs/webhook-token token | OBS_WEBHOOK_TOKEN;
+          secret/data/github/repo/${{ github.repository }}/aws/credentials AWS_ACCESS_KEY_ID | AWS_ACCESS_KEY_ID;
+          secret/data/github/repo/${{ github.repository }}/aws/credentials AWS_SECRET_ACCESS_KEY | AWS_SECRET_ACCESS_KEY
+    - name: Fall back to GitHub-hosted secrets
+      if: steps.get-vault-secrets.outcome == 'skipped'
+      run: |
+        echo "OBS_WEBHOOK_TOKEN=${OBS_WEBHOOK_TOKEN:?Secret OBS_WEBHOOK_TOKEN not found}" >> "$GITHUB_ENV"
+        echo "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:?Secret AWS_ACCESS_KEY_ID not found}" >> "$GITHUB_ENV"
+        echo "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:?Secret AWS_SECRET_ACCESS_KEY not found}" >> "$GITHUB_ENV"
+      env:
+        OBS_WEBHOOK_TOKEN: ${{ secrets.OBS_WEBHOOK_TOKEN }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
@@ -23,6 +50,8 @@ jobs:
         version_with_v=${GITHUB_REF#"refs/tags/"}
         release_zip_name="rancher-desktop-${version_with_v#v}.linux.x86_64.zip"
         major_minor=$(echo ${version_with_v} | sed -E 's/v([0-9]+\.[0-9]+)\.[0-9]+.*/\1/g')
+        # The stable package's _service in OBS fetches this exact name, so
+        # renaming it here alone breaks the rebuild.
         s3_zip_name="rancher-desktop-linux-${major_minor}.zip"
 
         # make variables available in subsequent steps
@@ -45,16 +74,14 @@ jobs:
         "dist/${release_zip_name}"
         "s3://rancher-desktop-assets-for-obs/${s3_zip_name}"
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_DEFAULT_REGION: us-east-1
         release_zip_name: ${{ env.release_zip_name }}
         s3_zip_name: ${{ env.s3_zip_name }}
     - name: Trigger OBS services for relevant package in stable channel
       run: >-
-        curl -X POST
-        -H "Authorization: Token ${OBS_WEBHOOK_TOKEN}"
-        "https://api.opensuse.org/trigger/runservice?project=isv:Rancher:stable&package=rancher-desktop-${MAJOR_MINOR}"
+        curl --request POST --fail-with-body
+        --header "Authorization: Token ${OBS_WEBHOOK_TOKEN}"
+        "https://api.opensuse.org/trigger/runservice?project=${OBS_RELEASE_PROJECT}&package=rancher-desktop-2-${MAJOR_MINOR}"
       env:
         MAJOR_MINOR: ${{ env.major_minor }}
-        OBS_WEBHOOK_TOKEN: ${{ secrets.OBS_WEBHOOK_TOKEN }}
+        OBS_RELEASE_PROJECT: ${{ vars.OBS_RELEASE_PROJECT }} # Per-repo, e.g. `isv:Rancher:stable`.
