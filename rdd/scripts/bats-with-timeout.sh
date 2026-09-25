@@ -18,13 +18,6 @@
 
 set -o errexit -o nounset -o pipefail
 
-# The rdd ctl probes in dump_api_state auto-start the service when bats
-# stopped it. Each start rotates rdd.stderr.log; without RDD_KEEP_LOGS,
-# rotation prunes the oldest numbered files, and a failure in the first
-# .bats file of a suite loses its log forever. bats itself sets this in
-# bats/helpers/defaults.bash, but that scope ends when bats exits.
-export RDD_KEEP_LOGS=1
-
 timeout_seconds=$1
 suite=$2
 shift 2
@@ -275,6 +268,39 @@ dump_windows_vm_logs() {
     done
 }
 
+# Query the resources through the instance kubeconfig, because `rdd ctl`
+# would start a stopped service and the new daemon would reconcile whatever
+# the last test left behind. Stopping the service removes the kubeconfig,
+# and kubectl without one queries localhost:8080, so skip the queries then.
+dump_rdd_resources() {
+    local kubeconfig
+    kubeconfig=$("$rdd_bin" svc paths config)
+    if [ ! -f "$kubeconfig" ]; then
+        echo "=== rdd kubectl get: skipped, no kubeconfig at ${kubeconfig} ==="
+        return
+    fi
+    local kubectl=(env "KUBECONFIG=${kubeconfig}" "$rdd_bin" kubectl)
+
+    local resource_types
+    echo "=== rdd kubectl get (overview) ==="
+    resource_types=$(timeout --kill-after=1 5 "${kubectl[@]}" api-resources --output=json 2>/dev/null \
+        | jq -rc '.resources | map(select((.group // "") | test("rancherdesktop.io")) | .name) | join(",")' \
+        || echo "apps,limavms,containers,images,volumes,containernamespaces")
+    timeout --kill-after=1 10 \
+        "${kubectl[@]}" get "$resource_types" --all-namespaces 2>&1 || true
+
+    echo
+    echo "=== rdd kubectl get events (by time) ==="
+    timeout --kill-after=1 10 \
+        "${kubectl[@]}" get events --all-namespaces \
+        --sort-by=.lastTimestamp 2>&1 | tail -100 || true
+
+    echo
+    echo "=== rdd kubectl get (full YAML) ==="
+    timeout --kill-after=1 15 \
+        "${kubectl[@]}" get "$resource_types" --all-namespaces --output=yaml 2>&1 || true
+}
+
 # Snapshot the current state of the rdd API server and (if wired up) the
 # forwarded Docker daemon. Wraps every probe in `timeout` so a hung or
 # dead daemon cannot block the capture — the common case for the
@@ -293,25 +319,8 @@ dump_api_state() {
     status_line=$(timeout --kill-after=1 5 "$rdd_bin" service status 2>&1 | head -1 || echo "status check timed out")
     echo "=== rdd service status: ${status_line} ==="
 
-    local resource_types
     echo
-    echo "=== rdd ctl get (overview) ==="
-    resource_types=$(timeout --kill-after=1 5 "$rdd_bin" ctl api-resources --output=json 2>/dev/null \
-        | jq -rc '.resources | map(select((.group // "") | test("rancherdesktop.io")) | .name) | join(",")' \
-        || echo "apps,limavms,containers,images,volumes,containernamespaces")
-    timeout --kill-after=1 10 \
-        "$rdd_bin" ctl get "$resource_types" --all-namespaces 2>&1 || true
-
-    echo
-    echo "=== rdd ctl get events (by time) ==="
-    timeout --kill-after=1 10 \
-        "$rdd_bin" ctl get events --all-namespaces \
-        --sort-by=.lastTimestamp 2>&1 | tail -100 || true
-
-    echo
-    echo "=== rdd ctl get (full YAML) ==="
-    timeout --kill-after=1 15 \
-        "$rdd_bin" ctl get "$resource_types" --all-namespaces --output=yaml 2>&1 || true
+    dump_rdd_resources
 
     # Docker state: test suites that exercise the container engine
     # forward the guest Docker socket to a host path. Skip silently

@@ -88,8 +88,9 @@ func newServiceConfigCommand() *cobra.Command {
 // ensureServiceRunning readies the control plane before a CLI command
 // relies on it. It bounds the already-running and cold-start paths by
 // startWaitTimeout (90s), independent of the caller's --timeout. The
-// cap lets a broken service fail fast so rdd limavm *, rdd set, rdd
-// kubectl, and rdd service config stay responsive on a long deadline.
+// 90s limit lets a broken service fail fast so rdd limavm *, rdd set,
+// rdd start, rdd stop, rdd run, rdd ctl, and rdd service config stay
+// responsive on a long deadline.
 func ensureServiceRunning(ctx context.Context) error {
 	if !service.Exists() {
 		// Persist no extra args; the per-start klogArgs below override
