@@ -1,6 +1,6 @@
 {
   "name": "@rancher/rdd-client",
-  "version": "0.0.1-83dd0aa554a95d03c9d9bf1b6bda9824cbbe45cb993f887a8ddf83d33ebad9d34e675aca7473d43864cc2ac8e7cd848db21a8f9c6506a3b16492d130636745e9",
+  "version": "0.0.1-83dd0aa554a95d03c9d9bf1b6bda9824cbbe45cb993f887a8ddf83d33ebad9d3f1e1b6c8092c9f03febfc98d77e83b67efb33be24aa69f126bd2c6d79aa8f162",
   "description": "OpenAPI client for @rancher/rdd-client",
   "author": "OpenAPI-Generator Contributors",
   "repository": {

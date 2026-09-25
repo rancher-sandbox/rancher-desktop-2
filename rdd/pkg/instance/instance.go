@@ -112,6 +112,12 @@ var TLSDir = sync.OnceValue(func() string {
 	return filepath.Join(Dir(), "tls")
 })
 
+// ExtensionDir returns the path to the directory where extension images are
+// downloaded and extracted.
+var ExtensionDir = sync.OnceValue(func() string {
+	return filepath.Join(Dir(), "extensions")
+})
+
 // ShortDir returns the short directory path for this instance (e.g., ~/.rd2).
 // This is distinct from Dir() which returns the service directory.
 // Lima uses ShortDir() because of socket name length constraints.

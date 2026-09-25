@@ -397,6 +397,99 @@ An endpoint at `/passthrough/.../exec` will speak WebSocket; messages are
 bidirectional, unbuffered binary as in the logs endpoint.  Any text must be
 UTF-8 encoded.
 
+#### Copying files
+
+To copy files in or out of a container, create a `ContainerCopyRequest` object:
+
+```yaml
+apiVersion: containers.rancherdesktop.io/v1alpha1
+kind: ContainerCopyRequest
+metadata:
+  name: whatever-23456
+  namespace: rancher-desktop
+spec:
+  fromContainer: 8eb6f2cf72b6616aa743cf9187f350af84c9749dab65474db2530f26745d2ef3
+  from: /path/to/copy
+  toContainer: # Normally, this is omitted instead
+  to: C:/destination/path
+status:
+  conditions:
+  - type: Settled
+    status: True
+    reason: Finished
+  - type: Failed
+    status: False
+```
+
+- **spec.fromContainer**, **spec.toContainer**: The container ID (i.e.
+  `metadata.name`) of the container to copy from / into.  Should not be set if
+  copying from/to the host (it is only shown above for illustrative purposes).
+  It is an error if either refers to a container that does not exist; it does
+  not have to be running.
+- **spec.from**, **spec.to**: paths for copying.  The interpretation of these
+  two values depend on the value of `spec.fromContainer` / `spec.toContainer`.
+
+If the `from` path does _not_ end with a slash (`/`), but the `to` path _does_,
+then the file (or directory) referenced will be created as a child of the `to`
+path.  Otherwise, if the `from` path refers to a directory, then the `to` path
+will also be treated as a directory, and any children of the `from` path will
+become children of the `to` path.  In the last case, the `from` path refers to a
+file; an error is raised if the `to` path refers to a directory, else a file is
+created (or replaced) with the contents of the `from` path.
+
+From | To | From directory | From file
+--- |  --- | --- | ---
+`a/` | `b/` | `a/foo` -> `b/foo` | Invalid
+`a/` | `b`  | `a/foo` -> `b/foo` | Invalid
+`a`  | `b/` | `a/foo` -> `b/a/foo` | Error
+`a`  | `b`  | `a/foo` -> `b/foo` | `a` -> `b` (create/overwrite)
+
+When a path refers to a host path, a few restrictions are placed on it:
+- It must refer to a path inside the RDD instance directory.  This may be
+  relaxed in the future.  (As access to RDD is currently equivalent to the
+  ability to run arbitratry processes as the user, this restriction is only here
+  as defence-in-depth.)
+- All symbolic links must refer to files inside the specified host directory.
+  If it points outside that directory, the file is silently dereferenced (when
+  copying to the host) or a dangling symlink results (when copying from the
+  host).
+- Symbolic links may not be supported on Windows hosts; they will be
+  dereferenced as necessary.
+
+Any parents of the destination are automatically created; if the destination is
+a directory, that directory is also created.  For copying to the host, all files
+and directories created (including parents) will be owned by the user running
+RDD.  For copying to a container, it will be owned by the default user when the
+container is run.  If the destination already exists, its existing contents are
+_not_ removed before the files are copied in; they will be silently overwritten
+as needed.
+
+For the initial implementation, only copy from a container to the host is
+supported.  Copying from host path to host path will never be allowed.
+
+Future improvement:
+- Filtering, gitignore-style.
+- More copy directions: to container, across containers.
+- Copying from/into the RDD WSL distribution.
+- Copying from/into other WSL distributions.
+- Progress notifications
+
+##### Status Conditions
+
+<table>
+<tr><th>Type<th>Reason<th>Status<th>Description<th>Terminal</tr>
+<tr><td rowspan=4>Settled
+      <td>Starting<td>False<td>Copying has not started yet<td>
+  <tr><td>Copying<td>False<td>Copying is in progress<td>
+  <tr><td>Finished<td>True<td>Copying has succeeded<td>:heavy_check_mark:
+  <tr><td>Errored<td>True<td>An error has been encountered<td>:heavy_check_mark:
+<tr><td rowspan=4>Failed
+      <td>Copying<td>Unknown<td>Copying is still in progress<td>
+  <tr><td>InvalidContainer<td>True<td>The `fromContainer` or `toContainer` value is invalid<td>:heavy_check_mark:
+  <tr><td>Errored<td>True<td>An error occurred; see <tt>message</tt><td>:heavy_check_mark:
+  <tr><td>Succeeded<td>False<td>Copying completed without errors<td>:heavy_check_mark:
+</table>
+
 #### Delete container
 Delete the `Container` object; a finalizer will be used to delete the container,
 at which point the `Container` object will actually be deleted.

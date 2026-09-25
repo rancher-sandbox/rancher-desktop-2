@@ -66,6 +66,12 @@ export * from '../models/IoRancherdesktopContainersV1alpha1VolumeCreateRequestSp
 export * from '../models/IoRancherdesktopContainersV1alpha1VolumeCreateRequestStatus';
 export * from '../models/IoRancherdesktopContainersV1alpha1VolumeList';
 export * from '../models/IoRancherdesktopContainersV1alpha1VolumeStatus';
+export * from '../models/IoRancherdesktopExtensionsV1alpha1Extension';
+export * from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionList';
+export * from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionSpec';
+export * from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionStatus';
+export * from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionStatusUi';
+export * from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionStatusUiDashboardTab';
 export * from '../models/IoRancherdesktopLimaV1alpha1LimaVM';
 export * from '../models/IoRancherdesktopLimaV1alpha1LimaVMList';
 export * from '../models/IoRancherdesktopLimaV1alpha1LimaVMSpec';
@@ -283,6 +289,12 @@ import { IoRancherdesktopContainersV1alpha1VolumeCreateRequestSpec } from '../mo
 import { IoRancherdesktopContainersV1alpha1VolumeCreateRequestStatus } from '../models/IoRancherdesktopContainersV1alpha1VolumeCreateRequestStatus';
 import { IoRancherdesktopContainersV1alpha1VolumeList } from '../models/IoRancherdesktopContainersV1alpha1VolumeList';
 import { IoRancherdesktopContainersV1alpha1VolumeStatus } from '../models/IoRancherdesktopContainersV1alpha1VolumeStatus';
+import { IoRancherdesktopExtensionsV1alpha1Extension } from '../models/IoRancherdesktopExtensionsV1alpha1Extension';
+import { IoRancherdesktopExtensionsV1alpha1ExtensionList } from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionList';
+import { IoRancherdesktopExtensionsV1alpha1ExtensionSpec } from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionSpec';
+import { IoRancherdesktopExtensionsV1alpha1ExtensionStatus } from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionStatus';
+import { IoRancherdesktopExtensionsV1alpha1ExtensionStatusUi } from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionStatusUi';
+import { IoRancherdesktopExtensionsV1alpha1ExtensionStatusUiDashboardTab } from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionStatusUiDashboardTab';
 import { IoRancherdesktopLimaV1alpha1LimaVM } from '../models/IoRancherdesktopLimaV1alpha1LimaVM';
 import { IoRancherdesktopLimaV1alpha1LimaVMList } from '../models/IoRancherdesktopLimaV1alpha1LimaVMList';
 import { IoRancherdesktopLimaV1alpha1LimaVMSpec } from '../models/IoRancherdesktopLimaV1alpha1LimaVMSpec';
@@ -544,6 +556,12 @@ let typeMap: {[index: string]: any} = {
     "IoRancherdesktopContainersV1alpha1VolumeCreateRequestStatus": IoRancherdesktopContainersV1alpha1VolumeCreateRequestStatus,
     "IoRancherdesktopContainersV1alpha1VolumeList": IoRancherdesktopContainersV1alpha1VolumeList,
     "IoRancherdesktopContainersV1alpha1VolumeStatus": IoRancherdesktopContainersV1alpha1VolumeStatus,
+    "IoRancherdesktopExtensionsV1alpha1Extension": IoRancherdesktopExtensionsV1alpha1Extension,
+    "IoRancherdesktopExtensionsV1alpha1ExtensionList": IoRancherdesktopExtensionsV1alpha1ExtensionList,
+    "IoRancherdesktopExtensionsV1alpha1ExtensionSpec": IoRancherdesktopExtensionsV1alpha1ExtensionSpec,
+    "IoRancherdesktopExtensionsV1alpha1ExtensionStatus": IoRancherdesktopExtensionsV1alpha1ExtensionStatus,
+    "IoRancherdesktopExtensionsV1alpha1ExtensionStatusUi": IoRancherdesktopExtensionsV1alpha1ExtensionStatusUi,
+    "IoRancherdesktopExtensionsV1alpha1ExtensionStatusUiDashboardTab": IoRancherdesktopExtensionsV1alpha1ExtensionStatusUiDashboardTab,
     "IoRancherdesktopLimaV1alpha1LimaVM": IoRancherdesktopLimaV1alpha1LimaVM,
     "IoRancherdesktopLimaV1alpha1LimaVMList": IoRancherdesktopLimaV1alpha1LimaVMList,
     "IoRancherdesktopLimaV1alpha1LimaVMSpec": IoRancherdesktopLimaV1alpha1LimaVMSpec,
