@@ -104,6 +104,8 @@ entries:
 - path: /usr/local/lib/systemd/system/containerd.service.d/network-namespace.conf
   source: root/usr/local/lib/systemd/system/containerd.service.d/network-namespace.conf
   profiles: [wsl]
+- path: /usr/local/lib/systemd/system/containerd.service.d/permissions.conf
+  source: root/usr/local/lib/systemd/system/containerd.service.d/permissions.conf
 - path: /usr/local/lib/systemd/system/containerd.service.d/target.conf
   source: root/usr/local/lib/systemd/system/containerd.service.d/target.conf
 - path: /usr/local/lib/systemd/system/docker.service.d/allowed-images.conf

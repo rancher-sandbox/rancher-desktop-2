@@ -851,7 +851,7 @@ func renderProvisionContent(t *testing.T, content string, param map[string]strin
 	return out.String()
 }
 
-func Test_limaTemplate_networkSetupExtraArgsDropin(t *testing.T) {
+func Test_limaTemplate_networkSetupExtraArgs(t *testing.T) {
 	t.Parallel()
 
 	data, err := os.ReadFile("../lima-template.yaml")
@@ -865,28 +865,37 @@ func Test_limaTemplate_networkSetupExtraArgsDropin(t *testing.T) {
 	}
 	assert.NilError(t, yaml.Unmarshal(data, &doc))
 
-	const dropinPath = "/etc/systemd/system/network-setup.service.d/extra-args.conf"
+	const sysconfigPath = "/etc/sysconfig/rancher-desktop"
 	var content string
 	for _, p := range doc.Provision {
-		if p.Path == dropinPath {
+		if p.Path == sysconfigPath {
 			content = p.Content
 			break
 		}
 	}
-	assert.Assert(t, content != "", "no provision entry writes %s", dropinPath)
+	assert.Assert(t, content != "", "no provision entry writes %s", sysconfigPath)
+
+	withArgs := func(v string) map[string]string {
+		return map[string]string{
+			"CONTAINER_ENGINE": "moby", "HOST_DOCKER_SOCKET": "", "HOST_HOME_GUEST": "",
+			"KUBERNETES_ENABLED": "false", "KUBERNETES_VERSION": "", "KUBERNETES_PORT": "6443",
+			"VM_SWITCH_LOG": "", "NETWORK_SETUP_EXTRA_ARGS": v,
+		}
+	}
 
 	// Empty param renders the distro's own default (an empty value).
-	blank := renderProvisionContent(t, content, map[string]string{"NETWORK_SETUP_EXTRA_ARGS": ""})
-	assert.Assert(t, strings.Contains(blank, `Environment="NETWORK_SETUP_EXTRA_ARGS="`),
+	blank := renderProvisionContent(t, content, withArgs(""))
+	assert.Assert(t, strings.Contains(blank, `NETWORK_SETUP_EXTRA_ARGS=""`),
 		"got:\n%s", blank)
 
-	// The value is a single env var. network-setup.service's ExecStart references
-	// it unbraced as $NETWORK_SETUP_EXTRA_ARGS, which systemd word-splits into
-	// separate arguments; braced ${...} would pass it as one argument.
+	// The value is a single env var. network-setup.service reads it from the
+	// EnvironmentFile and references it as $NETWORK_SETUP_EXTRA_ARGS,
+	// which systemd word-splits into separate arguments; braced ${...} would
+	// pass it as one argument.
 	got := renderProvisionContent(t, content,
-		map[string]string{"NETWORK_SETUP_EXTRA_ARGS": "--vm-switch-logfile-append --trace-packets"})
+		withArgs("--vm-switch-logfile-append --trace-packets"))
 	assert.Assert(t, strings.Contains(got,
-		`Environment="NETWORK_SETUP_EXTRA_ARGS=--vm-switch-logfile-append --trace-packets"`),
+		`NETWORK_SETUP_EXTRA_ARGS="--vm-switch-logfile-append --trace-packets"`),
 		"got:\n%s", got)
 }
 
