@@ -12,6 +12,11 @@ Environment=NETWORK_SETUP_LOG=/dev/stdout
 # replacing the ExecStart below. Empty by default; the unquoted
 # $NETWORK_SETUP_EXTRA_ARGS splits on whitespace into separate arguments.
 Environment=NETWORK_SETUP_EXTRA_ARGS=
+# Rancher Desktop passes the VM_SWITCH_LOG and NETWORK_SETUP_EXTRA_ARGS
+# through this file, which is written per instance.
+# Read after the defaults above so those values win and the
+# `-` prefix allows to make EnvironmentFile optional.
+EnvironmentFile=-/etc/sysconfig/rancher-desktop
 ExecStart=/usr/local/bin/network-setup \
   --debug \
   --logfile ${NETWORK_SETUP_LOG} \
