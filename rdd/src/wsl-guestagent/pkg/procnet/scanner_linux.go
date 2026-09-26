@@ -31,11 +31,11 @@ import (
 	"time"
 
 	"github.com/Masterminds/log-go"
-	"github.com/docker/go-connections/nat"
 	"github.com/lima-vm/lima/pkg/guestagent/procnettcp"
 
 	"github.com/rancher-sandbox/rancher-desktop/src/wsl-guestagent/pkg/tracker"
 	"github.com/rancher-sandbox/rancher-desktop/src/wsl-guestagent/pkg/utils"
+	"github.com/rancher-sandbox/rancher-desktop/src/wslproxy"
 )
 
 type action string
@@ -66,7 +66,7 @@ func (p *ProcNetScanner) ForwardPorts() error {
 	ticker := time.NewTicker(p.scanInterval)
 	defer ticker.Stop()
 
-	var previousPortMap nat.PortMap
+	var previousPortMap wslproxy.PortMap
 
 	for {
 		select {
@@ -78,7 +78,7 @@ func (p *ProcNetScanner) ForwardPorts() error {
 				log.Errorf("failed to parse /proc/net/{tcp, udp} files: %s", err)
 				continue
 			}
-			newPortMap := make(nat.PortMap)
+			newPortMap := make(wslproxy.PortMap)
 			for _, entry := range entries {
 				if err := addValidProtoEntryToPortMap(entry, newPortMap); err != nil {
 					log.Errorf("failed to create portMapping for entry: %w", err)
@@ -90,7 +90,7 @@ func (p *ProcNetScanner) ForwardPorts() error {
 			for port, bindings := range newPortMap {
 				if _, exists := previousPortMap[port]; !exists {
 					log.Infof("/proc/net scanner added port: %s -> %+v", port, bindings)
-					err := p.tracker.Add(utils.GenerateID(fmt.Sprintf("%s/%s", port.Proto(), port.Port())), nat.PortMap{
+					err := p.tracker.Add(utils.GenerateID(fmt.Sprintf("%s/%s", port.Proto(), port.Port())), wslproxy.PortMap{
 						port: bindings,
 					})
 					if err != nil {
@@ -148,7 +148,7 @@ func (p *ProcNetScanner) ForwardPorts() error {
 // Example iptables rule when 'action' is "delete":
 //
 //	iptables -t nat -D PREROUTING -p tcp --dport 8009 -j DNAT --to-destination 127.0.0.1:8009
-func (p *ProcNetScanner) execLoopbackIPtablesRule(bindings []nat.PortBinding, portProto nat.Port, action action) error {
+func (p *ProcNetScanner) execLoopbackIPtablesRule(bindings []wslproxy.PortBinding, portProto wslproxy.Port, action action) error {
 	for _, binding := range bindings {
 		if binding.HostIP == "127.0.0.1" {
 			// iptables -t nat -D PREROUTING -p tcp --dport 8009 -j DNAT --to-destination 127.0.0.1:8009
@@ -171,7 +171,7 @@ func (p *ProcNetScanner) execLoopbackIPtablesRule(bindings []nat.PortBinding, po
 	return nil
 }
 
-func addValidProtoEntryToPortMap(entry procnettcp.Entry, portMap nat.PortMap) error {
+func addValidProtoEntryToPortMap(entry procnettcp.Entry, portMap wslproxy.PortMap) error {
 	switch entry.Kind {
 	case procnettcp.TCP:
 		if entry.State == procnettcp.TCPListen {
@@ -185,9 +185,9 @@ func addValidProtoEntryToPortMap(entry procnettcp.Entry, portMap nat.PortMap) er
 	return nil
 }
 
-func addEntryToPortMap(entry procnettcp.Entry, portMap nat.PortMap) error {
+func addEntryToPortMap(entry procnettcp.Entry, portMap wslproxy.PortMap) error {
 	port := strconv.Itoa(int(entry.Port))
-	portMapKey, err := nat.NewPort(strings.ToLower(entry.Kind), port)
+	portMapKey, err := wslproxy.NewPort(strings.ToLower(entry.Kind), port)
 	if err != nil {
 		return fmt.Errorf("generating portMapKey protocol: %s, port: %d failed: %w",
 			entry.Kind,
@@ -209,7 +209,7 @@ func addEntryToPortMap(entry procnettcp.Entry, portMap nat.PortMap) error {
 	} else {
 		hostIP = inAddrAny
 	}
-	portBinding := nat.PortBinding{
+	portBinding := wslproxy.PortBinding{
 		HostIP:   hostIP.String(),
 		HostPort: port,
 	}

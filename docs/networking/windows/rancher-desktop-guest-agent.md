@@ -1,4 +1,4 @@
-# **[Rancher Desktop Guest Agent](../../../src/go/guestagent)**
+# **[Rancher Desktop Guest Agent](../../../rdd/src/wsl-guestagent)**
 
 The Rancher Desktop Guest Agent operates within the Rancher Desktop WSL distribution, particularly in an isolated namespace when the network tunnel is enabled. It facilitates interactions between various container engine APIs like Moby, containerd, and Kubernetes. The agent monitors container/service creation events from these APIs and, upon detecting ports needing exposure, forwards the port mappings to internal services accordingly. This ensures efficient and automated port forwarding management within the Rancher Desktop environment.
 
@@ -53,14 +53,14 @@ end
 
 ## PortMapping
 
-Is a struct object that represents an exposed container or a service. [Portmapping](../../../src/go/guestagent/pkg/types/portmapping.go#L23) objects consist of the following fields:
+Is a struct object that represents an exposed container or a service. [Portmapping](../../../rdd/src/wslproxy/portmapping.go#L21) objects consist of the following fields:
 
 ```
 type PortMapping struct {
 	// Remove indicates whether to remove or add the entry
 	Remove bool `json:"remove"`
 	// Ports are the port mappings for both IPV4 and IPV6
-	Ports nat.PortMap `json:"ports"`
+	Ports PortMap `json:"ports"`
 	// ConnectAddrs are the backend addresses to connect to
 	ConnectAddrs []ConnectAddrs `json:"connectAddrs"`
 }

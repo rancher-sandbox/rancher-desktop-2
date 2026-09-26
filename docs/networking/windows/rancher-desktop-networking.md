@@ -1,5 +1,5 @@
 
-# [Rancher Desktop Networking](../../../src/go/networking/)
+# [Rancher Desktop Networking](../../../rdd/src/networking/)
 
 Rancher Desktop Networking primarily acts as a layer 2 switch between the host (currently Windows only) and the VM (WSL) using the `AF_VSOCK` protocol. It facilitates the transmission of Ethernet frames from the VM to the host. Additionally, it provides `DNS`, `DHCP`, and dynamic port forwarding functionalities. The Rancher Desktop Networking comprises several key services: `host-switch`, `vm-switch`, `network-setup`, and `wsl-proxy`. It utilizes [gvisor's](https://github.com/google/gvisor) network stack and draws inspiration from the [gvisor-tap-vsock](https://github.com/google/gvisor) project.
 

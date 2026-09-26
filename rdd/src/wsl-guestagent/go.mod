@@ -11,6 +11,7 @@ require (
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.7.0
 	github.com/lima-vm/lima v1.0.0-beta.0
+	github.com/rancher-sandbox/rancher-desktop/src/wslproxy v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/sync v0.22.0
 	golang.org/x/sys v0.47.0
@@ -117,3 +118,5 @@ require (
 )
 
 replace github.com/lima-vm/lima => github.com/rancher-sandbox/lima v1.0.3-0.20250115235144-24eb898b3a96
+
+replace github.com/rancher-sandbox/rancher-desktop/src/wslproxy => ../wslproxy

@@ -26,11 +26,10 @@ import (
 	"sync"
 
 	gvisorTypes "github.com/containers/gvisor-tap-vsock/pkg/types"
-	"github.com/docker/go-connections/nat"
 	"github.com/sirupsen/logrus"
 
-	"github.com/rancher-sandbox/rancher-desktop/src/wsl-guestagent/pkg/types"
 	"github.com/rancher-sandbox/rancher-desktop/src/networking/pkg/utils"
+	"github.com/rancher-sandbox/rancher-desktop/src/wslproxy"
 )
 
 // ProxyConfig holds the configuration for a PortProxy instance.
@@ -98,7 +97,7 @@ func (p *PortProxy) UDPPortMappings() map[int]*net.UDPConn {
 func (p *PortProxy) handleEvent(conn net.Conn) {
 	defer conn.Close()
 
-	var pm types.PortMapping
+	var pm wslproxy.PortMapping
 	if err := json.NewDecoder(conn).Decode(&pm); err != nil {
 		logrus.Errorf("port server decoding received payload error: %s", err)
 		return
@@ -106,7 +105,7 @@ func (p *PortProxy) handleEvent(conn net.Conn) {
 	p.exec(pm)
 }
 
-func (p *PortProxy) exec(pm types.PortMapping) {
+func (p *PortProxy) exec(pm wslproxy.PortMapping) {
 	for portProto, portBindings := range pm.Ports {
 		proto := strings.ToLower(portProto.Proto())
 		logrus.Debugf("received the following port: [%s] and protocol: [%s] from portMapping: %+v", portProto.Port(), proto, pm)
@@ -122,9 +121,9 @@ func (p *PortProxy) exec(pm types.PortMapping) {
 	}
 }
 
-func (p *PortProxy) handleUDP(portBindings []nat.PortBinding, remove bool) {
+func (p *PortProxy) handleUDP(portBindings []wslproxy.PortBinding, remove bool) {
 	for _, portBinding := range portBindings {
-		port, err := nat.ParsePort(portBinding.HostPort)
+		port, err := wslproxy.ParsePort(portBinding.HostPort)
 		if err != nil {
 			logrus.Errorf("parsing port error: %s", err)
 			continue
@@ -207,9 +206,9 @@ func (p *PortProxy) acceptUDPConn(sourceConn *net.UDPConn, targetAddr *net.UDPAd
 	}
 }
 
-func (p *PortProxy) handleTCP(portBindings []nat.PortBinding, remove bool) {
+func (p *PortProxy) handleTCP(portBindings []wslproxy.PortBinding, remove bool) {
 	for _, portBinding := range portBindings {
-		port, err := nat.ParsePort(portBinding.HostPort)
+		port, err := wslproxy.ParsePort(portBinding.HostPort)
 		if err != nil {
 			logrus.Errorf("parsing port error: %s", err)
 			continue

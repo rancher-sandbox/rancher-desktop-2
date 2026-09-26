@@ -85,8 +85,9 @@ NERDCTL_BINARIES := $(addprefix $(NERDCTL_DIR)/bin/,buildctl buildkitd nerdctl)
 GUEST_BIN := $(OVERLAY_BUILD)/guest
 GUEST_BINARIES := $(addprefix $(GUEST_BIN)/, \
 	rancher-desktop-guest-agent network-setup vm-switch wsl-proxy rd-init rdd-guest)
-WSL_GUESTAGENT_SRC := $(shell find src/wsl-guestagent -name '*.go') src/wsl-guestagent/go.mod src/wsl-guestagent/go.sum
-NETWORKING_SRC := $(shell find src/networking -name '*.go') src/networking/go.mod src/networking/go.sum
+WSLPROXY_SRC := $(shell find src/wslproxy -name '*.go') src/wslproxy/go.mod
+WSL_GUESTAGENT_SRC := $(shell find src/wsl-guestagent -name '*.go') src/wsl-guestagent/go.mod src/wsl-guestagent/go.sum $(WSLPROXY_SRC)
+NETWORKING_SRC := $(shell find src/networking -name '*.go') src/networking/go.mod src/networking/go.sum $(WSLPROXY_SRC)
 RD_INIT_SRC := $(shell find src/rd-init -name '*.go') src/rd-init/go.mod src/rd-init/go.sum
 RDD_GUEST_SRC := $(shell find src/rdd-guest -name '*.go') src/rdd-guest/go.mod src/rdd-guest/go.sum
 
