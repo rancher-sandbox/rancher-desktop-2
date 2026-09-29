@@ -70,6 +70,12 @@ import { IoRancherdesktopContainersV1alpha1VolumeCreateRequestSpec } from '../mo
 import { IoRancherdesktopContainersV1alpha1VolumeCreateRequestStatus } from '../models/IoRancherdesktopContainersV1alpha1VolumeCreateRequestStatus';
 import { IoRancherdesktopContainersV1alpha1VolumeList } from '../models/IoRancherdesktopContainersV1alpha1VolumeList';
 import { IoRancherdesktopContainersV1alpha1VolumeStatus } from '../models/IoRancherdesktopContainersV1alpha1VolumeStatus';
+import { IoRancherdesktopExtensionsV1alpha1Extension } from '../models/IoRancherdesktopExtensionsV1alpha1Extension';
+import { IoRancherdesktopExtensionsV1alpha1ExtensionList } from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionList';
+import { IoRancherdesktopExtensionsV1alpha1ExtensionSpec } from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionSpec';
+import { IoRancherdesktopExtensionsV1alpha1ExtensionStatus } from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionStatus';
+import { IoRancherdesktopExtensionsV1alpha1ExtensionStatusUi } from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionStatusUi';
+import { IoRancherdesktopExtensionsV1alpha1ExtensionStatusUiDashboardTab } from '../models/IoRancherdesktopExtensionsV1alpha1ExtensionStatusUiDashboardTab';
 import { IoRancherdesktopLimaV1alpha1LimaVM } from '../models/IoRancherdesktopLimaV1alpha1LimaVM';
 import { IoRancherdesktopLimaV1alpha1LimaVMList } from '../models/IoRancherdesktopLimaV1alpha1LimaVMList';
 import { IoRancherdesktopLimaV1alpha1LimaVMSpec } from '../models/IoRancherdesktopLimaV1alpha1LimaVMSpec';
@@ -23473,6 +23479,844 @@ export class ObjectEventsV1Api {
      */
     public replaceNamespacedEvent(param: EventsV1ApiReplaceNamespacedEventRequest, options?: ConfigurationOptions): Promise<EventsV1Event> {
         return this.api.replaceNamespacedEvent(param.name, param.namespace, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+}
+
+import { ObservableExtensionsRancherdesktopIoV1alpha1Api } from "./ObservableAPI";
+import { ExtensionsRancherdesktopIoV1alpha1ApiRequestFactory, ExtensionsRancherdesktopIoV1alpha1ApiResponseProcessor} from "../apis/ExtensionsRancherdesktopIoV1alpha1Api";
+
+export interface ExtensionsRancherdesktopIoV1alpha1ApiCreateNamespacedExtensionRequest {
+    /**
+     * object name and auth scope, such as for teams and projects
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApicreateNamespacedExtension
+     */
+    namespace: string
+    /**
+     * 
+     * @type IoRancherdesktopExtensionsV1alpha1Extension
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApicreateNamespacedExtension
+     */
+    body: IoRancherdesktopExtensionsV1alpha1Extension
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApicreateNamespacedExtension
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApicreateNamespacedExtension
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApicreateNamespacedExtension
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApicreateNamespacedExtension
+     */
+    fieldValidation?: string
+}
+
+export interface ExtensionsRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedExtensionRequest {
+    /**
+     * object name and auth scope, such as for teams and projects
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteCollectionNamespacedExtension
+     */
+    namespace: string
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteCollectionNamespacedExtension
+     */
+    pretty?: string
+    /**
+     * The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteCollectionNamespacedExtension
+     */
+    _continue?: string
+    /**
+     * A selector to restrict the list of returned objects by their fields. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteCollectionNamespacedExtension
+     */
+    fieldSelector?: string
+    /**
+     * A selector to restrict the list of returned objects by their labels. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteCollectionNamespacedExtension
+     */
+    labelSelector?: string
+    /**
+     * limit is a maximum number of responses to return for a list call. If more items exist, the server will set the &#x60;continue&#x60; field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+     * Defaults to: undefined
+     * @type number
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteCollectionNamespacedExtension
+     */
+    limit?: number
+    /**
+     * resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteCollectionNamespacedExtension
+     */
+    resourceVersion?: string
+    /**
+     * resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteCollectionNamespacedExtension
+     */
+    resourceVersionMatch?: string
+    /**
+     * &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteCollectionNamespacedExtension
+     */
+    sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteCollectionNamespacedExtension
+     */
+    shardSelector?: string
+    /**
+     * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+     * Defaults to: undefined
+     * @type number
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteCollectionNamespacedExtension
+     */
+    timeoutSeconds?: number
+}
+
+export interface ExtensionsRancherdesktopIoV1alpha1ApiDeleteNamespacedExtensionRequest {
+    /**
+     * name of the Extension
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteNamespacedExtension
+     */
+    name: string
+    /**
+     * object name and auth scope, such as for teams and projects
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteNamespacedExtension
+     */
+    namespace: string
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteNamespacedExtension
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteNamespacedExtension
+     */
+    dryRun?: string
+    /**
+     * The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.
+     * Defaults to: undefined
+     * @type number
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteNamespacedExtension
+     */
+    gracePeriodSeconds?: number
+    /**
+     * if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteNamespacedExtension
+     */
+    ignoreStoreReadErrorWithClusterBreakingPotential?: boolean
+    /**
+     * Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the \&quot;orphan\&quot; finalizer will be added to/removed from the object\&#39;s finalizers list. Either this field or PropagationPolicy may be set, but not both.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteNamespacedExtension
+     */
+    orphanDependents?: boolean
+    /**
+     * Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: \&#39;Orphan\&#39; - orphan the dependents; \&#39;Background\&#39; - allow the garbage collector to delete the dependents in the background; \&#39;Foreground\&#39; - a cascading policy that deletes all dependents in the foreground.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteNamespacedExtension
+     */
+    propagationPolicy?: string
+    /**
+     * 
+     * @type V1DeleteOptions
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApideleteNamespacedExtension
+     */
+    body?: V1DeleteOptions
+}
+
+export interface ExtensionsRancherdesktopIoV1alpha1ApiListExtensionForAllNamespacesRequest {
+    /**
+     * allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server\&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistExtensionForAllNamespaces
+     */
+    allowWatchBookmarks?: boolean
+    /**
+     * The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistExtensionForAllNamespaces
+     */
+    _continue?: string
+    /**
+     * A selector to restrict the list of returned objects by their fields. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistExtensionForAllNamespaces
+     */
+    fieldSelector?: string
+    /**
+     * A selector to restrict the list of returned objects by their labels. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistExtensionForAllNamespaces
+     */
+    labelSelector?: string
+    /**
+     * limit is a maximum number of responses to return for a list call. If more items exist, the server will set the &#x60;continue&#x60; field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+     * Defaults to: undefined
+     * @type number
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistExtensionForAllNamespaces
+     */
+    limit?: number
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistExtensionForAllNamespaces
+     */
+    pretty?: string
+    /**
+     * resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistExtensionForAllNamespaces
+     */
+    resourceVersion?: string
+    /**
+     * resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistExtensionForAllNamespaces
+     */
+    resourceVersionMatch?: string
+    /**
+     * &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistExtensionForAllNamespaces
+     */
+    sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistExtensionForAllNamespaces
+     */
+    shardSelector?: string
+    /**
+     * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+     * Defaults to: undefined
+     * @type number
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistExtensionForAllNamespaces
+     */
+    timeoutSeconds?: number
+    /**
+     * Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistExtensionForAllNamespaces
+     */
+    watch?: boolean
+}
+
+export interface ExtensionsRancherdesktopIoV1alpha1ApiListNamespacedExtensionRequest {
+    /**
+     * object name and auth scope, such as for teams and projects
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistNamespacedExtension
+     */
+    namespace: string
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistNamespacedExtension
+     */
+    pretty?: string
+    /**
+     * allowWatchBookmarks requests watch events with type \&quot;BOOKMARK\&quot;. Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server\&#39;s discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistNamespacedExtension
+     */
+    allowWatchBookmarks?: boolean
+    /**
+     * The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the \&quot;next key\&quot;.  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistNamespacedExtension
+     */
+    _continue?: string
+    /**
+     * A selector to restrict the list of returned objects by their fields. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistNamespacedExtension
+     */
+    fieldSelector?: string
+    /**
+     * A selector to restrict the list of returned objects by their labels. Defaults to everything.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistNamespacedExtension
+     */
+    labelSelector?: string
+    /**
+     * limit is a maximum number of responses to return for a list call. If more items exist, the server will set the &#x60;continue&#x60; field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+     * Defaults to: undefined
+     * @type number
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistNamespacedExtension
+     */
+    limit?: number
+    /**
+     * resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistNamespacedExtension
+     */
+    resourceVersion?: string
+    /**
+     * resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistNamespacedExtension
+     */
+    resourceVersionMatch?: string
+    /**
+     * &#x60;sendInitialEvents&#x3D;true&#x60; may be set together with &#x60;watch&#x3D;true&#x60;. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic \&quot;Bookmark\&quot; event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with &#x60;\&quot;k8s.io/initial-events-end\&quot;: \&quot;true\&quot;&#x60; annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.  When &#x60;sendInitialEvents&#x60; option is set, we require &#x60;resourceVersionMatch&#x60; option to also be set. The semantic of the watch request is as following: - &#x60;resourceVersionMatch&#x60; &#x3D; NotOlderThan   is interpreted as \&quot;data at least as new as the provided &#x60;resourceVersion&#x60;\&quot;   and the bookmark event is send when the state is synced   to a &#x60;resourceVersion&#x60; at least as fresh as the one provided by the ListOptions.   If &#x60;resourceVersion&#x60; is unset, this is interpreted as \&quot;consistent read\&quot; and the   bookmark event is send when the state is synced at least to the moment   when request started being processed. - &#x60;resourceVersionMatch&#x60; set to any other value or unset   Invalid error is returned.  Defaults to true if &#x60;resourceVersion&#x3D;\&quot;\&quot;&#x60; or &#x60;resourceVersion&#x3D;\&quot;0\&quot;&#x60; (for backward compatibility reasons) and to false otherwise.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistNamespacedExtension
+     */
+    sendInitialEvents?: boolean
+    /**
+     * shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:    shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;)   shardRange(object.metadata.uid, \&#39;0x0\&#39;, \&#39;0x8000000000000000\&#39;) || shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  Field paths use CEL-style object-rooted syntax (e.g. \&quot;object.metadata.uid\&quot;), NOT the fieldSelector format (\&quot;metadata.uid\&quot;). Currently supported paths:   - object.metadata.uid   - object.metadata.namespace  hexStart and hexEnd are single-quoted CEL string literals with a \&#39;0x\&#39; prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.  Examples:   2-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)   4-shard split:     shard 0: shardRange(object.metadata.uid, \&#39;0x0000000000000000\&#39;, \&#39;0x4000000000000000\&#39;)     shard 1: shardRange(object.metadata.uid, \&#39;0x4000000000000000\&#39;, \&#39;0x8000000000000000\&#39;)     shard 2: shardRange(object.metadata.uid, \&#39;0x8000000000000000\&#39;, \&#39;0xc000000000000000\&#39;)     shard 3: shardRange(object.metadata.uid, \&#39;0xc000000000000000\&#39;, \&#39;0x10000000000000000\&#39;)  This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistNamespacedExtension
+     */
+    shardSelector?: string
+    /**
+     * Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+     * Defaults to: undefined
+     * @type number
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistNamespacedExtension
+     */
+    timeoutSeconds?: number
+    /**
+     * Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApilistNamespacedExtension
+     */
+    watch?: boolean
+}
+
+export interface ExtensionsRancherdesktopIoV1alpha1ApiPatchNamespacedExtensionRequest {
+    /**
+     * name of the Extension
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtension
+     */
+    name: string
+    /**
+     * object name and auth scope, such as for teams and projects
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtension
+     */
+    namespace: string
+    /**
+     * 
+     * @type any
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtension
+     */
+    body: any
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtension
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtension
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint. This field is required for apply requests (application/apply-patch) but optional for non-apply patch types (JsonPatch, MergePatch, StrategicMergePatch).
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtension
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtension
+     */
+    fieldValidation?: string
+    /**
+     * Force is going to \&quot;force\&quot; Apply requests. It means user will re-acquire conflicting fields owned by other people. Force flag must be unset for non-apply patch requests.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtension
+     */
+    force?: boolean
+}
+
+export interface ExtensionsRancherdesktopIoV1alpha1ApiPatchNamespacedExtensionStatusRequest {
+    /**
+     * name of the Extension
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtensionStatus
+     */
+    name: string
+    /**
+     * object name and auth scope, such as for teams and projects
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtensionStatus
+     */
+    namespace: string
+    /**
+     * 
+     * @type any
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtensionStatus
+     */
+    body: any
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtensionStatus
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtensionStatus
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint. This field is required for apply requests (application/apply-patch) but optional for non-apply patch types (JsonPatch, MergePatch, StrategicMergePatch).
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtensionStatus
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtensionStatus
+     */
+    fieldValidation?: string
+    /**
+     * Force is going to \&quot;force\&quot; Apply requests. It means user will re-acquire conflicting fields owned by other people. Force flag must be unset for non-apply patch requests.
+     * Defaults to: undefined
+     * @type boolean
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApipatchNamespacedExtensionStatus
+     */
+    force?: boolean
+}
+
+export interface ExtensionsRancherdesktopIoV1alpha1ApiReadNamespacedExtensionRequest {
+    /**
+     * name of the Extension
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireadNamespacedExtension
+     */
+    name: string
+    /**
+     * object name and auth scope, such as for teams and projects
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireadNamespacedExtension
+     */
+    namespace: string
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireadNamespacedExtension
+     */
+    pretty?: string
+    /**
+     * resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireadNamespacedExtension
+     */
+    resourceVersion?: string
+}
+
+export interface ExtensionsRancherdesktopIoV1alpha1ApiReadNamespacedExtensionStatusRequest {
+    /**
+     * name of the Extension
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireadNamespacedExtensionStatus
+     */
+    name: string
+    /**
+     * object name and auth scope, such as for teams and projects
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireadNamespacedExtensionStatus
+     */
+    namespace: string
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireadNamespacedExtensionStatus
+     */
+    pretty?: string
+    /**
+     * resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.  Defaults to unset
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireadNamespacedExtensionStatus
+     */
+    resourceVersion?: string
+}
+
+export interface ExtensionsRancherdesktopIoV1alpha1ApiReplaceNamespacedExtensionRequest {
+    /**
+     * name of the Extension
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireplaceNamespacedExtension
+     */
+    name: string
+    /**
+     * object name and auth scope, such as for teams and projects
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireplaceNamespacedExtension
+     */
+    namespace: string
+    /**
+     * 
+     * @type IoRancherdesktopExtensionsV1alpha1Extension
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireplaceNamespacedExtension
+     */
+    body: IoRancherdesktopExtensionsV1alpha1Extension
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireplaceNamespacedExtension
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireplaceNamespacedExtension
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireplaceNamespacedExtension
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireplaceNamespacedExtension
+     */
+    fieldValidation?: string
+}
+
+export interface ExtensionsRancherdesktopIoV1alpha1ApiReplaceNamespacedExtensionStatusRequest {
+    /**
+     * name of the Extension
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireplaceNamespacedExtensionStatus
+     */
+    name: string
+    /**
+     * object name and auth scope, such as for teams and projects
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireplaceNamespacedExtensionStatus
+     */
+    namespace: string
+    /**
+     * 
+     * @type IoRancherdesktopExtensionsV1alpha1Extension
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireplaceNamespacedExtensionStatus
+     */
+    body: IoRancherdesktopExtensionsV1alpha1Extension
+    /**
+     * If \&#39;true\&#39;, then the output is pretty printed. Defaults to \&#39;false\&#39; unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireplaceNamespacedExtensionStatus
+     */
+    pretty?: string
+    /**
+     * When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireplaceNamespacedExtensionStatus
+     */
+    dryRun?: string
+    /**
+     * fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireplaceNamespacedExtensionStatus
+     */
+    fieldManager?: string
+    /**
+     * fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+     * Defaults to: undefined
+     * @type string
+     * @memberof ExtensionsRancherdesktopIoV1alpha1ApireplaceNamespacedExtensionStatus
+     */
+    fieldValidation?: string
+}
+
+export class ObjectExtensionsRancherdesktopIoV1alpha1Api {
+    private api: ObservableExtensionsRancherdesktopIoV1alpha1Api
+
+    public constructor(configuration: Configuration, requestFactory?: ExtensionsRancherdesktopIoV1alpha1ApiRequestFactory, responseProcessor?: ExtensionsRancherdesktopIoV1alpha1ApiResponseProcessor) {
+        this.api = new ObservableExtensionsRancherdesktopIoV1alpha1Api(configuration, requestFactory, responseProcessor);
+    }
+
+    /**
+     * create an Extension
+     * @param param the request object
+     */
+    public createNamespacedExtensionWithHttpInfo(param: ExtensionsRancherdesktopIoV1alpha1ApiCreateNamespacedExtensionRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopExtensionsV1alpha1Extension>> {
+        return this.api.createNamespacedExtensionWithHttpInfo(param.namespace, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * create an Extension
+     * @param param the request object
+     */
+    public createNamespacedExtension(param: ExtensionsRancherdesktopIoV1alpha1ApiCreateNamespacedExtensionRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopExtensionsV1alpha1Extension> {
+        return this.api.createNamespacedExtension(param.namespace, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * delete collection of Extension
+     * @param param the request object
+     */
+    public deleteCollectionNamespacedExtensionWithHttpInfo(param: ExtensionsRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedExtensionRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
+        return this.api.deleteCollectionNamespacedExtensionWithHttpInfo(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
+    }
+
+    /**
+     * delete collection of Extension
+     * @param param the request object
+     */
+    public deleteCollectionNamespacedExtension(param: ExtensionsRancherdesktopIoV1alpha1ApiDeleteCollectionNamespacedExtensionRequest, options?: ConfigurationOptions): Promise<V1Status> {
+        return this.api.deleteCollectionNamespacedExtension(param.namespace, param.pretty, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds,  options).toPromise();
+    }
+
+    /**
+     * delete an Extension
+     * @param param the request object
+     */
+    public deleteNamespacedExtensionWithHttpInfo(param: ExtensionsRancherdesktopIoV1alpha1ApiDeleteNamespacedExtensionRequest, options?: ConfigurationOptions): Promise<HttpInfo<V1Status>> {
+        return this.api.deleteNamespacedExtensionWithHttpInfo(param.name, param.namespace, param.pretty, param.dryRun, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.orphanDependents, param.propagationPolicy, param.body,  options).toPromise();
+    }
+
+    /**
+     * delete an Extension
+     * @param param the request object
+     */
+    public deleteNamespacedExtension(param: ExtensionsRancherdesktopIoV1alpha1ApiDeleteNamespacedExtensionRequest, options?: ConfigurationOptions): Promise<V1Status> {
+        return this.api.deleteNamespacedExtension(param.name, param.namespace, param.pretty, param.dryRun, param.gracePeriodSeconds, param.ignoreStoreReadErrorWithClusterBreakingPotential, param.orphanDependents, param.propagationPolicy, param.body,  options).toPromise();
+    }
+
+    /**
+     * list objects of kind Extension
+     * @param param the request object
+     */
+    public listExtensionForAllNamespacesWithHttpInfo(param: ExtensionsRancherdesktopIoV1alpha1ApiListExtensionForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopExtensionsV1alpha1ExtensionList>> {
+        return this.api.listExtensionForAllNamespacesWithHttpInfo(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
+    }
+
+    /**
+     * list objects of kind Extension
+     * @param param the request object
+     */
+    public listExtensionForAllNamespaces(param: ExtensionsRancherdesktopIoV1alpha1ApiListExtensionForAllNamespacesRequest = {}, options?: ConfigurationOptions): Promise<IoRancherdesktopExtensionsV1alpha1ExtensionList> {
+        return this.api.listExtensionForAllNamespaces(param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.pretty, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
+    }
+
+    /**
+     * list objects of kind Extension
+     * @param param the request object
+     */
+    public listNamespacedExtensionWithHttpInfo(param: ExtensionsRancherdesktopIoV1alpha1ApiListNamespacedExtensionRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopExtensionsV1alpha1ExtensionList>> {
+        return this.api.listNamespacedExtensionWithHttpInfo(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
+    }
+
+    /**
+     * list objects of kind Extension
+     * @param param the request object
+     */
+    public listNamespacedExtension(param: ExtensionsRancherdesktopIoV1alpha1ApiListNamespacedExtensionRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopExtensionsV1alpha1ExtensionList> {
+        return this.api.listNamespacedExtension(param.namespace, param.pretty, param.allowWatchBookmarks, param._continue, param.fieldSelector, param.labelSelector, param.limit, param.resourceVersion, param.resourceVersionMatch, param.sendInitialEvents, param.shardSelector, param.timeoutSeconds, param.watch,  options).toPromise();
+    }
+
+    /**
+     * partially update the specified Extension
+     * @param param the request object
+     */
+    public patchNamespacedExtensionWithHttpInfo(param: ExtensionsRancherdesktopIoV1alpha1ApiPatchNamespacedExtensionRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopExtensionsV1alpha1Extension>> {
+        return this.api.patchNamespacedExtensionWithHttpInfo(param.name, param.namespace, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation, param.force,  options).toPromise();
+    }
+
+    /**
+     * partially update the specified Extension
+     * @param param the request object
+     */
+    public patchNamespacedExtension(param: ExtensionsRancherdesktopIoV1alpha1ApiPatchNamespacedExtensionRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopExtensionsV1alpha1Extension> {
+        return this.api.patchNamespacedExtension(param.name, param.namespace, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation, param.force,  options).toPromise();
+    }
+
+    /**
+     * partially update status of the specified Extension
+     * @param param the request object
+     */
+    public patchNamespacedExtensionStatusWithHttpInfo(param: ExtensionsRancherdesktopIoV1alpha1ApiPatchNamespacedExtensionStatusRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopExtensionsV1alpha1Extension>> {
+        return this.api.patchNamespacedExtensionStatusWithHttpInfo(param.name, param.namespace, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation, param.force,  options).toPromise();
+    }
+
+    /**
+     * partially update status of the specified Extension
+     * @param param the request object
+     */
+    public patchNamespacedExtensionStatus(param: ExtensionsRancherdesktopIoV1alpha1ApiPatchNamespacedExtensionStatusRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopExtensionsV1alpha1Extension> {
+        return this.api.patchNamespacedExtensionStatus(param.name, param.namespace, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation, param.force,  options).toPromise();
+    }
+
+    /**
+     * read the specified Extension
+     * @param param the request object
+     */
+    public readNamespacedExtensionWithHttpInfo(param: ExtensionsRancherdesktopIoV1alpha1ApiReadNamespacedExtensionRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopExtensionsV1alpha1Extension>> {
+        return this.api.readNamespacedExtensionWithHttpInfo(param.name, param.namespace, param.pretty, param.resourceVersion,  options).toPromise();
+    }
+
+    /**
+     * read the specified Extension
+     * @param param the request object
+     */
+    public readNamespacedExtension(param: ExtensionsRancherdesktopIoV1alpha1ApiReadNamespacedExtensionRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopExtensionsV1alpha1Extension> {
+        return this.api.readNamespacedExtension(param.name, param.namespace, param.pretty, param.resourceVersion,  options).toPromise();
+    }
+
+    /**
+     * read status of the specified Extension
+     * @param param the request object
+     */
+    public readNamespacedExtensionStatusWithHttpInfo(param: ExtensionsRancherdesktopIoV1alpha1ApiReadNamespacedExtensionStatusRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopExtensionsV1alpha1Extension>> {
+        return this.api.readNamespacedExtensionStatusWithHttpInfo(param.name, param.namespace, param.pretty, param.resourceVersion,  options).toPromise();
+    }
+
+    /**
+     * read status of the specified Extension
+     * @param param the request object
+     */
+    public readNamespacedExtensionStatus(param: ExtensionsRancherdesktopIoV1alpha1ApiReadNamespacedExtensionStatusRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopExtensionsV1alpha1Extension> {
+        return this.api.readNamespacedExtensionStatus(param.name, param.namespace, param.pretty, param.resourceVersion,  options).toPromise();
+    }
+
+    /**
+     * replace the specified Extension
+     * @param param the request object
+     */
+    public replaceNamespacedExtensionWithHttpInfo(param: ExtensionsRancherdesktopIoV1alpha1ApiReplaceNamespacedExtensionRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopExtensionsV1alpha1Extension>> {
+        return this.api.replaceNamespacedExtensionWithHttpInfo(param.name, param.namespace, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * replace the specified Extension
+     * @param param the request object
+     */
+    public replaceNamespacedExtension(param: ExtensionsRancherdesktopIoV1alpha1ApiReplaceNamespacedExtensionRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopExtensionsV1alpha1Extension> {
+        return this.api.replaceNamespacedExtension(param.name, param.namespace, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * replace status of the specified Extension
+     * @param param the request object
+     */
+    public replaceNamespacedExtensionStatusWithHttpInfo(param: ExtensionsRancherdesktopIoV1alpha1ApiReplaceNamespacedExtensionStatusRequest, options?: ConfigurationOptions): Promise<HttpInfo<IoRancherdesktopExtensionsV1alpha1Extension>> {
+        return this.api.replaceNamespacedExtensionStatusWithHttpInfo(param.name, param.namespace, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
+    }
+
+    /**
+     * replace status of the specified Extension
+     * @param param the request object
+     */
+    public replaceNamespacedExtensionStatus(param: ExtensionsRancherdesktopIoV1alpha1ApiReplaceNamespacedExtensionStatusRequest, options?: ConfigurationOptions): Promise<IoRancherdesktopExtensionsV1alpha1Extension> {
+        return this.api.replaceNamespacedExtensionStatus(param.name, param.namespace, param.body, param.pretty, param.dryRun, param.fieldManager, param.fieldValidation,  options).toPromise();
     }
 
 }
