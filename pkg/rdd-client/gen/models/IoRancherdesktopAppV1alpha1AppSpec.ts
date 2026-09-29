@@ -12,6 +12,7 @@
 
 import { IoRancherdesktopAppV1alpha1AppSpecApplication } from '../models/IoRancherdesktopAppV1alpha1AppSpecApplication';
 import { IoRancherdesktopAppV1alpha1AppSpecContainerEngine } from '../models/IoRancherdesktopAppV1alpha1AppSpecContainerEngine';
+import { IoRancherdesktopAppV1alpha1AppSpecGpu } from '../models/IoRancherdesktopAppV1alpha1AppSpecGpu';
 import { IoRancherdesktopAppV1alpha1AppSpecKubernetes } from '../models/IoRancherdesktopAppV1alpha1AppSpecKubernetes';
 import { IoRancherdesktopAppV1alpha1AppSpecVirtualMachine } from '../models/IoRancherdesktopAppV1alpha1AppSpecVirtualMachine';
 import { HttpFile } from '../http/http';
@@ -22,6 +23,7 @@ import { HttpFile } from '../http/http';
 export class IoRancherdesktopAppV1alpha1AppSpec {
     'application'?: IoRancherdesktopAppV1alpha1AppSpecApplication;
     'containerEngine'?: IoRancherdesktopAppV1alpha1AppSpecContainerEngine;
+    'gpu'?: IoRancherdesktopAppV1alpha1AppSpecGpu;
     'kubernetes'?: IoRancherdesktopAppV1alpha1AppSpecKubernetes;
     /**
     * namespace where this cluster-scoped App resource creates and manages its owned namespaced resources (e.g., rancher-desktop). Defaults to \"default\" if not specified. This field is immutable after creation: changing it would orphan existing owned resources (LimaVM, ConfigMaps) in the original namespace.
@@ -48,6 +50,12 @@ export class IoRancherdesktopAppV1alpha1AppSpec {
             "name": "containerEngine",
             "baseName": "containerEngine",
             "type": "IoRancherdesktopAppV1alpha1AppSpecContainerEngine",
+            "format": ""
+        },
+        {
+            "name": "gpu",
+            "baseName": "gpu",
+            "type": "IoRancherdesktopAppV1alpha1AppSpecGpu",
             "format": ""
         },
         {
