@@ -141,7 +141,7 @@
     "ts-loader": "^9.6.2",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
-    "undici": "8.10.2",
+    "undici": "8.11.0",
     "vue": "3.5.43",
     "vue-3-slider-component": "1.0.2",
     "vue-chartjs": "5.3.4",
