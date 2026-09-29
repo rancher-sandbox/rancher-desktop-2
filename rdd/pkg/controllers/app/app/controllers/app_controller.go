@@ -133,6 +133,7 @@ func (r *AppReconciler) pathManagementEnabled(ctx context.Context) bool {
 	}
 	return slices.Contains(enabled, v1alpha1.PathManagementControllerName)
 }
+
 // gpuWindowsHostSupported reports whether the host OS can provide AMD GPU
 // passthrough. This is currently WSL2 on Windows only, since the passthrough
 // relies on the DirectX Graphics kernel device (/dev/dxg) that WSL exposes. It

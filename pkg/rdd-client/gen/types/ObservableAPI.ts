@@ -20,6 +20,7 @@ import { IoRancherdesktopAppV1alpha1AppSpec } from '../models/IoRancherdesktopAp
 import { IoRancherdesktopAppV1alpha1AppSpecApplication } from '../models/IoRancherdesktopAppV1alpha1AppSpecApplication';
 import { IoRancherdesktopAppV1alpha1AppSpecApplicationUpdates } from '../models/IoRancherdesktopAppV1alpha1AppSpecApplicationUpdates';
 import { IoRancherdesktopAppV1alpha1AppSpecContainerEngine } from '../models/IoRancherdesktopAppV1alpha1AppSpecContainerEngine';
+import { IoRancherdesktopAppV1alpha1AppSpecGpu } from '../models/IoRancherdesktopAppV1alpha1AppSpecGpu';
 import { IoRancherdesktopAppV1alpha1AppSpecKubernetes } from '../models/IoRancherdesktopAppV1alpha1AppSpecKubernetes';
 import { IoRancherdesktopAppV1alpha1AppSpecVirtualMachine } from '../models/IoRancherdesktopAppV1alpha1AppSpecVirtualMachine';
 import { IoRancherdesktopAppV1alpha1AppStatus } from '../models/IoRancherdesktopAppV1alpha1AppStatus';

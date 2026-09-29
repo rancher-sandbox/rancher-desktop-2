@@ -12,6 +12,7 @@
 
 import { IoRancherdesktopAppV1alpha1AppSpecApplication } from '../models/IoRancherdesktopAppV1alpha1AppSpecApplication';
 import { IoRancherdesktopAppV1alpha1AppSpecContainerEngine } from '../models/IoRancherdesktopAppV1alpha1AppSpecContainerEngine';
+import { IoRancherdesktopAppV1alpha1AppSpecGpu } from '../models/IoRancherdesktopAppV1alpha1AppSpecGpu';
 import { IoRancherdesktopAppV1alpha1AppSpecKubernetes } from '../models/IoRancherdesktopAppV1alpha1AppSpecKubernetes';
 import { IoRancherdesktopAppV1alpha1AppSpecVirtualMachine } from '../models/IoRancherdesktopAppV1alpha1AppSpecVirtualMachine';
 import { HttpFile } from '../http/http';
@@ -22,6 +23,7 @@ import { HttpFile } from '../http/http';
 export class IoRancherdesktopAppV1alpha1AppSpec {
     'application'?: IoRancherdesktopAppV1alpha1AppSpecApplication;
     'containerEngine'?: IoRancherdesktopAppV1alpha1AppSpecContainerEngine;
+    'gpu'?: IoRancherdesktopAppV1alpha1AppSpecGpu;
     'kubernetes'?: IoRancherdesktopAppV1alpha1AppSpecKubernetes;
     /**
     * running specifies whether the VM should be running.
@@ -44,6 +46,12 @@ export class IoRancherdesktopAppV1alpha1AppSpec {
             "name": "containerEngine",
             "baseName": "containerEngine",
             "type": "IoRancherdesktopAppV1alpha1AppSpecContainerEngine",
+            "format": ""
+        },
+        {
+            "name": "gpu",
+            "baseName": "gpu",
+            "type": "IoRancherdesktopAppV1alpha1AppSpecGpu",
             "format": ""
         },
         {
