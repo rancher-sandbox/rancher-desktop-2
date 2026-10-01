@@ -210,7 +210,7 @@ func SetupWebhookForResource[T runtime.Object](mgr ctrl.Manager, obj T, config W
 // This blocks until the webhook is successfully registered or max attempts are exceeded.
 // This should be called after the webhook server is registered with the manager.
 func (wm *webhookManagerImpl[T]) Setup() error {
-	klog.Info("Starting webhook configuration creation...")
+	klog.InfoS("Starting webhook configuration creation...")
 
 	const maxAttempts = 20
 	const retryDelay = 200 * time.Millisecond
@@ -240,7 +240,7 @@ func (wm *webhookManagerImpl[T]) Setup() error {
 		klog.Infof("Webhook configuration creation attempt %d/%d", attempt, maxAttempts)
 		err := wm.createWebhookConfiguration()
 		if err == nil {
-			klog.Info("Successfully created webhook configuration")
+			klog.InfoS("Successfully created webhook configuration")
 			return nil
 		}
 		klog.Errorf("Failed to create webhook configuration (attempt %d/%d): %v", attempt, maxAttempts, err)

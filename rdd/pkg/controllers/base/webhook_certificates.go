@@ -51,7 +51,7 @@ func NewSharedWebhookCertificateManager(certDir, certName, keyName, serverIP str
 // GenerateWebhookCertificates generates self-signed webhook server certificates
 // with SANs for all registered webhook services.
 func (cm *SharedWebhookCertificateManager) GenerateWebhookCertificates() error {
-	klog.V(2).Info("Generating shared webhook certificates")
+	klog.V(2).InfoS("Generating shared webhook certificates")
 
 	var caKey *rsa.PrivateKey
 	var caCert *x509.Certificate
@@ -63,7 +63,7 @@ func (cm *SharedWebhookCertificateManager) GenerateWebhookCertificates() error {
 		if block != nil && block.Type == "RSA PRIVATE KEY" {
 			caKey, err = x509.ParsePKCS1PrivateKey(block.Bytes)
 			if err != nil {
-				klog.V(2).Info("Failed to parse existing CA private key, will regenerate", "error", err)
+				klog.V(2).InfoS("Failed to parse existing CA private key, will regenerate", "error", err)
 				caKey = nil
 			}
 		}
@@ -73,7 +73,7 @@ func (cm *SharedWebhookCertificateManager) GenerateWebhookCertificates() error {
 		if block != nil && block.Type == "CERTIFICATE" {
 			caCert, err = x509.ParseCertificate(block.Bytes)
 			if err != nil {
-				klog.V(2).Info("Failed to parse existing CA certificate, will regenerate", "error", err)
+				klog.V(2).InfoS("Failed to parse existing CA certificate, will regenerate", "error", err)
 				caCert = nil
 			}
 		}
@@ -273,13 +273,13 @@ func (cm *SharedWebhookCertificateManager) CertificatesExist() bool {
 
 	// Check if certificate expires within 30 days
 	if time.Until(cert.NotAfter) < 30*24*time.Hour {
-		klog.V(2).Info("Webhook certificate expires soon, will regenerate")
+		klog.V(2).InfoS("Webhook certificate expires soon, will regenerate")
 		return false
 	}
 
 	// Check if certificate includes all required DNS names
 	if !cm.certificateIncludesAllServiceNames(cert) {
-		klog.V(2).Info("Webhook certificate missing required DNS names, will regenerate")
+		klog.V(2).InfoS("Webhook certificate missing required DNS names, will regenerate")
 		return false
 	}
 

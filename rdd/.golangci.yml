@@ -48,6 +48,8 @@ linters:
         msg: Do not use fmt.Print statements.
       - pattern: ^testing.T.Fatal.*$
         msg: Use assert functions from the gotest.tools/v3/assert package instead.
+      - pattern: ^klog\.(Verbose\.)?(Info|Warning|Error|Fatal|Exit)(ln)?$
+        msg: Print-style klog calls glue an error or key-value pairs onto the message. Use InfoS or ErrorS, or a formatted call such as Warningf.
       analyze-types: true
     gocritic:
       disabled-checks:

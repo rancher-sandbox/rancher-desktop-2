@@ -264,7 +264,7 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 		return fmt.Errorf("webhook setup : %w", errors.Join(errs...))
 	}
 
-	klog.Info("All webhook configurations created successfully")
+	klog.InfoS("All webhook configurations created successfully")
 
 	scm.started = true
 
