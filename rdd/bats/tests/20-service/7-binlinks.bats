@@ -2,21 +2,25 @@ load '../../helpers/load'
 
 # Prove the daemon publishes the application's bundled binaries into
 # ~/.rd<instance>/bin only when rdd runs from inside the app bundle. A fake
-# bundle holds a real rdd copy at .../<resources>/<os>/bin/rdd next to a couple
-# of stand-in tool files; the daemon links whatever sits beside that rdd.
+# bundle holds a real rdd copy at .../${BUNDLE_BIN}/rdd next to a couple of
+# stand-in tool files; the daemon links whatever sits beside that rdd.
 # Symlinks need privileges on Windows, so the daemon falls back to hardlinks;
 # RDD_NO_SYMLINKS forces that fallback for the last test.
+
+# The packaged app stages rdd in <resources>/<platform>/bin. macOS capitalizes
+# Resources, and <platform> is Node's process.platform, which is win32 on
+# Windows.
+BUNDLE_BIN=resources/${OS}/bin
+is_macos && BUNDLE_BIN=Resources/${OS}/bin
+is_windows && BUNDLE_BIN=resources/win32/bin
 
 local_setup_file() {
     # Clean up from any previous run; svc delete also removes the short dir.
     rdd svc delete || :
 
     # Mock up a packaged Rancher Desktop distribution so rdd thinks it is
-    # bundled. The siblings are stand-ins; only their names matter. macOS
-    # capitalizes Resources; Linux and Windows use lowercase.
-    resources=resources
-    is_macos && resources=Resources
-    fake_bin="${BATS_FILE_TMPDIR}/Rancher Desktop.app/Contents/${resources}/${OS}/bin"
+    # bundled. The siblings are stand-ins; only their names matter.
+    fake_bin="${BATS_FILE_TMPDIR}/Rancher Desktop.app/Contents/${BUNDLE_BIN}"
     mkdir -p "${fake_bin}"
     cp "${PATH_REPO_ROOT}/bin/rdd${EXE}" "${fake_bin}/rdd${EXE}"
     echo "stand-in docker" >"${fake_bin}/docker${EXE}"
@@ -116,9 +120,7 @@ assert_hardlink_to() { # <target> <link>
     # Publish from a throwaway bundle, then delete it so its links dangle — the
     # uninstall case. Driving setup through rdd gives real symlinks the daemon
     # recognizes (MSYS2 ln -s would not).
-    resources=resources
-    is_macos && resources=Resources
-    bundle="${BATS_TEST_TMPDIR}/Gone.app/Contents/${resources}/${OS}/bin"
+    bundle="${BATS_TEST_TMPDIR}/Gone.app/Contents/${BUNDLE_BIN}"
     mkdir -p "${bundle}"
     cp "${PATH_REPO_ROOT}/bin/rdd${EXE}" "${bundle}/rdd${EXE}"
     echo "stand-in docker" >"${bundle}/docker${EXE}"

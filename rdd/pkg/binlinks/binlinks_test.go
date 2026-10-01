@@ -64,19 +64,19 @@ func TestInAppBundle(t *testing.T) {
 		},
 		{
 			name:     "Windows app bundle",
-			execPath: `C:\Program Files\Rancher Desktop\resources\windows\bin\rdd.exe`,
+			execPath: `C:\Program Files\Rancher Desktop\resources\win32\bin\rdd.exe`,
 			goos:     "windows",
 			want:     true,
 		},
 		{
 			name:     "Windows path without .exe suffix",
-			execPath: `C:\Program Files\Rancher Desktop\resources\windows\bin\rdd`,
+			execPath: `C:\Program Files\Rancher Desktop\resources\win32\bin\rdd`,
 			goos:     "windows",
 			want:     false,
 		},
 		{
 			name:     "Windows path with forward slashes",
-			execPath: "C:/Program Files/Rancher Desktop/resources/windows/bin/rdd.exe",
+			execPath: "C:/Program Files/Rancher Desktop/resources/win32/bin/rdd.exe",
 			goos:     "windows",
 			want:     false,
 		},

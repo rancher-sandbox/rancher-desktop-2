@@ -60,21 +60,24 @@ func exeSuffix(goos string) string {
 
 // inAppBundle reports whether execPath is the bundled rdd binary for the given
 // OS, as opposed to a standalone CLI install. The application stages its
-// per-platform resources under <resources>/<goos>/bin/rdd, where the directory
-// is "Resources" on macOS (the .app bundle convention) and lowercase
-// "resources" elsewhere, the separator is a backslash on Windows, and the
-// binary carries a .exe suffix there. The leading separator anchors the match,
-// so an unrelated path ending in the same tail does not qualify.
+// per-platform resources under <resources>/<platform>/bin/rdd. <resources> is
+// "Resources" on macOS (the .app bundle convention) and lowercase "resources"
+// elsewhere. <platform> is Node's process.platform, which matches goos except
+// on Windows, where it is "win32"; Windows also uses a backslash separator and
+// a .exe suffix. The leading separator anchors the match, so an unrelated path
+// ending in the same tail does not qualify.
 func inAppBundle(execPath, goos string) bool {
 	resources := "resources"
+	platform := goos
 	sep := "/"
 	switch goos {
 	case "darwin":
 		resources = "Resources"
 	case "windows":
+		platform = "win32"
 		sep = `\`
 	}
-	tail := strings.Join([]string{resources, goos, "bin", "rdd" + exeSuffix(goos)}, sep)
+	tail := strings.Join([]string{resources, platform, "bin", "rdd" + exeSuffix(goos)}, sep)
 	return strings.HasSuffix(execPath, sep+tail)
 }
 
