@@ -18,11 +18,6 @@ extraResources:
   - '!**/*.zip'
   - '!**/*-release.png' # icon masters; prepareIcons() generates the shipped names
   - '!**/*-prerelease.png'
-- from: rdd/bin
-  to: ${platform}/bin/
-  filter:
-  - rdd
-  - rdd.exe
 files:
 - dist/app/**/*
 - '!**/node_modules/*/prebuilds/!(${platform}*)/*.node'
@@ -33,6 +28,8 @@ mac:
   icon: ./resources/icons/mac-icon.png
   target: [ dmg, zip ]
   identity: ~ # We sign in a separate step
+  extraResources:
+  - { from: rdd/bin, to: darwin/bin/, filter: [ rdd ] }
   extraFiles:
   - { from: dist/signing-config-mac.yaml, to: build/signing-config-mac.yaml }
   - { from: dist/electron-builder.yaml, to: electron-builder.yml }
@@ -55,6 +52,8 @@ win:
   signtoolOptions:
     signingHashAlgorithms: [ sha256 ] # We only support Windows 10 + WSL2
   requestedExecutionLevel: asInvoker # The _app_ doesn't need privileges
+  extraResources:
+  - { from: rdd/bin, to: windows/bin/, filter: [ rdd.exe ] }
   extraFiles:
   - build/wix/*
   - build/license.rtf
@@ -66,6 +65,8 @@ linux:
   # Also names the .desktop file and its icon, so it must differ from
   # Rancher Desktop 1 for parallel installs.
   executableName: rancher-desktop-2
+  extraResources:
+  - { from: rdd/bin, to: linux/bin/, filter: [ rdd ] }
   target: [ zip ]
 publish:
   provider: custom

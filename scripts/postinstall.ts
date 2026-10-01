@@ -189,6 +189,7 @@ async function runScripts(): Promise<void> {
 function buildDownloadContextFor(rawPlatform: DependencyPlatform, manifest: DependencyManifest): Promise<DownloadContext> {
   const platform = rawPlatform === 'wsl' ? 'linux' : rawPlatform;
   const arch = buildUtils.arch;
+  const goPlatform = platform === 'win32' ? 'windows' : platform;
   const goArch = arch === 'arm64' ? 'arm64' : 'amd64';
   const resourcesDir = path.join(process.cwd(), 'resources');
   return Promise.resolve({
@@ -197,12 +198,12 @@ function buildDownloadContextFor(rawPlatform: DependencyPlatform, manifest: Depe
     dependencyPlatform: rawPlatform,
     platform,
     arch,
-    goPlatform:         platform === 'win32' ? 'windows' : platform,
+    goPlatform,
     goArch,
     resourcesDir,
-    binDir:             path.join(resourcesDir, platform, 'bin'),
+    binDir:             path.join(resourcesDir, goPlatform, 'bin'),
     internalDir:        path.join(resourcesDir, 'internal'),
-    dockerPluginsDir:   path.join(resourcesDir, platform, 'docker-cli-plugins'),
+    dockerPluginsDir:   path.join(resourcesDir, goPlatform, 'docker-cli-plugins'),
     hostDir:            path.join(resourcesDir, 'host'),
   });
 }

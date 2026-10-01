@@ -9,6 +9,8 @@ import path from 'path';
 import electron from 'electron';
 import which from 'which';
 
+import { artifactPlatform } from '@pkg/utils/releaseArtifacts';
+
 /**
  * RDDPaths are the paths provided by the RDD daemon.  These should be kept in
  * sync with the output of `rdd service paths`.
@@ -54,6 +56,14 @@ interface RDAPaths {
 
 export interface Paths extends RDDPaths, RDAPaths { }
 
+/**
+ * Get the platform's directory name under resources. It uses Go's GOOS names,
+ * as the release artifact names do.
+ */
+export function resourcesPlatformDir(): string {
+  return artifactPlatform(process.platform);
+}
+
 let cachedRDDPath: string | undefined;
 
 /**
@@ -70,7 +80,7 @@ export function getRDDPath(useCached = true): string {
   cachedRDDPath = (() => {
     if (electron.app?.isPackaged) {
       const packagedPath = path.join(
-        process.resourcesPath, process.platform, 'bin', exeName);
+        process.resourcesPath, resourcesPlatformDir(), 'bin', exeName);
       try {
         fs.accessSync(packagedPath, fs.constants.X_OK);
         return packagedPath;
@@ -156,13 +166,13 @@ const platformAgnosticPaths: PlatformAgnosticPaths = {
     return path.join(process.cwd(), 'resources');
   },
   get binDir() {
-    return path.join(this.resources, process.platform, 'bin');
+    return path.join(this.resources, resourcesPlatformDir(), 'bin');
   },
   get internalDir() {
     return path.join(this.resources, 'internal');
   },
   get dockerPluginsDir() {
-    return path.join(this.resources, process.platform, 'docker-cli-plugins');
+    return path.join(this.resources, resourcesPlatformDir(), 'docker-cli-plugins');
   },
 };
 

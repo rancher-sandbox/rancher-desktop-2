@@ -8,7 +8,7 @@ import { jest } from '@jest/globals';
 import { findHomeDir } from '@kubernetes/client-node';
 
 import type { spawnFile as spawnFileType } from '@pkg/utils/childProcess';
-import paths from '@pkg/utils/paths';
+import paths, { resourcesPlatformDir } from '@pkg/utils/paths';
 import mockModules from '@pkg/utils/testUtils/mockModules';
 
 const modules = mockModules({
@@ -44,7 +44,7 @@ describe('runCommand', () => {
       return Promise.resolve(JSON.stringify({ credsStore: 'pikachu' }));
     });
     spawnFile.mockImplementation((command, args, options) => {
-      const resourcesPath = path.join(paths.resources, process.platform, 'bin');
+      const resourcesPath = path.join(paths.resources, resourcesPlatformDir(), 'bin');
 
       expect(command).toEqual('docker-credential-pikachu');
       expect(args).toEqual(['pika']);

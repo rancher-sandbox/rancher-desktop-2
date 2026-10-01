@@ -34,6 +34,7 @@ import type { DeploymentProfileType } from '@pkg/config/settings';
 import { CURRENT_SETTINGS_VERSION } from '@pkg/config/settings';
 import { spawnFile } from '@pkg/utils/childProcess';
 import { reopenLogs } from '@pkg/utils/logging';
+import { resourcesPlatformDir } from '@pkg/utils/paths';
 
 import type { ElectronApplication, Page } from '@playwright/test';
 
@@ -43,7 +44,7 @@ test.describe.fixme('Locked fields', () => {
   const appPath = path.dirname(import.meta.dirname);
 
   function rdctlPath() {
-    return path.join(appPath, 'resources', os.platform(), 'bin', os.platform() === 'win32' ? 'rdctl.exe' : 'rdctl');
+    return path.join(appPath, 'resources', resourcesPlatformDir(), 'bin', os.platform() === 'win32' ? 'rdctl.exe' : 'rdctl');
   }
 
   async function rdctl(commandArgs: string[]): Promise< { stdout: string, stderr: string, error?: any }> {

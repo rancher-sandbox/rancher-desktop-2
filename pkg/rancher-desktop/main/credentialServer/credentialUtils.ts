@@ -114,10 +114,9 @@ async function getCredentialHelperInfo(command: string, payload: string): Promis
 async function runCredHelper(helper: string, command: string, input?: string): Promise<string> {
   // The PATH needs to contain our resources directory (on macOS that would
   // not be in the application's PATH).
-  // NOTE: This needs to match DockerDirManager.spawnFileWithExtraPath
   const pathVar = (process.env.PATH ?? '').split(path.delimiter).filter(x => x);
 
-  pathVar.push(path.join(paths.resources, process.platform, 'bin'));
+  pathVar.push(paths.binDir);
 
   const helperName = `docker-credential-${ helper }`;
   const body = stream.Readable.from(input ?? '');

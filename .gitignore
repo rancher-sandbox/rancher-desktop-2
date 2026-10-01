@@ -15,7 +15,7 @@
 /resources/internal/
 /resources/linux/
 /resources/preload.js*
-/resources/win32/
+/resources/windows/
 /screenshots/output/
 /src/go/i18n-report/i18n-report
 /src/go/rdctl/pkg/options/generated/*.go

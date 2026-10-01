@@ -27,14 +27,14 @@ const modules = mockModules({
   },
 });
 
-const { getRDDPath, getPaths, TEST_PLATFORM } = await import('../paths');
+const { getRDDPath, getPaths, resourcesPlatformDir, TEST_PLATFORM } = await import('../paths');
 
 describe('getRDDPath', () => {
   const exeName = process.platform === 'win32' ? 'rdd.exe' : 'rdd';
   let resourcesPath: string, packagedPath: string, relativePath: string, environmentPath: string;
   beforeAll(async() => {
     resourcesPath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'r-d-a-paths-'));
-    packagedPath = path.join(resourcesPath, process.platform, 'bin', exeName);
+    packagedPath = path.join(resourcesPath, resourcesPlatformDir(), 'bin', exeName);
     relativePath = path.join(process.cwd(), 'rdd', 'bin', exeName);
     environmentPath = path.join(resourcesPath, exeName);
   });
@@ -102,9 +102,9 @@ describe('getPaths', () => {
     ...rddPaths,
     rdd:              'rdd',
     resources:        path.join(process.cwd(), 'resources'),
-    binDir:           path.join(process.cwd(), 'resources', process.platform, 'bin'),
+    binDir:           path.join(process.cwd(), 'resources', resourcesPlatformDir(), 'bin'),
     internalDir:      path.join(process.cwd(), 'resources', 'internal'),
-    dockerPluginsDir: path.join(process.cwd(), 'resources', process.platform, 'docker-cli-plugins'),
+    dockerPluginsDir: path.join(process.cwd(), 'resources', resourcesPlatformDir(), 'docker-cli-plugins'),
     cache:            path.join(rddPaths.dir, 'cache'),
   };
   beforeEach(() => {

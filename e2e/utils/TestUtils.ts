@@ -16,7 +16,7 @@ import { Agent, getGlobalDispatcher, setGlobalDispatcher } from 'undici';
 import packageMeta from '@/package.json' with { type: 'json' };
 import { defaultSettings, Settings } from '@pkg/config/settings';
 import { spawnFile } from '@pkg/utils/childProcess';
-import paths from '@pkg/utils/paths';
+import paths, { resourcesPlatformDir } from '@pkg/utils/paths';
 import { RecursivePartial, RecursiveTypes } from '@pkg/utils/typeUtils';
 import * as RDDClient from '@rdd-client';
 
@@ -216,7 +216,7 @@ export async function teardown(app: ElectronApplication | undefined, testInfo: T
 export function getResourceBinDir(): string {
   const srcDir = path.dirname(import.meta.dirname);
 
-  return path.join(srcDir, '..', 'resources', os.platform(), 'bin');
+  return path.join(srcDir, '..', 'resources', resourcesPlatformDir(), 'bin');
 }
 
 function exeName(executable: string) {

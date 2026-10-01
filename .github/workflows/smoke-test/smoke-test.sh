@@ -245,7 +245,7 @@ install_win32() {
     fi
     local installDirectory
     installDirectory=$(cygpath --unix 'C:\Program Files\Rancher Desktop 2')
-    local rdd="$installDirectory/resources/win32/bin/rdd.exe"
+    local rdd="$installDirectory/resources/windows/bin/rdd.exe"
 
     local -a keys
     mapfile -t keys < <(yq.exe 'keys | .[]' < build/signing-config-win.yaml)

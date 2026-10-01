@@ -118,7 +118,7 @@ export async function sign(workDir: string, outDir: string): Promise<string[]> {
   await signFn(...filesToSign);
   const signedInstaller = await buildWiX(workDir, unpackedDir, outDir, signFn);
 
-  const rddSource = path.join(unpackedDir, 'resources', 'win32', 'bin', 'rdd.exe');
+  const rddSource = path.join(unpackedDir, 'resources', 'windows', 'bin', 'rdd.exe');
   const rddDest = path.join(outDir, rddArtifactName(config.extraMetadata.version, 'win32', buildUtils.arch));
   await fs.promises.copyFile(rddSource, rddDest, fs.constants.COPYFILE_FICLONE);
 

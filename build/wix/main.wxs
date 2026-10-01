@@ -88,10 +88,10 @@
       />
       <Environment Id="PathWindowsUserBin" Name="PATH"
         Action="set" Part="last" System="no" Permanent="no"
-        Value="[APPLICATIONFOLDER]resources\win32\bin\" />
+        Value="[APPLICATIONFOLDER]resources\windows\bin\" />
       <Environment Id="PathWindowsUserDockerCLIPlugins" Name="PATH"
         Action="set" Part="last" System="no" Permanent="no"
-        Value="[APPLICATIONFOLDER]resources\win32\docker-cli-plugins\" />
+        Value="[APPLICATIONFOLDER]resources\windows\docker-cli-plugins\" />
       <Environment Id="PathLinuxUserBin" Name="PATH"
         Action="set" Part="last" System="no" Permanent="no"
         Value="[APPLICATIONFOLDER]resources\linux\bin\" />
@@ -113,10 +113,10 @@
       />
       <Environment Id="PathWindowsSystemBin" Name="PATH"
         Action="set" Part="last" System="yes" Permanent="no"
-        Value="[APPLICATIONFOLDER]resources\win32\bin\" />
+        Value="[APPLICATIONFOLDER]resources\windows\bin\" />
       <Environment Id="PathWindowsSystemDockerCLIPlugins" Name="PATH"
         Action="set" Part="last" System="yes" Permanent="no"
-        Value="[APPLICATIONFOLDER]resources\win32\docker-cli-plugins\" />
+        Value="[APPLICATIONFOLDER]resources\windows\docker-cli-plugins\" />
       <Environment Id="PathLinuxSystemBin" Name="PATH"
         Action="set" Part="last" System="yes" Permanent="no"
         Value="[APPLICATIONFOLDER]resources\linux\bin\" />

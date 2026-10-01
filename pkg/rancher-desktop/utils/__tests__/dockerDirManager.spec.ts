@@ -8,7 +8,7 @@ import { jest } from '@jest/globals';
 import mockModules from '../testUtils/mockModules';
 
 import * as childProcess from '@pkg/utils/childProcess';
-import paths from '@pkg/utils/paths';
+import paths, { resourcesPlatformDir } from '@pkg/utils/paths';
 
 const spawnFile = childProcess.spawnFile;
 const modules = mockModules({
@@ -26,7 +26,7 @@ const modules = mockModules({
   },
   '@pkg/utils/paths': {
     ...paths,
-    resources: paths.resources,
+    binDir: paths.binDir,
   },
 });
 
@@ -357,11 +357,11 @@ describe('DockerDirManager', () => {
     };
 
     beforeEach(() => {
-      modules['@pkg/utils/paths'].resources = 'RESOURCES';
+      modules['@pkg/utils/paths'].binDir = path.join('RESOURCES', resourcesPlatformDir(), 'bin');
     });
     afterEach(() => {
       modules['@pkg/utils/childProcess'].spawnFile.mockRestore();
-      modules['@pkg/utils/paths'].resources = paths.resources;
+      modules['@pkg/utils/paths'].binDir = paths.binDir;
     });
 
     it('should return false when cred helper is not working', async() => {
@@ -396,7 +396,7 @@ describe('DockerDirManager', () => {
         .mockImplementation((command, args, options) => {
           commonCredHelperExpectations(command, args, options);
 
-          expect((options.env?.PATH ?? '').split(path.delimiter)).toContain(path.join('RESOURCES', os.platform(), 'bin'));
+          expect((options.env?.PATH ?? '').split(path.delimiter)).toContain(path.join('RESOURCES', resourcesPlatformDir(), 'bin'));
 
           return Promise.resolve({});
         });
