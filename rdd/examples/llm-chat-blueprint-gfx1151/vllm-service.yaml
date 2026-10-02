@@ -1,0 +1,18 @@
+# ClusterIP Service fronting the existing vllm-gfx1151 Pod (see
+# ../vllm-gfx1151-repro/vllm-pod.yaml) so in-cluster clients such as OpenWebUI
+# can reach the OpenAI-compatible API at a stable name:
+#
+#   http://vllm-gfx1151.default.svc.cluster.local:8000/v1
+#
+# The Pod already listens on 0.0.0.0:8000 and carries label app=vllm-gfx1151.
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-gfx1151
+  labels: { app: vllm-gfx1151 }
+spec:
+  selector: { app: vllm-gfx1151 }
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000

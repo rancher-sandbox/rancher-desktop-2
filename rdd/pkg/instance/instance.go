@@ -112,6 +112,14 @@ var TLSDir = sync.OnceValue(func() string {
 	return filepath.Join(Dir(), "tls")
 })
 
+// GPUDir returns the path to the directory where GPU passthrough support
+// files are staged on the host (librocdxg.so + dids.conf). It lives under
+// Dir(), which is inside the host home directory that the Lima VM mounts, so
+// provisioning can read the staged files from inside the guest.
+var GPUDir = sync.OnceValue(func() string {
+	return filepath.Join(Dir(), "gpu")
+})
+
 // ShortDir returns the short directory path for this instance (e.g., ~/.rd2).
 // This is distinct from Dir() which returns the service directory.
 // Lima uses ShortDir() because of socket name length constraints.

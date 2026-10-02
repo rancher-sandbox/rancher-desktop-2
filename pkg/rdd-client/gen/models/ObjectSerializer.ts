@@ -15,6 +15,7 @@ export * from '../models/IoRancherdesktopAppV1alpha1AppSpec';
 export * from '../models/IoRancherdesktopAppV1alpha1AppSpecApplication';
 export * from '../models/IoRancherdesktopAppV1alpha1AppSpecApplicationUpdates';
 export * from '../models/IoRancherdesktopAppV1alpha1AppSpecContainerEngine';
+export * from '../models/IoRancherdesktopAppV1alpha1AppSpecGpu';
 export * from '../models/IoRancherdesktopAppV1alpha1AppSpecKubernetes';
 export * from '../models/IoRancherdesktopAppV1alpha1AppSpecVirtualMachine';
 export * from '../models/IoRancherdesktopAppV1alpha1AppStatus';
@@ -232,6 +233,7 @@ import { IoRancherdesktopAppV1alpha1AppSpec } from '../models/IoRancherdesktopAp
 import { IoRancherdesktopAppV1alpha1AppSpecApplication, IoRancherdesktopAppV1alpha1AppSpecApplicationAddPathEnum     } from '../models/IoRancherdesktopAppV1alpha1AppSpecApplication';
 import { IoRancherdesktopAppV1alpha1AppSpecApplicationUpdates } from '../models/IoRancherdesktopAppV1alpha1AppSpecApplicationUpdates';
 import { IoRancherdesktopAppV1alpha1AppSpecContainerEngine, IoRancherdesktopAppV1alpha1AppSpecContainerEngineNameEnum   } from '../models/IoRancherdesktopAppV1alpha1AppSpecContainerEngine';
+import { IoRancherdesktopAppV1alpha1AppSpecGpu } from '../models/IoRancherdesktopAppV1alpha1AppSpecGpu';
 import { IoRancherdesktopAppV1alpha1AppSpecKubernetes } from '../models/IoRancherdesktopAppV1alpha1AppSpecKubernetes';
 import { IoRancherdesktopAppV1alpha1AppSpecVirtualMachine } from '../models/IoRancherdesktopAppV1alpha1AppSpecVirtualMachine';
 import { IoRancherdesktopAppV1alpha1AppStatus } from '../models/IoRancherdesktopAppV1alpha1AppStatus';
@@ -493,6 +495,7 @@ let typeMap: {[index: string]: any} = {
     "IoRancherdesktopAppV1alpha1AppSpecApplication": IoRancherdesktopAppV1alpha1AppSpecApplication,
     "IoRancherdesktopAppV1alpha1AppSpecApplicationUpdates": IoRancherdesktopAppV1alpha1AppSpecApplicationUpdates,
     "IoRancherdesktopAppV1alpha1AppSpecContainerEngine": IoRancherdesktopAppV1alpha1AppSpecContainerEngine,
+    "IoRancherdesktopAppV1alpha1AppSpecGpu": IoRancherdesktopAppV1alpha1AppSpecGpu,
     "IoRancherdesktopAppV1alpha1AppSpecKubernetes": IoRancherdesktopAppV1alpha1AppSpecKubernetes,
     "IoRancherdesktopAppV1alpha1AppSpecVirtualMachine": IoRancherdesktopAppV1alpha1AppSpecVirtualMachine,
     "IoRancherdesktopAppV1alpha1AppStatus": IoRancherdesktopAppV1alpha1AppStatus,
