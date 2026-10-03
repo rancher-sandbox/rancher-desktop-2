@@ -28,7 +28,6 @@ const APIGroup = "containers"
 var controllerCRD string
 
 // controller implements [base.Controller] for compose.
-// It only registers a validating webhook; there is no reconciler yet.
 type controller struct {
 	webhookPort     int
 	webhookManagers []base.WebhookManager
@@ -70,6 +69,20 @@ func (c *controller) GetWebhookManagers() []base.WebhookManager {
 	return c.webhookManagers
 }
 
+// setupReconciler sets up the reconcilers with the manager.
+func (c *controller) setupReconciler(ctx context.Context, mgr ctrl.Manager) error {
+	mgr.GetLogger().Info("Setting up compose reconciler")
+	if err := (&reconciler{
+		Client: mgr.GetClient(),
+	}).SetupWithManager(ctx, mgr); err != nil {
+		return err
+	}
+
+	return (&upRequestReconciler{
+		Client: mgr.GetClient(),
+	}).SetupWithManager(mgr)
+}
+
 // setupWebhookWithRuntimeConfig registers a validating webhook for
 // ComposeUpRequest.
 func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
@@ -93,9 +106,14 @@ func (c *controller) setupWebhookWithRuntimeConfig(mgr ctrl.Manager) error {
 }
 
 // RegisterWithManager implements [base.Controller].
-func (c *controller) RegisterWithManager(_ context.Context, mgr ctrl.Manager) error {
+func (c *controller) RegisterWithManager(ctx context.Context, mgr ctrl.Manager) error {
 	// Register the CRD types with the scheme
 	if err := v1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
+		return err
+	}
+
+	if err := c.setupReconciler(ctx, mgr); err != nil {
+		mgr.GetLogger().Error(err, "Failed to set up compose reconciler")
 		return err
 	}
 
