@@ -37,7 +37,7 @@ func LinkBundledBinaries() error {
 	if err != nil {
 		return fmt.Errorf("locate executable: %w", err)
 	}
-	binDir := filepath.Join(instance.ShortDir(), "bin")
+	binDir := instance.BinDir()
 	exe := exeSuffix(runtime.GOOS)
 	// RDD_NO_SYMLINKS forces hardlinks, so tests can exercise the fallback that
 	// real systems hit when symlinks need absent privileges.

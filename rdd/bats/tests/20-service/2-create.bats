@@ -61,6 +61,12 @@ load '../../helpers/load'
     rdd svc logs --stdout
 }
 
+@test 'RDD_STDERR_LOG names the control plane stderr log' {
+    # `rdd svc logs` finds the log the way the daemon does, so check that the
+    # path setup() writes its test markers to is that file too.
+    assert_file_contains "${RDD_STDERR_LOG}" 'Marked control plane as ready'
+}
+
 @test 'stop instance' {
     run -0 rdd svc stop
     run -0 extract_msg

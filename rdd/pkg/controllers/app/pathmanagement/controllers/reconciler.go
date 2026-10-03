@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/gofrs/flock"
@@ -30,6 +29,7 @@ import (
 	appv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/predicates"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/managedlines"
 )
 
@@ -247,7 +247,7 @@ func permanentPathError(err error) bool {
 // releases it. It blocks up to pathManagementLockTimeout; a stuck holder surfaces
 // as an error so the reconcile requeues rather than hanging.
 func acquirePathLock(ctx context.Context) (func(), error) {
-	dir, err := sharedDataDir()
+	dir, err := instance.SharedDataDir()
 	if err != nil {
 		return nil, fmt.Errorf("locate PATH lock directory: %w", err)
 	}
@@ -266,28 +266,6 @@ func acquirePathLock(ctx context.Context) (func(), error) {
 		return nil, fmt.Errorf("acquire PATH lock: timed out after %s", pathManagementLockTimeout)
 	}
 	return func() { _ = fl.Unlock() }, nil
-}
-
-// sharedDataDir returns the per-user data root that every instance shares (the
-// parent of instance.Dir()). The PATH lock lives here rather than under a single
-// instance's directory, so all of a user's daemons serialize on the same file.
-// It mirrors instance.Dir()'s layout but drops the instance-specific leaf, and
-// avoids instance.Dir()'s memoization so it tracks HOME in tests.
-func sharedDataDir() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	switch runtime.GOOS {
-	case "windows":
-		return filepath.Join(home, "AppData", "Local"), nil
-	case "linux":
-		return filepath.Join(home, ".local", "share"), nil
-	case "darwin":
-		return filepath.Join(home, "Library", "Application Support"), nil
-	default:
-		return "", fmt.Errorf("platform %s not supported", runtime.GOOS)
-	}
 }
 
 // SetupWithManager wires the reconciler to the App singleton.

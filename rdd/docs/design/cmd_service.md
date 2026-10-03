@@ -24,7 +24,9 @@ The short directory contains the following files and directories:
 
 | File | Description |
 | --- | --- |
-| `bin`         | contains utilities like `docker`, `helm`, etc. May be symlinks |
+| `bin`         | links to `rdd` and `kubectl`, plus bundled tools like `docker` and `helm` when rdd runs from the app bundle |
+| `containerd.sock` | containerd socket that Lima forwards from the guest (macOS and Linux) |
+| `docker.sock` | Docker socket that Lima forwards from the guest (macOS and Linux) |
 | `kube.config` | Kubernetes config only containing the `rancher-desktop-2` context |
 | `lima`        | `LIMA_HOME` is located here because of socket name length restrictions |
 
@@ -149,12 +151,18 @@ Prints instance directory and file paths. Accepts an optional key argument to pr
 | --- | --- |
 | `dir` | Service directory (`$APPDATA/rancher-desktop-$INSTANCE`) |
 | `log_dir` | Log directory |
+| `stdout_log` | Control plane stdout log (`$log_dir/rdd.stdout.log`) |
+| `stderr_log` | Control plane stderr log (`$log_dir/rdd.stderr.log`) |
 | `short_dir` | Short directory (e.g. `~/.rd2`) |
 | `lima_home` | Lima home directory (`$short_dir/lima`) |
+| `bin_dir` | Instance bin directory of user-facing executables (`$short_dir/bin`) |
 | `tls_dir` | TLS certificate directory |
-| `config` | RDD control plane config file path |
+| `config` | RDD control plane kubeconfig path |
+| `k3s_config` | Mirror of the in-VM k3s kubeconfig |
 | `pid_file` | PID file path |
 | `args_file` | Saved arguments file path |
+| `docker_socket` | Docker socket (`$short_dir/docker.sock`, a named pipe on Windows) |
+| `containerd_socket` | containerd socket (`$short_dir/containerd.sock`, a named pipe on Windows) |
 
 Output formats (`--output`, `-o`):
 
@@ -170,17 +178,23 @@ Examples:
 
 ```console
 $ rdd svc paths
-args_file  /path/to/rancher-desktop-default/rdd.args
-config     /path/to/rancher-desktop-default/config.json
-dir        /path/to/rancher-desktop-default
-lima_home  /path/to/.rd2/lima
-log_dir    /path/to/rancher-desktop-default/log
-pid_file   /path/to/rancher-desktop-default/rdd.pid
-short_dir  /path/to/.rd2
-tls_dir    /path/to/rancher-desktop-default/tls
+args_file          /Users/me/Library/Application Support/rancher-desktop-2/args.json
+bin_dir            /Users/me/.rd2/bin
+config             /Users/me/Library/Application Support/rancher-desktop-2/config.yaml
+containerd_socket  /Users/me/.rd2/containerd.sock
+dir                /Users/me/Library/Application Support/rancher-desktop-2
+docker_socket      /Users/me/.rd2/docker.sock
+k3s_config         /Users/me/Library/Application Support/rancher-desktop-2/k3s.yaml
+lima_home          /Users/me/.rd2/lima
+log_dir            /Users/me/Library/Logs/rancher-desktop-2
+pid_file           /Users/me/Library/Application Support/rancher-desktop-2/rdd.pid
+short_dir          /Users/me/.rd2
+stderr_log         /Users/me/Library/Logs/rancher-desktop-2/rdd.stderr.log
+stdout_log         /Users/me/Library/Logs/rancher-desktop-2/rdd.stdout.log
+tls_dir            /Users/me/Library/Application Support/rancher-desktop-2/tls
 
 $ rdd svc paths log_dir
-/path/to/rancher-desktop-default/log
+/Users/me/Library/Logs/rancher-desktop-2
 
 $ source <(rdd svc paths --output=shell)
 ```

@@ -40,13 +40,18 @@ source <(rdd svc paths --output=shell)
 | Variable | Description | Example (macOS, instance `2`) |
 | --- | --- | --- |
 | `RDD_ARGS_FILE` | Saved startup arguments | `~/Library/Application Support/rancher-desktop-2/args.json` |
+| `RDD_BIN_DIR` | Instance bin directory of user-facing executables | `~/.rd2/bin` |
+| `RDD_CONFIG` | RDD control plane kubeconfig | `~/Library/Application Support/rancher-desktop-2/config.yaml` |
+| `RDD_CONTAINERD_SOCKET` | containerd socket (a named pipe on Windows) | `~/.rd2/containerd.sock` |
 | `RDD_DIR` | Service instance directory | `~/Library/Application Support/rancher-desktop-2` |
-| `RDD_CONFIG` | RDD control plane config file | `~/Library/Application Support/rancher-desktop-2/config.yaml` |
+| `RDD_DOCKER_SOCKET` | Docker socket (a named pipe on Windows) | `~/.rd2/docker.sock` |
 | `RDD_K3S_CONFIG` | Mirror of the in-VM k3s kubeconfig | `~/Library/Application Support/rancher-desktop-2/k3s.yaml` |
 | `RDD_LIMA_HOME` | Lima home directory | `~/.rd2/lima` |
 | `RDD_LOG_DIR` | Log directory | `~/Library/Logs/rancher-desktop-2` |
 | `RDD_PID_FILE` | Service PID file | `~/Library/Application Support/rancher-desktop-2/rdd.pid` |
 | `RDD_SHORT_DIR` | Short directory path | `~/.rd2` |
+| `RDD_STDERR_LOG` | Control plane stderr log | `~/Library/Logs/rancher-desktop-2/rdd.stderr.log` |
+| `RDD_STDOUT_LOG` | Control plane stdout log | `~/Library/Logs/rancher-desktop-2/rdd.stdout.log` |
 | `RDD_TLS_DIR` | TLS certificate directory | `~/Library/Application Support/rancher-desktop-2/tls` |
 
 The short directory (`RDD_SHORT_DIR`) exists because Lima uses Unix domain sockets with a 104-byte path limit. Placing `LIMA_HOME` under `~/.rd2/lima` instead of the full application support path keeps socket paths short enough.

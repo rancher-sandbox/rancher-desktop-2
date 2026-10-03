@@ -7,7 +7,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -413,11 +412,10 @@ func newServiceLogCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			logrus.SetLevel(logrus.InfoLevel)
 
-			name := "rdd.stderr.log"
+			logPath := instance.StderrLog()
 			if ok, _ := cmd.Flags().GetBool("stdout"); ok {
-				name = "rdd.stdout.log"
+				logPath = instance.StdoutLog()
 			}
-			logPath := filepath.Join(instance.LogDir(), name)
 			follow, _ := cmd.Flags().GetBool("follow")
 
 			return tail.File(cmd.Context(), cmd.OutOrStdout(), logPath, follow)
