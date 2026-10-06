@@ -267,11 +267,11 @@ func Start(ctx context.Context, args []string) error {
 	if title != "" {
 		header = "=== " + title + " ===\n"
 	}
-	stdout, err := logfile.Create(instance.LogDir(), "rdd.stdout", keepLogs, header)
+	stdout, err := logfile.Create(instance.StdoutLog(), keepLogs, header)
 	if err != nil {
 		return err
 	}
-	stderr, err := logfile.Create(instance.LogDir(), "rdd.stderr", keepLogs, header)
+	stderr, err := logfile.Create(instance.StderrLog(), keepLogs, header)
 	if err != nil {
 		return err
 	}
@@ -573,7 +573,7 @@ func preserveAllInstanceLogs() {
 		if !entry.IsDir() {
 			continue
 		}
-		instDir := filepath.Join(instance.LimaHome(), entry.Name())
+		instDir := instance.LimaVMDir(entry.Name())
 		count, err := instance.PreserveLogs(instDir, entry.Name())
 		if err != nil {
 			logrus.WithError(err).WithField("instance", entry.Name()).Warn("Failed to preserve instance logs")

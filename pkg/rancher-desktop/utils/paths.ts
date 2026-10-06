@@ -32,6 +32,10 @@ interface RDDPaths {
   readonly pid_file:      string;
   /** RDD: short user data directory. */
   readonly short_dir:     string;
+  /** RDD: control plane stderr log file. */
+  readonly stderr_log:    string;
+  /** RDD: control plane stdout log file. */
+  readonly stdout_log:    string;
   /** RDD: TLS certificate directory. */
   readonly tls_dir:       string;
 }

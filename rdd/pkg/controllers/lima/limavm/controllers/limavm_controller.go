@@ -92,7 +92,7 @@ const (
 
 // sentinelPath returns the path to the preparing sentinel file for an instance.
 func sentinelPath(instanceName string) string {
-	return filepath.Join(instance.LimaHome(), instanceName, preparingSentinel)
+	return filepath.Join(instance.LimaVMDir(instanceName), preparingSentinel)
 }
 
 // hasSentinel reports whether the preparing sentinel file exists.
@@ -117,7 +117,7 @@ func removeSentinel(instanceName string) error {
 
 // instanceTemplatePath returns the path to the lima.yaml for an instance.
 func instanceTemplatePath(instanceName string) string {
-	return filepath.Join(instance.LimaHome(), instanceName, filenames.LimaYAML)
+	return filepath.Join(instance.LimaVMDir(instanceName), filenames.LimaYAML)
 }
 
 // readInstanceTemplate reads the lima.yaml from the instance directory.
@@ -201,7 +201,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		} else {
 			// Preparation didn't complete; delete the instance directory.
 			// Use os.RemoveAll because store.Inspect may fail if lima.yaml is missing.
-			instanceDir := filepath.Join(instance.LimaHome(), limaVM.Name)
+			instanceDir := instance.LimaVMDir(limaVM.Name)
 			logger.Info("Deleting incomplete instance directory", "path", instanceDir)
 			if err := os.RemoveAll(instanceDir); err != nil {
 				logger.Error(err, "Failed to delete incomplete instance directory")
@@ -313,7 +313,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		// cleanup (unregistering the WSL2 distro on Windows to release the VHD
 		// lock) before removing the directory, then we requeue to start fresh.
 		if strings.Contains(err.Error(), "already exists") {
-			instanceDir := filepath.Join(instance.LimaHome(), limaVM.Name)
+			instanceDir := instance.LimaVMDir(limaVM.Name)
 			logger.Info("Found stale Lima instance directory, removing it", "path", instanceDir)
 			if rmErr := removeStaleInstance(ctx, logger, limaVM.Name, instanceDir); rmErr != nil {
 				logger.Error(rmErr, "Failed to remove stale Lima instance directory; will retry")

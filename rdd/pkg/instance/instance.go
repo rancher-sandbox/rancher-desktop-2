@@ -43,22 +43,33 @@ var Name = sync.OnceValue(func() string {
 	return "rancher-desktop-" + Suffix()
 })
 
-// Dir returns the OS-specific data directory for this instance.
-var Dir = sync.OnceValue(func() string {
+// SharedDataDir returns the OS-specific data directory that holds every
+// instance's Dir(). It looks up the home directory on every call, so tests
+// can point it at a temporary home.
+func SharedDataDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		panic(fmt.Errorf("could not get home directory: %w", err))
+		return "", fmt.Errorf("could not get home directory: %w", err)
 	}
 	switch runtime.GOOS {
 	case "windows":
-		return filepath.Join(home, "AppData", "Local", Name())
+		return filepath.Join(home, "AppData", "Local"), nil
 	case "linux":
-		return filepath.Join(home, ".local", "share", Name())
+		return filepath.Join(home, ".local", "share"), nil
 	case "darwin":
-		return filepath.Join(home, "Library", "Application Support", Name())
+		return filepath.Join(home, "Library", "Application Support"), nil
 	default:
-		panic(fmt.Sprintf("platform %s not supported", runtime.GOOS))
+		return "", fmt.Errorf("platform %s not supported", runtime.GOOS)
 	}
+}
+
+// Dir returns the OS-specific data directory for this instance.
+var Dir = sync.OnceValue(func() string {
+	dir, err := SharedDataDir()
+	if err != nil {
+		panic(err)
+	}
+	return filepath.Join(dir, Name())
 })
 
 // LogDir returns the OS-specific log directory for this instance.
@@ -82,6 +93,16 @@ var LogDir = sync.OnceValue(func() string {
 	default:
 		panic(fmt.Sprintf("platform %s not supported", runtime.GOOS))
 	}
+})
+
+// StdoutLog returns the path of the control plane's stdout log.
+var StdoutLog = sync.OnceValue(func() string {
+	return filepath.Join(LogDir(), "rdd.stdout.log")
+})
+
+// StderrLog returns the path of the control plane's stderr log.
+var StderrLog = sync.OnceValue(func() string {
+	return filepath.Join(LogDir(), "rdd.stderr.log")
 })
 
 // ArgsFile returns the path to the saved service arguments file.
@@ -130,6 +151,12 @@ var ShortDir = sync.OnceValue(func() string {
 var LimaHome = sync.OnceValue(func() string {
 	return filepath.Join(ShortDir(), "lima")
 })
+
+// LimaVMDir returns the directory Lima keeps for the named LimaVM
+// (e.g., ~/.rd2/lima/rd).
+func LimaVMDir(name string) string {
+	return filepath.Join(LimaHome(), name)
+}
 
 // BinDir returns the directory holding this instance's user-facing executables
 // (e.g., ~/.rd2/bin). This is the directory the path-management controller adds
