@@ -4,13 +4,16 @@
 
 // Package binlinks publishes the binaries bundled with the Rancher Desktop
 // application into the instance bin directory (~/.rd<instance>/bin), so a user
-// can put that directory on PATH. Each entry is a symlink, or a hardlink where
-// symlinks need privileges that are absent (Windows without developer mode).
-// Inside the application bundle rdd owns the directory and recreates it to
-// mirror the bundled binaries. Standalone, rdd repairs its own rdd and kubectl
-// links and prunes any symlink left dangling by an uninstalled application, so a
-// stale link cannot shadow a tool the user later installs on PATH; working links
-// and non-symlink entries survive.
+// can put that directory on PATH. On macOS and Linux each entry is a symlink, or
+// a hardlink where symlinks need absent privileges. On Windows, where a standard
+// user can make neither under Program Files, the bundle instead publishes a
+// small forwarder per tool beside a <tool>.shim file naming the real binary (see
+// forwarders.go). Inside the application bundle rdd owns the directory and keeps
+// it mirroring the bundled binaries. Standalone, rdd repairs its own rdd and
+// kubectl links and prunes anything an uninstalled application left dangling —
+// symlinks, and forwarders whose target is gone — so a stale entry cannot shadow
+// a tool the user later installs on PATH; working links, forwarders with a live
+// target, and other files survive.
 package binlinks
 
 import (
@@ -26,12 +29,13 @@ import (
 )
 
 // LinkBundledBinaries publishes rdd's binaries into the instance bin directory.
-// Inside the application bundle it recreates the directory to mirror every
-// bundled binary; standalone it repairs only its own rdd and kubectl links.
+// Inside the application bundle it mirrors every bundled binary, recreating the
+// directory on macOS and Linux and reconciling forwarders in place on Windows;
+// standalone it repairs only its own rdd and kubectl links.
 // Publishing is best-effort and must not block startup. A per-binary link
-// failure is logged and skipped; only a whole-operation failure — an unreadable
-// bundle directory or an unwritable bin directory — is returned for the caller
-// to log.
+// failure is logged and skipped. Only a whole-operation failure is returned for
+// the caller to log, such as an unreadable bundle directory, an unwritable bin
+// directory, or a forwarder the bundle lacks or rdd cannot copy.
 func LinkBundledBinaries() error {
 	execPath, err := os.Executable()
 	if err != nil {
@@ -43,6 +47,9 @@ func LinkBundledBinaries() error {
 	// real systems hit when symlinks need absent privileges.
 	useSymlink := os.Getenv("RDD_NO_SYMLINKS") == ""
 	if inAppBundle(execPath, runtime.GOOS) {
+		if runtime.GOOS == "windows" {
+			return linkForwarders(execPath, binDir)
+		}
 		return linkBinaries(execPath, binDir, exe, useSymlink)
 	}
 	return ensureSelfLinks(execPath, binDir, exe, useSymlink)
@@ -134,9 +141,10 @@ func link(target, linkPath string, useSymlink bool) error {
 }
 
 // ensureSelfLinks keeps the instance bin directory usable when no application
-// bundle has published it. It first prunes symlinks left dangling by an
-// uninstalled application, then points the rdd and kubectl links at a standalone
-// rdd. Working links and non-symlink entries survive.
+// bundle has published it. It first prunes symlinks and forwarders left dangling
+// by an uninstalled application, then points the rdd and kubectl links at a
+// standalone rdd. Working links, forwarders with a live target, and other files
+// survive.
 func ensureSelfLinks(execPath, binDir, exe string, useSymlink bool) error {
 	if err := os.MkdirAll(binDir, 0o755); err != nil {
 		return fmt.Errorf("create %q: %w", binDir, err)
@@ -144,6 +152,9 @@ func ensureSelfLinks(execPath, binDir, exe string, useSymlink bool) error {
 	if err := pruneDanglingLinks(binDir); err != nil {
 		return err
 	}
+	// A bundle install publishes Windows forwarders instead of symlinks; prune
+	// any whose target an uninstalled application took with it.
+	pruneDanglingForwarders(binDir)
 	for _, name := range []string{"rdd" + exe, "kubectl" + exe} {
 		if err := ensureSelfLink(filepath.Join(binDir, name), execPath, useSymlink); err != nil {
 			klog.Warningf("Failed to repair the %q link: %v", name, err)
