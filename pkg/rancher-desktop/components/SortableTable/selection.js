@@ -123,15 +123,14 @@ export default {
     pagedRows() {
       // When the table contents changes:
       // - Remove items that are in the selection but no longer in the table.
+      //
+      // `selectedRows` (local data) and `pagedRows` (from the `rows` prop) can
+      // wrap the same underlying row in different Vue proxies, so compare by
+      // keyField instead of object identity.
 
       const content = this.pagedRows;
-      const toRemove = [];
-
-      for (const node of this.selectedRows) {
-        if (!content.includes(node) ) {
-          toRemove.push(node);
-        }
-      }
+      const contentKeys = new Set(content.map((row) => get(row, this.keyField)));
+      const toRemove = this.selectedRows.filter((node) => !contentKeys.has(get(node, this.keyField)));
 
       this.update([], toRemove);
     },
@@ -441,7 +440,7 @@ export default {
 
     update(toAdd, toRemove) {
       toRemove.forEach((row) => {
-        const index = this.selectedRows.findIndex((r) => r._key === row._key);
+        const index = this.selectedRows.findIndex((r) => get(r, this.keyField) === get(row, this.keyField));
 
         if (index !== -1) {
           this.selectedRows.splice(index, 1);
