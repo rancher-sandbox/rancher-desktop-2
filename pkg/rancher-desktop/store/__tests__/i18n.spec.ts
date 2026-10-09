@@ -204,3 +204,40 @@ describe('availableLocales getter', () => {
     expect(Object.keys(scriptGetters('none').availableLocales)).toEqual(['pt-br', 'ko', 'ja']);
   });
 });
+
+describe('switchTo action', () => {
+  function context(loaded: string[] = ['en-us', 'zh-hans']) {
+    return {
+      state: {
+        default:      'en-us',
+        selected:     'en-us',
+        available:    ['en-us', 'zh-hans'],
+        translations: Object.fromEntries(loaded.map(locale => [locale, {}])),
+      },
+      commit:   jest.fn(),
+      dispatch: jest.fn(() => Promise.reject(new Error('cannot load'))),
+    };
+  }
+
+  const switchTo = (ctx: unknown, locale: string) => (i18n.actions as any).switchTo(ctx, locale);
+
+  beforeEach(() => {
+    document.documentElement.lang = '';
+  });
+
+  it('declares the language on the document', async() => {
+    await switchTo(context(), 'zh-hans');
+
+    expect(document.documentElement.lang).toBe('zh-hans');
+  });
+
+  it('declares the fallback language when the translation cannot be loaded', async() => {
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    await switchTo(context(['en-us']), 'zh-hans');
+
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining('"zh-hans"'), expect.any(Error));
+    spy.mockRestore();
+    expect(document.documentElement.lang).toBe('en-us');
+  });
+});
