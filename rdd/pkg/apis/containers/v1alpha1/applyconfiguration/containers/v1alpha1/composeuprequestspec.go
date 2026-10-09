@@ -23,6 +23,10 @@ type ComposeUpRequestSpecApplyConfiguration struct {
 	// relative to workingDir.  It must be a descendent of workingDir.
 	//
 	Configs []string `json:"configs,omitempty"`
+	// Env is the set of environment variables to use when bringing up the compose
+	// project.
+	//
+	Env map[string]string `json:"env,omitempty"`
 }
 
 // ComposeUpRequestSpecApplyConfiguration constructs a declarative configuration of the ComposeUpRequestSpec type for use with
@@ -61,6 +65,20 @@ func (b *ComposeUpRequestSpecApplyConfiguration) WithWorkingDir(value string) *C
 func (b *ComposeUpRequestSpecApplyConfiguration) WithConfigs(values ...string) *ComposeUpRequestSpecApplyConfiguration {
 	for i := range values {
 		b.Configs = append(b.Configs, values[i])
+	}
+	return b
+}
+
+// WithEnv puts the entries into the Env field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, the entries provided by each call will be put on the Env field,
+// overwriting an existing map entries in Env field with the same key.
+func (b *ComposeUpRequestSpecApplyConfiguration) WithEnv(entries map[string]string) *ComposeUpRequestSpecApplyConfiguration {
+	if b.Env == nil && len(entries) > 0 {
+		b.Env = make(map[string]string, len(entries))
+	}
+	for k, v := range entries {
+		b.Env[k] = v
 	}
 	return b
 }
