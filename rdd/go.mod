@@ -25,7 +25,7 @@ require (
 	github.com/linuxkit/virtsock v0.0.0-20241009230534-cb6a20cc0422
 	github.com/mattn/go-isatty v0.0.24
 	github.com/mikefarah/yq/v4 v4.54.1
-	github.com/moby/moby/api v1.56.0
+	github.com/moby/moby/api v1.56.1
 	github.com/moby/moby/client v0.6.0
 	github.com/muesli/reflow v0.3.0
 	github.com/nxadm/tail v1.4.11
