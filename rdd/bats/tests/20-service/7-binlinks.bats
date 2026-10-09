@@ -4,8 +4,13 @@ load '../../helpers/load'
 # ~/.rd<instance>/bin only when rdd runs from inside the app bundle. A fake
 # bundle holds a real rdd copy at .../<resources>/<os>/bin/rdd next to a couple
 # of stand-in tool files; the daemon links whatever sits beside that rdd.
-# Symlinks need privileges on Windows, so the daemon falls back to hardlinks;
-# RDD_NO_SYMLINKS forces that fallback for the last test.
+#
+# The publish differs by platform. macOS and Linux get a symlink per tool (or a
+# hardlink where symlinks need privileges; RDD_NO_SYMLINKS forces that fallback
+# for the last test). Windows gets a forwarder per tool: a hardlink to a shared
+# rdd-forwarder.exe, beside a <tool>.shim naming the real binary. The bundle
+# must therefore carry rdd-forwarder.exe; a stand-in is enough here because these
+# tests check the published link structure, not that the forwarder runs.
 
 local_setup_file() {
     # Clean up from any previous run; svc delete also removes the short dir.
@@ -21,6 +26,9 @@ local_setup_file() {
     cp "${PATH_REPO_ROOT}/bin/rdd${EXE}" "${fake_bin}/rdd${EXE}"
     echo "stand-in docker" >"${fake_bin}/docker${EXE}"
     echo "stand-in helm" >"${fake_bin}/helm${EXE}"
+    # Windows publishes forwarders, which the daemon copies from the bundled
+    # rdd-forwarder.exe; a stand-in is enough for the link-structure checks.
+    is_windows && echo "stand-in forwarder" >"${fake_bin}/rdd-forwarder${EXE}"
 
     FAKE_BIN="${fake_bin}"
     DEST_DIR="${RDD_SHORT_DIR}/bin"
@@ -50,14 +58,50 @@ assert_hardlink_to() { # <target> <link>
     assert [ "$2" -ef "$1" ]
 }
 
+# assert_forwarder_to asserts the Windows forwarder published for <name>: a
+# hardlink to the shared rdd-forwarder, not a symlink, beside a <name>.shim that
+# names <target>. The shim's exact format is covered by the Go unit tests, so we
+# only check it names the target binary (which also proves kubectl forwards to
+# rdd, not to itself).
+assert_forwarder_to() { # <target> <name>
+    local dest="${DEST_DIR}/$2"
+    assert_file_exist "${dest}"
+    refute [ -L "${dest}" ]
+    assert [ "${dest}" -ef "${DEST_DIR}/rdd-forwarder${EXE}" ]
+    local shim="${DEST_DIR}/${2%"${EXE}"}.shim"
+    assert_file_exist "${shim}"
+    assert_file_contains "${shim}" "$(basename "$1")"
+}
+
+# assert_published asserts the bundle published <name> resolving to <target>: a
+# symlink on macOS and Linux, a forwarder on Windows.
+assert_published() { # <target> <name>
+    if is_windows; then
+        assert_forwarder_to "$1" "$2"
+    else
+        assert_symlink_to "$1" "${DEST_DIR}/$2"
+    fi
+}
+
+# assert_not_published asserts <name> is gone from the bin directory, including
+# its shim on Windows.
+assert_not_published() { # <name>
+    if is_windows; then
+        assert_file_not_exist "${DEST_DIR}/$1"
+        assert_file_not_exist "${DEST_DIR}/${1%"${EXE}"}.shim"
+    else
+        assert_link_not_exist "${DEST_DIR}/$1"
+    fi
+}
+
 @test 'publishes bundled binaries when started from the app bundle' {
     load_var FAKE_BIN DEST_DIR
     fake_rdd svc start
-    assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/rdd${EXE}"
-    assert_symlink_to "${FAKE_BIN}/docker${EXE}" "${DEST_DIR}/docker${EXE}"
-    assert_symlink_to "${FAKE_BIN}/helm${EXE}" "${DEST_DIR}/helm${EXE}"
-    # kubectl is not bundled; it links to rdd.
-    assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/kubectl${EXE}"
+    assert_published "${FAKE_BIN}/rdd${EXE}" "rdd${EXE}"
+    assert_published "${FAKE_BIN}/docker${EXE}" "docker${EXE}"
+    assert_published "${FAKE_BIN}/helm${EXE}" "helm${EXE}"
+    # kubectl is not bundled; it forwards to rdd.
+    assert_published "${FAKE_BIN}/rdd${EXE}" "kubectl${EXE}"
     # Stop the bundled daemon with fake_rdd; the repo rdd cannot (see fake_rdd).
     fake_rdd svc stop
 }
@@ -67,10 +111,10 @@ assert_hardlink_to() { # <target> <link>
     # The bundle run's links still resolve, so a standalone rdd leaves its own
     # rdd and kubectl links alone and never touches docker or helm.
     rdd svc start
-    assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/rdd${EXE}"
-    assert_symlink_to "${FAKE_BIN}/docker${EXE}" "${DEST_DIR}/docker${EXE}"
-    assert_symlink_to "${FAKE_BIN}/helm${EXE}" "${DEST_DIR}/helm${EXE}"
-    assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/kubectl${EXE}"
+    assert_published "${FAKE_BIN}/rdd${EXE}" "rdd${EXE}"
+    assert_published "${FAKE_BIN}/docker${EXE}" "docker${EXE}"
+    assert_published "${FAKE_BIN}/helm${EXE}" "helm${EXE}"
+    assert_published "${FAKE_BIN}/rdd${EXE}" "kubectl${EXE}"
 }
 
 @test 'updates the links when the bundle changes and rdd runs from it again' {
@@ -79,13 +123,13 @@ assert_hardlink_to() { # <target> <link>
     echo "stand-in nerdctl" >"${FAKE_BIN}/nerdctl${EXE}"
     rm "${FAKE_BIN}/helm${EXE}"
     fake_rdd svc start
-    assert_symlink_to "${FAKE_BIN}/nerdctl${EXE}" "${DEST_DIR}/nerdctl${EXE}"
-    # The dropped tool's link is gone, proving the directory was recreated.
-    assert_link_not_exist "${DEST_DIR}/helm${EXE}"
-    # Unchanged entries are still linked.
-    assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/rdd${EXE}"
-    assert_symlink_to "${FAKE_BIN}/docker${EXE}" "${DEST_DIR}/docker${EXE}"
-    assert_symlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/kubectl${EXE}"
+    assert_published "${FAKE_BIN}/nerdctl${EXE}" "nerdctl${EXE}"
+    # The dropped tool's entry (and its shim, on Windows) is gone.
+    assert_not_published "helm${EXE}"
+    # Unchanged entries are still published.
+    assert_published "${FAKE_BIN}/rdd${EXE}" "rdd${EXE}"
+    assert_published "${FAKE_BIN}/docker${EXE}" "docker${EXE}"
+    assert_published "${FAKE_BIN}/rdd${EXE}" "kubectl${EXE}"
     fake_rdd svc stop
 }
 
@@ -102,19 +146,21 @@ assert_hardlink_to() { # <target> <link>
     "${throwaway}/rdd${EXE}" svc start 3>&- 4>&-
     "${throwaway}/rdd${EXE}" svc stop 3>&- 4>&-
     try --max 30 --delay 1 -- rm -rf "${throwaway}"
-    # The standalone rdd repairs its own links to point at the running binary.
+    # The standalone rdd repairs its own rdd and kubectl links to point at the
+    # running binary. A standalone install does not publish forwarders, so these
+    # are symlinks on every platform.
     rdd svc start
     standalone="${PATH_REPO_ROOT}/bin/rdd${EXE}"
     assert_symlink_to "${standalone}" "${DEST_DIR}/rdd${EXE}"
     assert_symlink_to "${standalone}" "${DEST_DIR}/kubectl${EXE}"
-    # The unrelated docker link from the bundle run is left in place.
-    assert_symlink_to "${FAKE_BIN}/docker${EXE}" "${DEST_DIR}/docker${EXE}"
+    # The unrelated docker entry from the bundle run is left in place.
+    assert_published "${FAKE_BIN}/docker${EXE}" "docker${EXE}"
 }
 
 @test 'prunes dangling tool links left after an uninstall' {
     load_var DEST_DIR
     # Publish from a throwaway bundle, then delete it so its links dangle — the
-    # uninstall case. Driving setup through rdd gives real symlinks the daemon
+    # uninstall case. Driving setup through rdd gives real links the daemon
     # recognizes (MSYS2 ln -s would not).
     resources=resources
     is_macos && resources=Resources
@@ -122,23 +168,25 @@ assert_hardlink_to() { # <target> <link>
     mkdir -p "${bundle}"
     cp "${PATH_REPO_ROOT}/bin/rdd${EXE}" "${bundle}/rdd${EXE}"
     echo "stand-in docker" >"${bundle}/docker${EXE}"
+    is_windows && echo "stand-in forwarder" >"${bundle}/rdd-forwarder${EXE}"
     "${bundle}/rdd${EXE}" svc start 3>&- 4>&-
     "${bundle}/rdd${EXE}" svc stop 3>&- 4>&-
-    assert_symlink_to "${bundle}/docker${EXE}" "${DEST_DIR}/docker${EXE}"
+    assert_published "${bundle}/docker${EXE}" "docker${EXE}"
     try --max 30 --delay 1 -- rm -rf "${bundle}"
-    # A standalone rdd prunes the now-dangling docker link so it cannot shadow a
+    # A standalone rdd prunes the now-dangling docker entry so it cannot shadow a
     # tool on PATH, and repairs its own rdd and kubectl links to itself.
     rdd svc start
-    assert_link_not_exist "${DEST_DIR}/docker${EXE}"
+    assert_not_published "docker${EXE}"
     standalone="${PATH_REPO_ROOT}/bin/rdd${EXE}"
     assert_symlink_to "${standalone}" "${DEST_DIR}/rdd${EXE}"
     assert_symlink_to "${standalone}" "${DEST_DIR}/kubectl${EXE}"
 }
 
 @test 'publishes hardlinks when symlinks are disabled' {
+    skip_on_windows "Windows publishes forwarders, not symlinks or the hardlink fallback"
     load_var FAKE_BIN DEST_DIR
-    # RDD_NO_SYMLINKS forces the hardlink fallback that Windows hits without
-    # developer mode, so the same publish runs on a system that lacks symlinks.
+    # RDD_NO_SYMLINKS forces the hardlink fallback that a symlink-less Unix host
+    # would hit, so the same publish runs on a system that lacks symlinks.
     export RDD_NO_SYMLINKS=1
     fake_rdd svc start
     assert_hardlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/rdd${EXE}"
