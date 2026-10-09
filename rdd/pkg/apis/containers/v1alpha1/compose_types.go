@@ -197,6 +197,12 @@ type ComposeUpRequestSpec struct {
 	//
 	// +optional
 	Configs []string `json:"configs,omitempty"`
+	// Env is the set of environment variables to use when bringing up the compose
+	// project.
+	//
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="self.all(k, k.matches('^[a-zA-Z0-9_]+$'))"
+	Env map[string]string `json:"env,omitempty"`
 }
 
 // ComposeUpRequestStatus defines the observed state of a ComposeUpRequest.
