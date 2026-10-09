@@ -769,6 +769,7 @@ spec:
   name: my-project
   workingDir: /opt/foo/project-dir
   configs: []
+  env: {}
 status:
   conditions: []
 ```
@@ -789,6 +790,7 @@ a `ComposeProject`.
   project.  Relative to `spec.workingDir`, which means it's also a path on the
   host.  Must be inside `spec.workingDir` if given.  Defaults to the
   `docker compose` defaults.
+- **spec.env**: Optional; extra environment variables to set.
 - **status.conditions**: The normal status conditions; see [below](#status-conditions-1)
 
 ##### Status Conditions
