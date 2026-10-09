@@ -744,10 +744,11 @@ will cause `docker compose down --remove-orphans` to be run.  Any associated
 volumes and images will not be affected.
 
 Because `status.workingDir` and `status.configs` may not be available (empty, or
-the user may have deleted them since), this will only be able to delete
-resources with the correct labels.  The `ComposeProject` itself will be deleted
-once that succeeds (because `HasMembers` will become `False` at that point).
-If the `docker compose down` fails, it may be retried later.
+the user may have deleted them since), the `docker compose down` command may
+fail.  If the command fails for any reason, all containers with the relevant
+labels will be manually deleted; no other resources are affected.  The
+`ComposeProject` itself will be deleted once that succeeds (because `HasMembers`
+will become `False` at that point).
 
 Note: `docker swarm` may create compose projects as part of their mechanism;
 deleting projects created this way is likely to leave behind non-compose
