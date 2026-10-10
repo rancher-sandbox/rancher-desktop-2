@@ -338,13 +338,17 @@ generate-crds:
 	scripts/generate-crds.sh
 .PHONY: generate-crds
 
+generate-nerdctl:
+	scripts/generate-nerdctl.sh
+.PHONY: generate-nerdctl
+
 # We do not run this as part of `make generate` as this requires the service
 # to be buildable and runnable.
 generate-typescript: bin/rdd$(EXE)
 	../scripts/generate-rdd-client.sh
 .PHONY: generate-typescript
 
-generate: generate-deepcopy generate-crds
+generate: generate-deepcopy generate-crds generate-nerdctl
 .PHONY: generate
 
 verify-generate: generate generate-typescript
