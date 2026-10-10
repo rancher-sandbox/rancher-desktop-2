@@ -211,6 +211,7 @@ func TestReconcileContainer(t *testing.T) {
 		assert.Equal(t, compose.Status.Namespace, dockerNamespace)
 		assert.Equal(t, compose.Status.Name, "myproject")
 		assert.Equal(t, compose.Status.WorkingDir, "")
+		assert.Assert(t, controllerutil.ContainsFinalizer(&compose, mirrorFinalizer))
 		assert.Equal(t, len(compose.Status.Configs), 0)
 		assert.DeepEqual(t, compose.Status.Containers, []v1alpha1.ComposeProjectContainer{
 			{Name: resource.GetName(), UID: resource.GetUID()},
