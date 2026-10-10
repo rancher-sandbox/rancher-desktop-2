@@ -23,6 +23,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -120,6 +121,7 @@ func (r *reconciler) reconcileContainer(ctx context.Context, req composeRequest)
 		// concurrently created instead.
 		err := r.Get(ctx, client.ObjectKeyFromObject(project), project)
 		if apierrors.IsNotFound(err) {
+			controllerutil.AddFinalizer(project, mirrorFinalizer)
 			if err = r.Create(ctx, project); apierrors.IsAlreadyExists(err) {
 				err = r.Get(ctx, client.ObjectKeyFromObject(project), project)
 			}
