@@ -317,6 +317,10 @@ jobs:
       # cache comes near 100 MB.
       run: find "$(go env GOCACHE)" -type f -size +100M -delete
 
+    - name: "macOS: Trim the Go cache"
+      if: needs.check-paths.outputs.should-run && matrix.runs-on == 'macos-15-intel'
+      uses: $/.github/actions/trim-go-cache
+
     - name: "Windows: stop typeperf sampler"
       if: always() && needs.check-paths.outputs.should-run && runner.os == 'Windows'
       uses: $/.github/actions/windows-typeperf-sampler

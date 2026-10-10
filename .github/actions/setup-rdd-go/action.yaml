@@ -37,6 +37,9 @@ runs:
         echo "prefix=go-$RUNNER_OS-$RUNNER_ARCH-$(go env GOVERSION)-"
         echo "save=$SAVE"
       } | tee -a "$GITHUB_OUTPUT"
+      # Taken before the restore, so trim-go-cache can tell the entries this
+      # job used from the ones it only restored.
+      date +GO_CACHE_RESTORE_TIME=%s >> "${GITHUB_ENV}"
 
   # A run can restore an entry created on its own branch, on its base branch,
   # or on the default branch. Only main's entries are therefore visible to
