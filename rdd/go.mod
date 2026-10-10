@@ -44,9 +44,9 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 	gotest.tools/v3 v3.5.2
 	k8s.io/api v0.37.0
-	k8s.io/apiextensions-apiserver v0.36.4
+	k8s.io/apiextensions-apiserver v0.37.0
 	k8s.io/apimachinery v0.37.0
-	k8s.io/apiserver v0.36.4
+	k8s.io/apiserver v0.37.0
 	k8s.io/client-go v0.37.0
 	k8s.io/component-base v0.37.0
 	k8s.io/klog/v2 v2.140.0
@@ -235,8 +235,8 @@ require (
 	github.com/golangci/swaggoswag v0.0.0-20250504205917-77f2aca3143e // indirect
 	github.com/golangci/unconvert v0.0.0-20250410112200-a129a6e6413e // indirect
 	github.com/google/btree v1.1.3 // indirect
-	github.com/google/cel-go v0.29.0 // indirect
-	github.com/google/gnostic-models v0.7.0 // indirect
+	github.com/google/cel-go v0.29.2 // indirect
+	github.com/google/gnostic-models v0.7.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
@@ -468,14 +468,14 @@ require (
 	k8s.io/cli-runtime v0.36.4 // indirect
 	k8s.io/cloud-provider v0.36.4 // indirect
 	k8s.io/cluster-bootstrap v0.36.4 // indirect
-	k8s.io/code-generator v0.36.4 // indirect
+	k8s.io/code-generator v0.37.0 // indirect
 	k8s.io/component-helpers v0.36.4 // indirect
 	k8s.io/controller-manager v0.36.4 // indirect
 	k8s.io/csi-translation-lib v0.36.4 // indirect
 	k8s.io/dynamic-resource-allocation v0.36.4 // indirect
 	k8s.io/endpointslice v0.36.4 // indirect
 	k8s.io/externaljwt v0.36.4 // indirect
-	k8s.io/gengo/v2 v2.0.0-20250922181213-ec3ebc5fd46b // indirect
+	k8s.io/gengo/v2 v2.0.0-20260408192533-25e2208e0dc3 // indirect
 	k8s.io/kms v0.36.4 // indirect
 	k8s.io/kube-controller-manager v0.36.4 // indirect
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
@@ -490,8 +490,8 @@ require (
 	mvdan.cc/gofumpt v0.11.0 // indirect
 	mvdan.cc/sh/v3 v3.14.1 // indirect
 	mvdan.cc/unparam v0.0.0-20260823230713-2fa3d841b0c8 // indirect
-	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.34.0 // indirect
-	sigs.k8s.io/controller-tools v0.19.0 // indirect
+	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.36.0 // indirect
+	sigs.k8s.io/controller-tools v0.22.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/kustomize/api v0.21.1 // indirect
 	sigs.k8s.io/kustomize/kustomize/v5 v5.8.1 // indirect
