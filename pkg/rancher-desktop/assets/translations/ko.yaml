@@ -14,6 +14,10 @@ allowedImages:
   patterns:
     # @source Type the image pattern
     placeholder: 이미지 패턴 입력
+app:
+  # @reason Placeholder only; the product name is filled in at runtime
+  # @source {productName}
+  name: '{productName}'
 application:
   behavior:
     autoStart:
@@ -449,11 +453,6 @@ denyRoot:
   message: Rancher Desktop은 root 권한으로 실행할 수 없습니다. 일반 사용자로 다시 실행하십시오.
   # @source Cannot run as Root
   title: root로 실행할 수 없음
-deploymentProfile:
-  # @source Invalid deployment file {path}: no version specified. Add a version field to make it valid (current version is {version}).
-  noVersion: '잘못된 배포 파일 {path}: 버전이 지정되지 않았습니다. 유효하도록 version 필드를 추가하십시오(현재 버전은 {version}입니다).'
-  # @source Invalid deployment: no version specified at {path}. Add a version field to make it valid (current version is {version}).
-  noVersionRegistry: '잘못된 배포: {path}에 버전이 지정되지 않았습니다. 유효하도록 version 필드를 추가하십시오(현재 버전은 {version}입니다).'
 diagnostics:
   # @source {count} failed plus {muted} muted
   failedCount: '{count}개 실패 및 {muted}개 무시됨'
@@ -491,35 +490,6 @@ diagnostics:
     name: 이름
   # @source Diagnostics
   title: 진단
-dialog:
-  bridgedNetwork:
-    # @source Shared network isn't available either. Only network access is via port forwarding to the host.
-    noNetwork: 공유 네트워크도 사용할 수 없습니다. 호스트로의 포트 포워딩을 통해서만 네트워크에 액세스할 수 있습니다.
-    # @source Using shared network address {ip}
-    sharedFallback: 공유 네트워크 주소 {ip}을(를) 사용합니다
-    # @source Bridged network did not get an IP address.
-    title: 브리지 네트워크가 IP 주소를 받지 못했습니다.
-  confirmMigration:
-    # @source Delete Workloads
-    delete: 워크로드 삭제
-    # @source Downgrading from {from} to {to} will lose existing Kubernetes workloads. Delete the data?
-    message: '{from}에서 {to}(으)로 다운그레이드하면 기존 Kubernetes 워크로드가 손실됩니다. 데이터를 삭제하시겠습니까?'
-    # @source Confirming migration
-    title: 마이그레이션 확인
-  invalidK8sVersion:
-    # @source Falling back to recommended minimum upgrade version of {version}
-    detail: 권장 최소 업그레이드 버전인 {version}(으)로 대체합니다
-    # @source Requested Kubernetes version ''{version}'' is not a supported version.
-    message: 요청한 Kubernetes 버전 ''{version}''은(는) 지원되는 버전이 아닙니다.
-    # @source Invalid Kubernetes Version
-    title: 잘못된 Kubernetes 버전
-  networkFailure:
-    # @source Please acquire a version in the range {range} and install in ''{path}''
-    detail: '{range} 범위의 버전을 받아 ''''{path}''''에 설치하십시오'
-    # @source Can't download a compatible version of kubectl in offline-mode
-    message: 오프라인 모드에서는 호환되는 버전의 kubectl을 다운로드할 수 없습니다
-    # @source Network failure
-    title: 네트워크 오류
 extensions:
   # @reason Icon identifier (CSS class), not translatable text
   # @source icon-extension
@@ -576,8 +546,8 @@ general:
   projectDiscussions: '프로젝트 토론: <a href="https://slack.rancher.io/">Rancher Users</a> Slack의 <b>#rancher-desktop</b> 채널'
   # @source Project Links:
   projectLinks: '프로젝트 링크:'
-  # @source Welcome to Rancher Desktop by SUSE
-  title: SUSE의 Rancher Desktop에 오신 것을 환영합니다
+  # @source Welcome to {appName} by SUSE
+  title: SUSE의 {appName}에 오신 것을 환영합니다
 generic:
   # @reason Korean conjunction 및 keeps the surrounding spaces of the source joiner
   # @source  and 
@@ -594,6 +564,9 @@ generic:
   # @reason Button on the Port Forwarding page; matches the established 포트 포워딩 terminology
   # @source Forward
   forward: 포워딩
+  # @reason cron stays in Latin script, like the other Unix tool names in this file (docker, sudo, root)
+  # @source Invalid cron schedule
+  invalidCron: 유효하지 않은 cron 일정
   # @source Loading&hellip;
   loading: 불러오는 중&hellip;
   # @source Namespace
@@ -800,13 +773,10 @@ kubernetesPrefs:
     legendText: 옵션
     # @source Install Spin Operator
     spinkube: Spin Operator 설치
-    # @source Spin Operator requires <a href="#" data-navigate="Container Engine,general">WebAssembly</a> to be enabled.
-    spinkubeWarning: Spin Operator를 사용하려면 <a href="#" data-navigate="Container Engine,general">WebAssembly</a>가 활성화되어 있어야 합니다.
+    # @source Spin Operator requires <a href="#" data-navigate="container-engine,general">WebAssembly</a> to be enabled.
+    spinkubeWarning: Spin Operator를 사용하려면 <a href="#" data-navigate="container-engine,general">WebAssembly</a>가 활성화되어 있어야 합니다.
     # @source Enable Traefik
     traefik: Traefik 사용
-  port:
-    # @source Kubernetes Port
-    legendText: Kubernetes 포트
   version:
     # @source Kubernetes version
     legendText: Kubernetes 버전
@@ -844,6 +814,8 @@ locale:
   ko: 한국어
   # @source Portuguese (Brazilian)
   pt-br: 포르투갈어(브라질)
+  # @source Vietnamese
+  vi: 베트남어
   # @source Chinese (Simplified)
   zh-hans: 중국어(간체)
 mainMenu:
@@ -1014,8 +986,8 @@ preferences:
       restart: 변경 사항을 적용하면 Kubernetes가 다시 시작됩니다.
   containerEngine:
     webAssembly:
-      # @source WebAssembly must be enabled for the <a href="#" data-navigate="Kubernetes">Spin Operator</a> to be installed.
-      warning: <a href="#" data-navigate="Kubernetes">Spin Operator</a>를 설치하려면 WebAssembly가 활성화되어 있어야 합니다.
+      # @source WebAssembly must be enabled for the <a href="#" data-navigate="kubernetes">Spin Operator</a> to be installed.
+      warning: <a href="#" data-navigate="kubernetes">Spin Operator</a>를 설치하려면 WebAssembly가 활성화되어 있어야 합니다.
   error:
     # @source Reload Preferences to try again.
     body: 환경설정을 다시 로드하여 다시 시도하십시오.
@@ -1080,6 +1052,11 @@ preferences:
     proxy: 프록시
     # @source Volumes
     volumes: 볼륨
+  validation:
+    containerEngine:
+      name:
+        # @source Container engine {current} is not valid
+        FieldValueNotSupported: 컨테이너 엔진 {current}이(가) 유효하지 않습니다
 preferencesWindow:
   close:
     # @source There are preferences with changes that have not been applied. All unsaved preferences will be lost.
@@ -1126,157 +1103,6 @@ product:
     online: 온라인
   # @source Version
   version: 버전
-progress:
-  # @source Asking for permission to run tasks as administrator
-  askingPermission: 관리자 권한으로 작업을 실행하기 위한 권한 요청 중
-  # @source Bundling certificates
-  bundlingCertificates: 인증서 번들 생성 중
-  # @source Checking k3s images
-  checkingK3sImages: k3s 이미지 확인 중
-  # @source Configuring container engine
-  configuringContainerEngine: 컨테이너 엔진 구성 중
-  # @source Configuring image proxy
-  configuringImageProxy: 이미지 프록시 구성 중
-  # @source Configuring logrotate
-  configuringLogrotate: logrotate 구성 중
-  # @source Container engine components
-  containerEngineComponents: 컨테이너 엔진 구성 요소
-  # @source Copying certificates
-  copyingCertificates: 인증서 복사 중
-  # @source Deleting incompatible Kubernetes state
-  deletingIncompatibleState: 호환되지 않는 Kubernetes 상태 삭제 중
-  # @source Deleting Kubernetes
-  deletingKubernetes: Kubernetes 삭제 중
-  # @source Deleting virtual machine
-  deletingVirtualMachine: 가상 머신 삭제 중
-  # @source DNS configuration
-  dnsConfiguration: DNS 구성
-  # @source Downloading Kubernetes components
-  downloadingKubernetesComponents: Kubernetes 구성 요소 다운로드 중
-  # @source Ensuring compatible kubectl
-  ensuringCompatibleKubectl: 호환되는 kubectl 확인 중
-  # @source Ensuring virtualization is supported
-  ensuringVirtualizationSupported: 가상화 지원 여부 확인 중
-  # @source Expecting user permission to continue
-  expectingPermission: 계속하기 위한 사용자 권한 대기 중
-  # @source Extracting certificates
-  extractingCertificates: 인증서 추출 중
-  # @source Fetching certificates
-  fetchingCertificates: 인증서 가져오는 중
-  # @source Initializing Rancher Desktop
-  initializingRancherDesktop: Rancher Desktop 초기화 중
-  # @source Initializing WSL data
-  initializingWslData: WSL 데이터 초기화 중
-  # @source Installing Buildkit
-  installingBuildkit: Buildkit 설치 중
-  # @source Installing CA certificates
-  installingCaCertificates: CA 인증서 설치 중
-  # @source Installing container engine
-  installingContainerEngine: 컨테이너 엔진 설치 중
-  # @source Installing credential helper
-  installingCredentialHelper: 자격 증명 도우미 설치 중
-  # @source Installing the docker-credential helper
-  installingDockerCredentialHelper: docker-credential 도우미 설치 중
-  # @source Installing helpers
-  installingHelpers: 도우미 설치 중
-  # @source Installing image scanner
-  installingImageScanner: 이미지 스캐너 설치 중
-  # @source Installing k3s
-  installingK3s: k3s 설치 중
-  # @source Installing Kubernetes
-  installingKubernetes: Kubernetes 설치 중
-  # @source Kubernetes components
-  kubernetesComponents: Kubernetes 구성 요소
-  # @source Kubernetes dockerd compatibility
-  kubernetesDockerCompatibility: Kubernetes dockerd 호환성
-  # @source Mounting WSL data
-  mountingWslData: WSL 데이터 마운트 중
-  # @source Preparing to start
-  preparingToStart: 시작 준비 중
-  # @source Proxy Config Setup
-  proxyConfigSetup: 프록시 구성 설정
-  # @source Rancher Desktop guest agent
-  rancherDesktopGuestAgent: Rancher Desktop 게스트 에이전트
-  # @source Recovering virtual machine
-  recoveringBrokenVirtualMachine: 가상 머신 복구 중
-  # @source Regenerating configuration to account for lack of permissions
-  regeneratingConfiguration: 권한 부족을 반영하여 구성 다시 생성 중
-  # @source Registering WSL distribution
-  registeringWslDistribution: WSL 배포판 등록 중
-  # @source Removing existing certificates
-  removingExistingCertificates: 기존 인증서 제거 중
-  # @source Removing spinkube operator
-  removingSpinkubeOperator: spinkube 오퍼레이터 제거 중
-  # @source Removing stale state
-  removingStaleState: 오래된 상태 제거 중
-  # @source Removing Traefik
-  removingTraefik: Traefik 제거 중
-  # @source Resetting Kubernetes
-  resettingKubernetes: Kubernetes 재설정 중
-  # @source Running provisioning scripts
-  runningProvisioningScripts: 프로비저닝 스크립트 실행 중
-  # @source Running update-ca-certificates
-  runningUpdateCaCertificates: update-ca-certificates 실행 중
-  # @source Setting docker context
-  settingDockerContext: docker 컨텍스트 설정 중
-  # @source Setting Lima permissions
-  settingLimaPermissions: Lima 권한 설정 중
-  # @source Setting up Docker socket
-  settingUpDockerSocket: Docker 소켓 설정 중
-  # @source Setting up virtual ethernet
-  settingUpVirtualEthernet: 가상 이더넷 설정 중
-  # @source Shutting down
-  shuttingDown: 종료 중
-  # @source Skipping node checks, flannel is disabled
-  skippingNodeChecksFlannel: flannel이 비활성화되어 노드 검사를 건너뛰는 중
-  # @source Starting Backend
-  startingBackend: 백엔드 시작 중
-  # @source Starting buildkit
-  startingBuildkit: buildkit 시작 중
-  # @source Starting container engine
-  startingContainerEngine: 컨테이너 엔진 시작 중
-  # @source Starting image proxy
-  startingImageProxy: 이미지 프록시 시작 중
-  # @source Starting k3s
-  startingK3s: k3s 시작 중
-  # @source Starting Kubernetes
-  startingKubernetes: Kubernetes 시작 중
-  # @source Starting proxy
-  startingProxy: 프록시 시작 중
-  # @source Starting {service}
-  startingService: '{service} 시작 중'
-  # @source Starting virtual machine
-  startingVirtualMachine: 가상 머신 시작 중
-  # @source Starting WSL environment
-  startingWslEnvironment: WSL 환경 시작 중
-  # @source Stopping existing instance
-  stoppingExistingInstance: 기존 인스턴스 중지 중
-  # @source Stopping mock backend
-  stoppingMockBackend: 모의 백엔드 중지 중
-  # @source Stopping services
-  stoppingServices: 서비스 중지 중
-  # @source Updating cluster configuration
-  updatingClusterConfiguration: 클러스터 구성 업데이트 중
-  # @source Updating /etc/hosts
-  updatingEtcHosts: /etc/hosts 업데이트 중
-  # @source Updating kubeconfig
-  updatingKubeconfig: kubeconfig 업데이트 중
-  # @source Updating outdated virtual machine
-  updatingOutdatedVm: 오래된 가상 머신 업데이트 중
-  # @source Updating WSL data
-  updatingWslData: WSL 데이터 업데이트 중
-  # @source Upgrading WSL distribution
-  upgradingWslDistribution: WSL 배포판 업그레이드 중
-  # @source Waiting for container engine to be ready
-  waitingForContainerEngine: 컨테이너 엔진이 준비될 때까지 대기 중
-  # @source Waiting for Kubernetes API
-  waitingForKubernetesApi: Kubernetes API 대기 중
-  # @source Waiting for nodes
-  waitingForNodes: 노드 대기 중
-  # @source Waiting for services
-  waitingForServices: 서비스 대기 중
-  # @source Writing K3s configuration
-  writingK3sConfiguration: K3s 구성 작성 중
 snapshots:
   action:
     # @source Create Snapshot
@@ -1315,8 +1141,6 @@ snapshots:
         cancel: 취소
       # @source Creating {snapshot}
       header: '{snapshot} 생성 중'
-      # @source Please wait while snapshot '<b>'{snapshot}'</b>' is being created.'<br/>'This may take some time depending on your machine's resources.'<br/>'Rancher Desktop will be temporarily unavailable during this operation.'<br/><br/>'Once the snapshot is complete, the VM will restart.
-      message: 스냅샷 '<b>'{snapshot}'</b>'을(를) 생성하는 동안 잠시 기다려 주십시오.'<br/>'컴퓨터 리소스에 따라 시간이 다소 걸릴 수 있습니다.'<br/>'이 작업이 진행되는 동안 Rancher Desktop을 일시적으로 사용할 수 없습니다.'<br/><br/>'스냅샷 생성이 완료되면 VM이 다시 시작됩니다.
     delete:
       actions:
         # @source Cancel
@@ -1484,24 +1308,14 @@ tray:
   openMainWindow: 메인 창 열기
   # @source Open preferences dialog
   openPreferences: 환경설정 열기
-  # @source Quit Rancher Desktop
-  quitRancherDesktop: Rancher Desktop 종료
+  # @source Quit {appName}
+  quitRancherDesktop: '{appName} 종료'
   state:
-    # @source Kubernetes is disabled
-    disabled: Kubernetes 비활성화됨
-    # @source Kubernetes has encountered an error
-    error: Kubernetes 오류 발생
-    # @source Kubernetes is running
-    started: Kubernetes 실행 중
     # @source Kubernetes is starting
     starting: Kubernetes 시작 중
-    # @source Kubernetes is stopped
-    stopped: Kubernetes 중지됨
-    # @source Kubernetes is shutting down
-    stopping: Kubernetes 종료 중
-  # @reason Product name
-  # @source Rancher Desktop
-  tooltip: Rancher Desktop
+  # @reason Placeholder only; the product name is filled in at runtime
+  # @source {appName}
+  tooltip: '{appName}'
 troubleshooting:
   # @source Enable debug mode
   debugMode: 디버그 모드 활성화
@@ -1570,12 +1384,12 @@ unmetPrerequisites:
 updateStatus:
   # @source Applying update...
   applyingUpdate: 업데이트 적용 중...
-  # @source An update to version {version} is available
-  available: 버전 {version} 업데이트를 사용할 수 있습니다
+  # @source An update to version {version} is available.
+  available: 버전 {version} 업데이트를 사용할 수 있습니다.
   # @source Check for updates automatically
   checkForUpdates: 자동으로 업데이트 확인
-  # @source downloading... ({percent}%, {speed})
-  downloading: 다운로드 중... ({percent}%, {speed})
+  # @source An update to version {version} is available; downloading... ({percent}%, {speed})
+  downloading: 버전 {version} 업데이트를 사용할 수 있습니다. 다운로드 중... ({percent}%, {speed})
   # @source There was an error checking for updates.
   errorChecking: 업데이트를 확인하는 동안 오류가 발생했습니다.
   # @source Release Notes
@@ -1594,74 +1408,8 @@ updateStatus:
   # @source Update Available
   updateAvailable: 업데이트 사용 가능
 validation:
-  # @source Cannot decrease "{field}" from {from} to {to}
-  cannotDecrease: '"{field}"을(를) {from}에서 {to}(으)로 줄일 수 없습니다'
-  # @source Cannot enable WebAssembly with classic storage for moby.
-  cannotEnableWasmClassic: moby에서 classic 스토리지를 사용하는 경우 WebAssembly를 활성화할 수 없습니다.
-  # @source Cannot switch to classic storage for moby when WebAssembly is enabled.
-  cannotSwitchClassicWasm: WebAssembly가 활성화된 상태에서는 moby의 classic 스토리지로 전환할 수 없습니다.
-  # @source Cannot switch to moby container engine with classic storage when WebAssembly is enabled.
-  cannotSwitchMobyClassicWasm: WebAssembly가 활성화된 상태에서는 classic 스토리지를 사용하는 moby 컨테이너 엔진으로 전환할 수 없습니다.
-  # @source field "{field}" has duplicate entries: "{duplicates}"
-  duplicateEntries: '"{field}" 필드에 중복된 항목이 있습니다: "{duplicates}"'
-  # @source Errors in proposed settings:
-  errorsInProposedSettings: '제안된 설정에 오류가 있습니다:'
-  # @source field "{field}" is locked
-  fieldLocked: '"{field}" 필드는 잠겨 있습니다'
-  # @source {field}: "{pattern}" does not describe an image reference
-  invalidImageReference: '{field}: "{pattern}"은(는) 이미지 참조를 나타내지 않습니다'
-  # @source {field}: "{value}" is not a valid mapping
-  invalidMapping: '{field}: "{value}"은(는) 유효한 매핑이 아닙니다'
-  # @source {field}: "{name}" is an invalid name
-  invalidName: '{field}: "{name}"은(는) 유효하지 않은 이름입니다'
-  # @source field "{field}" has invalid entries (must be IP addresses, CIDR subnets, or domain names): "{entries}"
-  invalidNoproxyEntries: '"{field}" 필드에 유효하지 않은 항목이 있습니다(IP 주소, CIDR 서브넷 또는 도메인 이름이어야 합니다): "{entries}"'
-  # @source {field}: "{value}" is not a valid page name for Preferences Dialog
-  invalidPageName: '{field}: "{value}"은(는) 환경설정 대화 상자의 유효한 페이지 이름이 아닙니다'
-  # @source {field}: tab name "{tabName}" is not a valid tab name for "{page}" Preference page
-  invalidTabName: '{field}: 탭 이름 "{tabName}"은(는) "{page}" 환경설정 페이지의 유효한 탭 이름이 아닙니다'
-  # @source {field}: "{name}" has invalid tag "{tag}"
-  invalidTag: '{field}: "{name}"에 유효하지 않은 태그 "{tag}"이(가) 있습니다'
-  # @source Invalid value for "{field}": <{value}>
-  invalidValue: '"{field}"의 값이 유효하지 않습니다: <{value}>'
-  # @source Invalid value for "{field}": <{value}>; must be one of {validValues}
-  invalidValueEnum: '"{field}"의 값이 유효하지 않습니다: <{value}>; {validValues} 중 하나여야 합니다'
-  # @source Kubernetes version "{version}" not found.
-  kubernetesVersionNotFound: Kubernetes 버전 "{version}"을(를) 찾을 수 없습니다.
-  # @source {field}: "{name}" has non-string tag "{tag}"
-  nonStringTag: '{field}: "{name}"에 문자열이 아닌 태그 "{tag}"이(가) 있습니다'
-  # @source Changing field "{field}" via the API isn't supported.
-  notSupported: API를 통한 "{field}" 필드 변경은 지원되지 않습니다.
-  # @source Error for field ''{field}'': expecting value of type array, got ''{value}''
-  profileExpectedArray: '''''{field}'''' 필드 오류: 배열 타입 값이 필요하지만 ''''{value}''''을(를) 받았습니다'
-  # @source Error for field ''{field}'': expecting value of type {expectedType}, got ''{value}''
-  profileExpectedType: '''''{field}'''' 필드 오류: {expectedType} 타입 값이 필요하지만 ''''{value}''''을(를) 받았습니다'
-  # @source Error for field ''{field}'': expecting value of type {expectedType}, got an array {value}
-  profileExpectedTypeGotArray: '''''{field}'''' 필드 오류: {expectedType} 타입 값이 필요하지만 배열 {value}을(를) 받았습니다'
-  # @source Proposed field "{field}" should be an object, got <{value}>.
-  proposedShouldBeObject: 제안된 필드 "{field}"은(는) 객체여야 하지만 <{value}>을(를) 받았습니다.
-  # @source Setting {field} can only be enabled on aarch64 systems.
-  requiresArm: '{field} 설정은 aarch64 시스템에서만 활성화할 수 있습니다.'
-  # @source Setting {field} can only be changed when virtualMachine.mount.type is "{mountType}".
-  requiresNineP: '{field} 설정은 virtualMachine.mount.type이 "{mountType}"인 경우에만 변경할 수 있습니다.'
-  # @source Setting {field} can only be enabled when virtual-machine.type is "{vmType}".
-  requiresVz: '{field} 설정은 virtual-machine.type이 "{vmType}"인 경우에만 활성화할 수 있습니다.'
-  # @source Setting {field} can only be set when experimental.container-engine.web-assembly.enabled is set as well.
-  requiresWebAssembly: '{field} 설정은 experimental.container-engine.web-assembly.enabled도 함께 설정된 경우에만 설정할 수 있습니다.'
-  # @source Setting {field} to "{value}" requires that {otherField} is "{required}".
-  settingRequires: '{field}을(를) "{value}"(으)로 설정하려면 {otherField}이(가) "{required}"이어야 합니다.'
-  # @source Setting {field} to "{value}" requires that {otherField} is "{option1}" or "{option2}".
-  settingRequiresEither: '{field}을(를) "{value}"(으)로 설정하려면 {otherField}이(가) "{option1}" 또는 "{option2}"이어야 합니다.'
-  # @source Setting "{field}" should wrap an inner object, but got <{value}>.
-  shouldBeObject: '"{field}" 설정은 내부 객체를 감싸야 하지만 <{value}>을(를) 받았습니다.'
-  # @source Setting "{field}" should be a simple value, but got <{value}>.
-  shouldBeSimple: '"{field}" 설정은 단순 값이어야 하지만 <{value}>을(를) 받았습니다.'
   # @source One or more fields in this tab contain a form validation error
   tab: 이 탭의 하나 이상의 필드에 양식 유효성 검사 오류가 있습니다
-  # @source Setting {field} to "{vmType}" on ARM requires macOS 13.3 (Ventura) or later.
-  vzArmMacOs: ARM에서 {field}을(를) "{vmType}"(으)로 설정하려면 macOS 13.3(Ventura) 이상이 필요합니다.
-  # @source Setting {field} to "{vmType}" on Intel requires macOS 13.0 (Ventura) or later.
-  vzIntelMacOs: Intel에서 {field}을(를) "{vmType}"(으)로 설정하려면 macOS 13.0(Ventura) 이상이 필요합니다.
 virtualMachine:
   mount:
     type:

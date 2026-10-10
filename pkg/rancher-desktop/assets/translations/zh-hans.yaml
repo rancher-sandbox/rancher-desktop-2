@@ -14,6 +14,10 @@ allowedImages:
   patterns:
     # @source Type the image pattern
     placeholder: 输入镜像模式
+app:
+  # @reason the source is only the product-name placeholder
+  # @source {productName}
+  name: '{productName}'
 application:
   behavior:
     autoStart:
@@ -518,11 +522,6 @@ denyRoot:
   message: Rancher Desktop 不能以 root 权限运行。请以普通用户身份重新运行。
   # @source Cannot run as Root
   title: 无法以 Root 身份运行
-deploymentProfile:
-  # @source Invalid deployment file {path}: no version specified. Add a version field to make it valid (current version is {version}).
-  noVersion: 无效的部署文件 {path}：未指定版本。请添加版本字段使其有效（当前版本为 {version}）。
-  # @source Invalid deployment: no version specified at {path}. Add a version field to make it valid (current version is {version}).
-  noVersionRegistry: 无效的部署：未在 {path} 指定版本。请添加版本字段使其有效（当前版本为 {version}）。
 diagnostics:
   # @source {count} failed plus {muted} muted
   failedCount: '{count} 项失败，{muted} 项已静音'
@@ -559,35 +558,6 @@ diagnostics:
     name: 名称
   # @source Diagnostics
   title: 诊断
-dialog:
-  bridgedNetwork:
-    # @source Shared network isn't available either. Only network access is via port forwarding to the host.
-    noNetwork: 共享网络也不可用。只能通过端口转发访问主机网络。
-    # @source Using shared network address {ip}
-    sharedFallback: 使用共享网络地址 {ip}
-    # @source Bridged network did not get an IP address.
-    title: 桥接网络未获取到 IP 地址。
-  confirmMigration:
-    # @source Delete Workloads
-    delete: 删除工作负载
-    # @source Downgrading from {from} to {to} will lose existing Kubernetes workloads. Delete the data?
-    message: 从 {from} 降级到 {to} 将丢失现有的 Kubernetes 工作负载。是否删除数据？
-    # @source Confirming migration
-    title: 确认迁移
-  invalidK8sVersion:
-    # @source Falling back to recommended minimum upgrade version of {version}
-    detail: 回退到建议的最低升级版本 {version}
-    # @source Requested Kubernetes version ''{version}'' is not a supported version.
-    message: 请求的 Kubernetes 版本 ''{version}'' 不是受支持的版本。
-    # @source Invalid Kubernetes Version
-    title: 无效的 Kubernetes 版本
-  networkFailure:
-    # @source Please acquire a version in the range {range} and install in ''{path}''
-    detail: 请获取 {range} 范围内的版本并安装到 ''{path}''
-    # @source Can't download a compatible version of kubectl in offline-mode
-    message: 离线模式下无法下载兼容版本的 kubectl
-    # @source Network failure
-    title: 网络故障
 extensions:
   # @reason icon identifier, not translatable text
   # @source icon-extension
@@ -644,8 +614,8 @@ general:
   projectDiscussions: 项目讨论：<a href="https://slack.rancher.io/">Rancher Users</a> Slack 中的 <b>#rancher-desktop</b>
   # @source Project Links:
   projectLinks: 项目链接：
-  # @source Welcome to Rancher Desktop by SUSE
-  title: 欢迎使用 SUSE Rancher Desktop
+  # @source Welcome to {appName} by SUSE
+  title: 欢迎使用 SUSE {appName}
 generic:
   # @source  and 
   and: ' 和 '
@@ -659,6 +629,9 @@ generic:
   comma: 、
   # @source Forward
   forward: 转发
+  # @reason 表达式 over the literal 计划: the field validates the cron expression that the user types
+  # @source Invalid cron schedule
+  invalidCron: 无效的 cron 表达式
   # @source Loading&hellip;
   loading: 正在加载&hellip;
   # @source Namespace
@@ -853,13 +826,10 @@ kubernetesPrefs:
     legendText: 选项
     # @source Install Spin Operator
     spinkube: 安装 Spin Operator
-    # @source Spin Operator requires <a href="#" data-navigate="Container Engine,general">WebAssembly</a> to be enabled.
-    spinkubeWarning: Spin Operator 需要启用<a href="#" data-navigate="Container Engine,general">WebAssembly</a>。
+    # @source Spin Operator requires <a href="#" data-navigate="container-engine,general">WebAssembly</a> to be enabled.
+    spinkubeWarning: Spin Operator 需要启用 <a href="#" data-navigate="container-engine,general">WebAssembly</a>。
     # @source Enable Traefik
     traefik: 启用 Traefik
-  port:
-    # @source Kubernetes Port
-    legendText: Kubernetes 端口
   version:
     # @source Kubernetes version
     legendText: Kubernetes 版本
@@ -898,6 +868,8 @@ locale:
   ko: 韩语
   # @source Portuguese (Brazilian)
   pt-br: 葡萄牙语（巴西）
+  # @source Vietnamese
+  vi: 越南语
   # @reason locale name for Simplified Chinese - using the Chinese name per rules for locale names
   # @source Chinese (Simplified)
   zh-hans: 简体中文
@@ -1071,8 +1043,8 @@ preferences:
       restart: 应用更改后 Kubernetes 将重新启动。
   containerEngine:
     webAssembly:
-      # @source WebAssembly must be enabled for the <a href="#" data-navigate="Kubernetes">Spin Operator</a> to be installed.
-      warning: 必须启用 WebAssembly 才能安装 <a href="#" data-navigate="Kubernetes">Spin Operator</a>。
+      # @source WebAssembly must be enabled for the <a href="#" data-navigate="kubernetes">Spin Operator</a> to be installed.
+      warning: 必须启用 WebAssembly 才能安装 <a href="#" data-navigate="kubernetes">Spin Operator</a>。
   error:
     # @source Reload Preferences to try again.
     body: 重新加载偏好设置以重试。
@@ -1134,6 +1106,11 @@ preferences:
     proxy: 代理
     # @source Volumes
     volumes: 卷
+  validation:
+    containerEngine:
+      name:
+        # @source Container engine {current} is not valid
+        FieldValueNotSupported: 容器引擎 {current} 无效
 preferencesWindow:
   close:
     # @source There are preferences with changes that have not been applied. All unsaved preferences will be lost.
@@ -1187,157 +1164,6 @@ product:
     online: 在线
   # @source Version
   version: 版本
-progress:
-  # @source Asking for permission to run tasks as administrator
-  askingPermission: 正在请求以管理员身份运行任务的权限
-  # @source Bundling certificates
-  bundlingCertificates: 正在打包证书
-  # @source Checking k3s images
-  checkingK3sImages: 正在检查 k3s 镜像
-  # @source Configuring container engine
-  configuringContainerEngine: 正在配置容器引擎
-  # @source Configuring image proxy
-  configuringImageProxy: 正在配置镜像代理
-  # @source Configuring logrotate
-  configuringLogrotate: 正在配置 logrotate
-  # @source Container engine components
-  containerEngineComponents: 容器引擎组件
-  # @source Copying certificates
-  copyingCertificates: 正在复制证书
-  # @source Deleting incompatible Kubernetes state
-  deletingIncompatibleState: 正在删除不兼容的 Kubernetes 状态
-  # @source Deleting Kubernetes
-  deletingKubernetes: 正在删除 Kubernetes
-  # @source Deleting virtual machine
-  deletingVirtualMachine: 正在删除虚拟机
-  # @source DNS configuration
-  dnsConfiguration: DNS 配置
-  # @source Downloading Kubernetes components
-  downloadingKubernetesComponents: 正在下载 Kubernetes 组件
-  # @source Ensuring compatible kubectl
-  ensuringCompatibleKubectl: 正在确保 kubectl 兼容
-  # @source Ensuring virtualization is supported
-  ensuringVirtualizationSupported: 正在确保支持虚拟化
-  # @source Expecting user permission to continue
-  expectingPermission: 等待用户授权以继续
-  # @source Extracting certificates
-  extractingCertificates: 正在提取证书
-  # @source Fetching certificates
-  fetchingCertificates: 正在获取证书
-  # @source Initializing Rancher Desktop
-  initializingRancherDesktop: 正在初始化 Rancher Desktop
-  # @source Initializing WSL data
-  initializingWslData: 正在初始化 WSL 数据
-  # @source Installing Buildkit
-  installingBuildkit: 正在安装 Buildkit
-  # @source Installing CA certificates
-  installingCaCertificates: 正在安装 CA 证书
-  # @source Installing container engine
-  installingContainerEngine: 正在安装容器引擎
-  # @source Installing credential helper
-  installingCredentialHelper: 正在安装凭据助手
-  # @source Installing the docker-credential helper
-  installingDockerCredentialHelper: 正在安装 docker-credential 助手
-  # @source Installing helpers
-  installingHelpers: 正在安装辅助工具
-  # @source Installing image scanner
-  installingImageScanner: 正在安装镜像扫描器
-  # @source Installing k3s
-  installingK3s: 正在安装 k3s
-  # @source Installing Kubernetes
-  installingKubernetes: 正在安装 Kubernetes
-  # @source Kubernetes components
-  kubernetesComponents: Kubernetes 组件
-  # @source Kubernetes dockerd compatibility
-  kubernetesDockerCompatibility: Kubernetes dockerd 兼容性
-  # @source Mounting WSL data
-  mountingWslData: 正在挂载 WSL 数据
-  # @source Preparing to start
-  preparingToStart: 正在准备启动
-  # @source Proxy Config Setup
-  proxyConfigSetup: 代理配置设置
-  # @source Rancher Desktop guest agent
-  rancherDesktopGuestAgent: Rancher Desktop 来宾代理
-  # @source Recovering virtual machine
-  recoveringBrokenVirtualMachine: 正在恢复虚拟机
-  # @source Regenerating configuration to account for lack of permissions
-  regeneratingConfiguration: 正在重新生成配置以适应权限不足的情况
-  # @source Registering WSL distribution
-  registeringWslDistribution: 正在注册 WSL 发行版
-  # @source Removing existing certificates
-  removingExistingCertificates: 正在移除现有证书
-  # @source Removing spinkube operator
-  removingSpinkubeOperator: 正在移除 spinkube operator
-  # @source Removing stale state
-  removingStaleState: 正在移除过期状态
-  # @source Removing Traefik
-  removingTraefik: 正在移除 Traefik
-  # @source Resetting Kubernetes
-  resettingKubernetes: 正在重置 Kubernetes
-  # @source Running provisioning scripts
-  runningProvisioningScripts: 正在运行预配脚本
-  # @source Running update-ca-certificates
-  runningUpdateCaCertificates: 正在运行 update-ca-certificates
-  # @source Setting docker context
-  settingDockerContext: 正在设置 docker context
-  # @source Setting Lima permissions
-  settingLimaPermissions: 正在设置 Lima 权限
-  # @source Setting up Docker socket
-  settingUpDockerSocket: 正在设置 Docker socket
-  # @source Setting up virtual ethernet
-  settingUpVirtualEthernet: 正在设置虚拟以太网
-  # @source Shutting down
-  shuttingDown: 正在关闭
-  # @source Skipping node checks, flannel is disabled
-  skippingNodeChecksFlannel: 跳过节点检查，flannel 已禁用
-  # @source Starting Backend
-  startingBackend: 正在启动后端
-  # @source Starting buildkit
-  startingBuildkit: 正在启动 buildkit
-  # @source Starting container engine
-  startingContainerEngine: 正在启动容器引擎
-  # @source Starting image proxy
-  startingImageProxy: 正在启动镜像代理
-  # @source Starting k3s
-  startingK3s: 正在启动 k3s
-  # @source Starting Kubernetes
-  startingKubernetes: 正在启动 Kubernetes
-  # @source Starting proxy
-  startingProxy: 正在启动代理
-  # @source Starting {service}
-  startingService: 正在启动 {service}
-  # @source Starting virtual machine
-  startingVirtualMachine: 正在启动虚拟机
-  # @source Starting WSL environment
-  startingWslEnvironment: 正在启动 WSL 环境
-  # @source Stopping existing instance
-  stoppingExistingInstance: 正在停止现有实例
-  # @source Stopping mock backend
-  stoppingMockBackend: 正在停止模拟后端
-  # @source Stopping services
-  stoppingServices: 正在停止服务
-  # @source Updating cluster configuration
-  updatingClusterConfiguration: 正在更新集群配置
-  # @source Updating /etc/hosts
-  updatingEtcHosts: 正在更新 /etc/hosts
-  # @source Updating kubeconfig
-  updatingKubeconfig: 正在更新 kubeconfig
-  # @source Updating outdated virtual machine
-  updatingOutdatedVm: 正在更新过期的虚拟机
-  # @source Updating WSL data
-  updatingWslData: 正在更新 WSL 数据
-  # @source Upgrading WSL distribution
-  upgradingWslDistribution: 正在升级 WSL 发行版
-  # @source Waiting for container engine to be ready
-  waitingForContainerEngine: 正在等待容器引擎就绪
-  # @source Waiting for Kubernetes API
-  waitingForKubernetesApi: 正在等待 Kubernetes API
-  # @source Waiting for nodes
-  waitingForNodes: 正在等待节点
-  # @source Waiting for services
-  waitingForServices: 正在等待服务
-  # @source Writing K3s configuration
-  writingK3sConfiguration: 正在写入 K3s 配置
 snapshots:
   action:
     # @source Create Snapshot
@@ -1376,8 +1202,6 @@ snapshots:
         cancel: 取消
       # @source Creating {snapshot}
       header: 正在创建 {snapshot}
-      # @source Please wait while snapshot '<b>'{snapshot}'</b>' is being created.'<br/>'This may take some time depending on your machine's resources.'<br/>'Rancher Desktop will be temporarily unavailable during this operation.'<br/><br/>'Once the snapshot is complete, the VM will restart.
-      message: 正在创建快照 '<b>'{snapshot}'</b>'，请稍候。'<br/>'此操作可能需要一些时间，具体取决于您的计算机资源。'<br/>'在此期间 Rancher Desktop 将暂时不可用。'<br/><br/>'快照创建完成后，虚拟机将重新启动。
     delete:
       actions:
         # @reason cancel button label in delete confirmation dialog
@@ -1564,24 +1388,14 @@ tray:
   openMainWindow: 打开主窗口
   # @source Open preferences dialog
   openPreferences: 打开偏好设置
-  # @source Quit Rancher Desktop
-  quitRancherDesktop: 退出 Rancher Desktop
+  # @source Quit {appName}
+  quitRancherDesktop: 退出 {appName}
   state:
-    # @source Kubernetes is disabled
-    disabled: Kubernetes 已禁用
-    # @source Kubernetes has encountered an error
-    error: Kubernetes 遇到错误
-    # @source Kubernetes is running
-    started: Kubernetes 正在运行
     # @source Kubernetes is starting
     starting: Kubernetes 正在启动
-    # @source Kubernetes is stopped
-    stopped: Kubernetes 已停止
-    # @source Kubernetes is shutting down
-    stopping: Kubernetes 正在关闭
-  # @reason product name
-  # @source Rancher Desktop
-  tooltip: Rancher Desktop
+  # @reason the source is only the product-name placeholder
+  # @source {appName}
+  tooltip: '{appName}'
 troubleshooting:
   # @source Enable debug mode
   debugMode: 启用调试模式
@@ -1650,12 +1464,12 @@ unmetPrerequisites:
 updateStatus:
   # @source Applying update...
   applyingUpdate: 正在应用更新...
-  # @source An update to version {version} is available
-  available: 版本 {version} 的更新可用
+  # @source An update to version {version} is available.
+  available: 版本 {version} 的更新可用。
   # @source Check for updates automatically
   checkForUpdates: 自动检查更新
-  # @source downloading... ({percent}%, {speed})
-  downloading: 正在下载... ({percent}%, {speed})
+  # @source An update to version {version} is available; downloading... ({percent}%, {speed})
+  downloading: 版本 {version} 的更新可用；正在下载... ({percent}%, {speed})
   # @source There was an error checking for updates.
   errorChecking: 检查更新时出错。
   # @source Release Notes
@@ -1674,74 +1488,8 @@ updateStatus:
   # @source Update Available
   updateAvailable: 有可用更新
 validation:
-  # @source Cannot decrease "{field}" from {from} to {to}
-  cannotDecrease: 无法将"{field}"从 {from} 减小到 {to}
-  # @source Cannot enable WebAssembly with classic storage for moby.
-  cannotEnableWasmClassic: 无法在 moby 经典存储模式下启用 WebAssembly。
-  # @source Cannot switch to classic storage for moby when WebAssembly is enabled.
-  cannotSwitchClassicWasm: 启用 WebAssembly 时无法切换到 moby 的经典存储模式。
-  # @source Cannot switch to moby container engine with classic storage when WebAssembly is enabled.
-  cannotSwitchMobyClassicWasm: 启用 WebAssembly 时无法切换到使用经典存储的 moby 容器引擎。
-  # @source field "{field}" has duplicate entries: "{duplicates}"
-  duplicateEntries: 字段"{field}"存在重复条目："{duplicates}"
-  # @source Errors in proposed settings:
-  errorsInProposedSettings: 建议的设置中存在错误：
-  # @source field "{field}" is locked
-  fieldLocked: 字段"{field}"已锁定
-  # @source {field}: "{pattern}" does not describe an image reference
-  invalidImageReference: '{field}："{pattern}"不是有效的镜像引用'
-  # @source {field}: "{value}" is not a valid mapping
-  invalidMapping: '{field}："{value}"不是有效的映射'
-  # @source field "{field}" has invalid entries (must be IP addresses, CIDR subnets, or domain names): "{entries}"
-  invalidNoproxyEntries: 字段"{field}"包含无效条目（必须为 IP 地址、CIDR 子网或域名）："{entries}"
-  # @source {field}: "{name}" is an invalid name
-  invalidName: '{field}："{name}"是无效的名称'
-  # @source {field}: "{value}" is not a valid page name for Preferences Dialog
-  invalidPageName: '{field}："{value}"不是偏好设置对话框的有效页面名称'
-  # @source {field}: tab name "{tabName}" is not a valid tab name for "{page}" Preference page
-  invalidTabName: '{field}：标签页名称"{tabName}"不是"{page}"偏好设置页面的有效标签页名称'
-  # @source {field}: "{name}" has invalid tag "{tag}"
-  invalidTag: '{field}："{name}"的标签"{tag}"无效'
-  # @source Invalid value for "{field}": <{value}>
-  invalidValue: '"{field}"的值无效：<{value}>'
-  # @source Invalid value for "{field}": <{value}>; must be one of {validValues}
-  invalidValueEnum: '"{field}"的值无效：<{value}>；必须是以下之一：{validValues}'
-  # @source Kubernetes version "{version}" not found.
-  kubernetesVersionNotFound: 未找到 Kubernetes 版本"{version}"。
-  # @source {field}: "{name}" has non-string tag "{tag}"
-  nonStringTag: '{field}："{name}"的标签"{tag}"不是字符串'
-  # @source Changing field "{field}" via the API isn't supported.
-  notSupported: 不支持通过 API 更改字段"{field}"。
-  # @source Error for field ''{field}'': expecting value of type array, got ''{value}''
-  profileExpectedArray: 字段 ''{field}'' 出错：期望类型为 array，得到 ''{value}''
-  # @source Error for field ''{field}'': expecting value of type {expectedType}, got ''{value}''
-  profileExpectedType: 字段 ''{field}'' 出错：期望类型为 {expectedType}，得到 ''{value}''
-  # @source Error for field ''{field}'': expecting value of type {expectedType}, got an array {value}
-  profileExpectedTypeGotArray: 字段 ''{field}'' 出错：期望类型为 {expectedType}，得到数组 {value}
-  # @source Proposed field "{field}" should be an object, got <{value}>.
-  proposedShouldBeObject: 提议的字段"{field}"应为对象，得到 <{value}>。
-  # @source Setting {field} can only be enabled on aarch64 systems.
-  requiresArm: 设置 {field} 仅可在 aarch64 系统上启用。
-  # @source Setting {field} can only be changed when virtualMachine.mount.type is "{mountType}".
-  requiresNineP: 设置 {field} 仅可在 virtualMachine.mount.type 为"{mountType}"时更改。
-  # @source Setting {field} can only be enabled when virtual-machine.type is "{vmType}".
-  requiresVz: 设置 {field} 仅可在 virtual-machine.type 为"{vmType}"时启用。
-  # @source Setting {field} can only be set when experimental.container-engine.web-assembly.enabled is set as well.
-  requiresWebAssembly: 设置 {field} 时还需启用 experimental.container-engine.web-assembly.enabled。
-  # @source Setting {field} to "{value}" requires that {otherField} is "{required}".
-  settingRequires: 将 {field} 设置为"{value}"需要 {otherField} 为"{required}"。
-  # @source Setting {field} to "{value}" requires that {otherField} is "{option1}" or "{option2}".
-  settingRequiresEither: 将 {field} 设置为"{value}"需要 {otherField} 为"{option1}"或"{option2}"。
-  # @source Setting "{field}" should wrap an inner object, but got <{value}>.
-  shouldBeObject: 设置"{field}"应包含内部对象，但得到 <{value}>。
-  # @source Setting "{field}" should be a simple value, but got <{value}>.
-  shouldBeSimple: 设置"{field}"应为简单值，但得到 <{value}>。
   # @source One or more fields in this tab contain a form validation error
   tab: 此标签页中有一个或多个字段存在验证错误
-  # @source Setting {field} to "{vmType}" on ARM requires macOS 13.3 (Ventura) or later.
-  vzArmMacOs: 在 ARM 上将 {field} 设置为"{vmType}"需要 macOS 13.3 (Ventura) 或更高版本。
-  # @source Setting {field} to "{vmType}" on Intel requires macOS 13.0 (Ventura) or later.
-  vzIntelMacOs: 在 Intel 上将 {field} 设置为"{vmType}"需要 macOS 13.0 (Ventura) 或更高版本。
 virtualMachine:
   mount:
     type:

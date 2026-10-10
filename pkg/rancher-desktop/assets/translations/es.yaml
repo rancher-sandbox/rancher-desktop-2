@@ -14,6 +14,10 @@ allowedImages:
   patterns:
     # @source Type the image pattern
     placeholder: Escriba el patrón de imagen
+app:
+  # @reason The source is only the product-name placeholder; there is nothing to translate.
+  # @source {productName}
+  name: '{productName}'
 application:
   behavior:
     autoStart:
@@ -454,11 +458,6 @@ denyRoot:
   message: Rancher Desktop no puede ejecutarse con privilegios de root. Ejecútelo de nuevo como un usuario normal.
   # @source Cannot run as Root
   title: No se puede ejecutar como root
-deploymentProfile:
-  # @source Invalid deployment file {path}: no version specified. Add a version field to make it valid (current version is {version}).
-  noVersion: 'Archivo de implementación {path} no válido: no se especificó ninguna versión. Agregue un campo de versión para que sea válido (la versión actual es {version}).'
-  # @source Invalid deployment: no version specified at {path}. Add a version field to make it valid (current version is {version}).
-  noVersionRegistry: 'Implementación no válida: no se especificó ninguna versión en {path}. Agregue un campo de versión para que sea válida (la versión actual es {version}).'
 diagnostics:
   # @source {count} failed plus {muted} muted
   failedCount: '{count} fallidos más {muted} silenciados'
@@ -494,35 +493,6 @@ diagnostics:
     name: Nombre
   # @source Diagnostics
   title: Diagnósticos
-dialog:
-  bridgedNetwork:
-    # @source Shared network isn't available either. Only network access is via port forwarding to the host.
-    noNetwork: La red compartida tampoco está disponible. El único acceso a la red es mediante el reenvío de puertos al host.
-    # @source Using shared network address {ip}
-    sharedFallback: Usando la dirección de red compartida {ip}
-    # @source Bridged network did not get an IP address.
-    title: La red en modo puente no obtuvo una dirección IP.
-  confirmMigration:
-    # @source Delete Workloads
-    delete: Eliminar cargas de trabajo
-    # @source Downgrading from {from} to {to} will lose existing Kubernetes workloads. Delete the data?
-    message: Bajar de la versión {from} a la {to} hará que se pierdan las cargas de trabajo de Kubernetes existentes. ¿Desea eliminar los datos?
-    # @source Confirming migration
-    title: Confirmación de la migración
-  invalidK8sVersion:
-    # @source Falling back to recommended minimum upgrade version of {version}
-    detail: 'Se usará en su lugar la versión mínima de actualización recomendada: {version}'
-    # @source Requested Kubernetes version ''{version}'' is not a supported version.
-    message: La versión de Kubernetes solicitada ''{version}'' no es una versión compatible.
-    # @source Invalid Kubernetes Version
-    title: Versión de Kubernetes no válida
-  networkFailure:
-    # @source Please acquire a version in the range {range} and install in ''{path}''
-    detail: Obtenga una versión dentro del rango {range} e instálela en ''{path}''
-    # @source Can't download a compatible version of kubectl in offline-mode
-    message: No se puede descargar una versión compatible de kubectl en modo sin conexión
-    # @source Network failure
-    title: Fallo de red
 extensions:
   # @reason Icon identifier, not user-visible text; kept unchanged
   # @source icon-extension
@@ -585,8 +555,8 @@ general:
   # @source Project Links:
   projectLinks: 'Enlaces del proyecto:'
   # @reason Gender-neutral phrasing instead of "Bienvenido/a"
-  # @source Welcome to Rancher Desktop by SUSE
-  title: Le damos la bienvenida a Rancher Desktop de SUSE
+  # @source Welcome to {appName} by SUSE
+  title: Le damos la bienvenida a {appName} de SUSE
 generic:
   # @source  and 
   and: ' y '
@@ -602,6 +572,8 @@ generic:
   # @reason Used as the port-forwarding action button (PortForwarding.vue), so the forwarding sense, not navigation
   # @source Forward
   forward: Reenviar
+  # @source Invalid cron schedule
+  invalidCron: Programación cron no válida
   # @source Loading&hellip;
   loading: Cargando&hellip;
   # @source Namespace
@@ -811,13 +783,11 @@ kubernetesPrefs:
     # @reason "Spin Operator" kept as a product name.
     # @source Install Spin Operator
     spinkube: Instalar Spin Operator
-    # @source Spin Operator requires <a href="#" data-navigate="Container Engine,general">WebAssembly</a> to be enabled.
-    spinkubeWarning: El operador Spin requiere que <a href="#" data-navigate="Container Engine,general">WebAssembly</a> esté habilitado.
+    # @reason "Spin Operator" kept as a product name, matching the kubernetesPrefs.options.spinkube checkbox label above this warning.
+    # @source Spin Operator requires <a href="#" data-navigate="container-engine,general">WebAssembly</a> to be enabled.
+    spinkubeWarning: El Spin Operator requiere que <a href="#" data-navigate="container-engine,general">WebAssembly</a> esté habilitado.
     # @source Enable Traefik
     traefik: Habilitar Traefik
-  port:
-    # @source Kubernetes Port
-    legendText: Puerto de Kubernetes
   version:
     # @source Kubernetes version
     legendText: Versión de Kubernetes
@@ -855,6 +825,8 @@ locale:
   ko: Coreano
   # @source Portuguese (Brazilian)
   pt-br: Portugués (Brasil)
+  # @source Vietnamese
+  vi: Vietnamita
   # @source Chinese (Simplified)
   zh-hans: Chino (simplificado)
 mainMenu:
@@ -1031,8 +1003,8 @@ preferences:
   containerEngine:
     webAssembly:
       # @reason "Spin Operator" kept as a product name inside the link text.
-      # @source WebAssembly must be enabled for the <a href="#" data-navigate="Kubernetes">Spin Operator</a> to be installed.
-      warning: WebAssembly debe estar habilitado para que se pueda instalar el <a href="#" data-navigate="Kubernetes">Spin Operator</a>.
+      # @source WebAssembly must be enabled for the <a href="#" data-navigate="kubernetes">Spin Operator</a> to be installed.
+      warning: WebAssembly debe estar habilitado para que se pueda instalar el <a href="#" data-navigate="kubernetes">Spin Operator</a>.
   error:
     # @source Reload Preferences to try again.
     body: Vuelva a cargar la configuración para volver a intentarlo.
@@ -1102,6 +1074,11 @@ preferences:
     proxy: Proxy
     # @source Volumes
     volumes: Volúmenes
+  validation:
+    containerEngine:
+      name:
+        # @source Container engine {current} is not valid
+        FieldValueNotSupported: El motor de contenedores {current} no es válido
 preferencesWindow:
   close:
     # @source There are preferences with changes that have not been applied. All unsaved preferences will be lost.
@@ -1149,159 +1126,6 @@ product:
     online: en línea
   # @source Version
   version: Versión
-progress:
-  # @source Asking for permission to run tasks as administrator
-  askingPermission: Solicitando permiso para ejecutar tareas como administrador
-  # @source Bundling certificates
-  bundlingCertificates: Empaquetando certificados
-  # @source Checking k3s images
-  checkingK3sImages: Comprobando las imágenes de k3s
-  # @source Configuring container engine
-  configuringContainerEngine: Configurando el motor de contenedores
-  # @source Configuring image proxy
-  configuringImageProxy: Configurando el proxy de imágenes
-  # @source Configuring logrotate
-  configuringLogrotate: Configurando logrotate
-  # @source Container engine components
-  containerEngineComponents: Componentes del motor de contenedores
-  # @source Copying certificates
-  copyingCertificates: Copiando certificados
-  # @source Deleting incompatible Kubernetes state
-  deletingIncompatibleState: Eliminando el estado incompatible de Kubernetes
-  # @source Deleting Kubernetes
-  deletingKubernetes: Eliminando Kubernetes
-  # @source Deleting virtual machine
-  deletingVirtualMachine: Eliminando la máquina virtual
-  # @source DNS configuration
-  dnsConfiguration: Configuración de DNS
-  # @source Downloading Kubernetes components
-  downloadingKubernetesComponents: Descargando los componentes de Kubernetes
-  # @source Ensuring compatible kubectl
-  ensuringCompatibleKubectl: Comprobando que kubectl sea compatible
-  # @source Ensuring virtualization is supported
-  ensuringVirtualizationSupported: Comprobando la compatibilidad con la virtualización
-  # @source Expecting user permission to continue
-  expectingPermission: Esperando el permiso del usuario para continuar
-  # @source Extracting certificates
-  extractingCertificates: Extrayendo certificados
-  # @source Fetching certificates
-  fetchingCertificates: Obteniendo certificados
-  # @source Initializing Rancher Desktop
-  initializingRancherDesktop: Inicializando Rancher Desktop
-  # @source Initializing WSL data
-  initializingWslData: Inicializando los datos de WSL
-  # @source Installing Buildkit
-  installingBuildkit: Instalando Buildkit
-  # @source Installing CA certificates
-  installingCaCertificates: Instalando certificados de CA
-  # @source Installing container engine
-  installingContainerEngine: Instalando el motor de contenedores
-  # @reason "Asistente de credenciales" follows common Spanish documentation usage for "credential helper".
-  # @source Installing credential helper
-  installingCredentialHelper: Instalando el asistente de credenciales
-  # @reason "docker-credential" is the helper binary name prefix; kept verbatim.
-  # @source Installing the docker-credential helper
-  installingDockerCredentialHelper: Instalando el asistente docker-credential
-  # @source Installing helpers
-  installingHelpers: Instalando utilidades auxiliares
-  # @source Installing image scanner
-  installingImageScanner: Instalando el analizador de imágenes
-  # @source Installing k3s
-  installingK3s: Instalando k3s
-  # @source Installing Kubernetes
-  installingKubernetes: Instalando Kubernetes
-  # @source Kubernetes components
-  kubernetesComponents: Componentes de Kubernetes
-  # @source Kubernetes dockerd compatibility
-  kubernetesDockerCompatibility: Compatibilidad de Kubernetes con dockerd
-  # @source Mounting WSL data
-  mountingWslData: Montando los datos de WSL
-  # @source Preparing to start
-  preparingToStart: Preparándose para iniciar
-  # @source Proxy Config Setup
-  proxyConfigSetup: Configuración del proxy
-  # @source Rancher Desktop guest agent
-  rancherDesktopGuestAgent: Agente invitado de Rancher Desktop
-  # @source Recovering virtual machine
-  recoveringBrokenVirtualMachine: Recuperando la máquina virtual
-  # @source Regenerating configuration to account for lack of permissions
-  regeneratingConfiguration: Regenerando la configuración para tener en cuenta la falta de permisos
-  # @source Registering WSL distribution
-  registeringWslDistribution: Registrando la distribución de WSL
-  # @source Removing existing certificates
-  removingExistingCertificates: Eliminando los certificados existentes
-  # @source Removing spinkube operator
-  removingSpinkubeOperator: Eliminando el operador spinkube
-  # @source Removing stale state
-  removingStaleState: Eliminando el estado obsoleto
-  # @source Removing Traefik
-  removingTraefik: Eliminando Traefik
-  # @source Resetting Kubernetes
-  resettingKubernetes: Restableciendo Kubernetes
-  # @source Running provisioning scripts
-  runningProvisioningScripts: Ejecutando scripts de aprovisionamiento
-  # @source Running update-ca-certificates
-  runningUpdateCaCertificates: Ejecutando update-ca-certificates
-  # @source Setting docker context
-  settingDockerContext: Estableciendo el contexto de docker
-  # @source Setting Lima permissions
-  settingLimaPermissions: Estableciendo los permisos de Lima
-  # @source Setting up Docker socket
-  settingUpDockerSocket: Configurando el socket de Docker
-  # @source Setting up virtual ethernet
-  settingUpVirtualEthernet: Configurando la red ethernet virtual
-  # @source Shutting down
-  shuttingDown: Apagando
-  # @source Skipping node checks, flannel is disabled
-  skippingNodeChecksFlannel: Omitiendo las comprobaciones de nodos; flannel está deshabilitado
-  # @source Starting Backend
-  startingBackend: Iniciando el backend
-  # @source Starting buildkit
-  startingBuildkit: Iniciando buildkit
-  # @source Starting container engine
-  startingContainerEngine: Iniciando el motor de contenedores
-  # @source Starting image proxy
-  startingImageProxy: Iniciando el proxy de imágenes
-  # @source Starting k3s
-  startingK3s: Iniciando k3s
-  # @source Starting Kubernetes
-  startingKubernetes: Iniciando Kubernetes
-  # @source Starting proxy
-  startingProxy: Iniciando el proxy
-  # @source Starting {service}
-  startingService: Iniciando {service}
-  # @source Starting virtual machine
-  startingVirtualMachine: Iniciando la máquina virtual
-  # @source Starting WSL environment
-  startingWslEnvironment: Iniciando el entorno WSL
-  # @source Stopping existing instance
-  stoppingExistingInstance: Deteniendo la instancia existente
-  # @source Stopping mock backend
-  stoppingMockBackend: Deteniendo el backend simulado
-  # @source Stopping services
-  stoppingServices: Deteniendo servicios
-  # @source Updating cluster configuration
-  updatingClusterConfiguration: Actualizando la configuración del clúster
-  # @source Updating /etc/hosts
-  updatingEtcHosts: Actualizando /etc/hosts
-  # @source Updating kubeconfig
-  updatingKubeconfig: Actualizando kubeconfig
-  # @source Updating outdated virtual machine
-  updatingOutdatedVm: Actualizando la máquina virtual obsoleta
-  # @source Updating WSL data
-  updatingWslData: Actualizando los datos de WSL
-  # @source Upgrading WSL distribution
-  upgradingWslDistribution: Actualizando la distribución de WSL
-  # @source Waiting for container engine to be ready
-  waitingForContainerEngine: Esperando a que el motor de contenedores esté listo
-  # @source Waiting for Kubernetes API
-  waitingForKubernetesApi: Esperando la API de Kubernetes
-  # @source Waiting for nodes
-  waitingForNodes: Esperando los nodos
-  # @source Waiting for services
-  waitingForServices: Esperando los servicios
-  # @source Writing K3s configuration
-  writingK3sConfiguration: Escribiendo la configuración de K3s
 snapshots:
   action:
     # @source Create Snapshot
@@ -1341,8 +1165,6 @@ snapshots:
         cancel: Cancelar
       # @source Creating {snapshot}
       header: Creando {snapshot}
-      # @source Please wait while snapshot '<b>'{snapshot}'</b>' is being created.'<br/>'This may take some time depending on your machine's resources.'<br/>'Rancher Desktop will be temporarily unavailable during this operation.'<br/><br/>'Once the snapshot is complete, the VM will restart.
-      message: Espere mientras se crea la instantánea '<b>'{snapshot}'</b>'.'<br/>'Esto puede tardar algún tiempo según los recursos de su máquina.'<br/>'Rancher Desktop no estará disponible temporalmente durante esta operación.'<br/><br/>'Una vez completada la instantánea, la máquina virtual se reiniciará.
     delete:
       actions:
         # @source Cancel
@@ -1511,24 +1333,14 @@ tray:
   openMainWindow: Abrir la ventana principal
   # @source Open preferences dialog
   openPreferences: Abrir el diálogo de configuración
-  # @source Quit Rancher Desktop
-  quitRancherDesktop: Salir de Rancher Desktop
+  # @source Quit {appName}
+  quitRancherDesktop: Salir de {appName}
   state:
-    # @source Kubernetes is disabled
-    disabled: Kubernetes está deshabilitado
-    # @source Kubernetes has encountered an error
-    error: Kubernetes ha encontrado un error
-    # @source Kubernetes is running
-    started: Kubernetes está en ejecución
     # @source Kubernetes is starting
     starting: Kubernetes se está iniciando
-    # @source Kubernetes is stopped
-    stopped: Kubernetes está detenido
-    # @source Kubernetes is shutting down
-    stopping: Kubernetes se está deteniendo
-  # @reason 'Rancher Desktop' is the product name.
-  # @source Rancher Desktop
-  tooltip: Rancher Desktop
+  # @reason The source is only the product-name placeholder; there is nothing to translate.
+  # @source {appName}
+  tooltip: '{appName}'
 troubleshooting:
   # @source Enable debug mode
   debugMode: Habilitar el modo de depuración
@@ -1599,13 +1411,12 @@ unmetPrerequisites:
 updateStatus:
   # @source Applying update...
   applyingUpdate: Aplicando la actualización...
-  # @source An update to version {version} is available
-  available: Hay disponible una actualización a la versión {version}
+  # @source An update to version {version} is available.
+  available: Hay disponible una actualización a la versión {version}.
   # @source Check for updates automatically
   checkForUpdates: Buscar actualizaciones automáticamente
-  # @reason Lowercase kept; the source is lowercase because the string is appended inline.
-  # @source downloading... ({percent}%, {speed})
-  downloading: descargando... ({percent}%, {speed})
+  # @source An update to version {version} is available; downloading... ({percent}%, {speed})
+  downloading: Hay disponible una actualización a la versión {version}; descargando... ({percent}%, {speed})
   # @source There was an error checking for updates.
   errorChecking: Se produjo un error al buscar actualizaciones.
   # @source Release Notes
@@ -1624,76 +1435,8 @@ updateStatus:
   # @source Update Available
   updateAvailable: Actualización disponible
 validation:
-  # @source Cannot decrease "{field}" from {from} to {to}
-  cannotDecrease: No se puede reducir "{field}" de {from} a {to}
-  # @source Cannot enable WebAssembly with classic storage for moby.
-  cannotEnableWasmClassic: No se puede habilitar WebAssembly con el almacenamiento clásico para moby.
-  # @source Cannot switch to classic storage for moby when WebAssembly is enabled.
-  cannotSwitchClassicWasm: No se puede cambiar al almacenamiento clásico para moby cuando WebAssembly está habilitado.
-  # @source Cannot switch to moby container engine with classic storage when WebAssembly is enabled.
-  cannotSwitchMobyClassicWasm: No se puede cambiar al motor de contenedores moby con almacenamiento clásico cuando WebAssembly está habilitado.
-  # @reason Lowercase start kept to match the source, which is a fragment appended to other error text.
-  # @source field "{field}" has duplicate entries: "{duplicates}"
-  duplicateEntries: 'el campo "{field}" tiene entradas duplicadas: "{duplicates}"'
-  # @source Errors in proposed settings:
-  errorsInProposedSettings: 'Errores en la configuración propuesta:'
-  # @source field "{field}" is locked
-  fieldLocked: el campo "{field}" está bloqueado
-  # @source {field}: "{pattern}" does not describe an image reference
-  invalidImageReference: '{field}: "{pattern}" no describe una referencia de imagen'
-  # @source {field}: "{value}" is not a valid mapping
-  invalidMapping: '{field}: "{value}" no es una asignación válida'
-  # @source {field}: "{name}" is an invalid name
-  invalidName: '{field}: "{name}" no es un nombre válido'
-  # @source field "{field}" has invalid entries (must be IP addresses, CIDR subnets, or domain names): "{entries}"
-  invalidNoproxyEntries: 'el campo "{field}" tiene entradas no válidas (deben ser direcciones IP, subredes CIDR o nombres de dominio): "{entries}"'
-  # @source {field}: "{value}" is not a valid page name for Preferences Dialog
-  invalidPageName: '{field}: "{value}" no es un nombre de página válido para el diálogo de Configuración'
-  # @source {field}: tab name "{tabName}" is not a valid tab name for "{page}" Preference page
-  invalidTabName: '{field}: el nombre de pestaña "{tabName}" no es válido para la página de Configuración "{page}"'
-  # @source {field}: "{name}" has invalid tag "{tag}"
-  invalidTag: '{field}: "{name}" tiene la etiqueta no válida "{tag}"'
-  # @source Invalid value for "{field}": <{value}>
-  invalidValue: 'Valor no válido para "{field}": <{value}>'
-  # @source Invalid value for "{field}": <{value}>; must be one of {validValues}
-  invalidValueEnum: 'Valor no válido para "{field}": <{value}>; debe ser uno de {validValues}'
-  # @source Kubernetes version "{version}" not found.
-  kubernetesVersionNotFound: No se encontró la versión de Kubernetes "{version}".
-  # @source {field}: "{name}" has non-string tag "{tag}"
-  nonStringTag: '{field}: "{name}" tiene una etiqueta que no es una cadena: "{tag}"'
-  # @source Changing field "{field}" via the API isn't supported.
-  notSupported: No se admite cambiar el campo "{field}" mediante la API.
-  # @reason 'array' kept in English; it names the literal JSON type in deployment profiles.
-  # @source Error for field ''{field}'': expecting value of type array, got ''{value}''
-  profileExpectedArray: 'Error en el campo ''''{field}'''': se esperaba un valor de tipo array, se obtuvo ''''{value}'''''
-  # @source Error for field ''{field}'': expecting value of type {expectedType}, got ''{value}''
-  profileExpectedType: 'Error en el campo ''''{field}'''': se esperaba un valor de tipo {expectedType}, se obtuvo ''''{value}'''''
-  # @source Error for field ''{field}'': expecting value of type {expectedType}, got an array {value}
-  profileExpectedTypeGotArray: 'Error en el campo ''''{field}'''': se esperaba un valor de tipo {expectedType}, se obtuvo un array {value}'
-  # @source Proposed field "{field}" should be an object, got <{value}>.
-  proposedShouldBeObject: El campo propuesto "{field}" debería ser un objeto, se obtuvo <{value}>.
-  # @source Setting {field} can only be enabled on aarch64 systems.
-  requiresArm: La opción {field} solo se puede habilitar en sistemas aarch64.
-  # @source Setting {field} can only be changed when virtualMachine.mount.type is "{mountType}".
-  requiresNineP: La opción {field} solo se puede cambiar cuando virtualMachine.mount.type es "{mountType}".
-  # @source Setting {field} can only be enabled when virtual-machine.type is "{vmType}".
-  requiresVz: La opción {field} solo se puede habilitar cuando virtual-machine.type es "{vmType}".
-  # @source Setting {field} can only be set when experimental.container-engine.web-assembly.enabled is set as well.
-  requiresWebAssembly: La opción {field} solo se puede establecer cuando experimental.container-engine.web-assembly.enabled también está establecida.
-  # @source Setting {field} to "{value}" requires that {otherField} is "{required}".
-  settingRequires: Establecer {field} en "{value}" requiere que {otherField} sea "{required}".
-  # @source Setting {field} to "{value}" requires that {otherField} is "{option1}" or "{option2}".
-  settingRequiresEither: Establecer {field} en "{value}" requiere que {otherField} sea "{option1}" o "{option2}".
-  # @source Setting "{field}" should wrap an inner object, but got <{value}>.
-  shouldBeObject: La opción "{field}" debería contener un objeto interno, pero se obtuvo <{value}>.
-  # @source Setting "{field}" should be a simple value, but got <{value}>.
-  shouldBeSimple: La opción "{field}" debería ser un valor simple, pero se obtuvo <{value}>.
   # @source One or more fields in this tab contain a form validation error
   tab: Uno o más campos de esta pestaña contienen un error de validación del formulario
-  # @source Setting {field} to "{vmType}" on ARM requires macOS 13.3 (Ventura) or later.
-  vzArmMacOs: Establecer {field} en "{vmType}" en ARM requiere macOS 13.3 (Ventura) o posterior.
-  # @source Setting {field} to "{vmType}" on Intel requires macOS 13.0 (Ventura) or later.
-  vzIntelMacOs: Establecer {field} en "{vmType}" en Intel requiere macOS 13.0 (Ventura) o posterior.
 virtualMachine:
   mount:
     type:

@@ -6,17 +6,11 @@ hardcoded English strings, and other i18n issues.
 
 ## Quick start
 
-Run from the repository root:
+Build the binary, then run it from the repository root:
 
 ```sh
-go tool i18n-report <subcommand> [flags]
-```
-
-Or build and run the binary:
-
-```sh
-go build -o src/go/i18n-report/i18n-report ./src/go/i18n-report
-./src/go/i18n-report/i18n-report <subcommand> [flags]
+go build -C src/go/i18n-report
+src/go/i18n-report/i18n-report <subcommand> [flags]
 ```
 
 ## Exit codes
@@ -340,9 +334,10 @@ keys). PR CI runs the default structural set and no configured job passes
 `--strict`, so run it by hand before a release. Passing `--strict` without
 `--locale` is an error.
 
-The registration checks verify that the locale enum in `command-api.yaml`,
-`settingsValidator.ts`, its spec, and the `locale.*` display-name keys in
-`en-us.yaml` agree with the translation files on disk.
+The registration checks verify that the `LocaleString` union in
+`translationLoader.ts`, the `Locale` union in `settings.ts`, and the
+`locale.*` display-name keys in `en-us.yaml` agree with the translation
+files on disk.
 
 ## Common workflows
 

@@ -34,8 +34,9 @@ const dottedKey = `[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)*`
 
 // Patterns for finding translation key references in source code.
 var (
-	// t('...'), t("..."), t(`...`), also this.t(...) and $t(...)
-	keyPattern = regexp.MustCompile(`(?:^|[^a-zA-Z])t\(['"\x60](` + dottedKey + `)['"\x60]`)
+	// t('...'), t("..."), t(`...`), also this.t(...), $t(...), and t.value(...)
+	// for a computed translate getter (const t = computed(() => getters['i18n/t'])).
+	keyPattern = regexp.MustCompile(`(?:^|[^a-zA-Z])t(?:\.value)?\(['"\x60](` + dottedKey + `)['"\x60]`)
 	// titleKey/descriptionKey/labelKey properties with string literal values.
 	keyPropPattern = regexp.MustCompile(`(?:titleKey|descriptionKey|labelKey):\s*['"](` + dottedKey + `)['"]`)
 	// Lines containing a Key property may use ternaries; extract all dotted keys.
@@ -51,8 +52,8 @@ var (
 	vtDirectivePattern = regexp.MustCompile(`v-t="'(` + dottedKey + `)'"`)
 	// Direct store getter calls: getters['i18n/t']('key').
 	getterCallPattern = regexp.MustCompile(`\['i18n/t'\]\(\s*['"\x60](` + dottedKey + `)['"\x60]`)
-	// t( calls with the key literal on the following line.
-	multilineKeyPattern = regexp.MustCompile(`(?:^|[^a-zA-Z])t\(\s*\n\s*['"\x60](` + dottedKey + `)['"\x60]`)
+	// t( and t.value( calls with the key literal on the following line.
+	multilineKeyPattern = regexp.MustCompile(`(?:^|[^a-zA-Z])t(?:\.value)?\(\s*\n\s*['"\x60](` + dottedKey + `)['"\x60]`)
 	// Comment lines; keys mentioned in comments are not real references.
 	commentLinePattern = regexp.MustCompile(`^\s*(//|\*|/\*|<!--)`)
 

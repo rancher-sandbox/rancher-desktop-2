@@ -14,9 +14,6 @@ import (
 	"regexp"
 	"slices"
 	"sort"
-	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 // runCheck is the CI gate. Bare `check` runs the locale-independent source
@@ -146,62 +143,40 @@ func reportCheckSource(w io.Writer, root string) error {
 }
 
 // reportCheckRegistration checks that every locale registration surface
-// agrees with the translation files on disk: the locale enum in
-// command-api.yaml, the settingsValidator.ts enum construction, the
-// validator spec's test values, and the locale.* display-name keys in
-// en-us.yaml.
+// agrees with the translation files on disk: the LocaleString union in
+// translationLoader.ts, the Locale union in settings.ts, and the locale.*
+// display-name keys in en-us.yaml.
 func reportCheckRegistration(w io.Writer, root string, locales []string) error {
-	apiLocales, err := parseAPILocaleEnum(translationsPath(root, "../specs/command-api.yaml"))
-	if err != nil {
-		return err
-	}
-
-	// The expected enum: the source locale and every translation file on disk.
+	// The expected locales: the source locale and every translation file on disk.
 	expected := map[string]bool{sourceLocale: true}
 	for _, code := range locales {
 		expected[code] = true
 	}
 
-	apiSet := make(map[string]bool)
-	for _, code := range apiLocales {
-		apiSet[code] = true
-	}
-
 	var problems []string
 
-	for code := range expected {
-		if !apiSet[code] {
-			problems = append(problems, fmt.Sprintf("  locale %q missing from command-api.yaml enum", code))
+	// Both TypeScript locale unions must list exactly the expected locales.
+	unions := []struct{ path, name string }{
+		{filepath.Join("pkg", "rancher-desktop", "utils", "translationLoader.ts"), "LocaleString"},
+		{filepath.Join("pkg", "rancher-desktop", "config", "settings.ts"), "Locale"},
+	}
+	for _, u := range unions {
+		members, err := parseTypeUnion(filepath.Join(root, u.path), u.name)
+		if err != nil {
+			return err
+		}
+		file := filepath.Base(u.path)
+		for code := range expected {
+			if !members[code] {
+				problems = append(problems, fmt.Sprintf("  locale %q missing from %s type %s", code, file, u.name))
+			}
+		}
+		for code := range members {
+			if !expected[code] {
+				problems = append(problems, fmt.Sprintf("  %s type %s has %q with no translation file", file, u.name, code))
+			}
 		}
 	}
-	for code := range apiSet {
-		if !expected[code] {
-			problems = append(problems, fmt.Sprintf("  command-api.yaml enum has %q with no translation file", code))
-		}
-	}
-
-	// settingsValidator.ts must build its enum from the translation files
-	// instead of a hardcoded list. An unreadable registration file is an
-	// operational failure, like an unreadable command-api.yaml above; only a
-	// present-but-wrong file is a finding.
-	validatorPath := filepath.Join(root, "pkg", "rancher-desktop", "main",
-		"commandServer", "settingsValidator.ts")
-	validatorData, err := os.ReadFile(validatorPath)
-	if err != nil {
-		return fmt.Errorf("reading settingsValidator.ts: %w", err)
-	}
-	if !strings.Contains(string(validatorData), "...availableLocales") {
-		problems = append(problems, "  settingsValidator.ts: locale checkEnum does not use ...availableLocales (hardcoded list?)")
-	}
-
-	// Validate settingsValidator.spec.ts test values.
-	specPath := filepath.Join(root, "pkg", "rancher-desktop", "main",
-		"commandServer", "__tests__", "settingsValidator.spec.ts")
-	specData, err := os.ReadFile(specPath)
-	if err != nil {
-		return fmt.Errorf("reading settingsValidator.spec.ts: %w", err)
-	}
-	problems = append(problems, crossValidateSpec(string(specData), expected)...)
 
 	// Every locale needs a display name for the language picker.
 	enKeys, err := loadYAMLFlat(translationsPath(root, "en-us.yaml"))
@@ -227,97 +202,28 @@ func reportCheckRegistration(w io.Writer, root string, locales []string) error {
 	return nil
 }
 
-// parseAPILocaleEnum extracts the locale enum values from command-api.yaml
-// by parsing the YAML structure instead of using fragile regex matching.
-func parseAPILocaleEnum(path string) ([]string, error) {
+// parseTypeUnion returns the quoted string members of the TypeScript
+// declaration "export type <name> = 'a' | 'b' ...;" in the file at path.
+// An unreadable file or a missing declaration is an operational error.
+func parseTypeUnion(path, name string) (map[string]bool, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("reading command-api.yaml: %w", err)
+		return nil, fmt.Errorf("reading %s: %w", filepath.Base(path), err)
 	}
-
-	// Parse into a generic structure and navigate to the locale enum.
-	var doc map[string]interface{}
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("parsing command-api.yaml: %w", err)
+	declRe := regexp.MustCompile(`export\s+type\s+` + regexp.QuoteMeta(name) + `\s*=([^;]*);`)
+	decl := declRe.FindSubmatch(data)
+	if decl == nil {
+		return nil, fmt.Errorf("%s: no \"export type %s\" declaration", filepath.Base(path), name)
 	}
-
-	// Navigate: paths.*.*.properties.application.properties.locale.enum
-	// The locale enum sits deep under application settings; find it by
-	// recursively searching every map for a "locale" property that has an
-	// "enum".
-	locales := findLocaleEnum(doc)
-	if locales == nil {
-		return nil, fmt.Errorf("could not find locale enum in command-api.yaml")
+	members := make(map[string]bool)
+	for _, m := range unionMemberRe.FindAllSubmatch(decl[1], -1) {
+		members[string(m[1])] = true
 	}
-	return locales, nil
+	return members, nil
 }
 
-// findLocaleEnum searches a parsed YAML structure for a "locale" property
-// definition that contains an "enum" list, returning the enum values.
-func findLocaleEnum(v interface{}) []string {
-	switch node := v.(type) {
-	case map[string]interface{}:
-		// If this map has a "locale" key whose value has an "enum", that's it.
-		if locale, found := node["locale"]; found {
-			if localeMap, ok := locale.(map[string]interface{}); ok {
-				if enumVal, hasEnum := localeMap["enum"]; hasEnum {
-					if items, ok := enumVal.([]interface{}); ok {
-						var result []string
-						for _, item := range items {
-							if s, ok := item.(string); ok {
-								result = append(result, s)
-							}
-						}
-						if len(result) > 0 {
-							return result
-						}
-					}
-				}
-			}
-		}
-		// Recurse into all map values.
-		for _, val := range node {
-			if result := findLocaleEnum(val); result != nil {
-				return result
-			}
-		}
-	case []interface{}:
-		for _, val := range node {
-			if result := findLocaleEnum(val); result != nil {
-				return result
-			}
-		}
-	}
-	return nil
-}
-
-// specLocaleRe matches locale string values in test assertions, e.g.:
-//
-//	{ application: { locale: 'de' } }
-var specLocaleRe = regexp.MustCompile(`locale:\s*'([a-z][\w-]*)'`)
-
-// crossValidateSpec checks that locale values used as valid inputs in
-// the settings validator spec correspond to translation files on disk.
-func crossValidateSpec(specContent string, knownLocales map[string]bool) []string {
-	matches := specLocaleRe.FindAllStringSubmatch(specContent, -1)
-	seen := make(map[string]bool)
-	var problems []string
-	for _, m := range matches {
-		code := m[1]
-		if seen[code] {
-			continue
-		}
-		seen[code] = true
-		// "none" and "invalid" are special test values, not real locales.
-		if code == "none" || code == "invalid" {
-			continue
-		}
-		if !knownLocales[code] {
-			problems = append(problems, fmt.Sprintf("  settingsValidator.spec.ts uses locale %q with no translation file", code))
-		}
-	}
-	return problems
-}
+// unionMemberRe matches one quoted string member of a TypeScript union.
+var unionMemberRe = regexp.MustCompile(`'([^']*)'`)
 
 // reportCheckLocale runs the per-locale checks:
 //   - locale file present

@@ -23,6 +23,14 @@ test-wix-helper:
 	( cd src/go/wix-helper && go$(EXE) test ./... )
 .PHONY: test-wix-helper
 
+test-i18n-report:
+	( cd src/go/i18n-report && go$(EXE) test ./... )
+.PHONY: test-i18n-report
+
+check-translations:
+	( cd src/go/i18n-report && go$(EXE) run . check --locale=all )
+.PHONY: check-translations
+
 lint: lint-rdd lint-bats lint-shell lint-startup-profile lint-wix-helper
 .PHONY: lint
 

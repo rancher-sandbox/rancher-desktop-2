@@ -114,6 +114,19 @@ jobs:
         persist-credentials: false
     - uses: $/.github/actions/yarn-install
     - run: yarn test:unit:jest
+  test-i18n-report:
+    name: Translation Checks
+    needs: get-pr-number
+    runs-on: ubuntu-latest
+    if: ${{ ! needs.get-pr-number.outputs.number }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      with:
+        go-version-file: src/go/i18n-report/go.mod
+    - run: make test-i18n-report check-translations
   test-wix-helper:
     name: Wix Helper Tests
     needs: get-pr-number

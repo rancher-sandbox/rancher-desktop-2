@@ -35,8 +35,8 @@ describe('main-process i18n', () => {
   });
 
   it('renders ICU quoted literals as visible quotes', () => {
-    expect(t('dialog.invalidK8sVersion.message', { version: '1.32' }))
-      .toEqual("Requested Kubernetes version '1.32' is not a supported version.");
+    expect(t('images.scan.loadingText', { image: 'busybox:latest' }))
+      .toEqual("Scanning 'busybox:latest'");
   });
 
   it('degrades to the raw pattern when an argument is missing', () => {

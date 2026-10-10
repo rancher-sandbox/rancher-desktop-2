@@ -399,18 +399,6 @@ There are no repositories for AppImages, but you can access the [latest developm
 
 [latest development AppImage builds]: https://download.opensuse.org/repositories/isv:/Rancher:/dev/AppImage/
 
-## API
-
-Rancher Desktop supports a limited HTTP-based API. The API is defined in
-`pkg/rancher-desktop/assets/specs/command-api.yaml`, and you can see examples of how it's
-invoked in the client code at `go/src/rdctl`.
-
-### Stability
-
-The API is currently at version 1, but is still considered internal and experimental, and
-is subject to change without any advance notice. At some point we expect that necessary
-changes to the API will go through a warning and deprecation notice.
-
 ## Contributing
 
 Please see [the document about contributing](CONTRIBUTING.md).

@@ -7,7 +7,6 @@ package main
 import (
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 )
@@ -92,23 +91,12 @@ func TestRemoveKeyFromNode(t *testing.T) {
 				t.Error("expected no removal, but key was removed")
 			}
 
-			// A removal reserializes the whole file, which restyles scalars,
-			// so compare the parsed key/value set rather than raw bytes. This
-			// catches both a key that survived and a sibling the rewrite lost.
-			got, err := loadYAMLFlat(path)
+			data, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatal(err)
 			}
-			wantPath := filepath.Join(dir, "want.yaml")
-			if err := os.WriteFile(wantPath, []byte(tc.wantYAML), 0o644); err != nil {
-				t.Fatal(err)
-			}
-			want, err := loadYAMLFlat(wantPath)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("after removing %q:\n got %v\nwant %v", tc.key, got, want)
+			if string(data) != tc.wantYAML {
+				t.Errorf("after removing %q:\n got %q\nwant %q", tc.key, data, tc.wantYAML)
 			}
 		})
 	}
@@ -206,5 +194,80 @@ func TestReadKeysFiltersNonKeys(t *testing.T) {
 		if k != want[i] {
 			t.Errorf("key[%d] = %q, want %q", i, k, want[i])
 		}
+	}
+}
+
+func TestRemoveKeysKeepsFormatting(t *testing.T) {
+	input := `# File header.
+
+group:
+  removed: |-
+    first line
+    second line
+  kept: |-
+    kept line
+
+    after blank
+  # Head comment of removed key.
+  gone: x
+  # Head comment of kept key.
+  stays: "double quoted"
+  single: 'single quoted'
+
+parent:
+  # Comment on the only child.
+  only: v1
+
+last: 'end'
+`
+	want := `# File header.
+
+group:
+  kept: |-
+    kept line
+
+    after blank
+  # Head comment of kept key.
+  stays: "double quoted"
+  single: 'single quoted'
+
+last: 'end'
+`
+	path := filepath.Join(t.TempDir(), "test.yaml")
+	if err := os.WriteFile(path, []byte(input), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	keys := map[string]bool{"group.removed": true, "group.gone": true, "parent.only": true}
+	removed, err := removeKeysFromFile(path, keys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if removed != 3 {
+		t.Errorf("removed %d keys, want 3", removed)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != want {
+		t.Errorf("got:\n%s\nwant:\n%s", data, want)
+	}
+}
+
+func TestRemoveKeyFromFlowMappingFails(t *testing.T) {
+	input := "group: {a: x, b: y}\n"
+	path := filepath.Join(t.TempDir(), "test.yaml")
+	if err := os.WriteFile(path, []byte(input), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := removeKeysFromFile(path, map[string]bool{"group.a": true}); err == nil {
+		t.Error("expected an error removing a key from a flow mapping")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != input {
+		t.Errorf("file changed: %q", data)
 	}
 }
