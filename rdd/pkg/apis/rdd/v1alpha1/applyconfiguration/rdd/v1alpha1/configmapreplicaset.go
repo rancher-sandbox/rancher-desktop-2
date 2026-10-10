@@ -3,8 +3,11 @@
 package v1alpha1
 
 import (
+	rddv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/rdd/v1alpha1"
+	internal "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/rdd/v1alpha1/applyconfiguration/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -45,6 +48,47 @@ func ConfigMapReplicaSet(name, namespace string) *ConfigMapReplicaSetApplyConfig
 	b.WithKind("ConfigMapReplicaSet")
 	b.WithAPIVersion("rdd.rancherdesktop.io/v1alpha1")
 	return b
+}
+
+// ExtractConfigMapReplicaSetFrom extracts the applied configuration owned by fieldManager from
+// configMapReplicaSet for the specified subresource. Pass an empty string for subresource to extract
+// the main resource. Common subresources include "status", "scale", etc.
+// configMapReplicaSet must be a unmodified ConfigMapReplicaSet API object that was retrieved from the Kubernetes API.
+// ExtractConfigMapReplicaSetFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractConfigMapReplicaSetFrom(configMapReplicaSet *rddv1alpha1.ConfigMapReplicaSet, fieldManager string, subresource string) (*ConfigMapReplicaSetApplyConfiguration, error) {
+	b := &ConfigMapReplicaSetApplyConfiguration{}
+	err := managedfields.ExtractInto(configMapReplicaSet, internal.Parser().Type("com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.ConfigMapReplicaSet"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(configMapReplicaSet.Name)
+	b.WithNamespace(configMapReplicaSet.Namespace)
+
+	b.WithKind("ConfigMapReplicaSet")
+	b.WithAPIVersion("rdd.rancherdesktop.io/v1alpha1")
+	return b, nil
+}
+
+// ExtractConfigMapReplicaSet extracts the applied configuration owned by fieldManager from
+// configMapReplicaSet. If no managedFields are found in configMapReplicaSet for fieldManager, a
+// ConfigMapReplicaSetApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// configMapReplicaSet must be a unmodified ConfigMapReplicaSet API object that was retrieved from the Kubernetes API.
+// ExtractConfigMapReplicaSet provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractConfigMapReplicaSet(configMapReplicaSet *rddv1alpha1.ConfigMapReplicaSet, fieldManager string) (*ConfigMapReplicaSetApplyConfiguration, error) {
+	return ExtractConfigMapReplicaSetFrom(configMapReplicaSet, fieldManager, "")
+}
+
+// ExtractConfigMapReplicaSetStatus extracts the applied configuration owned by fieldManager from
+// configMapReplicaSet for the status subresource.
+func ExtractConfigMapReplicaSetStatus(configMapReplicaSet *rddv1alpha1.ConfigMapReplicaSet, fieldManager string) (*ConfigMapReplicaSetApplyConfiguration, error) {
+	return ExtractConfigMapReplicaSetFrom(configMapReplicaSet, fieldManager, "status")
 }
 
 func (b ConfigMapReplicaSetApplyConfiguration) IsApplyConfiguration() {}

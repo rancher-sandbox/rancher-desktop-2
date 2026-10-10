@@ -7,7 +7,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
     rdd.rancherdesktop.io/controller: container
   name: containercreaterequests.containers.rancherdesktop.io
 spec:
@@ -118,22 +118,11 @@ spec:
                 - name
                 x-kubernetes-list-type: map
               state:
-                allOf:
-                - enum:
-                  - created
-                  - running
-                  - pausing
-                  - paused
-                  - restarting
-                  - removing
-                  - exited
-                  - dead
-                  - unknown
-                - enum:
-                  - created
-                  - running
                 default: running
                 description: State is the desired state of the container.
+                enum:
+                - created
+                - running
                 type: string
             required:
             - image
@@ -228,7 +217,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: containers.containers.rancherdesktop.io
 spec:
   group: containers.rancherdesktop.io

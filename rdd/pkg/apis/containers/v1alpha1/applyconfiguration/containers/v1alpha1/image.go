@@ -3,8 +3,11 @@
 package v1alpha1
 
 import (
+	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
+	internal "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1/applyconfiguration/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -30,6 +33,47 @@ func Image(name, namespace string) *ImageApplyConfiguration {
 	b.WithKind("Image")
 	b.WithAPIVersion("containers.rancherdesktop.io/v1alpha1")
 	return b
+}
+
+// ExtractImageFrom extracts the applied configuration owned by fieldManager from
+// image for the specified subresource. Pass an empty string for subresource to extract
+// the main resource. Common subresources include "status", "scale", etc.
+// image must be a unmodified Image API object that was retrieved from the Kubernetes API.
+// ExtractImageFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractImageFrom(image *containersv1alpha1.Image, fieldManager string, subresource string) (*ImageApplyConfiguration, error) {
+	b := &ImageApplyConfiguration{}
+	err := managedfields.ExtractInto(image, internal.Parser().Type("com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.Image"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(image.Name)
+	b.WithNamespace(image.Namespace)
+
+	b.WithKind("Image")
+	b.WithAPIVersion("containers.rancherdesktop.io/v1alpha1")
+	return b, nil
+}
+
+// ExtractImage extracts the applied configuration owned by fieldManager from
+// image. If no managedFields are found in image for fieldManager, a
+// ImageApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// image must be a unmodified Image API object that was retrieved from the Kubernetes API.
+// ExtractImage provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractImage(image *containersv1alpha1.Image, fieldManager string) (*ImageApplyConfiguration, error) {
+	return ExtractImageFrom(image, fieldManager, "")
+}
+
+// ExtractImageStatus extracts the applied configuration owned by fieldManager from
+// image for the status subresource.
+func ExtractImageStatus(image *containersv1alpha1.Image, fieldManager string) (*ImageApplyConfiguration, error) {
+	return ExtractImageFrom(image, fieldManager, "status")
 }
 
 func (b ImageApplyConfiguration) IsApplyConfiguration() {}

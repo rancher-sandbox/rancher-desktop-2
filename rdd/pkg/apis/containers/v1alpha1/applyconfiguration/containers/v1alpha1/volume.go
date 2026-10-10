@@ -3,8 +3,11 @@
 package v1alpha1
 
 import (
+	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
+	internal "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1/applyconfiguration/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -30,6 +33,47 @@ func Volume(name, namespace string) *VolumeApplyConfiguration {
 	b.WithKind("Volume")
 	b.WithAPIVersion("containers.rancherdesktop.io/v1alpha1")
 	return b
+}
+
+// ExtractVolumeFrom extracts the applied configuration owned by fieldManager from
+// volume for the specified subresource. Pass an empty string for subresource to extract
+// the main resource. Common subresources include "status", "scale", etc.
+// volume must be a unmodified Volume API object that was retrieved from the Kubernetes API.
+// ExtractVolumeFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractVolumeFrom(volume *containersv1alpha1.Volume, fieldManager string, subresource string) (*VolumeApplyConfiguration, error) {
+	b := &VolumeApplyConfiguration{}
+	err := managedfields.ExtractInto(volume, internal.Parser().Type("com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.Volume"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(volume.Name)
+	b.WithNamespace(volume.Namespace)
+
+	b.WithKind("Volume")
+	b.WithAPIVersion("containers.rancherdesktop.io/v1alpha1")
+	return b, nil
+}
+
+// ExtractVolume extracts the applied configuration owned by fieldManager from
+// volume. If no managedFields are found in volume for fieldManager, a
+// VolumeApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// volume must be a unmodified Volume API object that was retrieved from the Kubernetes API.
+// ExtractVolume provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractVolume(volume *containersv1alpha1.Volume, fieldManager string) (*VolumeApplyConfiguration, error) {
+	return ExtractVolumeFrom(volume, fieldManager, "")
+}
+
+// ExtractVolumeStatus extracts the applied configuration owned by fieldManager from
+// volume for the status subresource.
+func ExtractVolumeStatus(volume *containersv1alpha1.Volume, fieldManager string) (*VolumeApplyConfiguration, error) {
+	return ExtractVolumeFrom(volume, fieldManager, "status")
 }
 
 func (b VolumeApplyConfiguration) IsApplyConfiguration() {}

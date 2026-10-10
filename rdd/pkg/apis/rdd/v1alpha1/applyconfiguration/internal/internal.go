@@ -23,6 +23,285 @@ func Parser() *typed.Parser {
 var parserOnce sync.Once
 var parser *typed.Parser
 var schemaYAML = typed.YAMLObject(`types:
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.ConfigMapReplicaSet
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+    - name: spec
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.ConfigMapSpec
+    - name: status
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.ConfigMapStatus
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.ConfigMapSpec
+  map:
+    fields:
+    - name: data
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: replicas
+      type:
+        scalar: numeric
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.ConfigMapStatus
+  map:
+    fields:
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+          elementRelationship: atomic
+    - name: readyReplicas
+      type:
+        scalar: numeric
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.HostInfo
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+    - name: spec
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.HostInfoSpec
+    - name: status
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.HostInfoStatus
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.HostInfoSpec
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.HostInfoStatus
+  map:
+    fields:
+    - name: cpus
+      type:
+        scalar: numeric
+    - name: memory
+      type:
+        namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.Notary
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+    - name: spec
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.NotarySpec
+    - name: status
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.NotaryStatus
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.NotarySpec
+  map:
+    fields:
+    - name: configMapName
+      type:
+        scalar: string
+    - name: value
+      type:
+        scalar: string
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.NotaryStatus
+  map:
+    fields:
+    - name: changeCount
+      type:
+        scalar: numeric
+    - name: configMapStatus
+      type:
+        scalar: string
+    - name: lastRecordedValue
+      type:
+        scalar: string
+- name: io.k8s.apimachinery.pkg.api.resource.Quantity
+  scalar: untyped
+  list:
+    elementType:
+      namedType: __untyped_atomic_
+    elementRelationship: atomic
+  map:
+    elementType:
+      namedType: __untyped_deduced_
+    elementRelationship: separable
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+  map:
+    fields:
+    - name: lastTransitionTime
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: message
+      type:
+        scalar: string
+    - name: observedGeneration
+      type:
+        scalar: numeric
+    - name: reason
+      type:
+        scalar: string
+    - name: status
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ConditionStatus
+    - name: type
+      type:
+        scalar: string
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.ConditionStatus
+  scalar: string
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: fieldsType
+      type:
+        scalar: string
+    - name: fieldsV1
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1
+    - name: manager
+      type:
+        scalar: string
+    - name: operation
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsOperationType
+    - name: subresource
+      type:
+        scalar: string
+    - name: time
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsOperationType
+  scalar: string
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+  map:
+    fields:
+    - name: annotations
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: creationTimestamp
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: deletionGracePeriodSeconds
+      type:
+        scalar: numeric
+    - name: deletionTimestamp
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: finalizers
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: associative
+    - name: generateName
+      type:
+        scalar: string
+    - name: generation
+      type:
+        scalar: numeric
+    - name: labels
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: managedFields
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry
+          elementRelationship: atomic
+    - name: name
+      type:
+        scalar: string
+    - name: namespace
+      type:
+        scalar: string
+    - name: ownerReferences
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference
+          elementRelationship: associative
+          keys:
+          - uid
+    - name: resourceVersion
+      type:
+        scalar: string
+    - name: selfLink
+      type:
+        scalar: string
+    - name: uid
+      type:
+        namedType: io.k8s.apimachinery.pkg.types.UID
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: blockOwnerDeletion
+      type:
+        scalar: boolean
+    - name: controller
+      type:
+        scalar: boolean
+    - name: kind
+      type:
+        scalar: string
+    - name: name
+      type:
+        scalar: string
+    - name: uid
+      type:
+        namedType: io.k8s.apimachinery.pkg.types.UID
+    elementRelationship: atomic
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+  scalar: untyped
+- name: io.k8s.apimachinery.pkg.types.UID
+  scalar: string
 - name: __untyped_atomic_
   scalar: untyped
   list:

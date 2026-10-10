@@ -7,7 +7,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
     rdd.rancherdesktop.io/controller: compose
   name: composeprojects.containers.rancherdesktop.io
 spec:
@@ -192,7 +192,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
     rdd.rancherdesktop.io/controller: compose
   name: composeuprequests.containers.rancherdesktop.io
 spec:

@@ -3,8 +3,11 @@
 package v1alpha1
 
 import (
+	rddv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/rdd/v1alpha1"
+	internal "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/rdd/v1alpha1/applyconfiguration/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -28,6 +31,47 @@ func Notary(name, namespace string) *NotaryApplyConfiguration {
 	b.WithKind("Notary")
 	b.WithAPIVersion("rdd.rancherdesktop.io/v1alpha1")
 	return b
+}
+
+// ExtractNotaryFrom extracts the applied configuration owned by fieldManager from
+// notary for the specified subresource. Pass an empty string for subresource to extract
+// the main resource. Common subresources include "status", "scale", etc.
+// notary must be a unmodified Notary API object that was retrieved from the Kubernetes API.
+// ExtractNotaryFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractNotaryFrom(notary *rddv1alpha1.Notary, fieldManager string, subresource string) (*NotaryApplyConfiguration, error) {
+	b := &NotaryApplyConfiguration{}
+	err := managedfields.ExtractInto(notary, internal.Parser().Type("com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.rdd.v1alpha1.Notary"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(notary.Name)
+	b.WithNamespace(notary.Namespace)
+
+	b.WithKind("Notary")
+	b.WithAPIVersion("rdd.rancherdesktop.io/v1alpha1")
+	return b, nil
+}
+
+// ExtractNotary extracts the applied configuration owned by fieldManager from
+// notary. If no managedFields are found in notary for fieldManager, a
+// NotaryApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// notary must be a unmodified Notary API object that was retrieved from the Kubernetes API.
+// ExtractNotary provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractNotary(notary *rddv1alpha1.Notary, fieldManager string) (*NotaryApplyConfiguration, error) {
+	return ExtractNotaryFrom(notary, fieldManager, "")
+}
+
+// ExtractNotaryStatus extracts the applied configuration owned by fieldManager from
+// notary for the status subresource.
+func ExtractNotaryStatus(notary *rddv1alpha1.Notary, fieldManager string) (*NotaryApplyConfiguration, error) {
+	return ExtractNotaryFrom(notary, fieldManager, "status")
 }
 
 func (b NotaryApplyConfiguration) IsApplyConfiguration() {}

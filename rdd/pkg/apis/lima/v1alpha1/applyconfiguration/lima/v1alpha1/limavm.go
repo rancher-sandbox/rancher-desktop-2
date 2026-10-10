@@ -3,8 +3,11 @@
 package v1alpha1
 
 import (
+	limav1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
+	internal "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1/applyconfiguration/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -31,6 +34,47 @@ func LimaVM(name, namespace string) *LimaVMApplyConfiguration {
 	b.WithKind("LimaVM")
 	b.WithAPIVersion("lima.rancherdesktop.io/v1alpha1")
 	return b
+}
+
+// ExtractLimaVMFrom extracts the applied configuration owned by fieldManager from
+// limaVM for the specified subresource. Pass an empty string for subresource to extract
+// the main resource. Common subresources include "status", "scale", etc.
+// limaVM must be a unmodified LimaVM API object that was retrieved from the Kubernetes API.
+// ExtractLimaVMFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractLimaVMFrom(limaVM *limav1alpha1.LimaVM, fieldManager string, subresource string) (*LimaVMApplyConfiguration, error) {
+	b := &LimaVMApplyConfiguration{}
+	err := managedfields.ExtractInto(limaVM, internal.Parser().Type("com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.lima.v1alpha1.LimaVM"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(limaVM.Name)
+	b.WithNamespace(limaVM.Namespace)
+
+	b.WithKind("LimaVM")
+	b.WithAPIVersion("lima.rancherdesktop.io/v1alpha1")
+	return b, nil
+}
+
+// ExtractLimaVM extracts the applied configuration owned by fieldManager from
+// limaVM. If no managedFields are found in limaVM for fieldManager, a
+// LimaVMApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// limaVM must be a unmodified LimaVM API object that was retrieved from the Kubernetes API.
+// ExtractLimaVM provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractLimaVM(limaVM *limav1alpha1.LimaVM, fieldManager string) (*LimaVMApplyConfiguration, error) {
+	return ExtractLimaVMFrom(limaVM, fieldManager, "")
+}
+
+// ExtractLimaVMStatus extracts the applied configuration owned by fieldManager from
+// limaVM for the status subresource.
+func ExtractLimaVMStatus(limaVM *limav1alpha1.LimaVM, fieldManager string) (*LimaVMApplyConfiguration, error) {
+	return ExtractLimaVMFrom(limaVM, fieldManager, "status")
 }
 
 func (b LimaVMApplyConfiguration) IsApplyConfiguration() {}

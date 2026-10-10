@@ -7,7 +7,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: apps.app.rancherdesktop.io
 spec:
   group: app.rancherdesktop.io
@@ -270,7 +270,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: demos.app.rancherdesktop.io
 spec:
   group: app.rancherdesktop.io
@@ -410,7 +410,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
     rdd.rancherdesktop.io/controller: compose
   name: composeprojects.containers.rancherdesktop.io
 spec:
@@ -595,7 +595,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
     rdd.rancherdesktop.io/controller: compose
   name: composeuprequests.containers.rancherdesktop.io
 spec:
@@ -762,7 +762,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
     rdd.rancherdesktop.io/controller: container
   name: containercreaterequests.containers.rancherdesktop.io
 spec:
@@ -873,22 +873,11 @@ spec:
                 - name
                 x-kubernetes-list-type: map
               state:
-                allOf:
-                - enum:
-                  - created
-                  - running
-                  - pausing
-                  - paused
-                  - restarting
-                  - removing
-                  - exited
-                  - dead
-                  - unknown
-                - enum:
-                  - created
-                  - running
                 default: running
                 description: State is the desired state of the container.
+                enum:
+                - created
+                - running
                 type: string
             required:
             - image
@@ -983,7 +972,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: containernamespaces.containers.rancherdesktop.io
 spec:
   group: containers.rancherdesktop.io
@@ -1046,7 +1035,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: containers.containers.rancherdesktop.io
 spec:
   group: containers.rancherdesktop.io
@@ -1335,7 +1324,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
     rdd.rancherdesktop.io/controller: image
   name: imagepullrequests.containers.rancherdesktop.io
 spec:
@@ -1493,7 +1482,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
     rdd.rancherdesktop.io/controller: image
   name: imagepushrequests.containers.rancherdesktop.io
 spec:
@@ -1619,7 +1608,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: images.containers.rancherdesktop.io
 spec:
   group: containers.rancherdesktop.io
@@ -1791,7 +1780,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
     rdd.rancherdesktop.io/controller: image
   name: imagescanrequests.containers.rancherdesktop.io
 spec:
@@ -1922,7 +1911,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
     rdd.rancherdesktop.io/controller: volume
   name: volumecreaterequests.containers.rancherdesktop.io
 spec:
@@ -2061,7 +2050,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: volumes.containers.rancherdesktop.io
 spec:
   group: containers.rancherdesktop.io
@@ -2157,7 +2146,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: limavms.lima.rancherdesktop.io
 spec:
   group: lima.rancherdesktop.io
@@ -2342,7 +2331,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: configmapreplicasets.rdd.rancherdesktop.io
 spec:
   group: rdd.rancherdesktop.io
@@ -2490,7 +2479,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: hostinfos.rdd.rancherdesktop.io
 spec:
   group: rdd.rancherdesktop.io
@@ -2567,7 +2556,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.19.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: notaries.rdd.rancherdesktop.io
 spec:
   group: rdd.rancherdesktop.io
