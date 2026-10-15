@@ -138,6 +138,16 @@ var BinDir = sync.OnceValue(func() string {
 	return filepath.Join(ShortDir(), "bin")
 })
 
+// DockerCliPluginsDir returns the directory holding this instance's docker CLI
+// plugins (e.g., ~/.rd2/docker-cli-plugins). binlinks mirrors the bundled
+// plugins here, and the path-management controller adds it to docker's
+// cliPluginsExtraDirs. It holds only plugins — unlike BinDir, which also carries
+// the docker-credential helpers — so `docker` doesn't mistake those helpers for
+// plugins.
+var DockerCliPluginsDir = sync.OnceValue(func() string {
+	return filepath.Join(ShortDir(), "docker-cli-plugins")
+})
+
 // KubeConfig returns the path to the instance's standalone kubeconfig
 // (e.g., ~/.rd2/kube.config). It holds only the rancher-desktop-{instance}
 // context and is published alongside the ~/.kube/config merge, so rdd run

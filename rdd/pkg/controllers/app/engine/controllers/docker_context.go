@@ -6,43 +6,31 @@ package controllers
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/containerd/errdefs"
 	"github.com/docker/cli/cli/config"
+	"github.com/docker/cli/cli/config/configfile"
 	"github.com/docker/cli/cli/context/docker"
 	"github.com/docker/cli/cli/context/store"
 	dockerclient "github.com/moby/moby/client"
 
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/dockerconfig"
 )
 
 // dockerContextProbeTimeout is the maximum time allowed to ping a Docker
 // socket when checking the user's current context is healthy.
 const dockerContextProbeTimeout = 3 * time.Second
 
-// dockerConfigDir returns $DOCKER_CONFIG when it is set, otherwise ~/.docker.
-// We compute this ourselves rather than calling config.Dir() because that
-// caches its result via sync.Once, which defeats t.Setenv("HOME", …) in tests.
-func dockerConfigDir() (string, error) {
-	if dir := os.Getenv("DOCKER_CONFIG"); dir != "" {
-		return dir, nil
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, ".docker"), nil
-}
-
 // newContextStore builds a store.Store rooted at ~/.docker/contexts and
 // configured with Docker CLI's standard metadata + endpoint types, so the
 // files it writes are interoperable with the docker CLI.
 func newContextStore() (store.Store, error) {
-	dir, err := dockerConfigDir()
+	dir, err := dockerconfig.Dir()
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +74,7 @@ func deleteDockerContext(name string) error {
 // this call (and set/clearCurrentDockerContext) until the user repairs
 // config.json.
 func getCurrentDockerContext() (string, error) {
-	dir, err := dockerConfigDir()
+	dir, err := dockerconfig.Dir()
 	if err != nil {
 		return "", err
 	}
@@ -97,36 +85,24 @@ func getCurrentDockerContext() (string, error) {
 	return cf.CurrentContext, nil
 }
 
-func setCurrentDockerContext(name string) error {
-	dir, err := dockerConfigDir()
-	if err != nil {
-		return err
-	}
-	cf, err := config.Load(dir)
-	if err != nil {
-		return err
-	}
-	if cf.CurrentContext == name {
-		return nil
-	}
-	cf.CurrentContext = name
-	return cf.Save()
+func setCurrentDockerContext(ctx context.Context, name string) error {
+	return dockerconfig.Edit(ctx, func(cf *configfile.ConfigFile) (bool, error) {
+		if cf.CurrentContext == name {
+			return false, nil
+		}
+		cf.CurrentContext = name
+		return true, nil
+	})
 }
 
-func clearCurrentDockerContext(name string) error {
-	dir, err := dockerConfigDir()
-	if err != nil {
-		return err
-	}
-	cf, err := config.Load(dir)
-	if err != nil {
-		return err
-	}
-	if cf.CurrentContext != name {
-		return nil
-	}
-	cf.CurrentContext = ""
-	return cf.Save()
+func clearCurrentDockerContext(ctx context.Context, name string) error {
+	return dockerconfig.Edit(ctx, func(cf *configfile.ConfigFile) (bool, error) {
+		if cf.CurrentContext != name {
+			return false, nil
+		}
+		cf.CurrentContext = ""
+		return true, nil
+	})
 }
 
 // pingDocker creates a Docker client with opts and pings it within ctx.

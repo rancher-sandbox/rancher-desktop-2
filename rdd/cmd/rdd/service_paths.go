@@ -19,17 +19,18 @@ import (
 
 func instancePaths() map[string]string {
 	return map[string]string{
-		"dir":               instance.Dir(),
-		"log_dir":           instance.LogDir(),
-		"short_dir":         instance.ShortDir(),
-		"lima_home":         instance.LimaHome(),
-		"tls_dir":           instance.TLSDir(),
-		"config":            instance.Config(),
-		"k3s_config":        instance.K3sConfig(),
-		"pid_file":          instance.PIDFile(),
-		"args_file":         instance.ArgsFile(),
-		"docker_socket":     instance.DockerSocket(),
-		"containerd_socket": instance.ContainerdSocket(),
+		"dir":                instance.Dir(),
+		"log_dir":            instance.LogDir(),
+		"short_dir":          instance.ShortDir(),
+		"lima_home":          instance.LimaHome(),
+		"tls_dir":            instance.TLSDir(),
+		"config":             instance.Config(),
+		"k3s_config":         instance.K3sConfig(),
+		"pid_file":           instance.PIDFile(),
+		"args_file":          instance.ArgsFile(),
+		"docker_socket":      instance.DockerSocket(),
+		"containerd_socket":  instance.ContainerdSocket(),
+		"docker_cli_plugins": instance.DockerCliPluginsDir(),
 	}
 }
 

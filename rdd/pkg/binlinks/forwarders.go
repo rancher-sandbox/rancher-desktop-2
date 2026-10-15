@@ -46,12 +46,16 @@ func shimPath(binDir, tool string) string {
 	return filepath.Join(binDir, strings.TrimSuffix(tool, ".exe")+shimSuffix)
 }
 
-// linkForwarders publishes a forwarder per bundled tool into binDir. It does not
-// wipe binDir: the running rdd reaches this code through its own forwarder, and
-// Windows will not delete a running executable. Instead it reconciles — refresh
-// each .shim, point each tool name at the current forwarder copy, and drop
-// forwarders for tools the bundle no longer ships.
-func linkForwarders(execPath, binDir string) error {
+// linkForwarders publishes a forwarder per bundled tool into binDir, and a
+// forwarder per bundled docker CLI plugin into both binDir (so the plugins also
+// work as standalone commands) and pluginDir (which holds only plugins, for
+// docker's cliPluginsExtraDirs). It does not wipe either directory: the running
+// rdd reaches this code through its own forwarder, and Windows will not delete a
+// running executable. Instead it reconciles — refresh each .shim, point each
+// name at the bin directory's forwarder copy, and drop forwarders the bundle no
+// longer ships. Plugin-directory forwarders hardlink to the bin directory's
+// copy; both directories are on the same volume.
+func linkForwarders(execPath, binDir, pluginDir string) error {
 	srcDir := filepath.Dir(execPath)
 	forwarderSrc := filepath.Join(srcDir, forwarderName)
 	if _, err := os.Stat(forwarderSrc); err != nil {
@@ -62,16 +66,22 @@ func linkForwarders(execPath, binDir string) error {
 	if err != nil {
 		return fmt.Errorf("read bundle directory %q: %w", srcDir, err)
 	}
+	plugins := pluginTargets(execPath)
+
 	// Every bundled binary forwards to itself; kubectl is a multicall into rdd
-	// rather than a separate binary, so it forwards to rdd.
-	want := map[string]string{}
+	// rather than a separate binary, so it forwards to rdd. The plugins also go
+	// into the bin directory so they work as standalone commands.
+	binWant := map[string]string{}
 	for _, entry := range entries {
 		if entry.IsDir() || entry.Name() == forwarderName {
 			continue
 		}
-		want[entry.Name()] = filepath.Join(srcDir, entry.Name())
+		binWant[entry.Name()] = filepath.Join(srcDir, entry.Name())
 	}
-	want["kubectl.exe"] = filepath.Join(srcDir, "rdd.exe")
+	binWant["kubectl.exe"] = filepath.Join(srcDir, "rdd.exe")
+	for name, target := range plugins {
+		binWant[name] = target
+	}
 
 	if err := os.MkdirAll(binDir, 0o755); err != nil {
 		return fmt.Errorf("create %q: %w", binDir, err)
@@ -82,19 +92,39 @@ func linkForwarders(execPath, binDir string) error {
 		return fmt.Errorf("stage forwarder %q: %w", master, err)
 	}
 
+	// Bin directory: match #448's reconcile (publish, drop no-longer-bundled,
+	// sweep), without the dangling-target prune, which the standalone path owns.
+	publishForwarders(binDir, master, binWant)
+	removeStaleForwarders(binDir, binWant)
+	sweepAside(binDir)
+
+	// Plugin directory: the same, plus a dangling-target prune so a plugin whose
+	// bundle target moved does not shadow one docker finds in another directory.
+	publishForwarders(pluginDir, master, plugins)
+	removeStaleForwarders(pluginDir, plugins)
+	pruneDanglingForwarders(pluginDir)
+	sweepAside(pluginDir)
+	return nil
+}
+
+// publishForwarders writes a .shim for each want entry into dir and hardlinks
+// its name to master. dir need not hold master: a plugin-directory forwarder
+// hardlinks to the bin directory's copy, on the same volume. Per-entry failures
+// are logged and skipped.
+func publishForwarders(dir, master string, want map[string]string) {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		klog.Warningf("Failed to create %q: %v", dir, err)
+		return
+	}
 	for tool, target := range want {
-		if err := os.WriteFile(shimPath(binDir, tool), shimContent(target), 0o644); err != nil {
-			klog.Warningf("Failed to write shim for %q, skipping: %v", tool, err)
+		if err := os.WriteFile(shimPath(dir, tool), shimContent(target), 0o644); err != nil {
+			klog.Warningf("Failed to write shim for %q in %q, skipping: %v", tool, dir, err)
 			continue
 		}
-		if err := ensureForwarderLink(master, filepath.Join(binDir, tool)); err != nil {
-			klog.Warningf("Failed to link forwarder %q, skipping: %v", tool, err)
+		if err := ensureForwarderLink(master, filepath.Join(dir, tool)); err != nil {
+			klog.Warningf("Failed to link forwarder %q in %q, skipping: %v", tool, dir, err)
 		}
 	}
-
-	removeStaleForwarders(binDir, want)
-	sweepAside(binDir)
-	return nil
 }
 
 // ensureForwarderCopy makes master a copy of the bundled forwarder. An existing

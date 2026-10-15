@@ -123,8 +123,9 @@ func TestLinkBinaries(t *testing.T) {
 			binDir := filepath.Join(t.TempDir(), "bin")
 			assert.NilError(t, os.MkdirAll(binDir, 0o755))
 			assert.NilError(t, os.WriteFile(filepath.Join(binDir, "stale"), []byte("old"), 0o644))
+			pluginDir := filepath.Join(t.TempDir(), "docker-cli-plugins")
 
-			assert.NilError(t, linkBinaries(execPath, binDir, tc.exe, tc.useSymlink))
+			assert.NilError(t, linkBinaries(execPath, binDir, pluginDir, tc.exe, tc.useSymlink))
 
 			// The stale entry from the previous install is gone.
 			_, err := os.Lstat(filepath.Join(binDir, "stale"))
@@ -157,6 +158,50 @@ func TestLinkBinaries(t *testing.T) {
 	}
 }
 
+// stagePluginBundle builds a bundle whose bin directory holds rdd (plus any
+// extra bin files) and whose sibling docker-cli-plugins directory holds the
+// given plugins. It returns the rdd path and the plugins source directory.
+func stagePluginBundle(t *testing.T, exe string, binFiles, plugins []string) (execPath, pluginsSrc string) {
+	t.Helper()
+	root := t.TempDir()
+	srcDir := filepath.Join(root, "bin")
+	assert.NilError(t, os.MkdirAll(srcDir, 0o755))
+	execPath = filepath.Join(srcDir, "rdd"+exe)
+	assert.NilError(t, os.WriteFile(execPath, []byte("binary"), 0o755))
+	for _, name := range binFiles {
+		assert.NilError(t, os.WriteFile(filepath.Join(srcDir, name), []byte("binary:"+name), 0o755))
+	}
+	pluginsSrc = filepath.Join(root, "docker-cli-plugins")
+	assert.NilError(t, os.MkdirAll(pluginsSrc, 0o755))
+	for _, name := range plugins {
+		assert.NilError(t, os.WriteFile(filepath.Join(pluginsSrc, name), []byte("plugin:"+name), 0o755))
+	}
+	return execPath, pluginsSrc
+}
+
+// TestLinkBinariesPlugins checks that the bundled docker CLI plugins are linked
+// into both the bin directory (as standalone commands) and the plugins-only
+// directory, on the macOS/Linux symlink path.
+func TestLinkBinariesPlugins(t *testing.T) {
+	plugins := []string{"docker-compose", "docker-buildx"}
+	execPath, pluginsSrc := stagePluginBundle(t, "", []string{"docker"}, plugins)
+
+	binDir := filepath.Join(t.TempDir(), "bin")
+	pluginDir := filepath.Join(t.TempDir(), "docker-cli-plugins")
+	assert.NilError(t, linkBinaries(execPath, binDir, pluginDir, "", true))
+
+	for _, name := range plugins {
+		target := filepath.Join(pluginsSrc, name)
+		// Linked into the bin directory alongside docker and kubectl.
+		assertSymlink(t, filepath.Join(binDir, name), target)
+		// And into the plugins-only directory.
+		assertSymlink(t, filepath.Join(pluginDir, name), target)
+	}
+	// The plugin directory holds only the plugins — not docker, kubectl, or the
+	// docker-credential helpers that share the bin directory.
+	assertDirEntries(t, pluginDir, plugins)
+}
+
 // TestEnsureSelfLinks checks the standalone path: a missing or dangling rdd or
 // kubectl link is repaired to point at the running executable, while a working
 // link and any unrelated entry are left untouched.
@@ -182,7 +227,7 @@ func TestEnsureSelfLinks(t *testing.T) {
 	docker := filepath.Join(binDir, "docker")
 	assert.NilError(t, os.Symlink(dockerTarget, docker))
 
-	assert.NilError(t, ensureSelfLinks(execPath, binDir, "", true))
+	assert.NilError(t, ensureSelfLinks(execPath, binDir, filepath.Join(t.TempDir(), "docker-cli-plugins"), "", true))
 
 	// The working rdd link is preserved, still pointing at the app binary.
 	assertSymlink(t, filepath.Join(binDir, "rdd"), appRdd)
@@ -203,7 +248,7 @@ func TestEnsureSelfLinksCreatesDir(t *testing.T) {
 			assert.NilError(t, os.WriteFile(execPath, []byte("binary"), 0o755))
 
 			binDir := filepath.Join(t.TempDir(), "bin")
-			assert.NilError(t, ensureSelfLinks(execPath, binDir, tc.exe, tc.useSymlink))
+			assert.NilError(t, ensureSelfLinks(execPath, binDir, filepath.Join(t.TempDir(), "docker-cli-plugins"), tc.exe, tc.useSymlink))
 
 			assertLink(t, filepath.Join(binDir, "rdd"+tc.exe), execPath, tc.useSymlink)
 			assertLink(t, filepath.Join(binDir, "kubectl"+tc.exe), execPath, tc.useSymlink)
@@ -232,7 +277,7 @@ func TestEnsureSelfLinksPrunesDangling(t *testing.T) {
 	assert.NilError(t, os.Symlink(tool, filepath.Join(binDir, "helm")))
 	assert.NilError(t, os.WriteFile(filepath.Join(binDir, "notes"), []byte("keep"), 0o644))
 
-	assert.NilError(t, ensureSelfLinks(execPath, binDir, "", true))
+	assert.NilError(t, ensureSelfLinks(execPath, binDir, filepath.Join(t.TempDir(), "docker-cli-plugins"), "", true))
 
 	// The dangling docker link is pruned, not repaired: rdd does not provide it.
 	_, err := os.Lstat(filepath.Join(binDir, "docker"))
@@ -244,6 +289,32 @@ func TestEnsureSelfLinksPrunesDangling(t *testing.T) {
 	assertSymlink(t, filepath.Join(binDir, "helm"), tool)
 	_, err = os.Lstat(filepath.Join(binDir, "notes"))
 	assert.NilError(t, err, "plain file was removed")
+}
+
+// TestEnsureSelfLinksPrunesDanglingPluginForwarders checks the uninstall path for
+// the plugin directory: a forwarder whose target is gone is removed, while a live
+// one stays.
+func TestEnsureSelfLinksPrunesDanglingPluginForwarders(t *testing.T) {
+	srcDir := t.TempDir()
+	execPath := filepath.Join(srcDir, "rdd")
+	assert.NilError(t, os.WriteFile(execPath, []byte("binary"), 0o755))
+	live := filepath.Join(srcDir, "docker-buildx.exe")
+	assert.NilError(t, os.WriteFile(live, []byte("binary"), 0o755))
+
+	pluginDir := filepath.Join(t.TempDir(), "docker-cli-plugins")
+	assert.NilError(t, os.MkdirAll(pluginDir, 0o755))
+	targets := map[string]string{
+		"docker-compose.exe": filepath.Join(srcDir, "gone.exe"),
+		"docker-buildx.exe":  live,
+	}
+	for name, target := range targets {
+		assert.NilError(t, os.WriteFile(filepath.Join(pluginDir, name), []byte("fwd"), 0o755))
+		assert.NilError(t, os.WriteFile(shimPath(pluginDir, name), shimContent(target), 0o644))
+	}
+
+	assert.NilError(t, ensureSelfLinks(execPath, filepath.Join(t.TempDir(), "bin"), pluginDir, "", true))
+
+	assertDirEntries(t, pluginDir, []string{"docker-buildx.exe", "docker-buildx.shim"})
 }
 
 // assertLink fails unless path is the kind of link to want that link() creates

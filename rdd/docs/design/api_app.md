@@ -42,7 +42,11 @@ It will only change the current context if it does not exist, or is not working 
 
 A standalone kube config holding only the `rancher-desktop-2` context is also written to `~/.rd2/kube.config`, which the [`rdd run`](cmd_app.md#rdd-run) command points `KUBECONFIG` at.
 
-Consider using `cliPluginsExtraDirs` in `~/.docker/config.json` instead of installing into `~/.docker/cli-plugins` and have a diagnostic if the plugins exist in `~/.docker/cli-plugins`? The mechanism should be compatible with whatever we do on Windows.
+### Docker CLI plugins
+
+The bundle ships Docker CLI plugins (`buildx`, `compose`, …) in a `docker-cli-plugins` directory beside its `bin` directory. Docker never discovers plugins via `PATH`. It searches the directories listed in `cliPluginsExtraDirs` in `~/.docker/config.json` first, then `~/.docker/cli-plugins`, then its system plugin directories. So the daemon mirrors the bundled plugins into a per-instance directory (`~/.rd2/docker-cli-plugins`) and registers that directory in `cliPluginsExtraDirs`.
+
+This registration is driven by [`spec.application.addPath`](#app-object), the same setting that manages `PATH`: `front`/`back` add the directory (prepended or appended), and `manual` removes it. Because `config.json`'s array has no fence to mark our entry (just like the Windows `Path`), the controller keeps a separate marker file in the instance directory so, under `manual`, it only removes an entry it added and leaves a user-added one alone. Both the engine controller (which edits `currentContext`) and this one serialize their `config.json` read-modify-writes behind a cross-process lock so neither drops the other's edit. Docker searches every `cliPluginsExtraDirs` entry before `~/.docker/cli-plugins`, so even under `back` our plugins win over the user's own copies there; `back` yields only to other tools' entries in `cliPluginsExtraDirs`.
 
 ## App object
 

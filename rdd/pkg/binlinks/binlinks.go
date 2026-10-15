@@ -4,16 +4,19 @@
 
 // Package binlinks publishes the binaries bundled with the Rancher Desktop
 // application into the instance bin directory (~/.rd<instance>/bin), so a user
-// can put that directory on PATH. On macOS and Linux each entry is a symlink, or
-// a hardlink where symlinks need absent privileges. On Windows, where a standard
-// user can make neither under Program Files, the bundle instead publishes a
-// small forwarder per tool beside a <tool>.shim file naming the real binary (see
-// forwarders.go). Inside the application bundle rdd owns the directory and keeps
-// it mirroring the bundled binaries. Standalone, rdd repairs its own rdd and
-// kubectl links and prunes anything an uninstalled application left dangling —
-// symlinks, and forwarders whose target is gone — so a stale entry cannot shadow
-// a tool the user later installs on PATH; working links, forwarders with a live
-// target, and other files survive.
+// can put that directory on PATH. It also publishes the bundled docker CLI
+// plugins into that bin directory and into a plugins-only directory
+// (~/.rd<instance>/docker-cli-plugins) that the path-management controller adds
+// to docker's cliPluginsExtraDirs. On macOS and Linux each entry is a symlink,
+// or a hardlink where symlinks need absent privileges. On Windows, where a
+// standard user can make neither under Program Files, the bundle instead
+// publishes a small forwarder per tool beside a <tool>.shim file naming the real
+// binary (see forwarders.go). Inside the application bundle rdd owns these
+// directories and keeps them mirroring the bundled binaries. Standalone, rdd
+// repairs its own rdd and kubectl links and prunes anything an uninstalled
+// application left dangling — symlinks, and forwarders whose target is gone — so
+// a stale entry cannot shadow a tool the user later installs on PATH; working
+// links, forwarders with a live target, and other files survive.
 package binlinks
 
 import (
@@ -41,18 +44,43 @@ func LinkBundledBinaries() error {
 	if err != nil {
 		return fmt.Errorf("locate executable: %w", err)
 	}
-	binDir := filepath.Join(instance.ShortDir(), "bin")
+	binDir := instance.BinDir()
+	pluginDir := instance.DockerCliPluginsDir()
 	exe := exeSuffix(runtime.GOOS)
 	// RDD_NO_SYMLINKS forces hardlinks, so tests can exercise the fallback that
 	// real systems hit when symlinks need absent privileges.
 	useSymlink := os.Getenv("RDD_NO_SYMLINKS") == ""
 	if inAppBundle(execPath, runtime.GOOS) {
 		if runtime.GOOS == "windows" {
-			return linkForwarders(execPath, binDir)
+			return linkForwarders(execPath, binDir, pluginDir)
 		}
-		return linkBinaries(execPath, binDir, exe, useSymlink)
+		return linkBinaries(execPath, binDir, pluginDir, exe, useSymlink)
 	}
-	return ensureSelfLinks(execPath, binDir, exe, useSymlink)
+	return ensureSelfLinks(execPath, binDir, pluginDir, exe, useSymlink)
+}
+
+// pluginsSrcDir returns the bundle's docker CLI plugins directory, a sibling of
+// the bin directory that holds execPath (resources/<os>/docker-cli-plugins).
+func pluginsSrcDir(execPath string) string {
+	return filepath.Join(filepath.Dir(filepath.Dir(execPath)), "docker-cli-plugins")
+}
+
+// pluginTargets maps each bundled docker CLI plugin's file name to its path in
+// the bundle. It returns nil when the bundle ships no plugin directory.
+func pluginTargets(execPath string) map[string]string {
+	src := pluginsSrcDir(execPath)
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return nil
+	}
+	want := map[string]string{}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		want[entry.Name()] = filepath.Join(src, entry.Name())
+	}
+	return want
 }
 
 // exeSuffix is the executable extension for goos: ".exe" on Windows, empty
@@ -85,16 +113,19 @@ func inAppBundle(execPath, goos string) bool {
 	return strings.HasSuffix(execPath, sep+tail)
 }
 
-// linkBinaries recreates binDir with links to the bundled binaries and a kubectl
-// link to rdd. Recreating it drops stale links from a previous install; reading
-// the source directory before removing binDir keeps the existing links when the
-// read fails.
-func linkBinaries(execPath, binDir, exe string, useSymlink bool) error {
+// linkBinaries recreates binDir with links to the bundled binaries, a kubectl
+// link to rdd, and links to the bundled docker CLI plugins; and recreates
+// pluginDir with links to just those plugins (for docker's cliPluginsExtraDirs).
+// Recreating each drops stale links from a previous install; reading the source
+// directories before removing the targets keeps the existing links when a read
+// fails.
+func linkBinaries(execPath, binDir, pluginDir, exe string, useSymlink bool) error {
 	srcDir := filepath.Dir(execPath)
 	entries, err := os.ReadDir(srcDir)
 	if err != nil {
 		return fmt.Errorf("read bundle directory %q: %w", srcDir, err)
 	}
+	plugins := pluginTargets(execPath)
 
 	if err := os.RemoveAll(binDir); err != nil {
 		return fmt.Errorf("remove %q: %w", binDir, err)
@@ -117,6 +148,28 @@ func linkBinaries(execPath, binDir, exe string, useSymlink bool) error {
 	// rdd so kubectl on PATH reaches rdd.
 	if err := link(execPath, filepath.Join(binDir, "kubectl"+exe), useSymlink); err != nil {
 		klog.Warningf("Failed to link kubectl to rdd: %v", err)
+	}
+
+	// Plugins go into the bin directory too, so docker-compose and docker-buildx
+	// work as standalone commands.
+	for name, target := range plugins {
+		if err := link(target, filepath.Join(binDir, name), useSymlink); err != nil {
+			klog.Warningf("Failed to link plugin %q into bin directory, skipping: %v", name, err)
+		}
+	}
+
+	// Plugin directory: only the plugins, so docker's cliPluginsExtraDirs entry
+	// doesn't pick up the docker-credential helpers that share the bin directory.
+	if err := os.RemoveAll(pluginDir); err != nil {
+		return fmt.Errorf("remove %q: %w", pluginDir, err)
+	}
+	if err := os.MkdirAll(pluginDir, 0o755); err != nil {
+		return fmt.Errorf("create %q: %w", pluginDir, err)
+	}
+	for name, target := range plugins {
+		if err := link(target, filepath.Join(pluginDir, name), useSymlink); err != nil {
+			klog.Warningf("Failed to link plugin %q into plugin directory, skipping: %v", name, err)
+		}
 	}
 	return nil
 }
@@ -145,7 +198,7 @@ func link(target, linkPath string, useSymlink bool) error {
 // by an uninstalled application, then points the rdd and kubectl links at a
 // standalone rdd. Working links, forwarders with a live target, and other files
 // survive.
-func ensureSelfLinks(execPath, binDir, exe string, useSymlink bool) error {
+func ensureSelfLinks(execPath, binDir, pluginDir, exe string, useSymlink bool) error {
 	if err := os.MkdirAll(binDir, 0o755); err != nil {
 		return fmt.Errorf("create %q: %w", binDir, err)
 	}
@@ -155,6 +208,11 @@ func ensureSelfLinks(execPath, binDir, exe string, useSymlink bool) error {
 	// A bundle install publishes Windows forwarders instead of symlinks; prune
 	// any whose target an uninstalled application took with it.
 	pruneDanglingForwarders(binDir)
+	// docker runs the first plugin candidate it finds, so a dangling forwarder in
+	// the plugin directory would hide a working plugin in a later directory.
+	if _, err := os.Stat(pluginDir); err == nil {
+		pruneDanglingForwarders(pluginDir)
+	}
 	for _, name := range []string{"rdd" + exe, "kubectl" + exe} {
 		if err := ensureSelfLink(filepath.Join(binDir, name), execPath, useSymlink); err != nil {
 			klog.Warningf("Failed to repair the %q link: %v", name, err)

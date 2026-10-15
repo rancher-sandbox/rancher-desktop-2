@@ -30,6 +30,7 @@ import (
 	appv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/app/predicates"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/dockerconfig"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/managedlines"
 )
 
@@ -71,6 +72,10 @@ type PathManagementReconciler struct {
 
 	// BinDir is the directory to add to PATH (e.g. ~/.rd2/bin).
 	BinDir string
+	// PluginDir is the instance's docker CLI plugins directory
+	// (e.g. ~/.rd2/docker-cli-plugins), registered in config.json's
+	// cliPluginsExtraDirs so `docker` finds the bundled plugins.
+	PluginDir string
 	// Suffix is the instance suffix (e.g. "2"). It goes into the fence markers so
 	// separate instances (and Rancher Desktop 1) don't touch each other's blocks.
 	Suffix string
@@ -108,7 +113,7 @@ func (r *PathManagementReconciler) Reconcile(ctx context.Context, _ ctrl.Request
 		if err := r.apply(ctx, appv1alpha1.AddPathManual, false); err != nil {
 			switch {
 			case permanentPathError(err):
-				log.Error(err, "Managed block is malformed; releasing finalizer without removing it")
+				log.Error(err, "A startup file or config.json is malformed; releasing finalizer without removing our entries")
 			case time.Since(app.DeletionTimestamp.Time) < pathUnwindRetryGrace:
 				log.Error(err, "Failed to unwind PATH management before App deletion; will retry")
 				return ctrl.Result{RequeueAfter: pathUnwindRetryInterval}, nil
@@ -202,24 +207,27 @@ func (r *PathManagementReconciler) Unwind(ctx context.Context) error {
 	return r.apply(ctx, appv1alpha1.AddPathManual, true)
 }
 
-// apply serializes the platform edit (shell startup files on Unix, the user
-// Environment on Windows) behind a cross-process lock, then runs it. The lock is
-// what makes the fence markers' promise — that separate instances can share one
-// ~/.zshrc — hold across daemons: without it, two instances read, compute, and
-// write concurrently, and the last writer drops the other's block. The in-process
-// mutex in atomicfile can't help, since the instances are separate processes and
-// the read/compute happens before the write anyway.
+// apply serializes the platform PATH edit behind a cross-process lock, runs it,
+// then registers (or removes) the plugin directory in config.json. The PATH lock
+// is what lets separate instances share one ~/.zshrc without the last writer
+// dropping the other's block; the config.json edit takes its own lock (see
+// applyDockerPlugins).
 func (r *PathManagementReconciler) apply(ctx context.Context, strategy appv1alpha1.AddPathStrategy, forceRemove bool) error {
 	unlock, err := acquirePathLock(ctx)
 	if err != nil {
 		return err
 	}
 	defer unlock()
-	return r.applyPath(ctx, strategy, forceRemove)
+	// The two edits are independent, so a broken startup file must not keep the
+	// plugin entry from being added or removed.
+	pathErr := r.applyPath(ctx, strategy, forceRemove)
+	pluginErr := r.applyDockerPlugins(ctx, strategy, forceRemove)
+	return errors.Join(pathErr, pluginErr)
 }
 
 // permanentPathError reports whether err is non-nil and every underlying cause is
-// a malformed managed block — a file the user corrupted that retrying can't fix.
+// a malformed managed block or an unparseable config.json — a file the user
+// corrupted that retrying can't fix.
 // applyPosix joins one error per startup file, so a single transient cause (I/O,
 // permissions, a full disk) anywhere makes the whole failure repairable: the
 // reconciler keeps retrying and Settled keeps gating until it clears. Only when
@@ -240,7 +248,7 @@ func permanentPathError(err error) bool {
 		}
 		return true
 	}
-	return errors.Is(err, managedlines.ErrMalformedBlock)
+	return errors.Is(err, managedlines.ErrMalformedBlock) || errors.Is(err, dockerconfig.ErrMalformed)
 }
 
 // acquirePathLock takes the shared PATH lock and returns a function that

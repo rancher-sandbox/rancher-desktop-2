@@ -3,7 +3,9 @@ load '../../helpers/load'
 # Prove the daemon publishes the application's bundled binaries into
 # ~/.rd<instance>/bin only when rdd runs from inside the app bundle. A fake
 # bundle holds a real rdd copy at .../<resources>/<os>/bin/rdd next to a couple
-# of stand-in tool files; the daemon links whatever sits beside that rdd.
+# of stand-in tool files; the daemon links whatever sits beside that rdd. The
+# bundle's docker CLI plugins (in a sibling docker-cli-plugins directory) are
+# mirrored into both the bin directory and a plugins-only directory.
 #
 # The publish differs by platform. macOS and Linux get a symlink per tool (or a
 # hardlink where symlinks need privileges; RDD_NO_SYMLINKS forces that fallback
@@ -32,9 +34,20 @@ local_setup_file() {
     # the link-structure checks only need a file of that name.
     is_windows && cp "${PATH_REPO_ROOT}/bin/rdd-forwarder${EXE}" "${fake_bin}/rdd-forwarder${EXE}"
 
+    # The bundle ships docker CLI plugins in a docker-cli-plugins directory
+    # beside bin. The daemon mirrors them into the instance bin directory (so
+    # they work as standalone commands) and into a plugins-only directory that
+    # the path-management controller registers in docker's cliPluginsExtraDirs.
+    plugin_src="${BATS_FILE_TMPDIR}/Rancher Desktop.app/Contents/${resources}/${OS}/docker-cli-plugins"
+    mkdir -p "${plugin_src}"
+    echo "stand-in buildx" >"${plugin_src}/docker-buildx${EXE}"
+    echo "stand-in compose" >"${plugin_src}/docker-compose${EXE}"
+
     FAKE_BIN="${fake_bin}"
+    FAKE_PLUGIN_SRC="${plugin_src}"
     DEST_DIR="${RDD_SHORT_DIR}/bin"
-    save_var FAKE_BIN DEST_DIR
+    PLUGIN_DEST_DIR="${RDD_SHORT_DIR}/docker-cli-plugins"
+    save_var FAKE_BIN FAKE_PLUGIN_SRC DEST_DIR PLUGIN_DEST_DIR
 }
 
 local_setup() {
@@ -85,6 +98,25 @@ assert_published() { # <target> <name>
     fi
 }
 
+# assert_published_in asserts <name> published in <dir> resolving to <target>: a
+# symlink on macOS and Linux, a forwarder on Windows. Like assert_published, but
+# for an arbitrary directory (the plugins-only directory as well as the bin
+# directory). Windows plugin forwarders hardlink to the bin directory's shared
+# rdd-forwarder copy, so the reference stays ${DEST_DIR}/rdd-forwarder.
+assert_published_in() { # <dir> <target> <name>
+    if is_windows; then
+        local dest="$1/$3"
+        assert_file_exist "${dest}"
+        refute [ -L "${dest}" ]
+        assert [ "${dest}" -ef "${DEST_DIR}/rdd-forwarder${EXE}" ]
+        local shim="$1/${3%"${EXE}"}.shim"
+        assert_file_exist "${shim}"
+        assert_file_contains "${shim}" "$(basename "$2")"
+    else
+        assert_symlink_to "$2" "$1/$3"
+    fi
+}
+
 # assert_not_published asserts <name> is gone from the bin directory, including
 # its shim on Windows.
 assert_not_published() { # <name>
@@ -105,6 +137,19 @@ assert_not_published() { # <name>
     # kubectl is not bundled; it forwards to rdd.
     assert_published "${FAKE_BIN}/rdd${EXE}" "kubectl${EXE}"
     # Stop the bundled daemon with fake_rdd; the repo rdd cannot (see fake_rdd).
+    fake_rdd svc stop
+}
+
+@test 'publishes bundled docker CLI plugins into the bin and plugin directories' {
+    load_var FAKE_BIN FAKE_PLUGIN_SRC DEST_DIR PLUGIN_DEST_DIR
+    fake_rdd svc start
+    # Each bundled docker CLI plugin is reachable both as a standalone command in
+    # the bin directory and in the plugins-only directory docker searches via
+    # cliPluginsExtraDirs.
+    for plugin in "docker-buildx${EXE}" "docker-compose${EXE}"; do
+        assert_published_in "${DEST_DIR}" "${FAKE_PLUGIN_SRC}/${plugin}" "${plugin}"
+        assert_published_in "${PLUGIN_DEST_DIR}" "${FAKE_PLUGIN_SRC}/${plugin}" "${plugin}"
+    done
     fake_rdd svc stop
 }
 

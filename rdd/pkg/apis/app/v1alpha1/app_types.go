@@ -125,9 +125,10 @@ const (
 
 	// PathManagementReasonMalformed means a startup file was hand-edited into a
 	// state we can't parse (a lone marker, or markers in the wrong order), so the
-	// block can't be removed. Only the user can fix the file, so unlike Failed
-	// it's permanent: it doesn't gate Settled under manual (which would wedge it
-	// forever) and doesn't block App deletion.
+	// block can't be removed, or docker/cli can't parse ~/.docker/config.json, so
+	// our cliPluginsExtraDirs entry can't be. Only the user can fix the file, so
+	// unlike Failed it's permanent: it doesn't gate Settled under manual (which
+	// would wedge it forever) and doesn't block App deletion.
 	PathManagementReasonMalformed = "Malformed"
 )
 
@@ -231,6 +232,15 @@ type ApplicationSpec struct {
 	// it. Without the marker — an entry the user added themselves — "manual"
 	// leaves Path alone wherever they put it. Unix files use start/end markers, so
 	// only our own block is touched regardless of position.
+	//
+	// addPath also drives the docker CLI plugins directory
+	// (~/.rd<suffix>/docker-cli-plugins): front/back register it in
+	// cliPluginsExtraDirs in ~/.docker/config.json so `docker` finds the bundled
+	// plugins, and manual removes it, guarded by its own marker file. This happens
+	// on every platform, since Docker never finds plugins via PATH. Docker searches
+	// every cliPluginsExtraDirs entry before ~/.docker/cli-plugins, so even under
+	// "back" the bundled plugins win over the user's own copies there; "back"
+	// yields only to other tools' cliPluginsExtraDirs entries.
 	// +optional
 	// +kubebuilder:validation:Enum=front;back;manual
 	// +kubebuilder:default=manual
