@@ -1,0 +1,27 @@
+name: Trim the Go build cache
+description: >-
+  Removes the Go build cache entries this job did not use, so the cache that
+  setup-rdd-go saves holds this job's working set instead of every generation
+  it was restored from. Run it after the job's last go command.
+
+runs:
+  using: composite
+  steps:
+  - shell: bash
+    run: |
+      set -o errexit -o nounset -o pipefail
+      # Go refreshes an entry's mtime when it uses the entry, but only once
+      # the mtime is an hour old (markUsed in cmd/go/internal/cache), so
+      # everything this job used is newer than an hour before the restore.
+      # Two more minutes absorb the rounding here and in find.
+      minutes=$(( ($(date +%s) - GO_CACHE_RESTORE_TIME) / 60 + 62 ))
+      gocache=$(go env GOCACHE)
+      du -sk "${gocache}"
+      echo "Removing the entries unused for ${minutes} minutes:"
+      # Match only the top-level -a and -d entries, as Go's own trim does. A
+      # cached executable's -d is a directory, and Go refreshes the
+      # directory's mtime, not the binary's.
+      find "${gocache}" -mindepth 2 -maxdepth 2 \
+        -path '*/[0-9a-f][0-9a-f]/*-[ad]' -mmin "+${minutes}" \
+        -print -exec rm -rf {} + | wc -l
+      du -sk "${gocache}"
