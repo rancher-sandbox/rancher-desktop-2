@@ -3,8 +3,11 @@
 package v1alpha1
 
 import (
+	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
+	internal "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1/applyconfiguration/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -41,6 +44,47 @@ func ComposeUpRequest(name, namespace string) *ComposeUpRequestApplyConfiguratio
 	b.WithKind("ComposeUpRequest")
 	b.WithAPIVersion("containers.rancherdesktop.io/v1alpha1")
 	return b
+}
+
+// ExtractComposeUpRequestFrom extracts the applied configuration owned by fieldManager from
+// composeUpRequest for the specified subresource. Pass an empty string for subresource to extract
+// the main resource. Common subresources include "status", "scale", etc.
+// composeUpRequest must be a unmodified ComposeUpRequest API object that was retrieved from the Kubernetes API.
+// ExtractComposeUpRequestFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractComposeUpRequestFrom(composeUpRequest *containersv1alpha1.ComposeUpRequest, fieldManager string, subresource string) (*ComposeUpRequestApplyConfiguration, error) {
+	b := &ComposeUpRequestApplyConfiguration{}
+	err := managedfields.ExtractInto(composeUpRequest, internal.Parser().Type("com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ComposeUpRequest"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(composeUpRequest.Name)
+	b.WithNamespace(composeUpRequest.Namespace)
+
+	b.WithKind("ComposeUpRequest")
+	b.WithAPIVersion("containers.rancherdesktop.io/v1alpha1")
+	return b, nil
+}
+
+// ExtractComposeUpRequest extracts the applied configuration owned by fieldManager from
+// composeUpRequest. If no managedFields are found in composeUpRequest for fieldManager, a
+// ComposeUpRequestApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// composeUpRequest must be a unmodified ComposeUpRequest API object that was retrieved from the Kubernetes API.
+// ExtractComposeUpRequest provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractComposeUpRequest(composeUpRequest *containersv1alpha1.ComposeUpRequest, fieldManager string) (*ComposeUpRequestApplyConfiguration, error) {
+	return ExtractComposeUpRequestFrom(composeUpRequest, fieldManager, "")
+}
+
+// ExtractComposeUpRequestStatus extracts the applied configuration owned by fieldManager from
+// composeUpRequest for the status subresource.
+func ExtractComposeUpRequestStatus(composeUpRequest *containersv1alpha1.ComposeUpRequest, fieldManager string) (*ComposeUpRequestApplyConfiguration, error) {
+	return ExtractComposeUpRequestFrom(composeUpRequest, fieldManager, "status")
 }
 
 func (b ComposeUpRequestApplyConfiguration) IsApplyConfiguration() {}

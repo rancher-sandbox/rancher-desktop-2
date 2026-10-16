@@ -4,8 +4,10 @@ package v1alpha1
 
 import (
 	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
+	internal "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1/applyconfiguration/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
@@ -36,6 +38,47 @@ func Container(name, namespace string) *ContainerApplyConfiguration {
 	b.WithKind("Container")
 	b.WithAPIVersion("containers.rancherdesktop.io/v1alpha1")
 	return b
+}
+
+// ExtractContainerFrom extracts the applied configuration owned by fieldManager from
+// container for the specified subresource. Pass an empty string for subresource to extract
+// the main resource. Common subresources include "status", "scale", etc.
+// container must be a unmodified Container API object that was retrieved from the Kubernetes API.
+// ExtractContainerFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractContainerFrom(container *containersv1alpha1.Container, fieldManager string, subresource string) (*ContainerApplyConfiguration, error) {
+	b := &ContainerApplyConfiguration{}
+	err := managedfields.ExtractInto(container, internal.Parser().Type("com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.Container"), fieldManager, b, subresource)
+	if err != nil {
+		return nil, err
+	}
+	b.WithName(container.Name)
+	b.WithNamespace(container.Namespace)
+
+	b.WithKind("Container")
+	b.WithAPIVersion("containers.rancherdesktop.io/v1alpha1")
+	return b, nil
+}
+
+// ExtractContainer extracts the applied configuration owned by fieldManager from
+// container. If no managedFields are found in container for fieldManager, a
+// ContainerApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
+// container must be a unmodified Container API object that was retrieved from the Kubernetes API.
+// ExtractContainer provides a way to perform a extract/modify-in-place/apply workflow.
+// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
+// applied if another fieldManager has updated or force applied any of the previously applied fields.
+func ExtractContainer(container *containersv1alpha1.Container, fieldManager string) (*ContainerApplyConfiguration, error) {
+	return ExtractContainerFrom(container, fieldManager, "")
+}
+
+// ExtractContainerStatus extracts the applied configuration owned by fieldManager from
+// container for the status subresource.
+func ExtractContainerStatus(container *containersv1alpha1.Container, fieldManager string) (*ContainerApplyConfiguration, error) {
+	return ExtractContainerFrom(container, fieldManager, "status")
 }
 
 func (b ContainerApplyConfiguration) IsApplyConfiguration() {}

@@ -48,7 +48,7 @@ export class IoRancherdesktopContainersV1alpha1ContainerCreateRequestSpec {
     /**
     * State is the desired state of the container.
     */
-    'state': string;
+    'state': IoRancherdesktopContainersV1alpha1ContainerCreateRequestSpecStateEnum;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -100,7 +100,7 @@ export class IoRancherdesktopContainersV1alpha1ContainerCreateRequestSpec {
         {
             "name": "state",
             "baseName": "state",
-            "type": "string",
+            "type": "IoRancherdesktopContainersV1alpha1ContainerCreateRequestSpecStateEnum",
             "format": ""
         }    ];
 
@@ -111,3 +111,9 @@ export class IoRancherdesktopContainersV1alpha1ContainerCreateRequestSpec {
     public constructor() {
     }
 }
+
+export enum IoRancherdesktopContainersV1alpha1ContainerCreateRequestSpecStateEnum {
+    Created = 'created',
+    Running = 'running'
+}
+

@@ -23,6 +23,536 @@ func Parser() *typed.Parser {
 var parserOnce sync.Once
 var parser *typed.Parser
 var schemaYAML = typed.YAMLObject(`types:
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ComposeProject
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+    - name: status
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ComposeProjectStatus
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ComposeProjectContainer
+  map:
+    fields:
+    - name: name
+      type:
+        scalar: string
+    - name: uid
+      type:
+        namedType: io.k8s.apimachinery.pkg.types.UID
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ComposeProjectStatus
+  map:
+    fields:
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+          elementRelationship: associative
+          keys:
+          - type
+    - name: configs
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: containers
+      type:
+        list:
+          elementType:
+            namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ComposeProjectContainer
+          elementRelationship: associative
+          keys:
+          - name
+    - name: name
+      type:
+        scalar: string
+    - name: namespace
+      type:
+        scalar: string
+    - name: workingDir
+      type:
+        scalar: string
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ComposeUpRequest
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+    - name: spec
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ComposeUpRequestSpec
+    - name: status
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ComposeUpRequestStatus
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ComposeUpRequestSpec
+  map:
+    fields:
+    - name: configs
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: name
+      type:
+        scalar: string
+    - name: namespace
+      type:
+        scalar: string
+    - name: workingDir
+      type:
+        scalar: string
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ComposeUpRequestStatus
+  map:
+    fields:
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+          elementRelationship: associative
+          keys:
+          - type
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.Container
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+    - name: spec
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerSpec
+    - name: status
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerStatus
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerAction
+  scalar: string
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerActionState
+  scalar: string
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerLastAction
+  map:
+    fields:
+    - name: action
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerAction
+    - name: completedAt
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: error
+      type:
+        scalar: string
+    - name: observedAt
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: state
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerActionState
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerNamespace
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+    - name: status
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerNamespaceStatus
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerNamespaceStatus
+  map:
+    fields:
+    - name: labels
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: name
+      type:
+        scalar: string
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerPort
+  map:
+    fields:
+    - name: bindings
+      type:
+        list:
+          elementType:
+            namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerPortBinding
+          elementRelationship: atomic
+    - name: name
+      type:
+        scalar: string
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerPortBinding
+  map:
+    fields:
+    - name: hostIP
+      type:
+        scalar: string
+    - name: hostPort
+      type:
+        scalar: string
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerSpec
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerStatus
+  map:
+    fields:
+    - name: args
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+          elementRelationship: associative
+          keys:
+          - type
+    - name: createdAt
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: error
+      type:
+        scalar: string
+    - name: exitCode
+      type:
+        scalar: numeric
+    - name: finishedAt
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: id
+      type:
+        scalar: string
+    - name: image
+      type:
+        scalar: string
+    - name: labels
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: lastAction
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerLastAction
+    - name: name
+      type:
+        scalar: string
+    - name: namespace
+      type:
+        scalar: string
+    - name: path
+      type:
+        scalar: string
+    - name: pid
+      type:
+        scalar: numeric
+    - name: ports
+      type:
+        list:
+          elementType:
+            namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerPort
+          elementRelationship: associative
+          keys:
+          - name
+    - name: startedAt
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: status
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerStatusValue
+      default: unknown
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ContainerStatusValue
+  scalar: string
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.Image
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+    - name: status
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ImageStatus
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.ImageStatus
+  map:
+    fields:
+    - name: architecture
+      type:
+        scalar: string
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+          elementRelationship: associative
+          keys:
+          - type
+    - name: createdAt
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: id
+      type:
+        scalar: string
+    - name: labels
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: namespace
+      type:
+        scalar: string
+    - name: os
+      type:
+        scalar: string
+    - name: repoDigests
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: repoTag
+      type:
+        scalar: string
+    - name: size
+      type:
+        scalar: numeric
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.Volume
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+    - name: status
+      type:
+        namedType: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.VolumeStatus
+- name: com.github.rancher-sandbox.rancher-desktop-daemon.pkg.apis.containers.v1alpha1.VolumeStatus
+  map:
+    fields:
+    - name: createdAt
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: driver
+      type:
+        scalar: string
+    - name: labels
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: mountpoint
+      type:
+        scalar: string
+    - name: name
+      type:
+        scalar: string
+    - name: namespace
+      type:
+        scalar: string
+    - name: options
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: scope
+      type:
+        scalar: string
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+  map:
+    fields:
+    - name: lastTransitionTime
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: message
+      type:
+        scalar: string
+    - name: observedGeneration
+      type:
+        scalar: numeric
+    - name: reason
+      type:
+        scalar: string
+    - name: status
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ConditionStatus
+    - name: type
+      type:
+        scalar: string
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.ConditionStatus
+  scalar: string
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: fieldsType
+      type:
+        scalar: string
+    - name: fieldsV1
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1
+    - name: manager
+      type:
+        scalar: string
+    - name: operation
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsOperationType
+    - name: subresource
+      type:
+        scalar: string
+    - name: time
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsOperationType
+  scalar: string
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+  map:
+    fields:
+    - name: annotations
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: creationTimestamp
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: deletionGracePeriodSeconds
+      type:
+        scalar: numeric
+    - name: deletionTimestamp
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+    - name: finalizers
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: associative
+    - name: generateName
+      type:
+        scalar: string
+    - name: generation
+      type:
+        scalar: numeric
+    - name: labels
+      type:
+        map:
+          elementType:
+            scalar: string
+    - name: managedFields
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry
+          elementRelationship: atomic
+    - name: name
+      type:
+        scalar: string
+    - name: namespace
+      type:
+        scalar: string
+    - name: ownerReferences
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference
+          elementRelationship: associative
+          keys:
+          - uid
+    - name: resourceVersion
+      type:
+        scalar: string
+    - name: selfLink
+      type:
+        scalar: string
+    - name: uid
+      type:
+        namedType: io.k8s.apimachinery.pkg.types.UID
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: blockOwnerDeletion
+      type:
+        scalar: boolean
+    - name: controller
+      type:
+        scalar: boolean
+    - name: kind
+      type:
+        scalar: string
+    - name: name
+      type:
+        scalar: string
+    - name: uid
+      type:
+        namedType: io.k8s.apimachinery.pkg.types.UID
+    elementRelationship: atomic
+- name: io.k8s.apimachinery.pkg.apis.meta.v1.Time
+  scalar: untyped
+- name: io.k8s.apimachinery.pkg.types.UID
+  scalar: string
 - name: __untyped_atomic_
   scalar: untyped
   list:

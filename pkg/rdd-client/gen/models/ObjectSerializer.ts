@@ -251,7 +251,7 @@ import { IoRancherdesktopContainersV1alpha1ComposeUpRequestStatus } from '../mod
 import { IoRancherdesktopContainersV1alpha1Container } from '../models/IoRancherdesktopContainersV1alpha1Container';
 import { IoRancherdesktopContainersV1alpha1ContainerCreateRequest } from '../models/IoRancherdesktopContainersV1alpha1ContainerCreateRequest';
 import { IoRancherdesktopContainersV1alpha1ContainerCreateRequestList } from '../models/IoRancherdesktopContainersV1alpha1ContainerCreateRequestList';
-import { IoRancherdesktopContainersV1alpha1ContainerCreateRequestSpec } from '../models/IoRancherdesktopContainersV1alpha1ContainerCreateRequestSpec';
+import { IoRancherdesktopContainersV1alpha1ContainerCreateRequestSpec       , IoRancherdesktopContainersV1alpha1ContainerCreateRequestSpecStateEnum   } from '../models/IoRancherdesktopContainersV1alpha1ContainerCreateRequestSpec';
 import { IoRancherdesktopContainersV1alpha1ContainerCreateRequestStatus } from '../models/IoRancherdesktopContainersV1alpha1ContainerCreateRequestStatus';
 import { IoRancherdesktopContainersV1alpha1ContainerList } from '../models/IoRancherdesktopContainersV1alpha1ContainerList';
 import { IoRancherdesktopContainersV1alpha1ContainerNamespace } from '../models/IoRancherdesktopContainersV1alpha1ContainerNamespace';
@@ -448,6 +448,7 @@ let enumsMap: Set<string> = new Set<string>([
     "IoRancherdesktopAppV1alpha1AppSpecApplicationAddPathEnum",
     "IoRancherdesktopAppV1alpha1AppSpecContainerEngineNameEnum",
     "IoRancherdesktopAppV1alpha1AppStatusConditionsInnerStatusEnum",
+    "IoRancherdesktopContainersV1alpha1ContainerCreateRequestSpecStateEnum",
     "IoRancherdesktopContainersV1alpha1ContainerStatusStatusEnum",
     "IoRancherdesktopContainersV1alpha1ContainerStatusLastActionActionEnum",
     "IoRancherdesktopContainersV1alpha1ContainerStatusLastActionStateEnum",

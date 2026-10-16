@@ -267,6 +267,13 @@ type ContainerList struct {
 	Items           []Container `json:"items"`
 }
 
+// +kubebuilder:validation:Enum=created;running
+
+// ContainerCreateState is the state that a ContainerCreateRequest asks the new
+// container to reach. It is a separate type because controller-gen ignores a
+// field's enum marker when the field's type has its own enum.
+type ContainerCreateState string
+
 // ContainerCreateRequestSpec defines the desired state for creating a container.
 type ContainerCreateRequestSpec struct {
 	// Name of the container to create; if not specified, a random name will be
@@ -310,8 +317,7 @@ type ContainerCreateRequestSpec struct {
 	//
 	// +required
 	// +kubebuilder:default:=running
-	// +kubebuilder:validation:Enum=created;running
-	State ContainerStatusValue `json:"state"`
+	State ContainerCreateState `json:"state"`
 }
 
 // ContainerCreateRequestStatus defines the status for a container creation request.
