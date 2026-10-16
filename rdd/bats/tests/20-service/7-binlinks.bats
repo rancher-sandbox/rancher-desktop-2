@@ -102,8 +102,9 @@ assert_not_published() { # <name>
     assert_published "${FAKE_BIN}/rdd${EXE}" "rdd${EXE}"
     assert_published "${FAKE_BIN}/docker${EXE}" "docker${EXE}"
     assert_published "${FAKE_BIN}/helm${EXE}" "helm${EXE}"
-    # kubectl is not bundled; it forwards to rdd.
+    # kubectl and nerdctl are not bundled; they forward to rdd.
     assert_published "${FAKE_BIN}/rdd${EXE}" "kubectl${EXE}"
+    assert_published "${FAKE_BIN}/rdd${EXE}" "nerdctl${EXE}"
     # Stop the bundled daemon with fake_rdd; the repo rdd cannot (see fake_rdd).
     fake_rdd svc stop
 }
@@ -121,7 +122,8 @@ assert_not_published() { # <name>
 
 @test 'updates the links when the bundle changes and rdd runs from it again' {
     load_var FAKE_BIN DEST_DIR
-    # Add a tool and drop one, then restart from the bundle.
+    # Add a tool and drop one, then restart from the bundle. The added tool
+    # shares the nerdctl multicall name; the bundled binary must win.
     echo "stand-in nerdctl" >"${FAKE_BIN}/nerdctl${EXE}"
     rm "${FAKE_BIN}/helm${EXE}"
     fake_rdd svc start
@@ -156,6 +158,8 @@ assert_not_published() { # <name>
     standalone="${PATH_REPO_ROOT}/bin/rdd${EXE}"
     assert_symlink_to "${standalone}" "${DEST_DIR}/rdd${EXE}"
     assert_symlink_to "${standalone}" "${DEST_DIR}/kubectl${EXE}"
+    # The bundle's nerdctl entry still resolves, so the repair leaves it in place.
+    assert_published "${FAKE_BIN}/nerdctl${EXE}" "nerdctl${EXE}"
     # The unrelated docker entry from the bundle run is left in place.
     assert_published "${FAKE_BIN}/docker${EXE}" "docker${EXE}"
 }
@@ -183,6 +187,7 @@ assert_not_published() { # <name>
     standalone="${PATH_REPO_ROOT}/bin/rdd${EXE}"
     assert_symlink_to "${standalone}" "${DEST_DIR}/rdd${EXE}"
     assert_symlink_to "${standalone}" "${DEST_DIR}/kubectl${EXE}"
+    assert_symlink_to "${standalone}" "${DEST_DIR}/nerdctl${EXE}"
 }
 
 @test 'publishes hardlinks when symlinks are disabled' {
