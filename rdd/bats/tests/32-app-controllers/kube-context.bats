@@ -142,22 +142,10 @@ kube_current_context_is() { # <expected-context>
 @test "rdd run prepends the instance bin directory to PATH" {
     # The instance bin directory leads PATH so tools bundled with the
     # instance shadow any global ones for the duration of the command.
-    run -0 rdd svc paths short_dir
-    bin_dir="${output}/bin"
-    if is_msys; then
-        # printenv is an MSYS program: its runtime rewrites the inherited
-        # PATH into POSIX form, so convert rdd's native path to match.
-        run -0 cygpath -u "${bin_dir}"
-        bin_dir="${output}"
-    elif is_windows; then
-        # Under WSL2 rdd emits a Windows path; convert it to the POSIX form
-        # printenv reports.
-        run -0 wslpath -u "${bin_dir}"
-        bin_dir="${output}"
-    fi
-
     run_e -0 rdd run printenv PATH
-    assert_equal "${output%%:*}" "${bin_dir}"
+    # MSYS2's printenv rewrites PATH into POSIX form, and paths.bash exports
+    # RDD_BIN_DIR in that form too.
+    assert_equal "${output%%:*}" "${RDD_BIN_DIR}"
 }
 
 @test "kubernetes controller sets current-context when no healthy context exists" {

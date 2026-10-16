@@ -27,6 +27,16 @@ const (
 	defaultWebhookCAKeyFileName  = "webhook-ca.key"
 )
 
+// webhookCACertPath returns the path of the webhook CA certificate in certDir.
+func webhookCACertPath(certDir string) string {
+	return filepath.Join(certDir, DefaultWebhookCACertFileName)
+}
+
+// webhookCAKeyPath returns the path of the webhook CA private key in certDir.
+func webhookCAKeyPath(certDir string) string {
+	return filepath.Join(certDir, defaultWebhookCAKeyFileName)
+}
+
 // SharedWebhookCertificateManager handles webhook certificate generation and management
 // for multiple controllers sharing the same webhook server infrastructure.
 type SharedWebhookCertificateManager struct {
@@ -58,7 +68,7 @@ func (cm *SharedWebhookCertificateManager) GenerateWebhookCertificates() error {
 	var err error
 
 	// If possible, load the CA private key and certificate from existing files.
-	if caKeyBytes, err := os.ReadFile(filepath.Join(cm.certDir, defaultWebhookCAKeyFileName)); err == nil {
+	if caKeyBytes, err := os.ReadFile(webhookCAKeyPath(cm.certDir)); err == nil {
 		block, _ := pem.Decode(caKeyBytes)
 		if block != nil && block.Type == "RSA PRIVATE KEY" {
 			caKey, err = x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -68,7 +78,7 @@ func (cm *SharedWebhookCertificateManager) GenerateWebhookCertificates() error {
 			}
 		}
 	}
-	if caCertBytes, err := os.ReadFile(filepath.Join(cm.certDir, DefaultWebhookCACertFileName)); err == nil {
+	if caCertBytes, err := os.ReadFile(webhookCACertPath(cm.certDir)); err == nil {
 		block, _ := pem.Decode(caCertBytes)
 		if block != nil && block.Type == "CERTIFICATE" {
 			caCert, err = x509.ParseCertificate(block.Bytes)
@@ -177,19 +187,19 @@ func (cm *SharedWebhookCertificateManager) GenerateWebhookCertificates() error {
 	}
 
 	// Save CA certificate for webhook configuration
-	webhookCACertPath := filepath.Join(cm.certDir, DefaultWebhookCACertFileName)
-	if err := cm.saveCertificate(webhookCACertPath, caCert.Raw); err != nil {
+	caCertPath := webhookCACertPath(cm.certDir)
+	if err := cm.saveCertificate(caCertPath, caCert.Raw); err != nil {
 		return fmt.Errorf("failed to save webhook CA certificate: %w", err)
 	}
 
 	// Save CA certificate private key for use by external controllers
-	webhookCAKeyPath := filepath.Join(cm.certDir, defaultWebhookCAKeyFileName)
-	if err := cm.savePrivateKey(webhookCAKeyPath, caKey); err != nil {
+	caKeyPath := webhookCAKeyPath(cm.certDir)
+	if err := cm.savePrivateKey(caKeyPath, caKey); err != nil {
 		return fmt.Errorf("failed to save webhook CA private key: %w", err)
 	}
 
 	klog.V(2).Infof("Shared webhook certificates generated successfully: cert=%s, key=%s, ca=%s",
-		webhookCertPath, webhookKeyPath, webhookCACertPath)
+		webhookCertPath, webhookKeyPath, caCertPath)
 	klog.V(2).Infof("Certificate includes DNS names: %v", webhookCertTemplate.DNSNames)
 	return nil
 }
@@ -220,12 +230,12 @@ func (cm *SharedWebhookCertificateManager) buildServiceDNSNames() []string {
 
 // GetCABundle returns the raw PEM-encoded CA certificate bundle for webhook configuration.
 func (cm *SharedWebhookCertificateManager) GetCABundle() ([]byte, error) {
-	webhookCACertPath := filepath.Join(cm.certDir, DefaultWebhookCACertFileName)
+	caCertPath := webhookCACertPath(cm.certDir)
 
 	// Read the webhook CA certificate file
-	caCertPEM, err := os.ReadFile(webhookCACertPath)
+	caCertPEM, err := os.ReadFile(caCertPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read webhook CA certificate file %s: %w", webhookCACertPath, err)
+		return nil, fmt.Errorf("failed to read webhook CA certificate file %s: %w", caCertPath, err)
 	}
 
 	// Validate that it's a proper PEM certificate

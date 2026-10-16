@@ -4,8 +4,9 @@
 
 // Package logfile creates log files with automatic rotation.
 //
-// Each call to Create renames any existing {name}.log to {name}.{N}.log
-// and opens a fresh {name}.log. The active log always has a stable name.
+// Each call to Create renames any existing {base}.log to {base}.{N}.log
+// beside it and opens a fresh {base}.log. The active log always has a
+// stable name.
 package logfile
 
 import (
@@ -16,6 +17,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 const retentionCount = 5
@@ -25,21 +27,24 @@ type numberedFile struct {
 	name string
 }
 
-// Create opens a new log file named {name}.log in dir, renaming any
-// existing {name}.log to {name}.{N}.log first.
+// Create opens a new log file at filePath, which must end in ".log",
+// renaming any existing {base}.log to {base}.{N}.log first.
 //
 // When keepAll is false, old numbered files beyond the retention count
 // are removed. If header is non-empty, it is written as the first line.
-func Create(dir, name string, keepAll bool, header string) (*os.File, error) {
+func Create(filePath string, keepAll bool, header string) (*os.File, error) {
+	dir, _, err := splitLogPath(filePath)
+	if err != nil {
+		return nil, err
+	}
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, fmt.Errorf("create log directory %s: %w", dir, err)
 	}
 
-	if err := Rotate(dir, name, keepAll); err != nil {
+	if err := Rotate(filePath, keepAll); err != nil {
 		return nil, err
 	}
 
-	filePath := filepath.Join(dir, name+".log")
 	f, err := os.Create(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("create log file %s: %w", filePath, err)
@@ -56,13 +61,18 @@ func Create(dir, name string, keepAll bool, header string) (*os.File, error) {
 	return f, nil
 }
 
-// Rotate renames {name}.log to {name}.{N}.log without creating a new file.
+// Rotate renames the log file at filePath, which must end in ".log", from
+// {base}.log to {base}.{N}.log without creating a new file.
 // Use this for logs managed by an external process (e.g., VM serial console
 // output written by the VM driver) that would be overwritten on next start.
 //
 // When keepAll is false, old numbered files beyond the retention count
 // are removed.
-func Rotate(dir, name string, keepAll bool) error {
+func Rotate(filePath string, keepAll bool) error {
+	dir, name, err := splitLogPath(filePath)
+	if err != nil {
+		return err
+	}
 	pattern := regexp.MustCompile(`^` + regexp.QuoteMeta(name) + `\.(\d+)\.log$`)
 
 	entries, err := os.ReadDir(dir)
@@ -92,7 +102,6 @@ func Rotate(dir, name string, keepAll bool) error {
 	}
 
 	nextN := maxN + 1
-	filePath := filepath.Join(dir, name+".log")
 
 	// Rename the current log to a numbered backup.
 	if _, err := os.Lstat(filePath); err == nil {
@@ -108,6 +117,16 @@ func Rotate(dir, name string, keepAll bool) error {
 	}
 
 	return nil
+}
+
+// splitLogPath returns the directory of filePath and its file name without
+// the ".log" suffix, or an error when filePath does not end in ".log".
+func splitLogPath(filePath string) (dir, base string, err error) {
+	base, ok := strings.CutSuffix(filepath.Base(filePath), ".log")
+	if !ok {
+		return "", "", fmt.Errorf("log file path %q does not end in .log", filePath)
+	}
+	return filepath.Dir(filePath), base, nil
 }
 
 // pruneOldFiles removes numbered log files beyond the retention count,

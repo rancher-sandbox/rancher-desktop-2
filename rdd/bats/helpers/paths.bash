@@ -33,6 +33,11 @@ host_path() { # <path>
 # shellcheck disable=SC1090
 if is_windows; then
     source <("${PATH_REPO_ROOT}/bin/rdd.exe" svc paths --output=shell | win_to_posix_exports)
+    if is_msys; then
+        # rdd.exe honors RDD_LOG_DIR as an override and would read /c/Users/...
+        # as \c\Users\... on the current drive, so hand it C:/Users/... instead.
+        RDD_LOG_DIR=$(host_path "${RDD_LOG_DIR}")
+    fi
 else
     source <("${PATH_REPO_ROOT}/bin/rdd" svc paths --output=shell)
 fi

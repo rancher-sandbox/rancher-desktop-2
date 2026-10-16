@@ -421,13 +421,13 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 	}
 	// Rotate serial logs before creating hostagent logs. The VM driver
 	// overwrites serial.log on each start; rotating preserves previous boots.
-	for _, name := range []string{"serial", "serialp", "serialv"} {
-		if err := logfile.Rotate(inst.Dir, name, keepLogs); err != nil {
+	for _, name := range []string{filenames.SerialLog, filenames.SerialPCILog, filenames.SerialVirtioLog} {
+		if err := logfile.Rotate(filepath.Join(inst.Dir, name), keepLogs); err != nil {
 			logger.Error(err, "Failed to rotate serial log", "name", name)
 		}
 	}
 
-	haStdoutW, err := logfile.Create(inst.Dir, "ha.stdout", keepLogs, header)
+	haStdoutW, err := logfile.Create(filepath.Join(inst.Dir, filenames.HostAgentStdoutLog), keepLogs, header)
 	if err != nil {
 		logger.Error(err, "Failed to create stdout log file")
 		if updateErr := r.updateCondition(ctx, limaVM, ConditionRunning, metav1.ConditionFalse, ReasonStartFailed, err.Error()); updateErr != nil {
@@ -436,7 +436,7 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 		return ctrl.Result{}, err
 	}
 	defer haStdoutW.Close()
-	haStderrW, err := logfile.Create(inst.Dir, "ha.stderr", keepLogs, header)
+	haStderrW, err := logfile.Create(filepath.Join(inst.Dir, filenames.HostAgentStderrLog), keepLogs, header)
 	if err != nil {
 		logger.Error(err, "Failed to create stderr log file")
 		if updateErr := r.updateCondition(ctx, limaVM, ConditionRunning, metav1.ConditionFalse, ReasonStartFailed, err.Error()); updateErr != nil {

@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
@@ -263,7 +262,7 @@ func (wm *webhookManagerImpl[T]) createWebhookConfiguration() error {
 
 	// Read CA bundle directly without creating a new certificate manager.
 	// The certificates were already created by SharedControllerManager.
-	caBundlePath := filepath.Join(instance.TLSDir(), DefaultWebhookCACertFileName)
+	caBundlePath := webhookCACertPath(instance.TLSDir())
 	klog.Infof("Reading CA bundle from: %s", caBundlePath)
 	caBundleBytes, err := os.ReadFile(caBundlePath)
 	if err != nil {

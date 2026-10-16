@@ -18,7 +18,7 @@ import (
 func TestCreateFirstFile(t *testing.T) {
 	dir := t.TempDir()
 
-	f, err := Create(dir, "test", false, "")
+	f, err := Create(filepath.Join(dir, "test.log"), false, "")
 	assert.NilError(t, err)
 	f.Close()
 
@@ -33,7 +33,7 @@ func TestSequentialNumbering(t *testing.T) {
 	dir := t.TempDir()
 
 	for i := 1; i <= 3; i++ {
-		f, err := Create(dir, "app", true, "")
+		f, err := Create(filepath.Join(dir, "app.log"), true, "")
 		assert.NilError(t, err, "Create #%d", i)
 		f.Close()
 	}
@@ -61,7 +61,7 @@ func TestPruning(t *testing.T) {
 	// Call 1 creates prune.log (no rename). Subsequent calls rename to numbered files.
 	count := retentionCount + 2
 	for i := 1; i <= count; i++ {
-		f, err := Create(dir, "prune", false, "")
+		f, err := Create(filepath.Join(dir, "prune.log"), false, "")
 		assert.NilError(t, err, "Create #%d", i)
 		f.Close()
 	}
@@ -89,7 +89,7 @@ func TestKeepAll(t *testing.T) {
 	// Create enough files to exceed the retention count with keepAll=true.
 	count := retentionCount + 2
 	for i := 1; i <= count; i++ {
-		f, err := Create(dir, "keep", true, "")
+		f, err := Create(filepath.Join(dir, "keep.log"), true, "")
 		assert.NilError(t, err, "Create #%d", i)
 		f.Close()
 	}
@@ -110,7 +110,7 @@ func TestHeader(t *testing.T) {
 	dir := t.TempDir()
 
 	header := "=== test header ===\n"
-	f, err := Create(dir, "header", false, header)
+	f, err := Create(filepath.Join(dir, "header.log"), false, header)
 	assert.NilError(t, err)
 	f.Close()
 
@@ -130,7 +130,7 @@ func TestGapsInNumbering(t *testing.T) {
 	}
 
 	// No gap.log exists, so nothing to rename. Active file is gap.log.
-	f, err := Create(dir, "gap", false, "")
+	f, err := Create(filepath.Join(dir, "gap.log"), false, "")
 	assert.NilError(t, err)
 	f.Close()
 
@@ -153,7 +153,7 @@ func TestGapsInNumbering(t *testing.T) {
 func TestCreatesDirectory(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nested", "dir")
 
-	f, err := Create(dir, "test", false, "")
+	f, err := Create(filepath.Join(dir, "test.log"), false, "")
 	assert.NilError(t, err)
 	f.Close()
 
@@ -164,13 +164,13 @@ func TestCreatesDirectory(t *testing.T) {
 func TestRenamePreservesContent(t *testing.T) {
 	dir := t.TempDir()
 
-	f, err := Create(dir, "app", false, "")
+	f, err := Create(filepath.Join(dir, "app.log"), false, "")
 	assert.NilError(t, err)
 	_, _ = f.WriteString("first log\n")
 	f.Close()
 
 	// Second call renames the first to app.1.log
-	f, err = Create(dir, "app", false, "")
+	f, err = Create(filepath.Join(dir, "app.log"), false, "")
 	assert.NilError(t, err)
 	_, _ = f.WriteString("second log\n")
 	f.Close()
@@ -188,7 +188,7 @@ func TestRotateNoFile(t *testing.T) {
 	dir := t.TempDir()
 
 	// Rotate with no existing file should be a no-op.
-	err := Rotate(dir, "test", false)
+	err := Rotate(filepath.Join(dir, "test.log"), false)
 	assert.NilError(t, err)
 
 	entries, err := os.ReadDir(dir)
@@ -202,7 +202,7 @@ func TestRotateRenamesFile(t *testing.T) {
 	// Create a file to rotate.
 	assert.NilError(t, os.WriteFile(filepath.Join(dir, "serial.log"), []byte("boot 1\n"), 0o644))
 
-	err := Rotate(dir, "serial", false)
+	err := Rotate(filepath.Join(dir, "serial.log"), false)
 	assert.NilError(t, err)
 
 	// Original should be gone, numbered backup should exist with original content.
@@ -219,7 +219,7 @@ func TestRotateSequentialNumbering(t *testing.T) {
 
 	for i := 1; i <= 3; i++ {
 		assert.NilError(t, os.WriteFile(filepath.Join(dir, "serial.log"), []byte(fmt.Sprintf("boot %d\n", i)), 0o644))
-		assert.NilError(t, Rotate(dir, "serial", true))
+		assert.NilError(t, Rotate(filepath.Join(dir, "serial.log"), true))
 	}
 
 	// No active file should remain.
@@ -240,7 +240,7 @@ func TestRotatePruning(t *testing.T) {
 	count := retentionCount + 2
 	for i := 1; i <= count; i++ {
 		assert.NilError(t, os.WriteFile(filepath.Join(dir, "serial.log"), []byte(fmt.Sprintf("boot %d\n", i)), 0o644))
-		assert.NilError(t, Rotate(dir, "serial", false))
+		assert.NilError(t, Rotate(filepath.Join(dir, "serial.log"), false))
 	}
 
 	// Oldest files should be pruned.
@@ -262,11 +262,11 @@ func TestMultipleNamesInSameDir(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create files with different names; they should not interfere
-	f1, err := Create(dir, "stdout", false, "")
+	f1, err := Create(filepath.Join(dir, "stdout.log"), false, "")
 	assert.NilError(t, err)
 	f1.Close()
 
-	f2, err := Create(dir, "stderr", false, "")
+	f2, err := Create(filepath.Join(dir, "stderr.log"), false, "")
 	assert.NilError(t, err)
 	f2.Close()
 
@@ -275,4 +275,16 @@ func TestMultipleNamesInSameDir(t *testing.T) {
 	assert.NilError(t, err, "expected stdout.log")
 	_, err = os.Stat(filepath.Join(dir, "stderr.log"))
 	assert.NilError(t, err, "expected stderr.log")
+}
+
+func TestPathWithoutLogSuffix(t *testing.T) {
+	dir := t.TempDir()
+
+	_, err := Create(filepath.Join(dir, "app.txt"), false, "")
+	assert.ErrorContains(t, err, "does not end in .log")
+	assert.ErrorContains(t, Rotate(filepath.Join(dir, "app"), false), "does not end in .log")
+
+	entries, err := os.ReadDir(dir)
+	assert.NilError(t, err)
+	assert.Equal(t, len(entries), 0, "expected no files after rejected paths")
 }

@@ -96,6 +96,8 @@ describe('getPaths', () => {
     log_dir:       'log_dir',
     pid_file:      'pid_file',
     short_dir:     'short_dir',
+    stderr_log:    'stderr_log',
+    stdout_log:    'stdout_log',
     tls_dir:       'tls_dir',
   };
   const expected: Paths = {

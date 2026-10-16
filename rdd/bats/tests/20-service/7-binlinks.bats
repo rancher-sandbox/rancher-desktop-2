@@ -33,8 +33,7 @@ local_setup_file() {
     is_windows && cp "${PATH_REPO_ROOT}/bin/rdd-forwarder${EXE}" "${fake_bin}/rdd-forwarder${EXE}"
 
     FAKE_BIN="${fake_bin}"
-    DEST_DIR="${RDD_SHORT_DIR}/bin"
-    save_var FAKE_BIN DEST_DIR
+    save_var FAKE_BIN
 }
 
 local_setup() {
@@ -66,11 +65,11 @@ assert_hardlink_to() { # <target> <link>
 # only check it names the target binary (which also proves kubectl forwards to
 # rdd, not to itself).
 assert_forwarder_to() { # <target> <name>
-    local dest="${DEST_DIR}/$2"
+    local dest="${RDD_BIN_DIR}/$2"
     assert_file_exist "${dest}"
     refute [ -L "${dest}" ]
-    assert [ "${dest}" -ef "${DEST_DIR}/rdd-forwarder${EXE}" ]
-    local shim="${DEST_DIR}/${2%"${EXE}"}.shim"
+    assert [ "${dest}" -ef "${RDD_BIN_DIR}/rdd-forwarder${EXE}" ]
+    local shim="${RDD_BIN_DIR}/${2%"${EXE}"}.shim"
     assert_file_exist "${shim}"
     assert_file_contains "${shim}" "$(basename "$1")"
 }
@@ -81,7 +80,7 @@ assert_published() { # <target> <name>
     if is_windows; then
         assert_forwarder_to "$1" "$2"
     else
-        assert_symlink_to "$1" "${DEST_DIR}/$2"
+        assert_symlink_to "$1" "${RDD_BIN_DIR}/$2"
     fi
 }
 
@@ -89,15 +88,15 @@ assert_published() { # <target> <name>
 # its shim on Windows.
 assert_not_published() { # <name>
     if is_windows; then
-        assert_file_not_exist "${DEST_DIR}/$1"
-        assert_file_not_exist "${DEST_DIR}/${1%"${EXE}"}.shim"
+        assert_file_not_exist "${RDD_BIN_DIR}/$1"
+        assert_file_not_exist "${RDD_BIN_DIR}/${1%"${EXE}"}.shim"
     else
-        assert_link_not_exist "${DEST_DIR}/$1"
+        assert_link_not_exist "${RDD_BIN_DIR}/$1"
     fi
 }
 
 @test 'publishes bundled binaries when started from the app bundle' {
-    load_var FAKE_BIN DEST_DIR
+    load_var FAKE_BIN
     fake_rdd svc start
     assert_published "${FAKE_BIN}/rdd${EXE}" "rdd${EXE}"
     assert_published "${FAKE_BIN}/docker${EXE}" "docker${EXE}"
@@ -109,7 +108,7 @@ assert_not_published() { # <name>
 }
 
 @test 'leaves working links untouched when started standalone' {
-    load_var FAKE_BIN DEST_DIR
+    load_var FAKE_BIN
     # The bundle run's links still resolve, so a standalone rdd leaves its own
     # rdd and kubectl links alone and never touches docker or helm.
     rdd svc start
@@ -120,7 +119,7 @@ assert_not_published() { # <name>
 }
 
 @test 'updates the links when the bundle changes and rdd runs from it again' {
-    load_var FAKE_BIN DEST_DIR
+    load_var FAKE_BIN
     # Add a tool and drop one, then restart from the bundle.
     echo "stand-in nerdctl" >"${FAKE_BIN}/nerdctl${EXE}"
     rm "${FAKE_BIN}/helm${EXE}"
@@ -136,12 +135,12 @@ assert_not_published() { # <name>
 }
 
 @test 'repairs missing or dangling rdd and kubectl links when started standalone' {
-    load_var FAKE_BIN DEST_DIR
+    load_var FAKE_BIN
     # Simulate an instance whose app was deleted: an rdd run from a throwaway
     # directory links rdd and kubectl to itself, then removing that directory
     # leaves the links dangling. Driving this through rdd avoids depending on
     # how the shell creates symlinks, which differs under MSYS2.
-    rm -f "${DEST_DIR}/rdd${EXE}" "${DEST_DIR}/kubectl${EXE}"
+    rm -f "${RDD_BIN_DIR}/rdd${EXE}" "${RDD_BIN_DIR}/kubectl${EXE}"
     throwaway="${BATS_TEST_TMPDIR}/throwaway"
     mkdir -p "${throwaway}"
     cp "${PATH_REPO_ROOT}/bin/rdd${EXE}" "${throwaway}/rdd${EXE}"
@@ -154,14 +153,13 @@ assert_not_published() { # <name>
     # that privilege Windows falls back to hardlinks and these checks fail.
     rdd svc start
     standalone="${PATH_REPO_ROOT}/bin/rdd${EXE}"
-    assert_symlink_to "${standalone}" "${DEST_DIR}/rdd${EXE}"
-    assert_symlink_to "${standalone}" "${DEST_DIR}/kubectl${EXE}"
+    assert_symlink_to "${standalone}" "${RDD_BIN_DIR}/rdd${EXE}"
+    assert_symlink_to "${standalone}" "${RDD_BIN_DIR}/kubectl${EXE}"
     # The unrelated docker entry from the bundle run is left in place.
     assert_published "${FAKE_BIN}/docker${EXE}" "docker${EXE}"
 }
 
 @test 'prunes dangling tool links left after an uninstall' {
-    load_var DEST_DIR
     # Publish from a throwaway bundle, then delete it so its links dangle — the
     # uninstall case. Driving setup through rdd gives real links the daemon
     # recognizes (MSYS2 ln -s would not).
@@ -181,27 +179,27 @@ assert_not_published() { # <name>
     rdd svc start
     assert_not_published "docker${EXE}"
     standalone="${PATH_REPO_ROOT}/bin/rdd${EXE}"
-    assert_symlink_to "${standalone}" "${DEST_DIR}/rdd${EXE}"
-    assert_symlink_to "${standalone}" "${DEST_DIR}/kubectl${EXE}"
+    assert_symlink_to "${standalone}" "${RDD_BIN_DIR}/rdd${EXE}"
+    assert_symlink_to "${standalone}" "${RDD_BIN_DIR}/kubectl${EXE}"
 }
 
 @test 'publishes hardlinks when symlinks are disabled' {
     skip_on_windows "Windows publishes forwarders, not symlinks or the hardlink fallback"
-    load_var FAKE_BIN DEST_DIR
+    load_var FAKE_BIN
     # RDD_NO_SYMLINKS forces the hardlink fallback that a symlink-less Unix host
     # would hit, so the same publish runs on a system that lacks symlinks.
     export RDD_NO_SYMLINKS=1
     fake_rdd svc start
-    assert_hardlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/rdd${EXE}"
-    assert_hardlink_to "${FAKE_BIN}/docker${EXE}" "${DEST_DIR}/docker${EXE}"
+    assert_hardlink_to "${FAKE_BIN}/rdd${EXE}" "${RDD_BIN_DIR}/rdd${EXE}"
+    assert_hardlink_to "${FAKE_BIN}/docker${EXE}" "${RDD_BIN_DIR}/docker${EXE}"
     # kubectl is not bundled; it hardlinks to rdd.
-    assert_hardlink_to "${FAKE_BIN}/rdd${EXE}" "${DEST_DIR}/kubectl${EXE}"
+    assert_hardlink_to "${FAKE_BIN}/rdd${EXE}" "${RDD_BIN_DIR}/kubectl${EXE}"
     fake_rdd svc stop
 }
 
 @test 'forwarders run the bundled tool under the invoked name' {
     skip_on_unix "only Windows publishes forwarders"
-    load_var FAKE_BIN DEST_DIR
+    load_var FAKE_BIN
     # Publish forwarders from the bundle, then run the published kubectl. It is a
     # hardlink to the real rdd-forwarder.exe beside a kubectl.shim naming rdd.exe,
     # so this exercises the forwarder passing "kubectl" through as argv[0] into
@@ -209,7 +207,7 @@ assert_not_published() { # <name>
     # would make rdd run as the daemon, not kubectl. `version --client` needs no
     # control plane.
     fake_rdd svc start
-    run -0 "${DEST_DIR}/kubectl${EXE}" version --client
+    run -0 "${RDD_BIN_DIR}/kubectl${EXE}" version --client
     assert_output --partial "Client Version"
     fake_rdd svc stop
 }

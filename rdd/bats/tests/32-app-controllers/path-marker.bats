@@ -47,7 +47,7 @@ assert_path_lacks_bindir() {
 # literal REG_EXPAND_SZ data, unlike the .NET setter, which expands %VAR% and
 # downgrades the value to REG_SZ.
 add_bindir_to_path() {
-    run -0 cygpath -w "${RDD_SHORT_DIR}/bin"
+    run -0 cygpath -w "${RDD_BIN_DIR}"
     local bindir=${output} current new
     current=$(reg_user_path) || current=""
     if [[ -n "${current}" ]]; then
@@ -102,13 +102,12 @@ local_setup_file() {
     # stays false because PATH management is host-side and needs no VM.
     rdd set running=false
 
-    # BIN_DIR must be the native Windows form the controller writes into the
-    # registry; paths.bash gives RDD_SHORT_DIR the MSYS (/c/...) form, which can
-    # never match. MARKER stays MSYS so assert_file_exist and rm can use it.
-    run -0 host_path "${RDD_SHORT_DIR}/bin"
+    # BIN_DIR must be the native Windows form that the controller writes into
+    # the registry; paths.bash gives RDD_BIN_DIR the MSYS (/c/...) form, which
+    # can never match.
+    run -0 host_path "${RDD_BIN_DIR}"
     BIN_DIR=${output}
-    MARKER="${RDD_SHORT_DIR}/.path-managed"
-    save_var BIN_DIR MARKER
+    save_var BIN_DIR
 }
 
 local_teardown_file() {
@@ -118,21 +117,21 @@ local_teardown_file() {
 }
 
 @test 'front adds the bin directory and records the marker' {
-    load_var BIN_DIR MARKER
+    load_var BIN_DIR
     set_add_path front
     try --max 30 --delay 1 -- assert_path_has_bindir
-    assert_file_exist "${MARKER}"
+    assert_file_exist "${RDD_PATH_MARKER}"
 }
 
 @test 'manual removes the marked entry and deletes the marker' {
-    load_var BIN_DIR MARKER
+    load_var BIN_DIR
     set_add_path manual
     try --max 30 --delay 1 -- assert_path_lacks_bindir
-    assert_file_not_exist "${MARKER}"
+    assert_file_not_exist "${RDD_PATH_MARKER}"
 }
 
 @test 'manual leaves an unmarked entry alone' {
-    load_var BIN_DIR MARKER
+    load_var BIN_DIR
     # The previous test left addPath=manual with no marker and our entry gone.
     # Add the bin directory the way a user would — directly in the registry, so
     # no marker exists — then force a manual reconcile and confirm it survives.
@@ -144,6 +143,6 @@ local_teardown_file() {
     bump_generation
     wait_path_applied
 
-    assert_file_not_exist "${MARKER}"
+    assert_file_not_exist "${RDD_PATH_MARKER}"
     assert_path_has_bindir
 }

@@ -29,8 +29,9 @@ func init() {
 // longer exists. It runs host-side and needs no API client.
 func Unwind(ctx context.Context) error {
 	r := &controllers.PathManagementReconciler{
-		BinDir: instance.BinDir(),
-		Suffix: instance.Suffix(),
+		BinDir:     instance.BinDir(),
+		PathMarker: instance.PathMarker(),
+		Suffix:     instance.Suffix(),
 	}
 	return r.Unwind(ctx)
 }
@@ -57,9 +58,10 @@ func (c *controller) RegisterWithManager(_ context.Context, mgr ctrl.Manager) er
 		return err
 	}
 	r := &controllers.PathManagementReconciler{
-		Client: mgr.GetClient(),
-		BinDir: instance.BinDir(),
-		Suffix: instance.Suffix(),
+		Client:     mgr.GetClient(),
+		BinDir:     instance.BinDir(),
+		PathMarker: instance.PathMarker(),
+		Suffix:     instance.Suffix(),
 	}
 	return r.SetupWithManager(mgr)
 }

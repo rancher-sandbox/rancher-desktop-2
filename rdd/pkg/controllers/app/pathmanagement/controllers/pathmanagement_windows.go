@@ -41,21 +41,12 @@ var (
 // point at a throwaway key instead of the real one.
 var envSubKey = `Environment`
 
-// pathMarkerName is the file in the instance directory (the parent of BinDir,
-// e.g. ~/.rd2) that records that rdd added the bin directory to the user Path.
-// Windows Path has no fenced block to mark our entry, so under manual we consult
-// this file to tell an entry we added from one the user typed: present means
-// remove the entry from any position, absent means leave it alone.
-const pathMarkerName = ".path-managed"
-
-// pathMarkerPath returns the marker file path in the instance directory.
-func (r *PathManagementReconciler) pathMarkerPath() string {
-	return filepath.Join(filepath.Dir(r.BinDir), pathMarkerName)
-}
-
-// pathMarkerExists reports whether the marker is present.
+// pathMarkerExists reports whether the PATH marker is present. Windows Path has
+// no fenced block to mark our entry, so under manual we consult the marker to
+// tell an entry we added from one the user typed. Present means remove the
+// entry from any position; absent means leave it alone.
 func (r *PathManagementReconciler) pathMarkerExists() bool {
-	_, err := os.Stat(r.pathMarkerPath())
+	_, err := os.Stat(r.PathMarker)
 	return err == nil
 }
 
@@ -63,9 +54,9 @@ func (r *PathManagementReconciler) pathMarkerExists() bool {
 // it before the registry write, so a crash in between still leaves the marker
 // and a later manual run can remove the entry.
 func (r *PathManagementReconciler) writePathMarker() error {
-	marker := r.pathMarkerPath()
+	marker := r.PathMarker
 	if err := os.MkdirAll(filepath.Dir(marker), 0o755); err != nil {
-		return fmt.Errorf("create instance directory: %w", err)
+		return fmt.Errorf("create PATH marker directory: %w", err)
 	}
 	if err := os.WriteFile(marker, nil, 0o644); err != nil {
 		return fmt.Errorf("write PATH marker %q: %w", marker, err)
@@ -76,7 +67,7 @@ func (r *PathManagementReconciler) writePathMarker() error {
 // removePathMarker deletes the marker, treating an already-absent marker as
 // success.
 func (r *PathManagementReconciler) removePathMarker() error {
-	if err := os.Remove(r.pathMarkerPath()); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := os.Remove(r.PathMarker); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("remove PATH marker: %w", err)
 	}
 	return nil

@@ -140,7 +140,7 @@ setup() {
     # Skip if the log directory doesn't exist (test may not start a service).
     if [[ -d "${RDD_LOG_DIR}" ]]; then
         local log
-        for log in "${RDD_LOG_DIR}"/rdd.stderr.log "${RDD_LOG_DIR}"/rdd.stdout.log; do
+        for log in "${RDD_STDERR_LOG}" "${RDD_STDOUT_LOG}"; do
             printf "=== BATS: %s %s ===\n" \
                 "$(date +"%Y-%m-%dT%H:%M:%S%z")" \
                 "${BATS_TEST_DESCRIPTION}" \

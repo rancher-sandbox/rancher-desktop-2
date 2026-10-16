@@ -211,15 +211,14 @@ export function clearLoggingDirectory(): void {
   for (const entry of entries) {
     if (entry.isFile() && entry.name.endsWith('.log')) {
       const topic = path.basename(entry.name, '.log');
+      const fullPath = path.join(paths.log_dir, entry.name);
 
-      if (['rdd.stdout', 'rdd.stderr'].includes(topic)) {
+      if ([paths.stdout_log, paths.stderr_log].includes(fullPath)) {
         // Avoid removing RDD logs, in case we're connecting to an existing one.
         continue;
       }
 
       if (!logs.has(topic)) {
-        const fullPath = path.join(paths.log_dir, entry.name);
-
         try {
           fs.unlinkSync(fullPath);
         } catch (ex: any) {

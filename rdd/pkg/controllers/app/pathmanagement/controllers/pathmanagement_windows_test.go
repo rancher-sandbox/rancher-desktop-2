@@ -55,21 +55,25 @@ func readTestPath(t *testing.T, keyPath string) (value string, valType uint32) {
 	return val, valType
 }
 
-// newTestReconciler returns a reconciler whose BinDir lives under a fresh temp
-// instance directory, so the PATH marker writes somewhere disposable.
+// newTestReconciler returns a reconciler with BinDir and the PATH marker in a
+// fresh temp directory, so tests write the marker somewhere disposable.
 func newTestReconciler(t *testing.T) *PathManagementReconciler {
 	t.Helper()
-	return &PathManagementReconciler{BinDir: filepath.Join(t.TempDir(), "bin")}
+	dir := t.TempDir()
+	return &PathManagementReconciler{
+		BinDir:     filepath.Join(dir, "bin"),
+		PathMarker: filepath.Join(dir, "marker"),
+	}
 }
 
 func assertMarkerExists(t *testing.T, r *PathManagementReconciler) {
 	t.Helper()
-	assert.Assert(t, r.pathMarkerExists(), "PATH marker should exist at %q", r.pathMarkerPath())
+	assert.Assert(t, r.pathMarkerExists(), "PATH marker should exist at %q", r.PathMarker)
 }
 
 func assertMarkerAbsent(t *testing.T, r *PathManagementReconciler) {
 	t.Helper()
-	assert.Assert(t, !r.pathMarkerExists(), "PATH marker should be absent at %q", r.pathMarkerPath())
+	assert.Assert(t, !r.pathMarkerExists(), "PATH marker should be absent at %q", r.PathMarker)
 }
 
 func TestWriteUserPathFrontPreservesExpandSZ(t *testing.T) {

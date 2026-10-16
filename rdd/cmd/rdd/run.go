@@ -122,7 +122,7 @@ func isKubeCommand(name string) bool {
 // the instance Docker context, points KUBECONFIG at the instance kubeconfig,
 // and clears DOCKER_HOST so the Docker context takes effect.
 func setupRunEnv() error {
-	binDir := filepath.Join(instance.ShortDir(), "bin")
+	binDir := instance.BinDir()
 	// Append the existing PATH only when it is set; concatenating an empty
 	// value would leave a trailing separator, which POSIX reads as the
 	// current directory.

@@ -7,7 +7,6 @@ package main
 import (
 	"bytes"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -64,7 +63,7 @@ func TestSetupRunEnv(t *testing.T) {
 
 	assert.NilError(t, setupRunEnv())
 
-	binDir := filepath.Join(instance.ShortDir(), "bin")
+	binDir := instance.BinDir()
 	assert.Equal(t, os.Getenv("PATH"), binDir+string(os.PathListSeparator)+"/usr/bin:/bin")
 	assert.Equal(t, os.Getenv("DOCKER_CONTEXT"), instance.Name())
 	assert.Equal(t, os.Getenv("KUBECONFIG"), instance.KubeConfig())
