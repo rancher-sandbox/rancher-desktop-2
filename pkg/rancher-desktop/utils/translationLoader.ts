@@ -15,7 +15,7 @@ import yaml from 'js-yaml';
 
 // TODO: generate this list from a script (e.g. as a `prebuild` script in
 // `package.json`).
-export type LocaleString = 'de' | 'en-us' | 'es' | 'fr' | 'it' | 'ja' | 'ko' | 'pt-br' | 'zh-hans';
+export type LocaleString = 'de' | 'en-us' | 'es' | 'fr' | 'it' | 'ja' | 'ko' | 'pt-br' | 'vi' | 'zh-hans';
 
 interface TranslationSource {
   locales: LocaleString[];

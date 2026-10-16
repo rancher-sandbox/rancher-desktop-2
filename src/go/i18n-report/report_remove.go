@@ -141,6 +141,8 @@ func findTranslationFiles(root string) ([]string, error) {
 
 // removeKeysFromFile removes the given dotted keys from a YAML file,
 // pruning empty parent nodes. Returns the number of keys removed.
+// It deletes only the removed keys' lines from the original text, so
+// every other key keeps its hand formatting.
 func removeKeysFromFile(path string, keys map[string]bool) (int, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -163,13 +165,20 @@ func removeKeysFromFile(path string, keys map[string]bool) (int, error) {
 		return 0, fmt.Errorf("%s: %w", path, err)
 	}
 
+	lines := strings.SplitAfter(string(data), "\n")
+	deleted := make([]bool, len(lines))
 	removed := 0
 	for key := range keys {
 		parts, err := splitKeyPath(key)
 		if err != nil {
 			return 0, fmt.Errorf("%s: invalid key %q: %w", path, key, err)
 		}
-		if removeKeyFromNode(root, parts) {
+		keyNode, err := removeKeyFromNode(root, parts)
+		if err != nil {
+			return 0, fmt.Errorf("%s: key %q: %w", path, key, err)
+		}
+		if keyNode != nil {
+			markKeyLines(lines, deleted, keyNode)
 			removed++
 		}
 	}
@@ -177,9 +186,14 @@ func removeKeysFromFile(path string, keys map[string]bool) (int, error) {
 	if removed == 0 {
 		return 0, nil
 	}
+	dropDoubledBlankLines(lines, deleted)
 
 	var buf strings.Builder
-	serializeYAMLNode(&buf, &doc)
+	for i, line := range lines {
+		if !deleted[i] {
+			buf.WriteString(line)
+		}
+	}
 
 	if err := writeFileAtomic(path, []byte(buf.String())); err != nil {
 		return 0, fmt.Errorf("writing %s: %w", path, err)
@@ -189,10 +203,13 @@ func removeKeysFromFile(path string, keys map[string]bool) (int, error) {
 }
 
 // removeKeyFromNode removes a dotted key path from a mapping node,
-// pruning empty parents. Returns true if the key was found and removed.
-func removeKeyFromNode(node *yaml.Node, parts []string) bool {
+// pruning empty parents. It returns the key node of the outermost pair
+// removed (the pruned parent, if any), or nil if the key was not found.
+// It returns an error for a key inside a flow mapping, since that key
+// shares its line with its siblings and the line cannot be deleted alone.
+func removeKeyFromNode(node *yaml.Node, parts []string) (*yaml.Node, error) {
 	if node.Kind != yaml.MappingNode || len(parts) == 0 {
-		return false
+		return nil, nil
 	}
 
 	for i := 0; i < len(node.Content)-1; i += 2 {
@@ -204,19 +221,90 @@ func removeKeyFromNode(node *yaml.Node, parts []string) bool {
 		}
 
 		if len(parts) == 1 {
-			// Remove this key-value pair.
+			if node.Style&yaml.FlowStyle != 0 {
+				return nil, fmt.Errorf("cannot remove a key from a flow mapping (line %d)", keyNode.Line)
+			}
 			node.Content = append(node.Content[:i], node.Content[i+2:]...)
-			return true
+			return keyNode, nil
 		}
 
 		// Recurse into nested mapping.
-		if removeKeyFromNode(valNode, parts[1:]) {
-			// Prune empty parent.
-			if valNode.Kind == yaml.MappingNode && len(valNode.Content) == 0 {
-				node.Content = append(node.Content[:i], node.Content[i+2:]...)
-			}
-			return true
+		removedKey, err := removeKeyFromNode(valNode, parts[1:])
+		if err != nil || removedKey == nil {
+			return nil, err
 		}
+		// Prune empty parent.
+		if valNode.Kind == yaml.MappingNode && len(valNode.Content) == 0 {
+			if node.Style&yaml.FlowStyle != 0 {
+				return nil, fmt.Errorf("cannot remove a key from a flow mapping (line %d)", keyNode.Line)
+			}
+			node.Content = append(node.Content[:i], node.Content[i+2:]...)
+			return keyNode, nil
+		}
+		return removedKey, nil
 	}
-	return false
+	return nil, nil
+}
+
+// markKeyLines marks for deletion the line of keyNode, its value (every
+// following line that is blank or indented deeper than the key, minus the
+// blank lines trailing it), and its head comment (the contiguous comment
+// lines directly above it at the key's indentation).
+func markKeyLines(lines []string, deleted []bool, keyNode *yaml.Node) {
+	keyIdx := keyNode.Line - 1
+	indent := keyNode.Column - 1
+	deleted[keyIdx] = true
+
+	end := keyIdx
+	for j := keyIdx + 1; j < len(lines); j++ {
+		if strings.TrimSpace(lines[j]) == "" {
+			continue
+		}
+		if lineIndent(lines[j]) <= indent {
+			break
+		}
+		end = j
+	}
+	for j := keyIdx + 1; j <= end; j++ {
+		deleted[j] = true
+	}
+
+	for j := keyIdx - 1; j >= 0; j-- {
+		trimmed := strings.TrimSpace(lines[j])
+		if !strings.HasPrefix(trimmed, "#") || lineIndent(lines[j]) != indent {
+			break
+		}
+		deleted[j] = true
+	}
+}
+
+// lineIndent returns the number of leading spaces on a line.
+func lineIndent(line string) int {
+	return len(line) - len(strings.TrimLeft(line, " "))
+}
+
+// dropDoubledBlankLines marks the blank line after a deleted block for
+// deletion when a blank line also precedes the block, so removing a group
+// that sat between two blank lines leaves one blank line, not two.
+func dropDoubledBlankLines(lines []string, deleted []bool) {
+	for start := 0; start < len(lines); start++ {
+		if !deleted[start] {
+			continue
+		}
+		end := start
+		for end+1 < len(lines) && deleted[end+1] {
+			end++
+		}
+		if start > 0 && end+1 < len(lines) && isBlankLine(lines[start-1]) && isBlankLine(lines[end+1]) {
+			deleted[end+1] = true
+			end++
+		}
+		start = end
+	}
+}
+
+// isBlankLine reports whether line is an empty or whitespace-only line. The
+// empty string after a file's final newline is not a line.
+func isBlankLine(line string) bool {
+	return strings.HasSuffix(line, "\n") && strings.TrimSpace(line) == ""
 }

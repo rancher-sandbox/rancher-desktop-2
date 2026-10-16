@@ -14,6 +14,10 @@ allowedImages:
   patterns:
     # @source Type the image pattern
     placeholder: イメージパターンを入力
+app:
+  # @reason Source is only the product-name placeholder; nothing to translate.
+  # @source {productName}
+  name: '{productName}'
 application:
   behavior:
     autoStart:
@@ -451,12 +455,6 @@ denyRoot:
   message: Rancher Desktopはroot権限では実行できません。通常のユーザーとして再度実行してください。
   # @source Cannot run as Root
   title: rootとして実行できません
-deploymentProfile:
-  # @reason version is the literal field name in the file, kept in English.
-  # @source Invalid deployment file {path}: no version specified. Add a version field to make it valid (current version is {version}).
-  noVersion: デプロイメントファイル{path}は無効です：バージョンが指定されていません。有効にするにはversionフィールドを追加してください（現在のバージョンは{version}です）。
-  # @source Invalid deployment: no version specified at {path}. Add a version field to make it valid (current version is {version}).
-  noVersionRegistry: デプロイメントが無効です：{path}にバージョンが指定されていません。有効にするにはversionフィールドを追加してください（現在のバージョンは{version}です）。
 diagnostics:
   # @source {count} failed plus {muted} muted
   failedCount: '{count}件が失敗、さらに{muted}件がミュートされています'
@@ -493,37 +491,6 @@ diagnostics:
     name: 名前
   # @source Diagnostics
   title: 診断
-dialog:
-  bridgedNetwork:
-    # @source Shared network isn't available either. Only network access is via port forwarding to the host.
-    noNetwork: 共有ネットワークも利用できません。ネットワークアクセスはホストへのポートフォワーディング経由のみです。
-    # @source Using shared network address {ip}
-    sharedFallback: 共有ネットワークアドレス{ip}を使用しています
-    # @source Bridged network did not get an IP address.
-    title: ブリッジネットワークがIPアドレスを取得できませんでした。
-  confirmMigration:
-    # @source Delete Workloads
-    delete: ワークロードを削除
-    # @source Downgrading from {from} to {to} will lose existing Kubernetes workloads. Delete the data?
-    message: '{from}から{to}へダウングレードすると、既存のKubernetesワークロードが失われます。データを削除しますか？'
-    # @source Confirming migration
-    title: 移行の確認
-  invalidK8sVersion:
-    # @source Falling back to recommended minimum upgrade version of {version}
-    detail: 推奨される最小アップグレードバージョン{version}にフォールバックします
-    # @reason ICU-escaped quotes ''…'' replaced with Japanese corner brackets 「」.
-    # @source Requested Kubernetes version ''{version}'' is not a supported version.
-    message: 要求されたKubernetesバージョン「{version}」はサポートされていません。
-    # @source Invalid Kubernetes Version
-    title: 無効なKubernetesバージョン
-  networkFailure:
-    # @reason ICU-escaped quotes ''…'' replaced with Japanese corner brackets 「」.
-    # @source Please acquire a version in the range {range} and install in ''{path}''
-    detail: '{range}の範囲のバージョンを入手し、「{path}」にインストールしてください'
-    # @source Can't download a compatible version of kubectl in offline-mode
-    message: オフラインモードでは互換性のあるバージョンのkubectlをダウンロードできません
-    # @source Network failure
-    title: ネットワーク障害
 extensions:
   # @reason Icon identifier, not user-visible text.
   # @source icon-extension
@@ -583,9 +550,9 @@ general:
   projectDiscussions: プロジェクトディスカッション：<a href="https://slack.rancher.io/">Rancher Users</a> Slackの<b>#rancher-desktop</b>
   # @source Project Links:
   projectLinks: プロジェクトリンク：
-  # @reason "Rancher Desktop by SUSE" kept intact as branding.
-  # @source Welcome to Rancher Desktop by SUSE
-  title: Rancher Desktop by SUSEへようこそ
+  # @reason "by SUSE" kept in English after the product name, as branding.
+  # @source Welcome to {appName} by SUSE
+  title: '{appName} by SUSEへようこそ'
 generic:
   # @reason Japanese conjunction と takes no surrounding spaces.
   # @source  and 
@@ -602,6 +569,8 @@ generic:
   # @reason Assumed to be the port-forwarding action; rendered as 転送.
   # @source Forward
   forward: 転送
+  # @source Invalid cron schedule
+  invalidCron: 無効な cron スケジュール
   # @source Loading&hellip;
   loading: 読み込み中&hellip;
   # @source Namespace
@@ -809,13 +778,10 @@ kubernetesPrefs:
     legendText: オプション
     # @source Install Spin Operator
     spinkube: Spin Operator をインストールする
-    # @source Spin Operator requires <a href="#" data-navigate="Container Engine,general">WebAssembly</a> to be enabled.
-    spinkubeWarning: Spin Operator を使用するには、<a href="#" data-navigate="Container Engine,general">WebAssembly</a> を有効にする必要があります。
+    # @source Spin Operator requires <a href="#" data-navigate="container-engine,general">WebAssembly</a> to be enabled.
+    spinkubeWarning: Spin Operator を使用するには、<a href="#" data-navigate="container-engine,general">WebAssembly</a> を有効にする必要があります。
     # @source Enable Traefik
     traefik: Traefik を有効にする
-  port:
-    # @source Kubernetes Port
-    legendText: Kubernetes ポート
   version:
     # @source Kubernetes version
     legendText: Kubernetes バージョン
@@ -853,6 +819,8 @@ locale:
   ko: 韓国語
   # @source Portuguese (Brazilian)
   pt-br: ポルトガル語（ブラジル）
+  # @source Vietnamese
+  vi: ベトナム語
   # @source Chinese (Simplified)
   zh-hans: 中国語（簡体字）
 mainMenu:
@@ -1028,8 +996,8 @@ preferences:
       restart: 変更を適用すると Kubernetes が再起動します。
   containerEngine:
     webAssembly:
-      # @source WebAssembly must be enabled for the <a href="#" data-navigate="Kubernetes">Spin Operator</a> to be installed.
-      warning: <a href="#" data-navigate="Kubernetes">Spin Operator</a> をインストールするには、WebAssembly を有効にする必要があります。
+      # @source WebAssembly must be enabled for the <a href="#" data-navigate="kubernetes">Spin Operator</a> to be installed.
+      warning: <a href="#" data-navigate="kubernetes">Spin Operator</a> をインストールするには、WebAssembly を有効にする必要があります。
   error:
     # @source Reload Preferences to try again.
     body: 環境設定を再読み込みして、もう一度お試しください。
@@ -1095,6 +1063,11 @@ preferences:
     proxy: プロキシ
     # @source Volumes
     volumes: ボリューム
+  validation:
+    containerEngine:
+      name:
+        # @source Container engine {current} is not valid
+        FieldValueNotSupported: コンテナーエンジン {current} は無効です
 preferencesWindow:
   close:
     # @source There are preferences with changes that have not been applied. All unsaved preferences will be lost.
@@ -1141,159 +1114,6 @@ product:
     online: オンライン
   # @source Version
   version: バージョン
-progress:
-  # @source Asking for permission to run tasks as administrator
-  askingPermission: 管理者としてタスクを実行する許可を求めています
-  # @source Bundling certificates
-  bundlingCertificates: 証明書をバンドルしています
-  # @source Checking k3s images
-  checkingK3sImages: k3s イメージを確認しています
-  # @source Configuring container engine
-  configuringContainerEngine: コンテナーエンジンを設定しています
-  # @source Configuring image proxy
-  configuringImageProxy: イメージプロキシを設定しています
-  # @source Configuring logrotate
-  configuringLogrotate: logrotate を設定しています
-  # @source Container engine components
-  containerEngineComponents: コンテナーエンジンコンポーネント
-  # @source Copying certificates
-  copyingCertificates: 証明書をコピーしています
-  # @source Deleting incompatible Kubernetes state
-  deletingIncompatibleState: 互換性のない Kubernetes の状態を削除しています
-  # @source Deleting Kubernetes
-  deletingKubernetes: Kubernetes を削除しています
-  # @source Deleting virtual machine
-  deletingVirtualMachine: 仮想マシンを削除しています
-  # @source DNS configuration
-  dnsConfiguration: DNS 設定
-  # @source Downloading Kubernetes components
-  downloadingKubernetesComponents: Kubernetes コンポーネントをダウンロードしています
-  # @source Ensuring compatible kubectl
-  ensuringCompatibleKubectl: 互換性のある kubectl を準備しています
-  # @source Ensuring virtualization is supported
-  ensuringVirtualizationSupported: 仮想化がサポートされていることを確認しています
-  # @source Expecting user permission to continue
-  expectingPermission: 続行のためユーザーの許可を待っています
-  # @source Extracting certificates
-  extractingCertificates: 証明書を抽出しています
-  # @source Fetching certificates
-  fetchingCertificates: 証明書を取得しています
-  # @source Initializing Rancher Desktop
-  initializingRancherDesktop: Rancher Desktop を初期化しています
-  # @source Initializing WSL data
-  initializingWslData: WSL データを初期化しています
-  # @source Installing Buildkit
-  installingBuildkit: Buildkit をインストールしています
-  # @source Installing CA certificates
-  installingCaCertificates: CA 証明書をインストールしています
-  # @source Installing container engine
-  installingContainerEngine: コンテナーエンジンをインストールしています
-  # @reason Docker term "credential helper" rendered in katakana, the usual form in Japanese Docker documentation.
-  # @source Installing credential helper
-  installingCredentialHelper: クレデンシャルヘルパーをインストールしています
-  # @source Installing the docker-credential helper
-  installingDockerCredentialHelper: docker-credential ヘルパーをインストールしています
-  # @source Installing helpers
-  installingHelpers: ヘルパーをインストールしています
-  # @source Installing image scanner
-  installingImageScanner: イメージスキャナーをインストールしています
-  # @source Installing k3s
-  installingK3s: k3s をインストールしています
-  # @source Installing Kubernetes
-  installingKubernetes: Kubernetes をインストールしています
-  # @source Kubernetes components
-  kubernetesComponents: Kubernetes コンポーネント
-  # @source Kubernetes dockerd compatibility
-  kubernetesDockerCompatibility: Kubernetes と dockerd の互換性
-  # @source Mounting WSL data
-  mountingWslData: WSL データをマウントしています
-  # @source Preparing to start
-  preparingToStart: 起動の準備をしています
-  # @source Proxy Config Setup
-  proxyConfigSetup: プロキシ設定のセットアップ
-  # @source Rancher Desktop guest agent
-  rancherDesktopGuestAgent: Rancher Desktop ゲストエージェント
-  # @source Recovering virtual machine
-  recoveringBrokenVirtualMachine: 仮想マシンを復旧しています
-  # @source Regenerating configuration to account for lack of permissions
-  regeneratingConfiguration: 権限がないため設定を再生成しています
-  # @source Registering WSL distribution
-  registeringWslDistribution: WSL ディストリビューションを登録しています
-  # @source Removing existing certificates
-  removingExistingCertificates: 既存の証明書を削除しています
-  # @reason "spinkube" kept in lowercase English as in the source; it is a project name.
-  # @source Removing spinkube operator
-  removingSpinkubeOperator: spinkube オペレーターを削除しています
-  # @source Removing stale state
-  removingStaleState: 古い状態を削除しています
-  # @source Removing Traefik
-  removingTraefik: Traefik を削除しています
-  # @source Resetting Kubernetes
-  resettingKubernetes: Kubernetes をリセットしています
-  # @source Running provisioning scripts
-  runningProvisioningScripts: プロビジョニングスクリプトを実行しています
-  # @source Running update-ca-certificates
-  runningUpdateCaCertificates: update-ca-certificates を実行しています
-  # @source Setting docker context
-  settingDockerContext: docker コンテキストを設定しています
-  # @source Setting Lima permissions
-  settingLimaPermissions: Lima の権限を設定しています
-  # @source Setting up Docker socket
-  settingUpDockerSocket: Docker ソケットをセットアップしています
-  # @source Setting up virtual ethernet
-  settingUpVirtualEthernet: 仮想イーサネットをセットアップしています
-  # @source Shutting down
-  shuttingDown: シャットダウンしています
-  # @source Skipping node checks, flannel is disabled
-  skippingNodeChecksFlannel: flannel が無効なため、ノードチェックをスキップしています
-  # @source Starting Backend
-  startingBackend: バックエンドを起動しています
-  # @source Starting buildkit
-  startingBuildkit: buildkit を起動しています
-  # @source Starting container engine
-  startingContainerEngine: コンテナーエンジンを起動しています
-  # @source Starting image proxy
-  startingImageProxy: イメージプロキシを起動しています
-  # @source Starting k3s
-  startingK3s: k3s を起動しています
-  # @source Starting Kubernetes
-  startingKubernetes: Kubernetes を起動しています
-  # @source Starting proxy
-  startingProxy: プロキシを起動しています
-  # @source Starting {service}
-  startingService: '{service} を起動しています'
-  # @source Starting virtual machine
-  startingVirtualMachine: 仮想マシンを起動しています
-  # @source Starting WSL environment
-  startingWslEnvironment: WSL 環境を起動しています
-  # @source Stopping existing instance
-  stoppingExistingInstance: 既存のインスタンスを停止しています
-  # @source Stopping mock backend
-  stoppingMockBackend: モックバックエンドを停止しています
-  # @source Stopping services
-  stoppingServices: サービスを停止しています
-  # @source Updating cluster configuration
-  updatingClusterConfiguration: クラスター構成を更新しています
-  # @source Updating /etc/hosts
-  updatingEtcHosts: /etc/hosts を更新しています
-  # @source Updating kubeconfig
-  updatingKubeconfig: kubeconfig を更新しています
-  # @source Updating outdated virtual machine
-  updatingOutdatedVm: 古い仮想マシンを更新しています
-  # @source Updating WSL data
-  updatingWslData: WSL データを更新しています
-  # @source Upgrading WSL distribution
-  upgradingWslDistribution: WSL ディストリビューションをアップグレードしています
-  # @source Waiting for container engine to be ready
-  waitingForContainerEngine: コンテナーエンジンの準備ができるのを待機しています
-  # @source Waiting for Kubernetes API
-  waitingForKubernetesApi: Kubernetes API を待機しています
-  # @source Waiting for nodes
-  waitingForNodes: ノードを待機しています
-  # @source Waiting for services
-  waitingForServices: サービスを待機しています
-  # @source Writing K3s configuration
-  writingK3sConfiguration: K3s の構成を書き込んでいます
 snapshots:
   action:
     # @source Create Snapshot
@@ -1333,8 +1153,6 @@ snapshots:
         cancel: キャンセル
       # @source Creating {snapshot}
       header: '{snapshot} を作成しています'
-      # @source Please wait while snapshot '<b>'{snapshot}'</b>' is being created.'<br/>'This may take some time depending on your machine's resources.'<br/>'Rancher Desktop will be temporarily unavailable during this operation.'<br/><br/>'Once the snapshot is complete, the VM will restart.
-      message: スナップショット '<b>'{snapshot}'</b>' が作成されるまでお待ちください。'<br/>'お使いのマシンのリソースによっては時間がかかることがあります。'<br/>'この操作の間、Rancher Desktop は一時的に使用できなくなります。'<br/><br/>'スナップショットの作成が完了すると、VM が再起動します。
     delete:
       actions:
         # @source Cancel
@@ -1505,24 +1323,14 @@ tray:
   openMainWindow: メインウィンドウを開く
   # @source Open preferences dialog
   openPreferences: 設定ダイアログを開く
-  # @source Quit Rancher Desktop
-  quitRancherDesktop: Rancher Desktop を終了
+  # @source Quit {appName}
+  quitRancherDesktop: '{appName} を終了'
   state:
-    # @source Kubernetes is disabled
-    disabled: Kubernetes は無効です
-    # @source Kubernetes has encountered an error
-    error: Kubernetes でエラーが発生しました
-    # @source Kubernetes is running
-    started: Kubernetes は実行中です
     # @source Kubernetes is starting
     starting: Kubernetes は起動中です
-    # @source Kubernetes is stopped
-    stopped: Kubernetes は停止しています
-    # @source Kubernetes is shutting down
-    stopping: Kubernetes はシャットダウン中です
-  # @reason application product name
-  # @source Rancher Desktop
-  tooltip: Rancher Desktop
+  # @reason Source is only the product-name placeholder; nothing to translate.
+  # @source {appName}
+  tooltip: '{appName}'
 troubleshooting:
   # @source Enable debug mode
   debugMode: デバッグモードを有効にする
@@ -1595,12 +1403,12 @@ unmetPrerequisites:
 updateStatus:
   # @source Applying update...
   applyingUpdate: 更新を適用しています...
-  # @source An update to version {version} is available
-  available: バージョン {version} への更新が利用可能です
+  # @source An update to version {version} is available.
+  available: バージョン {version} への更新が利用可能です。
   # @source Check for updates automatically
   checkForUpdates: 更新を自動的に確認する
-  # @source downloading... ({percent}%, {speed})
-  downloading: ダウンロード中...（{percent}%、{speed}）
+  # @source An update to version {version} is available; downloading... ({percent}%, {speed})
+  downloading: バージョン {version} への更新が利用可能です。ダウンロード中...（{percent}%、{speed}）
   # @source There was an error checking for updates.
   errorChecking: 更新の確認中にエラーが発生しました。
   # @source Release Notes
@@ -1619,75 +1427,8 @@ updateStatus:
   # @source Update Available
   updateAvailable: 更新が利用可能
 validation:
-  # @source Cannot decrease "{field}" from {from} to {to}
-  cannotDecrease: 「{field}」を {from} から {to} に減らすことはできません
-  # @source Cannot enable WebAssembly with classic storage for moby.
-  cannotEnableWasmClassic: moby のクラシックストレージでは WebAssembly を有効にできません。
-  # @source Cannot switch to classic storage for moby when WebAssembly is enabled.
-  cannotSwitchClassicWasm: WebAssembly が有効な場合、moby のクラシックストレージには切り替えられません。
-  # @source Cannot switch to moby container engine with classic storage when WebAssembly is enabled.
-  cannotSwitchMobyClassicWasm: WebAssembly が有効な場合、クラシックストレージの moby コンテナーエンジンには切り替えられません。
-  # @source field "{field}" has duplicate entries: "{duplicates}"
-  duplicateEntries: フィールド「{field}」に重複する項目があります：「{duplicates}」
-  # @source Errors in proposed settings:
-  errorsInProposedSettings: 指定された設定にエラーがあります：
-  # @source field "{field}" is locked
-  fieldLocked: フィールド「{field}」はロックされています
-  # @source {field}: "{pattern}" does not describe an image reference
-  invalidImageReference: '{field}: 「{pattern}」はイメージ参照を表していません'
-  # @source {field}: "{value}" is not a valid mapping
-  invalidMapping: '{field}: 「{value}」は有効なマッピングではありません'
-  # @source {field}: "{name}" is an invalid name
-  invalidName: '{field}: 「{name}」は無効な名前です'
-  # @source field "{field}" has invalid entries (must be IP addresses, CIDR subnets, or domain names): "{entries}"
-  invalidNoproxyEntries: フィールド「{field}」に無効な項目があります（IP アドレス、CIDR サブネット、またはドメイン名である必要があります）：「{entries}」
-  # @source {field}: "{value}" is not a valid page name for Preferences Dialog
-  invalidPageName: '{field}: 「{value}」は設定ダイアログの有効なページ名ではありません'
-  # @source {field}: tab name "{tabName}" is not a valid tab name for "{page}" Preference page
-  invalidTabName: '{field}: タブ名「{tabName}」は設定ページ「{page}」の有効なタブ名ではありません'
-  # @source {field}: "{name}" has invalid tag "{tag}"
-  invalidTag: '{field}: 「{name}」に無効なタグ「{tag}」があります'
-  # @source Invalid value for "{field}": <{value}>
-  invalidValue: 「{field}」の値が無効です：<{value}>
-  # @source Invalid value for "{field}": <{value}>; must be one of {validValues}
-  invalidValueEnum: 「{field}」の値が無効です：<{value}>。{validValues} のいずれかである必要があります
-  # @source Kubernetes version "{version}" not found.
-  kubernetesVersionNotFound: Kubernetes バージョン「{version}」が見つかりません。
-  # @source {field}: "{name}" has non-string tag "{tag}"
-  nonStringTag: '{field}: 「{name}」に文字列でないタグ「{tag}」があります'
-  # @source Changing field "{field}" via the API isn't supported.
-  notSupported: API 経由でのフィールド「{field}」の変更はサポートされていません。
-  # @reason Doubled ICU apostrophes (escaped literal quotes) preserved verbatim around the placeholders.
-  # @source Error for field ''{field}'': expecting value of type array, got ''{value}''
-  profileExpectedArray: フィールド ''{field}'' のエラー：配列型の値が必要ですが、''{value}'' が指定されました
-  # @source Error for field ''{field}'': expecting value of type {expectedType}, got ''{value}''
-  profileExpectedType: フィールド ''{field}'' のエラー：{expectedType} 型の値が必要ですが、''{value}'' が指定されました
-  # @source Error for field ''{field}'': expecting value of type {expectedType}, got an array {value}
-  profileExpectedTypeGotArray: フィールド ''{field}'' のエラー：{expectedType} 型の値が必要ですが、配列 {value} が指定されました
-  # @source Proposed field "{field}" should be an object, got <{value}>.
-  proposedShouldBeObject: 指定されたフィールド「{field}」はオブジェクトである必要がありますが、<{value}> が指定されました。
-  # @source Setting {field} can only be enabled on aarch64 systems.
-  requiresArm: 設定 {field} は aarch64 システムでのみ有効にできます。
-  # @source Setting {field} can only be changed when virtualMachine.mount.type is "{mountType}".
-  requiresNineP: 設定 {field} は、virtualMachine.mount.type が「{mountType}」の場合にのみ変更できます。
-  # @source Setting {field} can only be enabled when virtual-machine.type is "{vmType}".
-  requiresVz: 設定 {field} は、virtual-machine.type が「{vmType}」の場合にのみ有効にできます。
-  # @source Setting {field} can only be set when experimental.container-engine.web-assembly.enabled is set as well.
-  requiresWebAssembly: 設定 {field} は、experimental.container-engine.web-assembly.enabled も設定されている場合にのみ設定できます。
-  # @source Setting {field} to "{value}" requires that {otherField} is "{required}".
-  settingRequires: 設定 {field} を「{value}」にするには、{otherField} が「{required}」である必要があります。
-  # @source Setting {field} to "{value}" requires that {otherField} is "{option1}" or "{option2}".
-  settingRequiresEither: 設定 {field} を「{value}」にするには、{otherField} が「{option1}」または「{option2}」である必要があります。
-  # @source Setting "{field}" should wrap an inner object, but got <{value}>.
-  shouldBeObject: 設定「{field}」は内部オブジェクトを含む必要がありますが、<{value}> が指定されました。
-  # @source Setting "{field}" should be a simple value, but got <{value}>.
-  shouldBeSimple: 設定「{field}」は単純な値である必要がありますが、<{value}> が指定されました。
   # @source One or more fields in this tab contain a form validation error
   tab: このタブの 1 つ以上のフィールドにフォーム検証エラーがあります
-  # @source Setting {field} to "{vmType}" on ARM requires macOS 13.3 (Ventura) or later.
-  vzArmMacOs: ARM で設定 {field} を「{vmType}」にするには、macOS 13.3（Ventura）以降が必要です。
-  # @source Setting {field} to "{vmType}" on Intel requires macOS 13.0 (Ventura) or later.
-  vzIntelMacOs: Intel で設定 {field} を「{vmType}」にするには、macOS 13.0（Ventura）以降が必要です。
 virtualMachine:
   mount:
     type:
