@@ -70,6 +70,7 @@ export class ContainersPage {
     return await rows.count();
   }
 
+  // Waits only for the table element; its rows can arrive after this returns.
   async waitForTableToLoad() {
     await this.table.waitFor({ state: 'visible' });
   }

@@ -79,8 +79,8 @@ import Banner from '@pkg/components/Banner.vue';
 import SortableTable from '@pkg/components/SortableTable';
 import type { Settings } from '@pkg/config/settings';
 import { mapTypedActions, mapTypedGetters, mapTypedMutations, mapTypedState } from '@pkg/entry/store';
+import { showDeleteConfirmation } from '@pkg/utils/deleteConfirmation';
 import { hasField } from '@pkg/utils/iterator';
-import { defined } from '@pkg/utils/typeUtils';
 import { IoRancherdesktopContainersV1alpha1Volume as Volume } from '@rdd-client';
 
 const MAX_PATH_LENGTH = 40;
@@ -97,7 +97,7 @@ type RowItem = Volume & Required<Pick<Volume, 'status' | 'metadata'>> & {
     bulkable:    boolean;
     bulkAction?: string;
   }[];
-  deleteVolume: (items?: RowItem[]) => void;
+  deleteVolume: (items?: RowItem[]) => Promise<void>;
   browseFiles:  (items?: RowItem[]) => void;
 };
 
@@ -157,10 +157,12 @@ export default defineComponent({
               bulkAction: 'deleteVolume',
             },
           ],
-          deleteVolume: (args?: Volume | Volume[]) => {
-            const volumes = Array.isArray(args) ? args : [args].filter(defined);
+          deleteVolume: async(args?: Volume[]) => {
+            const targets = args?.length ? args : [volume];
 
-            return Promise.all(volumes.map(volume => this.volumeDelete({ volume })));
+            if (await this.confirmDelete(targets)) {
+              await Promise.all(targets.map(target => this.volumeDelete({ volume: target })));
+            }
           },
           browseFiles: () => {
             this.$router.push({ name: 'volumes-files-name', params: { name: volume.status.name } });
@@ -236,6 +238,18 @@ export default defineComponent({
       }
 
       return { content: undefined };
+    },
+    /**
+     * Ask the user to confirm deleting the given volumes.
+     */
+    async confirmDelete(volumes: Volume[]): Promise<boolean> {
+      return await showDeleteConfirmation({
+        title:   this.t('volumes.confirmDelete.title'),
+        message: this.t('volumes.confirmDelete.message', { count: volumes.length }),
+        confirm: this.t('volumes.confirmDelete.confirm'),
+        cancel:  this.t('generic.cancel'),
+        names:   volumes.map(volume => volume.status?.name ?? ''),
+      });
     },
     clearError() {
       switch (this.error?.source) {
