@@ -62,8 +62,8 @@ func linkForwarders(execPath, binDir string) error {
 	if err != nil {
 		return fmt.Errorf("read bundle directory %q: %w", srcDir, err)
 	}
-	// Every bundled binary forwards to itself; kubectl is a multicall into rdd
-	// rather than a separate binary, so it forwards to rdd.
+	// Every bundled binary forwards to itself. Each multicall name forwards to
+	// rdd, which provides it, unless the bundle ships a binary of that name.
 	want := map[string]string{}
 	for _, entry := range entries {
 		if entry.IsDir() || entry.Name() == forwarderName {
@@ -71,7 +71,11 @@ func linkForwarders(execPath, binDir string) error {
 		}
 		want[entry.Name()] = filepath.Join(srcDir, entry.Name())
 	}
-	want["kubectl.exe"] = filepath.Join(srcDir, "rdd.exe")
+	for _, name := range multiCallLinks {
+		if _, ok := want[name+".exe"]; !ok {
+			want[name+".exe"] = filepath.Join(srcDir, "rdd.exe")
+		}
+	}
 
 	if err := os.MkdirAll(binDir, 0o755); err != nil {
 		return fmt.Errorf("create %q: %w", binDir, err)

@@ -23,6 +23,9 @@ ctrctl() {
 curl() {
     command "curl${EXE}" "$@"
 }
+nerdctl() {
+    rdd nerdctl "$@"
+}
 
 # Fetch a URL and run assert_output against the response body, forwarding any
 # assert_output flags. Pair it with try() to poll an endpoint that comes up

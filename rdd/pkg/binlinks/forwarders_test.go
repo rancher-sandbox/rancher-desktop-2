@@ -44,11 +44,12 @@ func TestLinkForwarders(t *testing.T) {
 
 	assert.NilError(t, linkForwarders(execPath, binDir))
 
-	// Each bundled tool forwards to itself; kubectl forwards to rdd.
+	// Each bundled tool forwards to itself; kubectl and nerdctl forward to rdd.
 	assertForwarder(t, binDir, "docker.exe", filepath.Join(srcDir, "docker.exe"))
 	assertForwarder(t, binDir, "helm.exe", filepath.Join(srcDir, "helm.exe"))
 	assertForwarder(t, binDir, "rdd.exe", filepath.Join(srcDir, "rdd.exe"))
 	assertForwarder(t, binDir, "kubectl.exe", filepath.Join(srcDir, "rdd.exe"))
+	assertForwarder(t, binDir, "nerdctl.exe", filepath.Join(srcDir, "rdd.exe"))
 
 	// The master copy matches the bundled forwarder and the forwarder is not
 	// itself forwarded.
@@ -58,12 +59,27 @@ func TestLinkForwarders(t *testing.T) {
 	_, err = os.Lstat(filepath.Join(binDir, "rdd-forwarder.shim"))
 	assert.Assert(t, os.IsNotExist(err), "the forwarder got a shim")
 
-	// Exactly the forwarder, four tools, and their four shims.
+	// Exactly the forwarder, five tools, and their five shims.
 	assertDirEntries(t, binDir, []string{
 		forwarderName,
-		"docker.exe", "helm.exe", "rdd.exe", "kubectl.exe",
-		"docker.shim", "helm.shim", "rdd.shim", "kubectl.shim",
+		"docker.exe", "helm.exe", "rdd.exe", "kubectl.exe", "nerdctl.exe",
+		"docker.shim", "helm.shim", "rdd.shim", "kubectl.shim", "nerdctl.shim",
 	})
+}
+
+// TestLinkForwardersBundledMulticallWins checks that a bundled binary sharing a
+// multicall name forwards to itself; the multicall forwarder to rdd steps aside.
+func TestLinkForwardersBundledMulticallWins(t *testing.T) {
+	execPath := bundleDir(t, "rdd.exe", "nerdctl.exe")
+	srcDir := filepath.Dir(execPath)
+	binDir := filepath.Join(t.TempDir(), "bin")
+
+	assert.NilError(t, linkForwarders(execPath, binDir))
+
+	// nerdctl forwards to the bundled nerdctl, not to rdd.
+	assertForwarder(t, binDir, "nerdctl.exe", filepath.Join(srcDir, "nerdctl.exe"))
+	// kubectl is not bundled, so it forwards to rdd.
+	assertForwarder(t, binDir, "kubectl.exe", execPath)
 }
 
 // TestLinkForwardersReconciles checks that a second run keeps existing
