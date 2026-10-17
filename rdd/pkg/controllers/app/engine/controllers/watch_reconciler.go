@@ -310,7 +310,7 @@ func (r *EngineReconciler) manageDockerContext(endpointURL string) {
 		// Guard against writing currentContext after removeDockerContext has
 		// already cancelled probeCtx and deleted the context directory.
 		if !healthy && probeCtx.Err() == nil {
-			if err := setCurrentDockerContext(contextName); err != nil {
+			if err := setCurrentDockerContext(r.watcherCtx, contextName); err != nil {
 				log.Error(err, "Failed to set current Docker context", "context", contextName)
 			}
 		}
@@ -338,7 +338,9 @@ func (r *EngineReconciler) removeDockerContext() {
 
 	contextName := instance.Name()
 	log := logf.FromContext(r.watcherCtx).WithName("docker-context")
-	if err := clearCurrentDockerContext(contextName); err != nil {
+	// The shutdown hook cancels watcherCtx before calling stopWatcher, so the
+	// clear must not inherit that cancellation; Edit bounds the lock wait itself.
+	if err := clearCurrentDockerContext(context.WithoutCancel(r.watcherCtx), contextName); err != nil {
 		log.Error(err, "Failed to clear current Docker context", "context", contextName)
 	}
 	if err := deleteDockerContext(contextName); err != nil {

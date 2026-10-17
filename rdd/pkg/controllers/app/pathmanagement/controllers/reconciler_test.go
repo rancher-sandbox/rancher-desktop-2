@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	appv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/dockerconfig"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/managedlines"
 )
 
@@ -243,6 +244,44 @@ func TestReconcileReleasesFinalizerWhenUnwindFails(t *testing.T) {
 	var got appv1alpha1.App
 	err = c.Get(context.Background(), client.ObjectKey{Name: appName}, &got)
 	assert.Assert(t, err != nil)
+}
+
+// TestUnwindRemovesPluginEntryDespiteMalformedBlock checks that the PATH and
+// config.json edits are independent: an unparseable startup file still fails
+// Unwind, but our cliPluginsExtraDirs entry is removed.
+func TestUnwindRemovesPluginEntryDespiteMalformedBlock(t *testing.T) {
+	r, configFile := newPluginTestReconciler(t)
+	home := os.Getenv("HOME")
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "xdg-config-home"))
+	assert.NilError(t, r.apply(context.Background(), appv1alpha1.AddPathFront, false))
+
+	// The end marker is gone, so managedlines.Manage errors on every attempt.
+	assert.NilError(t, os.WriteFile(filepath.Join(home, ".zshrc"), []byte(r.startMarker()+"\n"), 0o644))
+
+	assert.ErrorIs(t, r.Unwind(context.Background()), managedlines.ErrMalformedBlock)
+	assert.Assert(t, readPluginDirs(t, configFile) == nil)
+}
+
+// TestReconcileManualMalformedDockerConfig checks that a config.json docker/cli
+// cannot parse is permanent, like a malformed startup file: under manual with
+// our marker present it reports Malformed, so it doesn't wedge Settled.
+func TestReconcileManualMalformedDockerConfig(t *testing.T) {
+	r, configFile := newPluginTestReconciler(t)
+	home := os.Getenv("HOME")
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "xdg-config-home"))
+	assert.NilError(t, r.apply(context.Background(), appv1alpha1.AddPathFront, false))
+	assert.NilError(t, os.WriteFile(configFile, []byte(`{"auths":{"example.com":{"auth":"not-base64"}}}`), 0o600))
+
+	app := &appv1alpha1.App{Name: appName, Generation: 1}
+	r.Client = fake.NewClientBuilder().WithScheme(reconcilerTestScheme(t)).WithObjects(app).WithStatusSubresource(app).Build()
+	_, err := r.Reconcile(context.Background(), ctrl.Request{})
+	assert.ErrorIs(t, err, dockerconfig.ErrMalformed)
+
+	var got appv1alpha1.App
+	assert.NilError(t, r.Get(context.Background(), client.ObjectKey{Name: appName}, &got))
+	cond := findCondition(got.Status.Conditions, appv1alpha1.AppConditionPathManagementReady)
+	assert.Assert(t, cond != nil)
+	assert.Equal(t, cond.Reason, appv1alpha1.PathManagementReasonMalformed)
 }
 
 // TestReconcileRetriesFinalizerWhenUnwindRepairable checks the other side: a

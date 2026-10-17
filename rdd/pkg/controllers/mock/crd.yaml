@@ -75,6 +75,15 @@ spec:
                       it. Without the marker — an entry the user added themselves — "manual"
                       leaves Path alone wherever they put it. Unix files use start/end markers, so
                       only our own block is touched regardless of position.
+
+                      addPath also drives the docker CLI plugins directory
+                      (~/.rd<suffix>/docker-cli-plugins): front/back register it in
+                      cliPluginsExtraDirs in ~/.docker/config.json so `docker` finds the bundled
+                      plugins, and manual removes it, guarded by its own marker file. This happens
+                      on every platform, since Docker never finds plugins via PATH. Docker searches
+                      every cliPluginsExtraDirs entry before ~/.docker/cli-plugins, so even under
+                      "back" the bundled plugins win over the user's own copies there; "back"
+                      yields only to other tools' cliPluginsExtraDirs entries.
                     enum:
                     - front
                     - back

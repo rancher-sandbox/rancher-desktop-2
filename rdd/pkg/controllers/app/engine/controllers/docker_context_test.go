@@ -15,6 +15,9 @@ import (
 	"github.com/docker/cli/cli/context/docker"
 	"github.com/docker/cli/cli/context/store"
 	"gotest.tools/v3/assert"
+
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/dockerconfig"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 )
 
 // newDockerTestDir creates a temp ~/.docker layout and points HOME at its parent.
@@ -89,7 +92,7 @@ func Test_dockerConfigDir_DOCKER_CONFIG(t *testing.T) {
 	override := t.TempDir()
 	t.Setenv("DOCKER_CONFIG", override)
 
-	dir, err := dockerConfigDir()
+	dir, err := dockerconfig.Dir()
 	assert.NilError(t, err)
 	assert.Equal(t, dir, override)
 
@@ -139,22 +142,22 @@ func Test_currentDockerContext(t *testing.T) {
 	})
 
 	t.Run("set then get", func(t *testing.T) {
-		assert.NilError(t, setCurrentDockerContext("rancher-desktop-2"))
+		assert.NilError(t, setCurrentDockerContext(context.Background(), "rancher-desktop-2"))
 		name, err := getCurrentDockerContext()
 		assert.NilError(t, err)
 		assert.Equal(t, name, "rancher-desktop-2")
 	})
 
 	t.Run("clear only when context matches", func(t *testing.T) {
-		assert.NilError(t, setCurrentDockerContext("rancher-desktop-2"))
+		assert.NilError(t, setCurrentDockerContext(context.Background(), "rancher-desktop-2"))
 		// Different name — should not clear.
-		assert.NilError(t, clearCurrentDockerContext("rancher-desktop-3"))
+		assert.NilError(t, clearCurrentDockerContext(context.Background(), "rancher-desktop-3"))
 		name, err := getCurrentDockerContext()
 		assert.NilError(t, err)
 		assert.Equal(t, name, "rancher-desktop-2")
 
 		// Matching name — should clear.
-		assert.NilError(t, clearCurrentDockerContext("rancher-desktop-2"))
+		assert.NilError(t, clearCurrentDockerContext(context.Background(), "rancher-desktop-2"))
 		name, err = getCurrentDockerContext()
 		assert.NilError(t, err)
 		assert.Equal(t, name, "")
@@ -165,7 +168,7 @@ func Test_currentDockerContext(t *testing.T) {
 		seed := []byte(`{"auths":{"example.com":{}}}` + "\n")
 		assert.NilError(t, os.WriteFile(configFile, seed, 0o600))
 
-		assert.NilError(t, setCurrentDockerContext("rancher-desktop-2"))
+		assert.NilError(t, setCurrentDockerContext(context.Background(), "rancher-desktop-2"))
 
 		data, err := os.ReadFile(configFile)
 		assert.NilError(t, err)
@@ -182,7 +185,7 @@ func Test_currentDockerContext(t *testing.T) {
 		seed := []byte(`{"rancherDesktopCustom":"keep-me"}` + "\n")
 		assert.NilError(t, os.WriteFile(configFile, seed, 0o600))
 
-		assert.NilError(t, setCurrentDockerContext("rancher-desktop-2"))
+		assert.NilError(t, setCurrentDockerContext(context.Background(), "rancher-desktop-2"))
 
 		data, err := os.ReadFile(configFile)
 		assert.NilError(t, err)
@@ -197,7 +200,7 @@ func Test_currentDockerContext(t *testing.T) {
 		seed := []byte(`{"currentContext":"rancher-desktop-2","auths":{"example.com":{}}}` + "\n")
 		assert.NilError(t, os.WriteFile(configFile, seed, 0o600))
 
-		assert.NilError(t, clearCurrentDockerContext("rancher-desktop-2"))
+		assert.NilError(t, clearCurrentDockerContext(context.Background(), "rancher-desktop-2"))
 
 		name, err := getCurrentDockerContext()
 		assert.NilError(t, err)
@@ -210,6 +213,25 @@ func Test_currentDockerContext(t *testing.T) {
 		_, hasAuths := cfg["auths"]
 		assert.Assert(t, hasAuths, "auths key must be preserved across clear")
 	})
+}
+
+// Test_removeDockerContext_cancelledWatcher covers the manager shutdown hook,
+// which cancels watcherCtx before stopWatcher removes the context. The clear
+// must still run, or docker is left on a context that no longer exists.
+func Test_removeDockerContext_cancelledWatcher(t *testing.T) {
+	configFile := newDockerTestDir(t)
+	name := instance.Name()
+	assert.NilError(t, createReplaceDockerContext(name, "unix:///tmp/docker.sock"))
+	assert.NilError(t, os.WriteFile(configFile, []byte(`{"currentContext":"`+name+`"}`+"\n"), 0o600))
+
+	r := &EngineReconciler{}
+	r.watcherCtx, r.watcherCancel = context.WithCancel(context.Background())
+	r.watcherCancel()
+	r.removeDockerContext()
+
+	current, err := getCurrentDockerContext()
+	assert.NilError(t, err)
+	assert.Equal(t, current, "")
 }
 
 func Test_probeNamedDockerContext(t *testing.T) {
