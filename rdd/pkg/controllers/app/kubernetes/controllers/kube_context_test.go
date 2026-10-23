@@ -285,9 +285,9 @@ func TestKubeConfigWritersSerialized(t *testing.T) {
 	go func() { setDone <- setCurrentKubeContext("rancher-desktop-2") }()
 
 	select {
-	case <-setDone:
+	case err := <-setDone:
 		assert.Assert(t, false,
-			"setCurrentKubeContext completed inside createReplaceKubeContext's load-to-write window")
+			"setCurrentKubeContext completed inside createReplaceKubeContext's load-to-write window (err: %v)", err)
 	case <-time.After(100 * time.Millisecond):
 	}
 

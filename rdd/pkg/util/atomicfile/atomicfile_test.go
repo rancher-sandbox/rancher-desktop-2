@@ -197,8 +197,8 @@ func TestUpdatesSerialized(t *testing.T) {
 	}()
 
 	select {
-	case <-secondDone:
-		assert.Assert(t, false, "second update ran inside the first update's critical section")
+	case err := <-secondDone:
+		assert.Assert(t, false, "second update ran inside the first update's critical section (err: %v)", err)
 	case <-time.After(100 * time.Millisecond):
 	}
 

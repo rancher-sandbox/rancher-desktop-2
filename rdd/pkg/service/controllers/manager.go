@@ -317,8 +317,9 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 	// webhook configurations exist and their server answers.
 	if err := MarkControlPlaneReady(ctx, scm.discovery.client); err != nil {
 		mgrCancel()
-		<-mgrResult
-		return fmt.Errorf("failed to mark control plane as ready: %w", err)
+		return errors.Join(
+			fmt.Errorf("failed to mark control plane as ready: %w", err),
+			managerResult(<-mgrResult))
 	}
 
 	return managerResult(<-mgrResult)
