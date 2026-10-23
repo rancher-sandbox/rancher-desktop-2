@@ -119,7 +119,7 @@
                 }"
                 @click.stop="toggleExpand(group.ref)"
               />
-              {{ group.ref }}
+              {{ groupLabel(group.ref) }}
               <span v-if="!!collapsed[group.ref]"> ({{ group.rows.length }})</span>
             </div>
           </td>
@@ -138,15 +138,17 @@ import Banner from '@pkg/components/Banner.vue';
 import ContainerStatusBadge from '@pkg/components/ContainerStatusBadge.vue';
 import SortableTable from '@pkg/components/SortableTable';
 import { mapTypedActions, mapTypedGetters, mapTypedMutations, mapTypedState } from '@pkg/entry/store';
+import { showDeleteConfirmation } from '@pkg/utils/deleteConfirmation';
 import { hasField } from '@pkg/utils/iterator';
 import { defined } from '@pkg/utils/typeUtils';
 import { IoRancherdesktopContainersV1alpha1Container as Container } from '@rdd-client';
 
 interface Action {
-  label:    string;
-  action:   string;
-  enabled:  boolean;
-  bulkable: boolean;
+  label:       string;
+  action:      string;
+  enabled:     boolean;
+  bulkable:    boolean;
+  bulkAction?: string;
 }
 
 type RowItem = Container & {
@@ -160,10 +162,17 @@ type RowItem = Container & {
   pauseContainer:    (this: Container) => void;
   unpauseContainer:  (this: Container) => void;
   restartContainer:  (this: Container) => void;
-  deleteContainer:   (this: Container) => void;
+  deleteContainer:   (containers?: Container[]) => Promise<void>;
   viewInfo:          (this: Container) => void;
   portList:          (readonly [number, number])[];
 };
+
+/**
+ * The projectGroup of containers outside any compose project or Kubernetes pod.
+ * It doubles as the grouping and sort key, so it stays untranslated;
+ * groupLabel() shows a translated label in its place.
+ */
+const STANDALONE_CONTAINERS_GROUP = 'Standalone Containers';
 
 export default defineComponent({
   name:       'Containers',
@@ -243,7 +252,7 @@ export default defineComponent({
               } else if (composeProject) {
                 return composeProject;
               }
-              return 'Standalone Containers';
+              return STANDALONE_CONTAINERS_GROUP;
             })(),
             availableActions: this.getContainerActions(container),
             startContainer:   () => this.containerRequestAction({ container, state: 'start' }),
@@ -251,7 +260,13 @@ export default defineComponent({
             pauseContainer:   () => this.containerRequestAction({ container, state: 'pause' }),
             unpauseContainer: () => this.containerRequestAction({ container, state: 'unpause' }),
             restartContainer: () => this.containerRequestAction({ container, state: 'restart' }),
-            deleteContainer:  () => this.containerDelete({ container }),
+            deleteContainer:  async(args?: Container[]) => {
+              const targets = args?.length ? args : [container];
+
+              if (await this.confirmDelete(targets)) {
+                await Promise.all(targets.map(target => this.containerDelete({ container: target })));
+              }
+            },
             viewInfo:         () => this.viewInfo(container),
             portList,
             portsSortKey:     portList.map(([hostPort]) => hostPort).sort((a, b) => a - b),
@@ -286,6 +301,18 @@ export default defineComponent({
     onChangeNamespace(event: Event) {
       const { value } = event.target as HTMLSelectElement;
       this.setCurrentNamespace({ namespace: value });
+    },
+    /**
+     * Ask the user to confirm deleting the given containers.
+     */
+    async confirmDelete(containers: Container[]): Promise<boolean> {
+      return await showDeleteConfirmation({
+        title:   this.t('containers.confirmDelete.title'),
+        message: this.t('containers.confirmDelete.message', { count: containers.length }),
+        confirm: this.t('containers.confirmDelete.confirm'),
+        cancel:  this.t('generic.cancel'),
+        names:   containers.map(container => container.status?.name || container.metadata?.name || ''),
+      });
     },
     getContainerActions(container: Container) {
       return [
@@ -330,6 +357,7 @@ export default defineComponent({
           action:     'deleteContainer',
           enabled:    this.isStopped(container),
           bulkable:   true,
+          bulkAction: 'deleteContainer',
         },
       ];
     },
@@ -430,6 +458,16 @@ export default defineComponent({
 
     toggleExpand(group: string) {
       this.collapsed[group] = !this.collapsed[group];
+    },
+
+    /**
+     * @param group The group key (a container's projectGroup).
+     * @returns The text shown in the group's header row.
+     */
+    groupLabel(group: string): string {
+      // Compose project and pod names are user data; only the standalone group
+      // has a fixed English key that needs a translated label.
+      return group === STANDALONE_CONTAINERS_GROUP ? this.t('containers.manage.table.group.standalone') : group;
     },
 
     clearError() {
