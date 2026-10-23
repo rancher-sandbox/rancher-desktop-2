@@ -15,7 +15,7 @@ func TestKeyPatterns(t *testing.T) {
 		line    string
 		wantKey string // empty means no match expected
 	}{
-		// keyPattern: t('key'), t("key"), t(`key`), this.t(), $t()
+		// keyPattern: t('key'), t("key"), t(`key`), this.t(), $t(), t.value()
 		{"t single quotes", `t('action.refresh')`, "action.refresh"},
 		{"t double quotes", `t("action.refresh")`, "action.refresh"},
 		{"t backtick", "t(`action.refresh`)", "action.refresh"},
@@ -23,6 +23,12 @@ func TestKeyPatterns(t *testing.T) {
 		{"$t", `$t('nav.home')`, "nav.home"},
 		{"preceded by space", ` t('key.name')`, "key.name"},
 		{"not preceded by letter", `xt('key.name')`, ""}, // "xt" has letter before t
+		{"computed getter t.value", `return t.value('some.key');`, "some.key"},
+		{"computed getter t.value with args", `return t.value('some.key', { x: 1 });`, "some.key"},
+		{"other .value call", `ref.value('some.key')`, ""},
+		// multilineKeyPattern: the key literal on the line after the call
+		{"multiline t", "t(\n  'some.key',", "some.key"},
+		{"multiline t.value", "t.value(\n  'some.key',", "some.key"},
 
 		// keyPropPattern: titleKey/descriptionKey/labelKey with string values
 		{"titleKey", `titleKey: 'page.title'`, "page.title"},
@@ -51,7 +57,7 @@ func TestKeyPatterns(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var found string
 
-			for _, pat := range []*regexp.Regexp{keyPattern, keyPropPattern, keyAttrPattern, vtDirectivePattern, getterCallPattern} {
+			for _, pat := range []*regexp.Regexp{keyPattern, keyPropPattern, keyAttrPattern, vtDirectivePattern, getterCallPattern, multilineKeyPattern} {
 				if m := pat.FindStringSubmatch(tc.line); m != nil {
 					found = m[1]
 					break

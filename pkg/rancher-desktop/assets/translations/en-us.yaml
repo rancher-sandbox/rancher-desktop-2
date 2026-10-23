@@ -10,6 +10,7 @@ generic:
   and: ' and '
   comma: ', '
   loading: Loading&hellip;
+  invalidCron: Invalid cron schedule
 locale:
   de: German
   en-us: English
@@ -19,6 +20,7 @@ locale:
   ja: Japanese
   ko: Korean
   pt-br: Portuguese (Brazilian)
+  vi: Vietnamese
   zh-hans: Chinese (Simplified)
 nav:
   userMenu:
@@ -71,17 +73,7 @@ tray:
   tooltip: '{appName}'
   state:
     # @no-translate Kubernetes
-    stopped: Kubernetes is stopped
-    # @no-translate Kubernetes
     starting: Kubernetes is starting
-    # @no-translate Kubernetes
-    started: Kubernetes is running
-    # @no-translate Kubernetes
-    stopping: Kubernetes is shutting down
-    # @no-translate Kubernetes
-    error: Kubernetes has encountered an error
-    # @no-translate Kubernetes
-    disabled: Kubernetes is disabled
   openMainWindow: Open main window
   openPreferences: Open preferences dialog
   openDashboard: Open cluster dashboard
@@ -121,35 +113,11 @@ product:
     fullName: Container Engine
     abbreviation: CE
   deactivated: deactivated
-suffix:
-  percent: "%"
-  milliCpus: milli CPUs
-  cpus: CPUs
-  ib: iB
-  mib: MiB
-  gb: GB
-  revisions: |-
-    {count, plural,
-      =1 { Revision }
-      other { Revisions }
-    }
-  seconds: |-
-    {count, plural,
-      =1 { Second }
-      other { Seconds }
-    }
-  sec: Sec
-  times: |-
-    {count, plural,
-      =1 { Time }
-      other { Times }
-    }
 ##############################
 # Components & Pages
 ##############################
 app:
   name: '{productName}'
-  update: "There's one last step to finish updating Rancher Desktop"
 firstRun:
   kubernetesVersion:
     # @no-translate Kubernetes
@@ -648,44 +616,7 @@ sortableTable:
     groupBy: Group by
     show: Show
 validation:
-  cannotDecrease: Cannot decrease "{field}" from {from} to {to}
-  # @no-translate WebAssembly, moby
-  cannotEnableWasmClassic: Cannot enable WebAssembly with classic storage for moby.
-  # @no-translate WebAssembly, moby
-  cannotSwitchClassicWasm: Cannot switch to classic storage for moby when WebAssembly is enabled.
-  # @no-translate WebAssembly, moby
-  cannotSwitchMobyClassicWasm: Cannot switch to moby container engine with classic storage when WebAssembly is enabled.
-  duplicateEntries: 'field "{field}" has duplicate entries: "{duplicates}"'
-  errorsInProposedSettings: 'Errors in proposed settings:'
-  fieldLocked: field "{field}" is locked
-  invalidImageReference: '{field}: "{pattern}" does not describe an image reference'
-  invalidMapping: '{field}: "{value}" is not a valid mapping'
-  invalidNoproxyEntries: 'field "{field}" has invalid entries (must be IP addresses, CIDR subnets, or domain names): "{entries}"'
-  invalidName: '{field}: "{name}" is an invalid name'
-  invalidPageName: '{field}: "{value}" is not a valid page name for Preferences Dialog'
-  invalidTabName: '{field}: tab name "{tabName}" is not a valid tab name for "{page}" Preference page'
-  invalidTag: '{field}: "{name}" has invalid tag "{tag}"'
-  invalidValue: 'Invalid value for "{field}": <{value}>'
-  invalidValueEnum: 'Invalid value for "{field}": <{value}>; must be one of {validValues}'
-  # @no-translate Kubernetes
-  kubernetesVersionNotFound: Kubernetes version "{version}" not found.
-  nonStringTag: '{field}: "{name}" has non-string tag "{tag}"'
-  notSupported: Changing field "{field}" via the API isn't supported.
-  profileExpectedArray: "Error for field ''{field}'': expecting value of type array, got ''{value}''"
-  profileExpectedType: "Error for field ''{field}'': expecting value of type {expectedType}, got ''{value}''"
-  profileExpectedTypeGotArray: "Error for field ''{field}'': expecting value of type {expectedType}, got an array {value}"
-  proposedShouldBeObject: Proposed field "{field}" should be an object, got <{value}>.
-  requiresArm: Setting {field} can only be enabled on aarch64 systems.
-  requiresNineP: Setting {field} can only be changed when virtualMachine.mount.type is "{mountType}".
-  requiresVz: Setting {field} can only be enabled when virtual-machine.type is "{vmType}".
-  requiresWebAssembly: Setting {field} can only be set when experimental.container-engine.web-assembly.enabled is set as well.
-  settingRequires: Setting {field} to "{value}" requires that {otherField} is "{required}".
-  settingRequiresEither: Setting {field} to "{value}" requires that {otherField} is "{option1}" or "{option2}".
-  shouldBeObject: Setting "{field}" should wrap an inner object, but got <{value}>.
-  shouldBeSimple: Setting "{field}" should be a simple value, but got <{value}>.
   tab: One or more fields in this tab contain a form validation error
-  vzArmMacOs: Setting {field} to "{vmType}" on ARM requires macOS 13.3 (Ventura) or later.
-  vzIntelMacOs: Setting {field} to "{vmType}" on Intel requires macOS 13.0 (Ventura) or later.
 action:
   refresh: Refresh
 snapshots:
@@ -739,8 +670,6 @@ snapshots:
         cancel: Cancel
     creating:
       header: Creating {snapshot}
-      # @no-translate Rancher Desktop
-      message: Please wait while snapshot '<b>'{snapshot}'</b>' is being created.'<br/>'This may take some time depending on your machine's resources.'<br/>'Rancher Desktop will be temporarily unavailable during this operation.'<br/><br/>'Once the snapshot is complete, the VM will restart.
       actions:
         cancel: Cancel
     buttons:
@@ -851,7 +780,6 @@ preferences:
     containerEngine: Container Engine
     # @no-translate Kubernetes
     kubernetes: Kubernetes
-    shortcut: switch to preference tab {tabName}
   tabs:
     general: General
     behavior: Behavior
@@ -985,34 +913,10 @@ blogFeed:
 # @no-translate — product name (title of the Rancher cluster dashboard window)
 dashboard:
   windowTitle: Rancher Dashboard
-deploymentProfile:
-  noVersion: 'Invalid deployment file {path}: no version specified. Add a version field to make it valid (current version is {version}).'
-  noVersionRegistry: 'Invalid deployment: no version specified at {path}. Add a version field to make it valid (current version is {version}).'
 denyRoot:
   # @no-translate Rancher Desktop
   message: Rancher Desktop cannot be run with root privileges. Please run again as a regular user.
   title: Cannot run as Root
-dialog:
-  bridgedNetwork:
-    noNetwork: Shared network isn't available either. Only network access is via port forwarding to the host.
-    sharedFallback: Using shared network address {ip}
-    title: Bridged network did not get an IP address.
-  confirmMigration:
-    delete: Delete Workloads
-    # @no-translate Kubernetes
-    message: Downgrading from {from} to {to} will lose existing Kubernetes workloads. Delete the data?
-    title: Confirming migration
-  invalidK8sVersion:
-    detail: Falling back to recommended minimum upgrade version of {version}
-    # @no-translate Kubernetes
-    message: Requested Kubernetes version ''{version}'' is not a supported version.
-    # @no-translate Kubernetes
-    title: Invalid Kubernetes Version
-  networkFailure:
-    detail: Please acquire a version in the range {range} and install in ''{path}''
-    # @no-translate kubectl
-    message: Can't download a compatible version of kubectl in offline-mode
-    title: Network failure
 kubernetesError:
   context: 'Context:'
   lastCommand: 'Last command run:'
@@ -1036,9 +940,6 @@ kubernetesPrefs:
     spinkubeWarning: 'Spin Operator requires <a href="#" data-navigate="container-engine,general">WebAssembly</a> to be enabled.'
     # @no-translate Traefik
     traefik: Enable Traefik
-  port:
-    # @no-translate Kubernetes
-    legendText: Kubernetes Port
   version:
     # @no-translate Kubernetes
     legendText: Kubernetes version
@@ -1055,115 +956,6 @@ preferencesWindow:
     title: Rancher Desktop - Close Preferences
   # @no-translate Rancher Desktop
   title: Rancher Desktop - Preferences
-progress:
-  askingPermission: Asking for permission to run tasks as administrator
-  bundlingCertificates: Bundling certificates
-  # @no-translate k3s
-  checkingK3sImages: Checking k3s images
-  configuringContainerEngine: Configuring container engine
-  configuringImageProxy: Configuring image proxy
-  configuringLogrotate: Configuring logrotate
-  containerEngineComponents: Container engine components
-  copyingCertificates: Copying certificates
-  # @no-translate Kubernetes
-  deletingIncompatibleState: Deleting incompatible Kubernetes state
-  # @no-translate Kubernetes
-  deletingKubernetes: Deleting Kubernetes
-  deletingVirtualMachine: Deleting virtual machine
-  dnsConfiguration: DNS configuration
-  # @no-translate Kubernetes
-  downloadingKubernetesComponents: Downloading Kubernetes components
-  # @no-translate kubectl
-  ensuringCompatibleKubectl: Ensuring compatible kubectl
-  ensuringVirtualizationSupported: Ensuring virtualization is supported
-  expectingPermission: Expecting user permission to continue
-  extractingCertificates: Extracting certificates
-  fetchingCertificates: Fetching certificates
-  # @no-translate Rancher Desktop
-  initializingRancherDesktop: Initializing Rancher Desktop
-  # @no-translate WSL
-  initializingWslData: Initializing WSL data
-  # @no-translate Buildkit
-  installingBuildkit: Installing Buildkit
-  installingCaCertificates: Installing CA certificates
-  installingContainerEngine: Installing container engine
-  installingCredentialHelper: Installing credential helper
-  # @no-translate docker-credential
-  installingDockerCredentialHelper: Installing the docker-credential helper
-  installingHelpers: Installing helpers
-  installingImageScanner: Installing image scanner
-  # @no-translate k3s
-  installingK3s: Installing k3s
-  # @no-translate Kubernetes
-  installingKubernetes: Installing Kubernetes
-  # @no-translate Kubernetes
-  kubernetesComponents: Kubernetes components
-  # @no-translate Kubernetes, dockerd
-  kubernetesDockerCompatibility: Kubernetes dockerd compatibility
-  # @no-translate WSL
-  mountingWslData: Mounting WSL data
-  preparingToStart: Preparing to start
-  proxyConfigSetup: Proxy Config Setup
-  # @no-translate Rancher Desktop
-  rancherDesktopGuestAgent: Rancher Desktop guest agent
-  recoveringBrokenVirtualMachine: Recovering virtual machine
-  regeneratingConfiguration: Regenerating configuration to account for lack of permissions
-  # @no-translate WSL
-  registeringWslDistribution: Registering WSL distribution
-  removingExistingCertificates: Removing existing certificates
-  # @no-translate spinkube
-  removingSpinkubeOperator: Removing spinkube operator
-  removingStaleState: Removing stale state
-  # @no-translate Traefik
-  removingTraefik: Removing Traefik
-  # @no-translate Kubernetes
-  resettingKubernetes: Resetting Kubernetes
-  runningProvisioningScripts: Running provisioning scripts
-  # @no-translate update-ca-certificates
-  runningUpdateCaCertificates: Running update-ca-certificates
-  # @no-translate docker
-  settingDockerContext: Setting docker context
-  # @no-translate Lima
-  settingLimaPermissions: Setting Lima permissions
-  # @no-translate Docker
-  settingUpDockerSocket: Setting up Docker socket
-  settingUpVirtualEthernet: Setting up virtual ethernet
-  shuttingDown: Shutting down
-  # @no-translate flannel
-  skippingNodeChecksFlannel: Skipping node checks, flannel is disabled
-  startingBackend: Starting Backend
-  # @no-translate buildkit
-  startingBuildkit: Starting buildkit
-  startingContainerEngine: Starting container engine
-  startingImageProxy: Starting image proxy
-  # @no-translate k3s
-  startingK3s: Starting k3s
-  # @no-translate Kubernetes
-  startingKubernetes: Starting Kubernetes
-  startingProxy: Starting proxy
-  startingService: Starting {service}
-  startingVirtualMachine: Starting virtual machine
-  # @no-translate WSL
-  startingWslEnvironment: Starting WSL environment
-  stoppingExistingInstance: Stopping existing instance
-  stoppingMockBackend: Stopping mock backend
-  stoppingServices: Stopping services
-  updatingClusterConfiguration: Updating cluster configuration
-  # @no-translate /etc/hosts
-  updatingEtcHosts: Updating /etc/hosts
-  # @no-translate kubeconfig
-  updatingKubeconfig: Updating kubeconfig
-  updatingOutdatedVm: Updating outdated virtual machine
-  # @no-translate WSL
-  updatingWslData: Updating WSL data
-  # @no-translate WSL
-  upgradingWslDistribution: Upgrading WSL distribution
-  waitingForContainerEngine: Waiting for container engine to be ready
-  # @no-translate Kubernetes
-  waitingForKubernetesApi: Waiting for Kubernetes API
-  waitingForNodes: Waiting for nodes
-  waitingForServices: Waiting for services
-  writingK3sConfiguration: Writing K3s configuration
 systemPreferences:
   cpus: '# CPUs'
   memory: Memory (GB)
