@@ -314,6 +314,8 @@ export interface startRancherDesktopOptions {
   timeout?:    number;
   /** A suffix to be added to the log file, for variants. */
   logVariant?: string;
+  /** If set, do not avoid triggering first-run logic. */
+  firstRun?:   boolean;
 }
 
 /**
@@ -335,6 +337,7 @@ export async function startRancherDesktop(testInfo: TestInfo, options: startRanc
     file: testInfo.file, options, startTime: Date.now(),
   };
   const topSrcDir = path.join(import.meta.dirname, '../..');
+  const rdd = path.join(topSrcDir, 'rdd', 'bin', exeName('rdd'));
   const logsDir = reportAsset(testInfo, 'log');
   await fs.promises.rm(logsDir, {
     recursive: true, force: true, maxRetries: 3,
@@ -352,13 +355,9 @@ export async function startRancherDesktop(testInfo: TestInfo, options: startRanc
   // We need to manually launch RDD, to force the use of the mock backend.
   const rddLogs = (await fs.promises.open(path.join(logsDir, 'rdd-exec.log'), 'a')).createWriteStream();
   try {
-    await spawnFile(
-      path.join(topSrcDir, 'rdd', 'bin', exeName('rdd')),
-      ['service', 'delete'],
+    await spawnFile(rdd, ['service', 'delete'],
       { env, stdio: ['ignore', rddLogs, rddLogs] });
-    await spawnFile(
-      path.join(topSrcDir, 'rdd', 'bin', exeName('rdd')),
-      ['service', 'start', '--controllers=', '--wait=false'],
+    await spawnFile(rdd, ['service', 'start', '--controllers=', '--wait=false'],
       { env, stdio: ['ignore', rddLogs, rddLogs] });
   } finally {
     await expect(util.promisify(rddLogs.close.bind(rddLogs))(), 'failed to close RDD logs')
@@ -373,6 +372,22 @@ export async function startRancherDesktop(testInfo: TestInfo, options: startRanc
   // Stash controller PID so we can kill it in teardown().
   currentTest.mockController = controller;
   controller.unref(); // Don't block test if we fail to clean up.
+
+  // Wait for the CRD to be registered first, since that is done by the mock
+  // controller asynchronously from control plane readiness.
+  await retry(async() => {
+    const { stdout } = await spawnFile(rdd, ['ctl', 'api-resources', '--output=name'], { env, stdio: 'pipe' });
+    if (!stdout.split(/\s+/).includes('apps.app.rancherdesktop.io')) {
+      throw new Error('apps.app.rancherdesktop.io not registered yet');
+    }
+  });
+
+  if (!options?.firstRun) {
+    // When not doing first-run, create the `app` manually.  Since we're using
+    // the mock controller, the app will not initially settle. Create the app
+    // without waiting for it to settle.
+    await retry(() => spawnFile(rdd, ['set', 'running=false', '--wait=false'], { env, stdio: 'pipe' }));
+  }
 
   const args = [
     path.join(topSrcDir, packageMeta.main),

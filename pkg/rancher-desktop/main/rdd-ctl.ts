@@ -138,5 +138,41 @@ function fetchConfig(): Promise<string> {
   return fetchConfigPromise;
 }
 
+export async function isFirstRunNeeded(): Promise<boolean> {
+  try {
+    const rddPath = getRDDPath();
+    const { stdout: statusJSON } = await spawnFile(rddPath,
+      ['service', 'status', '--output=json'], { stdio: ['ignore', 'pipe', console] });
+    console.debug('RDD service status:', statusJSON);
+    const status = JSON.parse(statusJSON);
+    if (!status.created) {
+      // The backend has not been created; we need first run.
+      return true;
+    }
+    // The backend has been created (running or not).  We will need to do first-
+    // run if the app object does not exist.  This can be rather expensive, as
+    // in a real first-run case, this involves registering all the CRDs etc.  We
+    // accept that as inevitable for now.
+
+    // Wait for the CRD to exist; wait up to ten seconds.
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const { stdout: resources } = await spawnFile(rddPath,
+        ['ctl', 'api-resources', '--output=name'], { stdio: ['ignore', 'pipe', console] });
+      if (resources.split(/\s+/).includes('apps.app.rancherdesktop.io')) {
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    const { stdout } = await spawnFile(rddPath,
+      ['ctl', 'get', 'app', '--output=name'], { stdio: ['ignore', 'pipe', console] });
+    return !(stdout?.trim());
+  } catch (err) {
+    console.error('Error checking if first run is needed:', err);
+    // In case of failure, default to not showing the first run dialog; this
+    // lets us use the normal path to show fatal errors.  Nothing in first-run
+    // is critical; the user can always change the preferences manually.
+    return false;
+  }
+}
+
 getIpcMainProxy(console).handle('rdd/kube-config', () => fetchConfig());
-mainEvents.handle('rdd/kube-config', () => fetchConfig());

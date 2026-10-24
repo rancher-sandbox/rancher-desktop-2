@@ -62,10 +62,6 @@ export default async function setupNetworking() {
 
     mainEvents.emit('network-ready');
   });
-  // Trigger RDD config loading, ignoring the result.  This lets us move the
-  // certificate handling setup outside of a potential hot path.  If this has
-  // already occurred, it would just ignore the cached result.
-  mainEvents.invoke('rdd/kube-config').catch(console.error);
 }
 
 /**

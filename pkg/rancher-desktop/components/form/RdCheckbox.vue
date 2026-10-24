@@ -47,6 +47,7 @@ const { preference: preferenceName, isExperimental, immediate, tooltip, labelKey
 
 const store = useStore();
 const preferences = computed(() => store.getters['preferences/preferences']);
+const hasPreferences = computed(() => !!Object.keys(preferences.value).length);
 const value = computed(() => !!_.get(preferences.value, preferenceName, false));
 const isLocked = computed(() => store.getters['preferences/isPreferenceLocked'](preferenceName));
 
@@ -65,7 +66,7 @@ function onUpdate(value: boolean) {
     <checkbox
       v-bind="$attrs"
       class="checkbox"
-      :disabled="$attrs.disabled || isLocked"
+      :disabled="!hasPreferences || !!$attrs.disabled || isLocked"
       :value="value"
       @update:value="onUpdate"
     >

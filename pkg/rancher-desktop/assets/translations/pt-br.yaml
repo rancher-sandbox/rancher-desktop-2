@@ -562,21 +562,12 @@ extensions:
 firstRun:
   # @source Enable Kubernetes
   enableKubernetes: Habilitar Kubernetes
-  kubernetesVersion:
-    # @source (cached versions only)
-    cachedOnly: (apenas versões em cache)
-    # @source Kubernetes Version
-    legend: Versão do Kubernetes
-    # @source Other Versions
-    otherVersions: Outras versões
-    # @source Recommended Versions
-    recommendedVersions: Versões recomendadas
   # @reason 'OK' is the standard dialog button label in pt-br
   # @source OK
   ok: OK
   # @reason 'Boas-vindas' avoids the gendered 'Bem-vindo/Bem-vinda'; widely used in Brazilian product UI
-  # @source Welcome to Rancher Desktop by SUSE
-  welcome: Boas-vindas ao Rancher Desktop da SUSE
+  # @source Welcome to {appName} by SUSE
+  welcome: Boas-vindas ao {appName} da SUSE
 general:
   # @source Rancher Desktop provides Kubernetes and image management through the use of a desktop application.
   description: O Rancher Desktop oferece Kubernetes e gerenciamento de imagens por meio de um aplicativo de desktop.
@@ -838,6 +829,8 @@ kubernetesPrefs:
     otherVersions: Outras versões
     # @source Recommended Versions
     recommendedVersions: Versões recomendadas
+    # @source Loading versions...
+    unavailable: Carregando versões&hellip;
 labelSelect:
   noOptions:
     # @source No options

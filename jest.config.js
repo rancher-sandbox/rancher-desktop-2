@@ -34,6 +34,9 @@ export default {
   setupFiles: [
     '<rootDir>/pkg/rancher-desktop/utils/testUtils/setupBrowserApis.ts',
   ],
+  setupFilesAfterEnv: [
+    '<rootDir>/pkg/rancher-desktop/utils/testUtils/jestMatchers.ts',
+  ],
   testEnvironment:        'jsdom',
   testEnvironmentOptions: {
     customExportConditions: [

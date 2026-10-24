@@ -618,19 +618,10 @@ extensions:
 firstRun:
   # @source Enable Kubernetes
   enableKubernetes: 启用 Kubernetes
-  kubernetesVersion:
-    # @source (cached versions only)
-    cachedOnly: （仅缓存版本）
-    # @source Kubernetes Version
-    legend: Kubernetes 版本
-    # @source Other Versions
-    otherVersions: 其他版本
-    # @source Recommended Versions
-    recommendedVersions: 推荐版本
   # @source OK
   ok: 确定
-  # @source Welcome to Rancher Desktop by SUSE
-  welcome: 欢迎使用 SUSE Rancher Desktop
+  # @source Welcome to {appName} by SUSE
+  welcome: 欢迎使用 SUSE {appName}
 general:
   # @source Rancher Desktop provides Kubernetes and image management through the use of a desktop application.
   description: Rancher Desktop 通过桌面应用程序提供 Kubernetes 和镜像管理功能。
@@ -869,6 +860,8 @@ kubernetesPrefs:
     otherVersions: 其他版本
     # @source Recommended Versions
     recommendedVersions: 推荐版本
+    # @source Loading versions...
+    unavailable: 正在加载版本信息&hellip;
 labelSelect:
   noOptions:
     # @source No options

@@ -10,25 +10,34 @@ defineOptions({ name: 'engine-selector' });
 const store = useStore();
 const t = computed(() => store.getters['i18n/t']);
 
-withDefaults(defineProps<{
-  containerEngine: ContainerEngineName;
-  row?:            boolean;
-  isLocked?:       boolean;
-}>(), {
-  row:      false,
-  isLocked: false,
+const {
+  disabled = false,
+  row = false,
+} = defineProps({
+  disabled: Boolean,
+  row:      Boolean,
 });
 
-const emit = defineEmits({
-  change: (_value: ContainerEngineName) => true,
-});
-
+const containerEngine = computed(() => store.getters['preferences/preferences']?.containerEngine?.name);
+const isLocked = computed(() => store.getters['preferences/isPreferenceLocked']('containerEngine.name'));
 const options = computed(() => Object.values(ContainerEngineName)
   .map(value => ({
     label:       t.value(`containerEngine.options.${ value }.label`),
     value,
     description: t.value(`containerEngine.options.${ value }.description`),
   })));
+
+async function onEngineChange(value: ContainerEngineName) {
+  try {
+    await store.dispatch('preferences/modify', {
+      key: 'containerEngine.name',
+      value,
+    });
+  } catch (ex) {
+    console.error(ex);
+  }
+}
+
 </script>
 
 <template>
@@ -43,8 +52,8 @@ const options = computed(() => Object.values(ContainerEngineName)
       :value="containerEngine"
       :options="options"
       :row="row"
-      :disabled="isLocked"
-      @update:value="emit('change', $event)"
+      :disabled="disabled || isLocked"
+      @update:value="onEngineChange"
     >
       <template #label>
         <slot name="label" />

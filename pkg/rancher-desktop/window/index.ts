@@ -6,6 +6,7 @@ import Electron, {
 } from 'electron';
 
 import { getSettings } from '@pkg/config/settingsImpl';
+import mainEvents from '@pkg/main/mainEvents';
 import { IpcRendererEvents } from '@pkg/typings/electron-ipc';
 import { isDevBuild } from '@pkg/utils/environment';
 import Logging from '@pkg/utils/logging';
@@ -748,3 +749,9 @@ export function makeSendToFrame(sender: Electron.WebContents, logger?: { debug: 
     }
   };
 }
+
+mainEvents.on('before-quit', () => {
+  // Before we quit, make sure to kill the first-run window without committing
+  // any changes due to lack of time.
+  getWindow('FirstRun')?.destroy();
+});

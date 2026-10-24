@@ -2,13 +2,13 @@ export default {
   name: 'directives',
   install(app) {
     app.directive('focus', {
-      mounted(_el, _binding, vnode) {
-        const { components, refs } = vnode.ctx;
+      mounted(el, _binding, vnode) {
+        const { components, refs } = vnode.ctx ?? {};
 
-        if ('LabeledTooltip' in components) {
+        if (components && 'LabeledTooltip' in components) {
           refs.value?.focus();
         } else {
-          _el.focus();
+          el.focus();
         }
       },
     });

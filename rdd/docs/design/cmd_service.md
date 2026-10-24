@@ -133,6 +133,21 @@ Deletes the datastore, but create a new (empty) one with the same settings.
 
 Show control plane status: whether it has been created, whether it is running, and its PID.
 
+Additional options:
+
+*   `--output=json`
+    Print the status as a JSON object instead of the default (`text`) textual
+    output suitable for human consumption. The flag also accepts `-o` as a
+    shorthand, e.g. `--output=text` is the same as `-o text`.
+
+Known keys:
+
+| Key | Description |
+| --- | --- |
+| `created` | The control plane has been created |
+| `running` | The control plane is running |
+| `pid` | The PID of the control plane; `0` if it is not running. |
+
 ### `rdd service log`
 
 Show control plane logs.

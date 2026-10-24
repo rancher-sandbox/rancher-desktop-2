@@ -19,6 +19,11 @@ load '../../helpers/load'
     assert_line "\"rancher-desktop-${RDD_INSTANCE}\" control plane PID is: 0"
 }
 
+@test 'verify instance does not exist in json' {
+    run -0 --separate-stderr rdd svc status --output=json
+    assert_jq_raw .created false .running false .pid 0 "${output}"
+}
+
 @test 'create instance' {
     run -0 rdd svc create
     run -0 extract_msg
@@ -32,6 +37,11 @@ load '../../helpers/load'
     assert_line "\"rancher-desktop-${RDD_INSTANCE}\" control plane has been created: true"
     assert_line "\"rancher-desktop-${RDD_INSTANCE}\" control plane has been started: false"
     assert_line "\"rancher-desktop-${RDD_INSTANCE}\" control plane PID is: 0"
+}
+
+@test 'verify instance exists in json' {
+    run -0 --separate-stderr rdd svc status --output=json
+    assert_jq_raw .created true .running false .pid 0 "${output}"
 }
 
 @test 'start instance' {
@@ -49,6 +59,14 @@ load '../../helpers/load'
     assert_line "\"rancher-desktop-${RDD_INSTANCE}\" control plane has been created: true"
     assert_line "\"rancher-desktop-${RDD_INSTANCE}\" control plane has been started: true"
     refute_line "\"rancher-desktop-${RDD_INSTANCE}\" control plane PID is: 0"
+}
+
+@test 'verify instance has been started in json' {
+    run -0 --separate-stderr rdd svc status --output=json
+    json=${output}
+    assert_jq_raw .created true .running true "${json}"
+    run -0 jq_raw .pid "${json}"
+    refute_output "0"
 }
 
 @test 'logs shows control plane stderr' {
@@ -82,6 +100,11 @@ load '../../helpers/load'
     assert_line "\"rancher-desktop-${RDD_INSTANCE}\" control plane PID is: 0"
 }
 
+@test 'verify instance has been stopped in json' {
+    run -0 --separate-stderr rdd svc status --output=json
+    assert_jq_raw .created true .running false .pid 0 "${output}"
+}
+
 @test 'Delete instance' {
     run -0 rdd svc delete
     run -0 extract_msg
@@ -95,4 +118,9 @@ load '../../helpers/load'
     assert_line "\"rancher-desktop-${RDD_INSTANCE}\" control plane has been created: false"
     assert_line "\"rancher-desktop-${RDD_INSTANCE}\" control plane has been started: false"
     assert_line "\"rancher-desktop-${RDD_INSTANCE}\" control plane PID is: 0"
+}
+
+@test 'verify instance has been deleted in json' {
+    run -0 --separate-stderr rdd svc status --output=json
+    assert_jq_raw .created false .running false .pid 0 "${output}"
 }

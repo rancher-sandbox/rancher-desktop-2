@@ -149,8 +149,38 @@ check_truthiness() {
 
 get_json_test_data() {
     # The run/assert silliness is because shellcheck gets confused by direct assignment to $output
-    run echo '{"String":"string", "False":false, "Null":null}'
+    run echo '{"String":"string", "False":false, "Null":null, "Container": { "Child": 3 }}'
     assert_success
+}
+
+@test 'assert_jq_raw checks one key-value pair' {
+    get_json_test_data
+    assert_jq_raw .String string "${output}"
+}
+
+@test 'assert_jq_raw checks multiple key-value pairs' {
+    get_json_test_data
+    assert_jq_raw .String string .False false "${output}"
+}
+
+@test 'assert_jq_raw checks nested values' {
+    get_json_test_data
+    assert_jq_raw .Container.Child 3 "${output}"
+}
+
+@test 'assert_jq_raw succeeds with no key-value pairs given' {
+    get_json_test_data
+    assert_jq_raw "${output}"
+}
+
+@test 'assert_jq_raw checks incorrect key-value pair' {
+    get_json_test_data
+    run -1 assert_jq_raw .String number "${output}"
+}
+
+@test 'assert_jq_raw checks incorrect nested values' {
+    get_json_test_data
+    run -1 assert_jq_raw .Container.Child wrong "${output}"
 }
 
 @test 'jq_output extracts string value' {

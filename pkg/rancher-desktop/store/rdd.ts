@@ -68,8 +68,8 @@ export const mutations = {
 export const actions = {
   ...resourceWatchActions('rdd', resources),
 
-  /** Ensure that the application is started. */
-  async ensureAppStarted({ dispatch, getters, rootState, commit }) {
+  /** Ensure that the app exists; the VM will not be touched. */
+  async ensureAppExists({ dispatch, getters, rootState, commit }) {
     for (let attempt = 0; true; attempt++) {
       try {
         await dispatch('waitForResources', ['apps']);
@@ -110,7 +110,7 @@ export const actions = {
         } else {
           console.error('Failed to create app, will retry:', err);
           commit('SET_ERROR', err as Error);
-          return;
+          return false;
         }
       }
       // We need a slight pause to ensure that the watch has managed to pick
@@ -118,8 +118,28 @@ export const actions = {
       await new Promise(resolve => setTimeout(resolve, 100));
       app = getters.app;
     }
+    return true;
+  },
+
+  /** Ensure that the application is started. */
+  async ensureAppStarted({ dispatch, getters, rootState, commit }) {
+    // Ensure the app exists.
+    const succeeded = await dispatch('ensureAppExists');
+
+    if (!succeeded) {
+      // We failed to create the app, and an error has been set.
+      return;
+    }
 
     // Start the app.
+    const { config } = rootState['rdd-connection'];
+    const client = config.makeApiClient(RDDClient.AppRancherdesktopIoV1alpha1Api);
+    const app = getters.app;
+
+    if (app?.metadata?.name === undefined) {
+      throw new Error('Failed to get app metadata');
+    }
+
     await client.patchApp(
       { name: app.metadata.name, body: { spec: { running: true } } },
       RDDClient.setHeaderOptions('Content-Type', RDDClient.PatchStrategy.MergePatch),

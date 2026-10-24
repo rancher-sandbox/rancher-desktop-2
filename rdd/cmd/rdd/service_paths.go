@@ -14,6 +14,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	cliflag "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/flag"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 )
 
@@ -46,29 +47,22 @@ const (
 	outputShell = "shell"
 )
 
-var validOutputFormats = fmt.Sprintf("%s, %s, or %s", outputTable, outputJSON, outputShell)
-
 func newServicePathsCommand() *cobra.Command {
+	output := cliflag.NewEnumValue(outputTable, outputJSON, outputShell)
 	command := &cobra.Command{
 		Use:   "paths [key]",
 		Short: "Print instance paths",
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  servicePathsAction,
 	}
-	command.Flags().StringP("output", "o", outputTable, "Output format: "+validOutputFormats)
+	command.Flags().VarP(output, "output", "o", "Output format: "+output.AllowedValues())
 	return command
 }
 
 func servicePathsAction(cmd *cobra.Command, args []string) error {
-	format, _ := cmd.Flags().GetString("output")
-	switch format {
-	case outputTable, outputJSON, outputShell:
-	default:
-		return fmt.Errorf("unknown output format %q; valid formats: %s", format, validOutputFormats)
-	}
-
 	paths := instancePaths()
 	keys := slices.Sorted(maps.Keys(paths))
+	output := cmd.Flags().Lookup("output").Value.String()
 
 	// Filter to a single key if specified.
 	if len(args) == 1 {
@@ -76,7 +70,7 @@ func servicePathsAction(cmd *cobra.Command, args []string) error {
 		if _, ok := paths[key]; !ok {
 			return fmt.Errorf("unknown key %q; valid keys: %s", key, strings.Join(keys, ", "))
 		}
-		if format == outputTable {
+		if output == outputTable {
 			_, err := fmt.Fprintln(cmd.OutOrStdout(), paths[key])
 			return err
 		}
@@ -84,7 +78,7 @@ func servicePathsAction(cmd *cobra.Command, args []string) error {
 	}
 
 	w := cmd.OutOrStdout()
-	switch format {
+	switch output {
 	case outputJSON:
 		m := make(map[string]string, len(keys))
 		for _, key := range keys {

@@ -554,21 +554,12 @@ extensions:
 firstRun:
   # @source Enable Kubernetes
   enableKubernetes: Kubernetesを有効にする
-  kubernetesVersion:
-    # @source (cached versions only)
-    cachedOnly: （キャッシュされたバージョンのみ）
-    # @source Kubernetes Version
-    legend: Kubernetesバージョン
-    # @source Other Versions
-    otherVersions: その他のバージョン
-    # @source Recommended Versions
-    recommendedVersions: 推奨バージョン
   # @reason OK button label is kept as-is in Japanese Windows/macOS dialogs
   # @source OK
   ok: OK
   # @reason "Rancher Desktop by SUSE" kept intact as branding.
-  # @source Welcome to Rancher Desktop by SUSE
-  welcome: Rancher Desktop by SUSEへようこそ
+  # @source Welcome to {appName} by SUSE
+  welcome: '{appName} by SUSEへようこそ'
 general:
   # @source Rancher Desktop provides Kubernetes and image management through the use of a desktop application.
   description: Rancher Desktopは、デスクトップアプリケーションを通じてKubernetesとイメージ管理を提供します。
@@ -825,6 +816,8 @@ kubernetesPrefs:
     otherVersions: その他のバージョン
     # @source Recommended Versions
     recommendedVersions: 推奨バージョン
+    # @source Loading versions...
+    unavailable: バージョン情報を読み込んでいます&hellip;
 labelSelect:
   noOptions:
     # @source No options

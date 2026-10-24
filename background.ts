@@ -13,6 +13,7 @@ import { getIpcMainProxy } from '@pkg/main/ipcMain';
 import mainEvents from '@pkg/main/mainEvents';
 import buildApplicationMenu from '@pkg/main/mainmenu';
 import setupNetworking from '@pkg/main/networking';
+import { isFirstRunNeeded } from '@pkg/main/rdd-ctl';
 import initializeTransientPreferences from '@pkg/main/transientPreferences';
 import Logging, { clearLoggingDirectory } from '@pkg/utils/logging';
 import { fetchMacOsVersion, getMacOsVersion } from '@pkg/utils/osVersion';
@@ -20,7 +21,6 @@ import paths from '@pkg/utils/paths';
 import { protocolsRegistered, setupProtocolHandlers } from '@pkg/utils/protocols';
 import getWSLVersion from '@pkg/utils/wslVersion';
 import * as window from '@pkg/window';
-import '@pkg/main/rdd-ctl';
 import { closeDashboard, openDashboard } from '@pkg/window/dashboard';
 import { openPreferences } from '@pkg/window/preferences';
 
@@ -43,7 +43,21 @@ clearLoggingDirectory();
 
 const ipcMainProxy = getIpcMainProxy(console);
 
-let gone = false; // when true indicates app is shutting down
+/**
+ * Represents the different states of the application's lifetime.
+ */
+enum LifetimeState {
+  /** The first window has not been shown yet. */
+  Starting,
+  /** The first-run dialog is being shown. */
+  FirstRun,
+  /** The main application window has been shown at least once. */
+  Running,
+  /** The application is in the process of shutting down. */
+  ShuttingDown,
+}
+let lifetimeState = LifetimeState.Starting;
+
 const noModalDialogs = false;
 
 // Scheme must be registered before the app is ready
@@ -57,8 +71,19 @@ process.on('unhandledRejection', (reason) => {
 
 Electron.app.on('second-instance', async() => {
   await protocolsRegistered;
-  console.warn('A second instance was started');
-  window.openMain();
+  switch (lifetimeState) {
+  case LifetimeState.FirstRun:
+    console.warn('A second instance was started during first-run');
+    window.restoreWindow(window.getWindow('FirstRun'));
+    break;
+  case LifetimeState.Running:
+    console.warn('A second instance was started while running');
+    window.openMain();
+    break;
+  default:
+    // If we are starting, the first window will show up eventually.
+    // If we are shutting down, it's too late to do anything.
+  }
 });
 
 Electron.protocol.registerSchemesAsPrivileged([{ scheme: 'app' }, {
@@ -95,16 +120,22 @@ Electron.app.whenReady().then(async() => {
     await setupNetworking();
 
     initMainI18n();
-    initUI();
+    await initUI();
   } catch (ex: any) {
     console.error(`Error starting up: ${ ex }`, ex.stack);
-    gone = true;
+    lifetimeState = LifetimeState.ShuttingDown;
     Electron.app.quit();
   }
 });
 
-function initUI() {
-  if (gone) {
+async function initUI() {
+  if (await isFirstRunNeeded()) {
+    console.log('First run is needed');
+    lifetimeState = LifetimeState.FirstRun;
+    await window.openFirstRunDialog();
+  }
+
+  if (lifetimeState === LifetimeState.ShuttingDown) {
     console.log('User triggered quit during first-run');
 
     return;
@@ -125,12 +156,13 @@ function initUI() {
   updateAboutPanel();
   onLocaleChange(updateAboutPanel);
   window.openMain();
+  lifetimeState = LifetimeState.Running;
 }
 
 async function checkForRootPrivs() {
   if (isRoot()) {
     await window.openDenyRootDialog();
-    gone = true;
+    lifetimeState = LifetimeState.ShuttingDown;
     Electron.app.quit();
   }
 }
@@ -195,19 +227,24 @@ async function checkPrerequisites() {
   }
 
   if (messageId !== 'ok') {
+    // Set the state first, so we don't open up a _second_ window while the
+    // modal dialog is up.
+    lifetimeState = LifetimeState.ShuttingDown;
     await window.openUnmetPrerequisitesDialog(messageId, ...args);
-    gone = true;
     Electron.app.quit();
   }
 }
 
 Electron.app.on('before-quit', (event) => {
-  if (gone) {
+  if (lifetimeState === LifetimeState.ShuttingDown) {
+    // We are already ready to quit.
     mainEvents.emit('quit');
 
     return;
   }
+
   event.preventDefault();
+  lifetimeState = LifetimeState.ShuttingDown;
 
   try {
     mainEvents.emit('before-quit');
@@ -216,10 +253,7 @@ Electron.app.on('before-quit', (event) => {
     console.log(`2: Child exited with code ${ ex.errCode ?? '<unknown>' }`);
     handleFailure(ex);
   } finally {
-    gone = true;
-    setImmediate(() => {
-      Electron.app.quit();
-    });
+    setImmediate(() => Electron.app.quit());
   }
 });
 
@@ -232,7 +266,27 @@ Electron.app.on('activate', async() => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   await protocolsRegistered;
-  window.openMain();
+  switch (lifetimeState) {
+  case LifetimeState.Starting:
+    // The first window will show up eventually.
+    break;
+  case LifetimeState.ShuttingDown:
+    // It's too late to do anything.
+    break;
+  case LifetimeState.FirstRun: {
+    // Find the first run window.
+    const firstRunWindow = window.getWindow('FirstRun');
+    if (firstRunWindow) {
+      console.log('Still processing first-run dialog; focusing');
+      window.restoreWindow(firstRunWindow);
+      return;
+    }
+    // Fall through if the first-run window is missing.
+  }
+  default:
+    // The first run window went missing, or first-run is complete.
+    window.openMain();
+  }
 });
 
 ipcMainProxy.on('dashboard-open', () => {
@@ -367,7 +421,7 @@ function handleFailure(payload: any) {
   if (noModalDialogs) {
     console.log(titlePart);
     console.log(message);
-    gone = true;
+    lifetimeState = LifetimeState.ShuttingDown;
     Electron.app.quit();
   } else {
     showErrorDialog(titlePart, message, false);

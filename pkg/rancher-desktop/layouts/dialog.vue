@@ -21,25 +21,29 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script lang="ts" setup>
+import { onMounted, nextTick, useTemplateRef } from 'vue';
+import { useStore } from 'vuex';
 
 import { ipcRenderer } from '@pkg/utils/ipcRenderer';
 
-export default defineComponent({
-  name: 'dialog-layout',
-  mounted() {
-    this.$store.dispatch('i18n/init').catch(ex => console.error(ex));
-    // The page component is mounted before the layout (because the layout
-    // contains the page component); so we can safely send `dialog/load` here
-    // and assume the page has already been mounted.
-    ipcRenderer.on('dialog/populate', async() => {
-      await this.$nextTick();
-      (this.$refs.wrapper as Element)?.setAttribute('data-loaded', '');
-      ipcRenderer.send('dialog/ready');
-    });
-    ipcRenderer.send('dialog/load');
-  },
+defineOptions({ name: 'dialog-layout' });
+
+const store = useStore();
+const wrapper = useTemplateRef('wrapper');
+
+onMounted(() => {
+  store.dispatch('i18n/init').catch(ex => console.error(ex));
+
+  // The page component is mounted before the layout (because the layout
+  // contains the page component); so we can safely send `dialog/load` here
+  // and assume the page has already been mounted.
+  ipcRenderer.on('dialog/populate', async() => {
+    await nextTick();
+    wrapper.value?.setAttribute('data-loaded', '');
+    ipcRenderer.send('dialog/ready');
+  });
+  ipcRenderer.send('dialog/load');
 });
 </script>
 

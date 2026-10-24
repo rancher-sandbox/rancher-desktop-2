@@ -550,19 +550,10 @@ extensions:
 firstRun:
   # @source Enable Kubernetes
   enableKubernetes: Kubernetes 활성화
-  kubernetesVersion:
-    # @source (cached versions only)
-    cachedOnly: (캐시된 버전만)
-    # @source Kubernetes Version
-    legend: Kubernetes 버전
-    # @source Other Versions
-    otherVersions: 기타 버전
-    # @source Recommended Versions
-    recommendedVersions: 권장 버전
   # @source OK
   ok: 확인
-  # @source Welcome to Rancher Desktop by SUSE
-  welcome: SUSE의 Rancher Desktop에 오신 것을 환영합니다
+  # @source Welcome to {appName} by SUSE
+  welcome: SUSE의 {appName}에 오신 것을 환영합니다
 general:
   # @source Rancher Desktop provides Kubernetes and image management through the use of a desktop application.
   description: Rancher Desktop은 데스크톱 애플리케이션을 통해 Kubernetes와 이미지 관리를 제공합니다.
@@ -816,6 +807,8 @@ kubernetesPrefs:
     otherVersions: 기타 버전
     # @source Recommended Versions
     recommendedVersions: 권장 버전
+    # @source Loading versions...
+    unavailable: 버전 정보를 불러오는 중&hellip;
 labelSelect:
   noOptions:
     # @source No options

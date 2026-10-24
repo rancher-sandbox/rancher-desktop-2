@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -20,6 +21,7 @@ import (
 	watchtools "k8s.io/client-go/tools/watch"
 
 	cliexit "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/exit"
+	cliflag "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/flag"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/developer"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 	service "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/cmd"
@@ -387,20 +389,36 @@ func serviceDeleteAction(cmd *cobra.Command, _ []string) error {
 }
 
 func newServiceStatusCommand() *cobra.Command {
+	output := cliflag.NewEnumValue("text", "json")
 	command := &cobra.Command{
 		Use:  "status",
 		Long: "Show control plane status",
-		RunE: func(*cobra.Command, []string) error {
-			logrus.SetLevel(logrus.InfoLevel)
-			logrus.Infof("%q control plane has been created: %v", instance.Name(), service.Exists())
-			logrus.Infof("%q control plane has been started: %v", instance.Name(), service.Running())
-			logrus.Infof("%q control plane PID is: %v", instance.Name(), service.PID())
-			if developer.Mode() {
-				logrus.Info("developer mode is enabled")
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			switch output.String() {
+			case "json":
+				status := map[string]any{
+					"created": service.Exists(),
+					"running": service.Running(),
+					"pid":     service.PID(),
+				}
+				if developer.Mode() {
+					status["developer_mode"] = true
+				}
+				return json.NewEncoder(cmd.OutOrStdout()).Encode(status)
+			default:
+				logrus.SetLevel(logrus.InfoLevel)
+				logrus.Infof("%q control plane has been created: %v", instance.Name(), service.Exists())
+				logrus.Infof("%q control plane has been started: %v", instance.Name(), service.Running())
+				logrus.Infof("%q control plane PID is: %v", instance.Name(), service.PID())
+				if developer.Mode() {
+					logrus.Info("developer mode is enabled")
+				}
+				return nil
 			}
-			return nil
 		},
 	}
+	command.Flags().VarP(output, "output", "o", "Output format: "+output.AllowedValues())
 	return command
 }
 

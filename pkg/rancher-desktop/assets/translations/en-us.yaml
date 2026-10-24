@@ -151,17 +151,11 @@ app:
   name: '{productName}'
   update: "There's one last step to finish updating Rancher Desktop"
 firstRun:
-  kubernetesVersion:
-    # @no-translate Kubernetes
-    legend: Kubernetes Version
-    cachedOnly: (cached versions only)
-    otherVersions: Other Versions
-    recommendedVersions: Recommended Versions
   ok: OK
   # @no-translate Kubernetes
   enableKubernetes: Enable Kubernetes
-  # @no-translate Rancher Desktop, SUSE
-  welcome: Welcome to Rancher Desktop by SUSE
+  # @no-translate SUSE
+  welcome: Welcome to {appName} by SUSE
 marketplace:
   title: Extensions
   noResults: No extension found for the search criteria
@@ -1046,6 +1040,7 @@ kubernetesPrefs:
     legendTextCached: Kubernetes version (cached versions only)
     otherVersions: Other Versions
     recommendedVersions: Recommended Versions
+    unavailable: Loading versions...
 preferencesWindow:
   close:
     detail: There are preferences with changes that have not been applied. All unsaved preferences will be lost.
