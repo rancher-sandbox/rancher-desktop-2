@@ -29,7 +29,9 @@ export class VolumesPage {
   }
 
   getVolumeRow(volumeName: string) {
-    return this.page.locator(`tr.main-row[data-node-id="${ volumeName }"]`);
+    return this.volumes.filter({
+      has: this.page.getByTestId('volume-name-cell').locator(`[data-volume-name="${ volumeName }"]`),
+    });
   }
 
   async waitForVolumeToAppear(volumeName: string) {

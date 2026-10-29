@@ -45,7 +45,10 @@
       </template>
       <template #col:Name="{ row } : { row: RowItem }">
         <td data-testid="volume-name-cell">
-          <span v-tooltip="getTooltipConfig(row.status.name)">
+          <span
+            v-tooltip="getTooltipConfig(row.status.name)"
+            :data-volume-name="row.status.name"
+          >
             {{ shortHash(row.status.name) }}
           </span>
         </td>
