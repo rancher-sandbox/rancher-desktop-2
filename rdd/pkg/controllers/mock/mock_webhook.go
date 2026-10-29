@@ -15,6 +15,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlwebhookadmission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 )
 
@@ -35,6 +36,27 @@ func (c *controller) setupWebhookWithManager(mgr ctrl.Manager) error {
 	managers, err := base.SetupWebhookForResource(mgr, &corev1.Namespace{}, mutatingConfig)
 	if err != nil {
 		mgr.GetLogger().Error(err, "Failed to set up Mock Namespace webhook")
+		return err
+	}
+	c.webhookManagers = append(c.webhookManagers, managers...)
+
+	volumeWhiteListValidator, err := newVolumeWhiteListValidator(testVolumes)
+	if err != nil {
+		mgr.GetLogger().Error(err, "Failed to create Volume White List Validator")
+		return err
+	}
+	volumeWhiteListConfig := base.WebhookConfig[*v1alpha1.Volume]{
+		Name:        "mock-volume-whitelist",
+		WebhookName: "mock-volume-whitelist.mock.rancherdesktop.io",
+		WebhookPort: c.webhookPort,
+		Operations: []admissionregistrationv1.OperationType{
+			admissionregistrationv1.Create,
+		},
+		Validator: volumeWhiteListValidator,
+	}
+	managers, err = base.SetupWebhookForResource(mgr, &v1alpha1.Volume{}, volumeWhiteListConfig)
+	if err != nil {
+		mgr.GetLogger().Error(err, "Failed to set up Mock Volume webhook")
 		return err
 	}
 	c.webhookManagers = append(c.webhookManagers, managers...)
