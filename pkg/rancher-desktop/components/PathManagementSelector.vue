@@ -1,71 +1,51 @@
-<script lang="ts">
-import { defineComponent } from 'vue';
+<script setup lang="ts">
+import { computed, inject, ref } from 'vue';
+import { useStore } from 'vuex';
 
 import RadioButton from '@pkg/components/form/RadioButton.vue';
 import RadioGroup from '@pkg/components/form/RadioGroup.vue';
+import { binDirInjectionKey } from '@pkg/types/injectionKeys';
+import { escapeHtml } from '@pkg/utils/string';
+import { IoRancherdesktopAppV1alpha1AppSpecApplicationAddPathEnum as AddPath } from '@rdd-client';
 
-interface pathManagementOptions {
-  label:       string,
-  value:       string,
-  description: string
+defineOptions({ name: 'path-management-selector' });
+
+const {
+  row = false,
+  showLabel = true,
+  disabled = false,
+} = defineProps<{
+  row?:       boolean,
+  showLabel?: boolean,
+  disabled?:  boolean,
+}>();
+
+const store = useStore();
+const t = computed(() => store.getters['i18n/t']);
+const preferences = computed(() => store.getters['preferences/preferences']);
+const isPreferenceLocked = computed(() => store.getters['preferences/isPreferenceLocked']);
+const isLocked = computed(() => !!isPreferenceLocked.value?.('application.addPath'));
+const currentValue = computed(() => preferences.value.application?.addPath ?? AddPath.Manual);
+
+const binDir = inject(binDirInjectionKey, ref('~/.rd2/bin'));
+
+const options = computed(() =>
+  Object.values(AddPath).map(key => ({
+    label:       t.value(`pathManagement.options.${ key }.label`),
+    value:       key,
+    description: t.value(`pathManagement.options.${ key }.description`, { binDir: escapeHtml(binDir.value) }),
+  } as const)));
+
+const groupName = 'pathManagement';
+
+const label = computed(() => showLabel ? t.value('pathManagement.label') : '');
+const tooltip = computed(() => showLabel
+  ? { content: t.value('pathManagement.tooltip', { binDir: escapeHtml(binDir.value) }), html: true }
+  : '');
+
+function updateVal(value: AddPath) {
+  store.dispatch('preferences/modify', { key: 'application.addPath', value });
 }
-
-export default defineComponent({
-  name:       'path-management-selector',
-  components: {
-    RadioGroup,
-    RadioButton,
-  },
-  props: {
-    value: {
-      type:    String,
-      default: 'rcFiles',
-    },
-    row: {
-      type:    Boolean,
-      default: false,
-    },
-    showLabel: {
-      type:    Boolean,
-      default: true,
-    },
-    isLocked: {
-      type:    Boolean,
-      default: false,
-    },
-  },
-  emits:    ['input'],
-  computed: {
-    options(): pathManagementOptions[] {
-      return [
-        {
-          label:       this.t('pathManagement.options.rcFiles.label'),
-          value:       'rcFiles',
-          description: this.t('pathManagement.options.rcFiles.description'),
-        },
-        {
-          label:       this.t('pathManagement.options.manual.label'),
-          value:       'manual',
-          description: this.t('pathManagement.options.manual.description'),
-        },
-      ];
-    },
-    groupName(): string {
-      return 'pathManagement';
-    },
-    label(): string {
-      return this.showLabel ? this.t('pathManagement.label') : '';
-    },
-    tooltip(): string {
-      return this.showLabel ? this.t('pathManagement.tooltip') : '';
-    },
-  },
-  methods: {
-    updateVal(value: string) {
-      this.$emit('input', value);
-    },
-  },
-});
 </script>
 
 <template>
@@ -73,34 +53,41 @@ export default defineComponent({
     :name="groupName"
     :label="label"
     :tooltip="tooltip"
-    :value="value"
+    :value="currentValue"
     :options="options"
     :row="row"
-    :disabled="isLocked"
+    :disabled="isLocked || disabled"
+    data-testid="path-management-selector"
+    :data-value="currentValue"
     :class="{ 'locked-radio': isLocked }"
     class="path-management"
     @update:value="updateVal"
   >
     <template
-      v-if="showLabel"
+      v-if="showLabel && $slots.label"
       #label
     >
       <slot name="label" />
     </template>
-    <template #1="{ option, isDisabled, mode }">
+    <template
+      v-for="(option, index) in options"
+      #[index]="{ isDisabled }"
+      :key="groupName + '-' + option.value"
+    >
       <radio-button
-        v-bind="$attrs"
-        :key="groupName + '-' + option.value"
         :name="groupName"
-        :value="value"
+        :value="currentValue"
         :label="option.label"
         :val="option.value"
         :disabled="isDisabled"
-        :mode="mode"
+        :data-testid="`path-management-${option.value}`"
         @update:value="updateVal(option.value)"
       >
         <template #description>
-          <span v-html="option.description" />
+          <span
+            v-clean-html="option.description"
+            data-testid="description"
+          />
         </template>
       </radio-button>
     </template>
@@ -114,7 +101,7 @@ export default defineComponent({
   padding: 2px;
 }
 
-.path-management :deep(label) {
+.path-management :deep(.radio-label) {
   color: var(--input-label);
 }
 </style>

@@ -429,16 +429,20 @@ allowedImages:
 pathManagement:
   label: Configure PATH
   # @no-translate Rancher Desktop, kubectl, nerdctl, helm, docker
-  tooltip: Rancher Desktop ships with tools, such as kubectl, nerdctl, helm and docker. In order to use these tools, <code>$HOME/.rd/bin</code> must be in your PATH.
+  tooltip: Rancher Desktop ships with tools, such as kubectl, nerdctl, helm and docker, and various docker plugins. In order to use these tools, '<code>'{binDir}'</code>' must be in your PATH.
   options:
-    rcFiles:
-      label: Automatic
+    front:
+      label: Add to front
       # @no-translate Rancher Desktop
-      description: Rancher Desktop edits your shell profile for you. Restart any open shells for changes to take effect.
+      description: Rancher Desktop will add '<code>'{binDir}'</code>' to the front of your PATH, and register bundled docker plugins.  Restart any open shells for changes to take effect.
+    back:
+      label: Append to back
+      # @no-translate Rancher Desktop
+      description: Rancher Desktop will add '<code>'{binDir}'</code>' to the back of your PATH, and register bundled docker plugins.  Restart any open shells for changes to take effect.
     manual:
       label: Manual
       # @no-translate Rancher Desktop
-      description: Rancher Desktop does not change your PATH configuration; add <code>$HOME/.rd/bin</code> to your path manually.
+      description: Rancher Desktop does not change your PATH configuration and does not register bundled docker plugins; add '<code>'{binDir}'</code>' to your path manually.
 sudoPrompt:
   title: Administrative Access Required
   # @no-translate Rancher Desktop

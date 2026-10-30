@@ -97,6 +97,7 @@ export interface IpcMainInvokeEvents {
   'show-message-box-rd': (options: Electron.MessageBoxOptions, modal?: boolean) => any;
   /** Fetch the raw RSS XML of the Rancher Desktop blog. */
   'get-blog-feed':       () => string;
+  'get-paths':           () => import('@pkg/utils/paths').Paths;
 
   // #region extensions
   /** Execute the given command and return the results. */

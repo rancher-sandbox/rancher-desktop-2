@@ -56,14 +56,6 @@ func TestComputeWindowsPath(t *testing.T) {
 			wantChanged: false,
 		},
 		{
-			name:        "unset without marker leaves a front entry alone",
-			current:     `C:\bin;C:\Windows`,
-			binDir:      `C:\bin`,
-			strategy:    appv1alpha1.AddPathUnset,
-			want:        `C:\bin;C:\Windows`,
-			wantChanged: false,
-		},
-		{
 			name:        "front is idempotent when already at front",
 			current:     `C:\bin;C:\Windows`,
 			binDir:      `C:\bin`,

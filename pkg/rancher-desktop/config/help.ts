@@ -19,7 +19,7 @@ const baseUrl = process.env.RD_DOCS_URL ?? 'https://docs.rancherdesktop.io';
 class PreferencesHelp {
   private readonly mapping = {
     // 'application/behavior':            'ui/preferences/application/behavior',
-    // 'application/environment':         'ui/preferences/application/environment',
+    'application/environment':         'ui/preferences/application/environment',
     'application/general':             'ui/preferences/application/general',
     'virtual-machine/hardware':        'ui/preferences/virtual-machine/hardware',
     // 'virtual-machine/volumes':         'ui/preferences/virtual-machine/volumes',

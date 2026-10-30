@@ -22,15 +22,25 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, nextTick, useTemplateRef } from 'vue';
+import { onMounted, nextTick, useTemplateRef, ref, provide, readonly } from 'vue';
 import { useStore } from 'vuex';
 
+import { binDirInjectionKey } from '@pkg/types/injectionKeys';
 import { ipcRenderer } from '@pkg/utils/ipcRenderer';
 
 defineOptions({ name: 'dialog-layout' });
 
 const store = useStore();
 const wrapper = useTemplateRef('wrapper');
+const binDir = ref('~/.rd2/bin');
+
+ipcRenderer.invoke('get-paths').then(result => {
+  binDir.value = result.bin_dir;
+}).catch(e => {
+  console.error('Failed to get paths:', e);
+});
+
+provide(binDirInjectionKey, readonly(binDir));
 
 onMounted(() => {
   store.dispatch('i18n/init').catch(ex => console.error(ex));

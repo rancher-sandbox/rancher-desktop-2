@@ -939,18 +939,23 @@ pathManagement:
   # @source Configure PATH
   label: PATH 구성
   options:
+    back:
+      # @source Rancher Desktop will add '<code>'{binDir}'</code>' to the back of your PATH, and register bundled docker plugins.  Restart any open shells for changes to take effect.
+      description: Rancher Desktop이 '<code>'{binDir}'</code>'을 PATH 맨 뒤에 추가하고 번들로 제공되는 docker 플러그인을 등록합니다. 변경 사항을 적용하려면 열려 있는 셸을 다시 시작하십시오.
+      # @source Append to back
+      label: 맨 뒤에 추가
+    front:
+      # @source Rancher Desktop will add '<code>'{binDir}'</code>' to the front of your PATH, and register bundled docker plugins.  Restart any open shells for changes to take effect.
+      description: Rancher Desktop이 '<code>'{binDir}'</code>'을 PATH 맨 앞에 추가하고 번들로 제공되는 docker 플러그인을 등록합니다. 변경 사항을 적용하려면 열려 있는 셸을 다시 시작하십시오.
+      # @source Add to front
+      label: 맨 앞에 추가
     manual:
-      # @source Rancher Desktop does not change your PATH configuration; add <code>$HOME/.rd/bin</code> to your path manually.
-      description: Rancher Desktop은 PATH 구성을 변경하지 않습니다. <code>$HOME/.rd/bin</code>을 PATH에 직접 추가하십시오.
+      # @source Rancher Desktop does not change your PATH configuration and does not register bundled docker plugins; add '<code>'{binDir}'</code>' to your path manually.
+      description: Rancher Desktop은 PATH 구성을 변경하지 않으며 번들로 제공되는 docker 플러그인도 등록하지 않습니다. '<code>'{binDir}'</code>'을 PATH에 직접 추가하십시오.
       # @source Manual
       label: 수동
-    rcFiles:
-      # @source Rancher Desktop edits your shell profile for you. Restart any open shells for changes to take effect.
-      description: Rancher Desktop이 셸 프로필을 대신 수정합니다. 변경 사항을 적용하려면 열려 있는 셸을 다시 시작하십시오.
-      # @source Automatic
-      label: 자동
-  # @source Rancher Desktop ships with tools, such as kubectl, nerdctl, helm and docker. In order to use these tools, <code>$HOME/.rd/bin</code> must be in your PATH.
-  tooltip: Rancher Desktop에는 kubectl, nerdctl, helm, docker와 같은 도구가 포함되어 있습니다. 이러한 도구를 사용하려면 <code>$HOME/.rd/bin</code>이 PATH에 있어야 합니다.
+  # @source Rancher Desktop ships with tools, such as kubectl, nerdctl, helm and docker, and various docker plugins. In order to use these tools, '<code>'{binDir}'</code>' must be in your PATH.
+  tooltip: Rancher Desktop에는 kubectl, nerdctl, helm, docker와 같은 도구와 다양한 docker 플러그인이 포함되어 있습니다. 이러한 도구를 사용하려면 '<code>'{binDir}'</code>'이 PATH에 있어야 합니다.
 portForwarding:
   # @source Include Kubernetes services
   includeKubernetesServices: Kubernetes 서비스 포함

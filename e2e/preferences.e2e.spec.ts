@@ -49,7 +49,7 @@ test.describe('Preferences Dialog', () => {
 
       await expect(application.nav).toHaveClass('preferences-nav-item active');
       await expect(application.tabGeneral).toHaveText('General');
-      // TODO: environment tab visiblity.
+      await expect(application.tabEnvironment).toHaveText('Environment');
       // TODO: behavior tab visibility.
       await expect(application.tabGeneral).toHaveAttribute('aria-selected', 'true');
 
@@ -87,16 +87,31 @@ test.describe('Preferences Dialog', () => {
       await expect(application.pathManagement).not.toBeVisible();
     });
 
-    test.fixme('should render environment tab', async() => {
-      test.skip(os.platform() === 'win32', 'Environment tab not available on Windows');
+    test('should render environment tab', async() => {
       const { application } = prefPage;
 
       await application.tabEnvironment.click();
+      await expect(application.tabEnvironment).toHaveAttribute('aria-selected', 'true');
+      await expect(application.tabPanel).toHaveAttribute('id', 'environment');
 
+      // Check element visibility
       await expect(application.administrativeAccess).not.toBeVisible();
       await expect(application.automaticUpdates).not.toBeVisible();
       await expect(application.statistics).not.toBeVisible();
       await expect(application.pathManagement).toBeVisible();
+
+      // Check path management descriptions; click behaviour is handled in unit tests.
+      const strings = {
+        manual: 'Manual',
+        front:  'Add to front',
+        back:   'Append to back',
+      };
+      for (const [value, text] of Object.entries(strings)) {
+        const element = application.pathManagement.getByTestId(`path-management-${ value }`);
+        await expect(element).toBeVisible();
+        await expect(element.locator('.radio-label')).toContainText(text);
+        await expect(element.getByTestId('description')).toContainText('BIN_DIR');
+      }
     });
   });
 

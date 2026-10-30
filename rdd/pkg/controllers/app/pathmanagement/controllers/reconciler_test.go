@@ -67,9 +67,9 @@ func TestReconcileWritesReadyCondition(t *testing.T) {
 	assert.Equal(t, cond.ObservedGeneration, int64(3))
 }
 
-// TestReconcileUnsetAddsNoBlock checks that the default "unset" strategy writes
+// TestReconcileManualAddsNoBlock checks that the default "manual" strategy writes
 // no managed block, leaves an existing rc file alone, and still reports success.
-func TestReconcileUnsetAddsNoBlock(t *testing.T) {
+func TestReconcileManualAddsNoBlock(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "xdg-config-home"))
@@ -78,7 +78,7 @@ func TestReconcileUnsetAddsNoBlock(t *testing.T) {
 
 	app := &appv1alpha1.App{
 		Name: appName, Generation: 1,
-		Spec: appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathUnset}},
+		Spec: appv1alpha1.AppSpec{Application: appv1alpha1.ApplicationSpec{AddPath: appv1alpha1.AddPathManual}},
 	}
 	scheme := reconcilerTestScheme(t)
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(app).WithStatusSubresource(app).Build()
@@ -90,7 +90,7 @@ func TestReconcileUnsetAddsNoBlock(t *testing.T) {
 	for _, name := range []string{".zshrc", ".bashrc", ".bash_profile", ".bash_login", ".profile", ".cshrc"} {
 		if data, err := os.ReadFile(filepath.Join(home, name)); err == nil {
 			assert.Assert(t, !strings.Contains(string(data), r.startMarker()),
-				"%s must not carry our block under unset", name)
+				"%s must not carry our block under manual", name)
 		}
 	}
 	got, err := os.ReadFile(zshrc)

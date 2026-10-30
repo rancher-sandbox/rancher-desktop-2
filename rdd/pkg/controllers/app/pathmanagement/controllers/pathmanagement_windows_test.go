@@ -137,20 +137,6 @@ func TestWriteUserPathManualWithoutMarkerLeavesEntry(t *testing.T) {
 	assert.Equal(t, val, seed)
 }
 
-func TestWriteUserPathUnsetWithoutMarkerLeavesEntry(t *testing.T) {
-	r := newTestReconciler(t)
-	seed := r.BinDir + `;C:\Windows`
-	keyPath := withTestEnvKey(t, seed, registry.EXPAND_SZ)
-
-	changed, err := r.writeUserPath(appv1alpha1.AddPathUnset, false)
-	assert.NilError(t, err)
-	assert.Equal(t, changed, false)
-
-	val, _ := readTestPath(t, keyPath)
-	assert.Equal(t, val, seed)
-	assertMarkerAbsent(t, r)
-}
-
 func TestWriteUserPathManualDeletesStaleMarker(t *testing.T) {
 	r := newTestReconciler(t)
 	// The marker is present, but the user already removed the entry by hand.

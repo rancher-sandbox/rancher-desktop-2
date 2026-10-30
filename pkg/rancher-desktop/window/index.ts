@@ -598,7 +598,16 @@ export function openDialog(id: string, opts?: Electron.BrowserWindowConstructorO
  * configuration required.
  */
 export async function openFirstRunDialog() {
-  const window = openDialog('FirstRun', { frame: true });
+  // When running under Playwright, `preferred-size-changed` doesn't seem to get
+  // triggered; supply a fixed fallback window size so we don't get a tiny window.
+  const sizes = process.env.PLAYWRIGHT_TEST ? { width: 450, height: 750 } : {};
+  const window = openDialog('FirstRun', { ...sizes, center: true, frame: true });
+
+  window.webContents.on('ipc-message', (_event, channel) => {
+    if (channel === 'dialog/load') {
+      window.webContents.send('dialog/populate');
+    }
+  });
 
   await (new Promise<void>((resolve) => {
     window.on('closed', resolve);

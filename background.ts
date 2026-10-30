@@ -17,7 +17,7 @@ import { isFirstRunNeeded } from '@pkg/main/rdd-ctl';
 import initializeTransientPreferences from '@pkg/main/transientPreferences';
 import Logging, { clearLoggingDirectory } from '@pkg/utils/logging';
 import { fetchMacOsVersion, getMacOsVersion } from '@pkg/utils/osVersion';
-import paths from '@pkg/utils/paths';
+import paths, { pathKeys, Paths } from '@pkg/utils/paths';
 import { protocolsRegistered, setupProtocolHandlers } from '@pkg/utils/protocols';
 import getWSLVersion from '@pkg/utils/wslVersion';
 import * as window from '@pkg/window';
@@ -392,6 +392,24 @@ ipcMainProxy.handle('show-message-box-rd', async(_event, options: Electron.Messa
 });
 
 ipcMainProxy.handle('get-locked-fields', () => ({}));
+
+ipcMainProxy.handle('get-paths', () => {
+  // When taking screenshots or running end-to-end tests, override some paths
+  // so the output is consistent.
+  const result = Object.fromEntries(pathKeys.map(key => [key, paths[key]])) as Partial<Paths>;
+  if ((process.env.RD_TEST ?? '').includes('screenshots')) {
+    Object.assign(result, {
+      bin_dir: '~/.rd2/bin',
+    });
+  } else if ((process.env.RD_TEST ?? '').includes('e2e')) {
+    Object.assign(result, {
+      bin_dir: 'BIN_DIR',
+    });
+  }
+  // Assume all the paths are available; if any are missing, we can fail at
+  // runtime.
+  return result as Paths;
+});
 
 function showErrorDialog(title: string, message: string, fatal?: boolean) {
   if (noModalDialogs) {

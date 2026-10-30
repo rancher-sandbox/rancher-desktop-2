@@ -19,21 +19,16 @@
         :disabled="!preferencesLoaded"
       />
     </rd-fieldset>
-    <!--
     <rd-fieldset
-      v-if="pathManagementRelevant"
       :legend-text="t('pathManagement.label')"
-      :legend-tooltip="t('pathManagement.tooltip')"
-      :is-locked="pathManagementSelectorLocked"
+      :legend-tooltip="t('pathManagement.tooltip', { binDir: escapeHtml(binDir) })"
+      :is-locked="isPreferenceLocked('application.addPath')"
     >
       <path-management-selector
-        :value="pathManagementStrategy"
-        :is-locked="pathManagementSelectorLocked"
         :show-label="false"
-        @input="setPathManagementStrategy"
+        :disabled="!preferencesLoaded"
       />
     </rd-fieldset>
-    -->
     <div class="button-area">
       <button
         ref="accept-btn"
@@ -49,23 +44,26 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
+import { computed, inject, onBeforeMount, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue';
 import { useStore } from 'vuex';
 
 import EngineSelector from '@pkg/components/EngineSelector.vue';
 import KubernetesVersionSelector from '@pkg/components/KubernetesVersionSelector.vue';
+import PathManagementSelector from '@pkg/components/PathManagementSelector.vue';
 import PreferencesAlert from '@pkg/components/Preferences/Alert.vue';
 import RdCheckbox from '@pkg/components/form/RdCheckbox.vue';
 import RdFieldset from '@pkg/components/form/RdFieldset.vue';
-import { ipcRenderer } from '@pkg/utils/ipcRenderer';
+import { binDirInjectionKey } from '@pkg/types/injectionKeys';
+import { escapeHtml } from '@pkg/utils/string';
 
 defineOptions({ name: 'first-run-dialog', layout: 'dialog' });
 
 const store = useStore();
 const t = computed(() => store.getters['i18n/t']);
 const preferences = computed(() => store.getters['preferences/preferences']);
-const isPreferencesLocked = computed(() => store.getters['preferences/isPreferenceLocked']);
-const engineSelectorLocked = computed(() => isPreferencesLocked.value('containerEngine.name'));
+const isPreferenceLocked = computed(() => store.getters['preferences/isPreferenceLocked']);
+const engineSelectorLocked = computed(() => isPreferenceLocked.value('containerEngine.name'));
+const binDir = inject(binDirInjectionKey, ref('~/.rd2/bin'));
 const preferencesLoaded = computed(() => Object.keys(preferences.value ?? {}).length > 0);
 const processing = ref(false);
 const errorStatus = computed(() => store.state.preferences.errorStatus);
@@ -78,7 +76,7 @@ const unwatchPreferencesLoaded = watch(preferencesLoaded, (newValue) => {
     unwatchPreferencesLoaded();
     acceptBtn.value.focus();
   }
-}, { immediate: true });
+}, { flush: 'post', immediate: true });
 
 async function commitAndClose(event: Event) {
   event.preventDefault();
@@ -111,10 +109,6 @@ onBeforeMount(async() => {
   } catch (ex) {
     console.error(ex);
   }
-});
-
-onMounted(() => {
-  ipcRenderer.send('dialog/ready');
 });
 
 onBeforeUnmount(async() => {

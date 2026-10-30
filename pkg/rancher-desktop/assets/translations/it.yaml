@@ -972,19 +972,23 @@ pathManagement:
   # @source Configure PATH
   label: Configura il PATH
   options:
+    back:
+      # @source Rancher Desktop will add '<code>'{binDir}'</code>' to the back of your PATH, and register bundled docker plugins.  Restart any open shells for changes to take effect.
+      description: Rancher Desktop aggiungerà '<code>'{binDir}'</code>' alla fine del PATH e registrerà i plugin docker inclusi. Riavvia le shell aperte affinché le modifiche abbiano effetto.
+      # @source Append to back
+      label: Aggiungi alla fine
+    front:
+      # @source Rancher Desktop will add '<code>'{binDir}'</code>' to the front of your PATH, and register bundled docker plugins.  Restart any open shells for changes to take effect.
+      description: Rancher Desktop aggiungerà '<code>'{binDir}'</code>' all'inizio del PATH e registrerà i plugin docker inclusi. Riavvia le shell aperte affinché le modifiche abbiano effetto.
+      # @source Add to front
+      label: Aggiungi all'inizio
     manual:
-      # @source Rancher Desktop does not change your PATH configuration; add <code>$HOME/.rd/bin</code> to your path manually.
-      description: Rancher Desktop non modifica la configurazione del PATH; aggiungi manualmente <code>$HOME/.rd/bin</code> al PATH.
+      # @source Rancher Desktop does not change your PATH configuration and does not register bundled docker plugins; add '<code>'{binDir}'</code>' to your path manually.
+      description: Rancher Desktop non modifica la configurazione del PATH e non registra i plugin docker inclusi; aggiungi manualmente '<code>'{binDir}'</code>' al PATH.
       # @source Manual
       label: Manuale
-    rcFiles:
-      # @source Rancher Desktop edits your shell profile for you. Restart any open shells for changes to take effect.
-      description: Rancher Desktop modifica il profilo della shell per te. Riavvia le shell aperte affinché le modifiche abbiano effetto.
-      # @reason Feminine, agreeing with the implied 'configurazione (del PATH)'; pairs with the invariant 'Manuale'.
-      # @source Automatic
-      label: Automatica
-  # @source Rancher Desktop ships with tools, such as kubectl, nerdctl, helm and docker. In order to use these tools, <code>$HOME/.rd/bin</code> must be in your PATH.
-  tooltip: Rancher Desktop include strumenti come kubectl, nerdctl, helm e docker. Per poterli utilizzare, <code>$HOME/.rd/bin</code> deve essere nel PATH.
+  # @source Rancher Desktop ships with tools, such as kubectl, nerdctl, helm and docker, and various docker plugins. In order to use these tools, '<code>'{binDir}'</code>' must be in your PATH.
+  tooltip: Rancher Desktop include strumenti come kubectl, nerdctl, helm e docker, oltre a diversi plugin docker. Per poterli utilizzare, '<code>'{binDir}'</code>' deve essere nel PATH.
 portForwarding:
   # @source Include Kubernetes services
   includeKubernetesServices: Includi i servizi Kubernetes
