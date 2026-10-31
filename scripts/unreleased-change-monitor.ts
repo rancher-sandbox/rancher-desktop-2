@@ -1,6 +1,5 @@
 import { Octokit } from 'octokit';
 
-import * as tools from '@/scripts/dependencies/tools';
 import { GitHubDependency, HasUnreleasedChangesResult, getOctokit, RancherDesktopRepository } from '@/scripts/lib/dependencies';
 
 const GITHUB_OWNER = process.env.GITHUB_REPOSITORY?.split('/')[0] || 'rancher-sandbox';
@@ -12,9 +11,7 @@ const mainRepo = new RancherDesktopRepository(GITHUB_OWNER, GITHUB_REPO);
 
 type DependencyState = { dependency: GitHubDependency } & HasUnreleasedChangesResult;
 
-const dependencies: GitHubDependency[] = [
-  new tools.Steve(),
-];
+const dependencies: GitHubDependency[] = [];
 
 type Issue = Awaited<ReturnType<Octokit['rest']['search']['issuesAndPullRequests']>>['data']['items'][0];
 

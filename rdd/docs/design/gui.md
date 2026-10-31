@@ -4,7 +4,11 @@
 
 The GUI will avoid interacting with the host machine, outside of calling `rdd`
 to get its configuration, including both relevant paths and how to connect to
-the control plane.  It may also need to interact with RDX extensions.
+the control plane.  It may also need to interact with RDX extensions.  The GUI
+also starts `rdd steve`, which serves the Cluster Dashboard.  Having the control
+plane start steve instead would need a process supervisor and a status field for
+steve's port.  It would not help a GUI on another host either, because steve
+binds 127.0.0.1, so that GUI would still need a proxy to reach it.
 
 1.  Run `rdd service paths` to determine paths (where to store the logs,
     GUI-specific data, etc.).

@@ -60,7 +60,6 @@ export interface DependencyVersions {
   ECRCredentialHelper:             string;
   electron:                        string;
   helm:                            string;
-  steve:                           string;
   wix:                             string;
 }
 
@@ -626,11 +625,10 @@ export function GlobalDependency<T extends abstract new(...args: any[]) => Versi
  * Value | Description
  * --- | ---
  * `published` | Get GitHub releases (excluding versions marked as *pre-release* on GitHub).
- * `published-pre` | Get GitHub releases (including those marked as *pre-release* on GitHub).
  * `semver` | GitHub releases, excluding those marked as *pre-release*, or those with semver pre-release parts.
  * `custom` | The implementation must override `getAvailableVersions()`.
  */
-type ReleaseFilter = 'published' | 'published-pre' | 'semver' | 'custom';
+type ReleaseFilter = 'published' | 'semver' | 'custom';
 
 /**
  * A {@link VersionedDependency} using GitHub releases.
@@ -781,9 +779,7 @@ export async function getPublishedReleaseTagNames(owner: string, repo: string, r
   releases = releases.filter(release => release.published_at !== null);
 
   // Filter out pre-releases
-  if (releaseFilter !== 'published-pre') {
-    releases = releases.filter(release => !release.prerelease);
-  }
+  releases = releases.filter(release => !release.prerelease);
   let tagNames = releases.map(release => release.tag_name);
 
   if (releaseFilter === 'semver') {

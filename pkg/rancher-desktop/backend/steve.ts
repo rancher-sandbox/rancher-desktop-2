@@ -1,6 +1,4 @@
 import { ChildProcess, spawn } from 'child_process';
-import os from 'os';
-import path from 'path';
 
 import Electron from 'electron';
 
@@ -8,7 +6,7 @@ import { getIpcMainProxy } from '@pkg/main/ipcMain';
 import mainEvents from '@pkg/main/mainEvents';
 import Latch from '@pkg/utils/latch';
 import Logging from '@pkg/utils/logging';
-import paths from '@pkg/utils/paths';
+import { getRDDPath } from '@pkg/utils/paths';
 import { send } from '@pkg/window';
 
 const console = Logging.steve;
@@ -83,9 +81,7 @@ export class Steve {
       this.stop();
     }
 
-    const osSpecificName = /^win/i.test(os.platform()) ? 'steve.exe' : 'steve';
-    const stevePath = path.join(paths.internalDir, osSpecificName);
-    const childProcess = spawn(stevePath, ['--context', 'rancher-desktop-2'],
+    const childProcess = spawn(getRDDPath(), ['steve', '--context', 'rancher-desktop-2'],
       { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
     this.process = childProcess;
 
@@ -99,8 +95,8 @@ export class Steve {
       throw new Error(`Failed to start Steve: could not get output`);
     }
 
-    // Steve has been modified to output the port to stdout and then immediately
-    // close it, leaving stderr open for logs.
+    // `rdd steve` writes the port to stdout and then immediately closes it,
+    // leaving stderr open for logs.
     stdout.on('data', (data) => {
       portBuffer += data.toString();
     });
