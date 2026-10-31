@@ -1,0 +1,15 @@
+{
+  "name": "rancher-deskboard",
+  "description": "rancher-deskboard plugin",
+  "version": "0.2.0",
+  "private": false,
+  "rancher": {
+    "annotations": {
+      "catalog.cattle.io/rancher-version": ">= v2.9.3",
+      "catalog.cattle.io/ui-extensions-version": ">= 3.0.0"
+    }
+  },
+  "browserslist": [
+    "electron >= 35"
+  ]
+}

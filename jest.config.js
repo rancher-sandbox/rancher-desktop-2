@@ -17,6 +17,7 @@ export default {
     'vue',
   ],
   modulePathIgnorePatterns: [
+    '<rootDir>/dashboard',
     '<rootDir>/dist',
     '<rootDir>/pkg/rancher-desktop/dist',
     '<rootDir>/.git',
