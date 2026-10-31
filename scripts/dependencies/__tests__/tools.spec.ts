@@ -20,7 +20,6 @@ function contextFor(manifest: DependencyManifest): DownloadContext {
     goArch:             'amd64',
     resourcesDir:       '/nonexistent/resources',
     binDir:             '/nonexistent/bin',
-    internalDir:        '/nonexistent/internal',
     dockerPluginsDir:   '/nonexistent/docker-plugins',
     hostDir:            '/nonexistent/host',
   };

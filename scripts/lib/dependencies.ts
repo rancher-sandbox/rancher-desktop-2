@@ -41,8 +41,6 @@ export interface DownloadContext {
   resourcesDir:       string;
   // binDir is for binaries that the user will execute
   binDir:             string;
-  // internalDir is for binaries that RD will execute behind the scenes
-  internalDir:        string;
   // dockerPluginsDir is for docker CLI plugins.
   dockerPluginsDir:   string;
   // hostDir is a directory for things that are not shipped.
@@ -660,8 +658,6 @@ export abstract class GitHubDependency extends VersionedDependency {
     return tags.map(tag => tag.replace(/^v/, ''));
   }
 }
-
-export interface HasUnreleasedChangesResult { latestReleaseTag: string, hasUnreleasedChanges: boolean }
 
 export type GitHubRelease = Awaited<ReturnType<Octokit['rest']['repos']['listReleases']>>['data'][0];
 

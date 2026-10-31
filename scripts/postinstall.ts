@@ -201,7 +201,6 @@ function buildDownloadContextFor(rawPlatform: DependencyPlatform, manifest: Depe
     goArch,
     resourcesDir,
     binDir:             path.join(resourcesDir, goPlatform, 'bin'),
-    internalDir:        path.join(resourcesDir, 'internal'),
     dockerPluginsDir:   path.join(resourcesDir, goPlatform, 'docker-cli-plugins'),
     hostDir:            path.join(resourcesDir, 'host'),
   });
