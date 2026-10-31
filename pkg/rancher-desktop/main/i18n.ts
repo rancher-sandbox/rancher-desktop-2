@@ -105,6 +105,13 @@ export function t(key: string, args?: Record<string, string | number>): string {
 }
 
 /**
+ * The locale that `t` translates into.
+ */
+export function getLocale(): LocaleString {
+  return currentLocale;
+}
+
+/**
  * Register a callback to run after the locale has been loaded.
  * Use this instead of listening to settings-update directly, which
  * would race against the locale loading.
