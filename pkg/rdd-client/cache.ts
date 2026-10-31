@@ -29,6 +29,7 @@ import {
 } from './informer';
 import { ObjectSerializer } from './serializer';
 import { KubernetesObject, KubernetesListObject } from './types';
+import { getSerializationType } from './util';
 import { Watch } from './watch';
 
 export interface ObjectCache<T> {
@@ -242,6 +243,9 @@ export class ListWatch<T extends KubernetesObject> implements ObjectCache<T>, In
       return Promise.resolve();
     case 'ADDED':
     case 'MODIFIED':
+      // Watch events are raw JSON; deserialize them like list items so that
+      // the cache holds one representation (e.g. Date for date-time fields).
+      obj = ObjectSerializer.deserialize(obj, getSerializationType(obj.apiVersion, obj.kind));
       addOrUpdateObject(
         this.objects,
         obj,

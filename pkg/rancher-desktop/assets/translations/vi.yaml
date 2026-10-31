@@ -416,6 +416,14 @@ containerStats:
     # @source Write
     write: Ghi
 containers:
+  confirmDelete:
+    # @source &Delete
+    confirm: '&Xóa'
+    # @reason Vietnamese nouns, English loanwords included, keep one form for any count, so both plural branches are identical.
+    # @source Delete {count} {count, plural, one {container} other {containers}}?
+    message: Xóa {count} {count, plural, one {container} other {container}}?
+    # @source Confirm container deletion
+    title: Xác nhận xóa container
   manage:
     table:
       action:
@@ -427,6 +435,9 @@ containers:
         start: Khởi động
         # @source Stop
         stop: Dừng
+      group:
+        # @source Standalone Containers
+        standalone: Container độc lập
       header:
         # @source Name
         containerName: Tên
@@ -636,11 +647,12 @@ images:
   confirmDelete:
     # @source Delete
     confirm: Xóa
+    # @reason Vietnamese nouns, English loanwords included, keep one form for any count, so both plural branches are identical.
     # @source Delete {count} {count, plural, one {image} other {images}}?
     multiple: Xóa {count} {count, plural, one {image} other {image}}?
     # @source Delete image {name}:{tag}?
     single: Xóa image {name}:{tag}?
-    # @source Confirming image deletion
+    # @source Confirm image deletion
     title: Xác nhận xóa image
   manager:
     # @source Close Output to Continue
@@ -1527,6 +1539,14 @@ virtualMachine:
     # @source VZ Option
     legend: Tùy chọn VZ
 volumes:
+  confirmDelete:
+    # @source &Delete
+    confirm: '&Xóa'
+    # @reason Vietnamese nouns, English loanwords included, keep one form for any count, so both plural branches are identical.
+    # @source Delete {count} {count, plural, one {volume} other {volumes}}?
+    message: Xóa {count} {count, plural, one {volume} other {volume}}?
+    # @source Confirm volume deletion
+    title: Xác nhận xóa volume
   files:
     # @source Available
     available: Khả dụng

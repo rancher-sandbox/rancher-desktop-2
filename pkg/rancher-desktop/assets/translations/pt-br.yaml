@@ -427,6 +427,13 @@ containerStats:
     # @source Write
     write: Escrita
 containers:
+  confirmDelete:
+    # @source &Delete
+    confirm: '&Excluir'
+    # @source Delete {count} {count, plural, one {container} other {containers}}?
+    message: Excluir {count} {count, plural, one {contêiner} other {contêineres}}?
+    # @source Confirm container deletion
+    title: Confirmar exclusão de contêiner
   manage:
     table:
       action:
@@ -438,6 +445,9 @@ containers:
         start: Iniciar
         # @source Stop
         stop: Parar
+      group:
+        # @source Standalone Containers
+        standalone: Contêineres independentes
       header:
         # @source Name
         containerName: Nome
@@ -660,8 +670,8 @@ images:
     multiple: Excluir {count} {count, plural, one {imagem} other {imagens}}?
     # @source Delete image {name}:{tag}?
     single: Excluir a imagem {name}:{tag}?
-    # @source Confirming image deletion
-    title: Confirmação de exclusão de imagem
+    # @source Confirm image deletion
+    title: Confirmar exclusão de imagem
   manager:
     # @source Close Output to Continue
     close: Fechar a saída para continuar
@@ -1573,6 +1583,13 @@ virtualMachine:
     # @source VZ Option
     legend: Opção do VZ
 volumes:
+  confirmDelete:
+    # @source &Delete
+    confirm: '&Excluir'
+    # @source Delete {count} {count, plural, one {volume} other {volumes}}?
+    message: Excluir {count} {count, plural, one {volume} other {volumes}}?
+    # @source Confirm volume deletion
+    title: Confirmar exclusão de volume
   files:
     # @source Available
     available: Disponível

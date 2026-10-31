@@ -294,9 +294,6 @@ export default defineComponent({
     imagesToDelete(): RowItem[] {
       return this.selected.filter(image => this.isDeletable(image));
     },
-    imageIdsToDelete() {
-      return this.imagesToDelete.map(image => image.reference || image.id);
-    },
     rows(): RowItem[] {
       return this.filteredImages
         .map(image => ({
@@ -389,8 +386,11 @@ export default defineComponent({
       this.imageOutputCuller = getImageOutputCuller(command);
     },
     async deleteImages() {
-      const message = this.t('images.confirmDelete.multiple', { count: this.imagesToDelete.length });
-      const detail = this.imageIdsToDelete.join('\n');
+      // The table's live selection can change while the dialog is open, so
+      // delete exactly the images the dialog lists.
+      const images = this.imagesToDelete;
+      const message = this.t('images.confirmDelete.multiple', { count: images.length });
+      const detail = images.map(image => image.reference || image.id).join('\n');
 
       const options: Electron.MessageBoxOptions = {
         message,
@@ -409,7 +409,7 @@ export default defineComponent({
       }
 
       // TODO: This should display deletion output.
-      await Promise.all(this.imagesToDelete.map(image => this.imageDelete({ image })));
+      await Promise.all(images.map(image => this.imageDelete({ image })));
     },
     async deleteImage(image: ParsedImage) {
       const options: Electron.MessageBoxOptions = {
