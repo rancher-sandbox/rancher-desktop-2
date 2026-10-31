@@ -6,6 +6,8 @@
 (?:^|/)\.gitmodules$
 (?:^|/)go\.mod$
 (?:^|/)go\.sum$
+# Cluster Explorer plugin, a separate Yarn project
+^dashboard/
 # configuration for check-spelling itself
 ^\.github/actions/spelling/
 ^\Q.github/workflows/spelling.yml\E$
