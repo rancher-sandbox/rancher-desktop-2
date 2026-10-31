@@ -163,6 +163,10 @@ func main() {
 	yqCmd.Hidden = !developer.Mode()
 	cmd.AddCommand(yqCmd)
 
+	steveCmd := newSteveCommand()
+	steveCmd.Hidden = !developer.Mode()
+	cmd.AddCommand(steveCmd)
+
 	cmd.AddCommand(
 		hostagent.NewCommand(),
 		newKubectlCommand(),
