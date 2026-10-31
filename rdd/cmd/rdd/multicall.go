@@ -19,17 +19,17 @@ import (
 
 const instancePrefix = "rdd-"
 
-// multiCallArgs lets rdd run as an embedded command (kubectl, nerdctl, yq)
+// multiCallArgs lets rdd run as an embedded command (kubectl, nerdctl, steve, yq)
 // when invoked under that name via a symlink or rename, inserting the
 // matching subcommand for Cobra to dispatch. It rejects any name other than
-// rdd, rdd-<instance> with a valid instance, kubectl, nerdctl, yq and the
+// rdd, rdd-<instance> with a valid instance, kubectl, nerdctl, steve, yq and the
 // names that isReleaseName accepts. Names compare case-sensitively. It reads
 // the name from argv[0] (see commandName), because os.Executable() would
 // resolve symlinks back to rdd on Linux.
 func multiCallArgs(args []string) ([]string, error) {
 	name := commandName(args[0], runtime.GOOS)
 	switch name {
-	case "kubectl", "nerdctl", "yq":
+	case "kubectl", "nerdctl", "steve", "yq":
 		return append([]string{args[0], name}, args[1:]...), nil
 	case "rdd":
 		return args, nil
@@ -44,7 +44,7 @@ func multiCallArgs(args []string) ([]string, error) {
 		}
 		return args, nil
 	}
-	return nil, fmt.Errorf("unsupported command name %q: use rdd, rdd-<instance>, kubectl, nerdctl or yq", base)
+	return nil, fmt.Errorf("unsupported command name %q: use rdd, rdd-<instance>, kubectl, nerdctl, steve or yq", base)
 }
 
 // isReleaseName reports whether name starts with "rdd." and a digit, like the
