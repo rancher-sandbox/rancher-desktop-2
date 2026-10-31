@@ -6,7 +6,6 @@ import Electron from 'electron';
 import _ from 'lodash';
 import semver from 'semver';
 
-import { Steve } from '@pkg/backend/steve';
 import { Help } from '@pkg/config/help';
 import { initMainI18n, onLocaleChange, t } from '@pkg/main/i18n';
 import { getIpcMainProxy } from '@pkg/main/ipcMain';
@@ -14,6 +13,7 @@ import mainEvents from '@pkg/main/mainEvents';
 import buildApplicationMenu from '@pkg/main/mainmenu';
 import setupNetworking from '@pkg/main/networking';
 import { isFirstRunNeeded } from '@pkg/main/rdd-ctl';
+import { followAppStatus } from '@pkg/main/steveLifecycle';
 import initializeTransientPreferences from '@pkg/main/transientPreferences';
 import Logging, { clearLoggingDirectory } from '@pkg/utils/logging';
 import { fetchMacOsVersion, getMacOsVersion } from '@pkg/utils/osVersion';
@@ -319,15 +319,7 @@ ipcMainProxy.on('dialog/close', (_event, args) => {
 
 // Start and stop Steve as needed
 ipcMainProxy.on('backend/app-status-changed', (_event, statusConditions) => {
-  const [status] = statusConditions.KubernetesReady ?? [];
-
-  if (status) {
-    Steve.getInstance().start().catch((err) => {
-      console.error('Failed to start Steve:', err);
-    });
-  } else {
-    Steve.getInstance().stop();
-  }
+  followAppStatus(statusConditions);
 });
 
 ipcMainProxy.handle('versions/macOs', () => {
