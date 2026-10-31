@@ -72,6 +72,7 @@ jobs:
       if: runner.os != 'macOS'
       run: make guest-binaries
       working-directory: rdd
+    - uses: $/.github/actions/trim-go-cache
   test-rdd:
     name: RDD Unit tests
     needs: get-pr-number
