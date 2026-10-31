@@ -12,7 +12,7 @@
       class="volumesTable"
       data-testid="volumes-table"
       :headers="headers"
-      key-field="Name"
+      key-field="status.name"
       :rows="rows"
       no-rows-key="volumes.sortableTables.noRows"
       :row-actions="true"
@@ -80,7 +80,6 @@ import SortableTable from '@pkg/components/SortableTable';
 import type { Settings } from '@pkg/config/settings';
 import { mapTypedActions, mapTypedGetters, mapTypedMutations, mapTypedState } from '@pkg/entry/store';
 import { hasField } from '@pkg/utils/iterator';
-import { defined } from '@pkg/utils/typeUtils';
 import { IoRancherdesktopContainersV1alpha1Volume as Volume } from '@rdd-client';
 
 const MAX_PATH_LENGTH = 40;
@@ -91,14 +90,13 @@ const MAX_PATH_LENGTH = 40;
 type RowItem = Volume & Required<Pick<Volume, 'status' | 'metadata'>> & {
   createdText:      string;
   availableActions: {
-    label:       string;
-    action:      string;
-    enabled:     boolean;
-    bulkable:    boolean;
-    bulkAction?: string;
+    label:    string;
+    action:   string;
+    enabled:  boolean;
+    bulkable: boolean;
   }[];
-  deleteVolume: (items?: RowItem[]) => void;
-  browseFiles:  (items?: RowItem[]) => void;
+  deleteVolume: (this: RowItem) => void;
+  browseFiles:  (this: RowItem) => void;
 };
 
 export default defineComponent({
@@ -111,22 +109,22 @@ export default defineComponent({
         {
           name:  'Name',
           label: this.t('volumes.manage.table.header.volumeName'),
-          sort:  ['Name'],
+          sort:  ['status.name'],
         },
         {
           name:  'Driver',
           label: this.t('volumes.manage.table.header.driver'),
-          sort:  ['Driver', 'Name'],
+          sort:  ['status.driver', 'status.name'],
         },
         {
           name:  'Mountpoint',
           label: this.t('volumes.manage.table.header.mountpoint'),
-          sort:  ['Mountpoint', 'Name'],
+          sort:  ['status.mountpoint', 'status.name'],
         },
         {
           name:  'Created',
           label: this.t('volumes.manage.table.header.created'),
-          sort:  ['Created', 'Name'],
+          sort:  ['status.createdAt', 'status.name'],
           width: 120,
         },
       ],
@@ -150,19 +148,14 @@ export default defineComponent({
               bulkable: false,
             },
             {
-              label:      this.t('volumes.manager.table.action.delete'),
-              action:     'deleteVolume',
-              enabled:    true,
-              bulkable:   true,
-              bulkAction: 'deleteVolume',
+              label:     this.t('volumes.manager.table.action.delete'),
+              action:    'deleteVolume',
+              enabled:   true,
+              bulkable:  true,
             },
           ],
-          deleteVolume: (args?: Volume | Volume[]) => {
-            const volumes = Array.isArray(args) ? args : [args].filter(defined);
-
-            return Promise.all(volumes.map(volume => this.volumeDelete({ volume })));
-          },
-          browseFiles: () => {
+          deleteVolume: () => this.volumeDelete({ volume }),
+          browseFiles:  () => {
             this.$router.push({ name: 'volumes-files-name', params: { name: volume.status.name } });
           },
         }));

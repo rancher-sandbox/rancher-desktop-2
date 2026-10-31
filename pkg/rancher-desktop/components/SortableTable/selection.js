@@ -124,14 +124,9 @@ export default {
       // When the table contents changes:
       // - Remove items that are in the selection but no longer in the table.
 
-      const content = this.pagedRows;
-      const toRemove = [];
-
-      for (const node of this.selectedRows) {
-        if (!content.includes(node) ) {
-          toRemove.push(node);
-        }
-      }
+      const contentKeys = new Set(this.pagedRows.map((row) => get(row, this.keyField)));
+      const toRemove = this.selectedRows.filter((node) =>
+        !contentKeys.has(get(node, this.keyField)));
 
       this.update([], toRemove);
     },
@@ -279,11 +274,11 @@ export default {
         return;
       }
 
-      const isSelected = selection.includes(node);
+      const isSelected = selection.some((row) => get(row, this.keyField) === get(node, this.keyField));
       let prevNode = this.prevNode;
 
       // PrevNode is only valid if it's in the current content
-      if ( !prevNode || !content.includes(prevNode) ) {
+      if ( !prevNode || !content.some((row) => get(row, this.keyField) === get(prevNode, this.keyField)) ) {
         prevNode = node;
       }
 
@@ -321,7 +316,7 @@ export default {
       e.stopPropagation();
 
       this.prevNode = node;
-      const isSelected = this.selectedRows.includes(node);
+      const isSelected = this.selectedRows.some((row) => get(row, this.keyField) === get(node, this.keyField));
 
       if ( !isSelected ) {
         this.update([node], this.selectedRows.slice());
@@ -402,7 +397,7 @@ export default {
       }
 
       // check if there is already duplicate content selected (selectedRows) on the list to toggle...
-      toToggle = toToggle.filter((item) => !this.selectedRows.includes(item));
+      toToggle = toToggle.filter((item) => !this.selectedRows.some((row) => get(row, this.keyField) === get(item, this.keyField)));
 
       return toToggle;
     },
@@ -430,7 +425,7 @@ export default {
       const add = [];
       const remove = [];
 
-      if (this.selectedRows.includes(node)) {
+      if (this.selectedRows.some((row) => get(row, this.keyField) === get(node, this.keyField))) {
         remove.push(node);
       } else {
         add.push(node);
@@ -441,7 +436,7 @@ export default {
 
     update(toAdd, toRemove) {
       toRemove.forEach((row) => {
-        const index = this.selectedRows.findIndex((r) => r._key === row._key);
+        const index = this.selectedRows.findIndex((r) => get(r, this.keyField) === get(row, this.keyField));
 
         if (index !== -1) {
           this.selectedRows.splice(index, 1);

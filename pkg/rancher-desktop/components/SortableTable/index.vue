@@ -1324,7 +1324,7 @@ export default {
                     class="selection-checkbox"
                     :data-node-id="row.key"
                     :data-testid="componentTestid + '-' + i + '-checkbox'"
-                    :value="selectedRows.includes(row.row)"
+                    :value="selectedRows.some(r => get(r, keyField) === row.key)"
                   />
                 </td>
                 <td
