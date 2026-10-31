@@ -1,6 +1,5 @@
 import { importTypes } from '@rancher/auto-import';
 import { IInternal, IPlugin } from '@shell/core/types';
-import Socket from '@shell/utils/socket';
 
 // Init the package
 export default function(plugin: IPlugin, internal: IInternal): void {
@@ -10,10 +9,7 @@ export default function(plugin: IPlugin, internal: IInternal): void {
   // Provide plugin metadata from package.json
   plugin.metadata = require('./package.json');
 
-  const { $axios, store, app: { router } } = internal;
-
-  interceptApiRequest($axios);
-  interceptWebSocketUrls();
+  const { store, app: { router } } = internal;
 
   const logoRoute = router.resolve({
     name: 'c-cluster-explorer',
@@ -37,52 +33,3 @@ export default function(plugin: IPlugin, internal: IInternal): void {
     hideCopyConfig: true,
   });
 }
-
-/**
- * Intercepts requests to rewrite URLs. This is useful intercepting any direct
- * API calls when running dashboard on plain HTTP.
- *
- * NOTE: This is currently used for running Dashboard in Rancher Desktop.
- * @param {*} axios The axios instance to modify
- */
-const interceptApiRequest = (axios: any) => {
-  axios.interceptors.request.use((config: any) => {
-    // ensure that traffic to port 6120 stays on http
-    if (config.url.includes(':6120')) {
-      config.url = config.url
-        .replace('https://', 'http://');
-    }
-
-    return config;
-  }, (error: any) => {
-    return Promise.reject(error);
-  });
-};
-
-/**
- * Intercepts WebSocket URL construction to rewrite URLs for the HTTP port.
- *
- * rdd serves the dashboard over plain HTTP, so WebSocket connections for pod
- * logs/shell need to use ws:// (not wss://).
- *
- * This fixes issue #3212 where newly created pods fail to show logs because
- * their WebSocket URLs use wss:// on the HTTP port.
- */
-const interceptWebSocketUrls = () => {
-  const originalSetUrl = Socket.prototype.setUrl;
-
-  Socket.prototype.setUrl = function(url: string) {
-    // Let the original setUrl process the URL first (handles relative URLs,
-    // protocol upgrades, etc.)
-    originalSetUrl.call(this, url);
-
-    // Now apply our transformations to this.url AFTER the original processing.
-    // The original setUrl upgrades ws:// to wss:// when served over HTTPS,
-    // so we need to fix it here.
-
-    // Convert wss://127.0.0.1:6120 → ws://127.0.0.1:6120
-    if (this.url.includes(':6120')) {
-      this.url = this.url.replace('wss://', 'ws://');
-    }
-  };
-};
