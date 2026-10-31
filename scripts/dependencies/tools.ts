@@ -199,35 +199,6 @@ export class CheckSpelling extends GlobalDependency(GitHubDependency) {
   }
 }
 
-export class Steve extends GlobalDependency(GitHubDependency) {
-  readonly name = 'steve';
-  readonly githubOwner = 'rancher-sandbox';
-  readonly githubRepo = 'rancher-desktop-steve';
-  readonly releaseFilter = 'published-pre';
-
-  async download(context: DownloadContext): Promise<void> {
-    const asset = selectAsset(context, this.name);
-    const stevePath = path.join(context.internalDir, exeName(context, 'steve'));
-
-    await downloadTarGZ(asset.url, stevePath, { expectedChecksum: asset.checksum });
-  }
-
-  async getAssets(version: string): Promise<DependencyAsset[]> {
-    const steveURLBase = `https://github.com/${ this.githubOwner }/${ this.githubRepo }/releases/download/v${ version }`;
-    const upstream = await fetchUpstreamChecksums(`${ steveURLBase }/steve.sha512sum`, 'sha512');
-
-    return Promise.all(cartesian(HOST_PLATFORMS, ARCHES).map(async([platform, arch]) => {
-      const archiveName = `steve-${ platform }-${ arch }.tar.gz`;
-      const url = `${ steveURLBase }/${ archiveName }`;
-      const checksum = await downloadAndHash(url, {
-        verify: { algorithm: 'sha512', expected: upstream[archiveName] },
-      });
-
-      return { platform, arch, url, checksum };
-    }));
-  }
-}
-
 export class DockerProvidedCredHelpers extends GlobalDependency(GitHubDependency) {
   readonly name = 'dockerProvidedCredentialHelpers';
   readonly githubOwner = 'docker';

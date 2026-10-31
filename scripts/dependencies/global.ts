@@ -16,6 +16,5 @@ export const globalDependencies: VersionedDependency[] = [
   new tools.ECRCredHelper(),
   new tools.GoLangCILint(),
   new tools.Helm(),
-  new tools.Steve(),
   new Wix(),
 ];
