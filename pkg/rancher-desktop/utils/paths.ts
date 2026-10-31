@@ -45,13 +45,11 @@ interface RDDPaths {
  */
 interface RDAPaths {
   /** RDA: path to the RDD executable. */
-  readonly rdd:         string;
+  readonly rdd:       string;
   /** RDA: resources directory. */
-  readonly resources:   string;
-  /** RDA: internal executables directory. */
-  readonly internalDir: string;
+  readonly resources: string;
   /** RDA: cache directory. */
-  readonly cache:       string;
+  readonly cache:     string;
 }
 
 export interface Paths extends RDDPaths, RDAPaths { }
@@ -105,7 +103,7 @@ export function getRDDPath(useCached = true): string {
 }
 
 type PlatformSpecificPaths = Pick<RDAPaths, 'cache'>;
-type PlatformAgnosticPaths = Pick<RDAPaths, 'resources' | 'internalDir'>;
+type PlatformAgnosticPaths = Pick<RDAPaths, 'resources'>;
 
 /**
  * TEST_PLATFORM is a special platform name for testing.
@@ -164,9 +162,6 @@ const platformAgnosticPaths: PlatformAgnosticPaths = {
     // `.../Electron.app/Contents/Resources` (and other similar paths on other
     // platforms); we need to use the project directory instead.
     return path.join(process.cwd(), 'resources');
-  },
-  get internalDir() {
-    return path.join(this.resources, 'internal');
   },
 };
 

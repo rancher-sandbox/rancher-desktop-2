@@ -104,7 +104,6 @@ describe('getPaths', () => {
     ...rddPaths,
     rdd:              'rdd',
     resources:        path.join(process.cwd(), 'resources'),
-    internalDir:      path.join(process.cwd(), 'resources', 'internal'),
     cache:            path.join(rddPaths.dir, 'cache'),
   };
   beforeEach(() => {
@@ -141,7 +140,7 @@ describe('getPaths', () => {
         dir:       path.join(os.tmpdir(), 'rancher-desktop'),
         cache:     path.join(os.tmpdir(), 'rancher-desktop', 'cache'),
         log_dir:   path.join(os.tmpdir(), 'rancher-desktop', 'log_dir'),
-        ...pick(expected, 'resources', 'internalDir', 'rdd'),
+        ...pick(expected, 'resources', 'rdd'),
       };
       const actual = getPaths(expected.rdd, TEST_PLATFORM as any);
       for (const untypedKey of Object.keys(expected)) {
