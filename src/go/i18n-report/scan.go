@@ -18,11 +18,12 @@ type keyReference struct {
 	Line int    `json:"line"`
 }
 
-// dynamicKeyRef records a template literal pattern that references
-// translation keys via interpolation (e.g., `prefix.${var}.suffix`).
+// dynamicKeyRef records a pattern that references translation keys at
+// runtime, either a template literal with interpolation
+// (e.g., `prefix.${var}.suffix`) or an i18n-uses entry (e.g., `nav.group.*`).
 type dynamicKeyRef struct {
-	Template string         // raw template content
-	Pattern  string         // human-readable: "prefix.{}.suffix"
+	Template string         // raw template content or i18n-uses entry
+	Pattern  string         // human-readable: "prefix.{}.suffix" or "nav.group.*"
 	Regex    *regexp.Regexp // compiled regex for matching keys
 	Ref      keyReference   // source location
 }
@@ -71,6 +72,10 @@ var (
 
 	// Splits a template string on ${...} interpolations.
 	interpolationSplit = regexp.MustCompile(`\$\{[^}]+\}`)
+
+	// An i18n-uses comment names the keys that a dynamic reference resolves to.
+	// It is the annotation that the dashboard shell's check-i18n reads.
+	i18nUsesPattern = regexp.MustCompile(`//\s*i18n-uses\s+(.+)$`)
 )
 
 // templateToKeyRegex converts a template literal with ${...} interpolations
@@ -116,6 +121,40 @@ func extractDynamicPatterns(line string, ref keyReference) []dynamicKeyRef {
 			Template: template,
 			Pattern:  templateToHumanPattern(template),
 			Regex:    re,
+			Ref:      ref,
+		})
+	}
+	return dynamics
+}
+
+// extractI18nUses returns the key patterns that an i18n-uses comment on the line
+// declares. A trailing * spans the remaining segments, and any other * spans one.
+func extractI18nUses(line string, ref keyReference) []dynamicKeyRef {
+	m := i18nUsesPattern.FindStringSubmatch(line)
+	if m == nil {
+		return nil
+	}
+	var dynamics []dynamicKeyRef
+	for _, pattern := range strings.Split(m[1], ",") {
+		pattern = strings.TrimSpace(pattern)
+		if pattern == "" {
+			continue
+		}
+		segments := strings.Split(pattern, ".")
+		for i, segment := range segments {
+			switch {
+			case segment != "*":
+				segments[i] = regexp.QuoteMeta(segment)
+			case i == len(segments)-1:
+				segments[i] = ".*"
+			default:
+				segments[i] = `[^.]*`
+			}
+		}
+		dynamics = append(dynamics, dynamicKeyRef{
+			Template: pattern,
+			Pattern:  pattern,
+			Regex:    regexp.MustCompile("^" + strings.Join(segments, `\.`) + "$"),
 			Ref:      ref,
 		})
 	}
@@ -223,10 +262,11 @@ func scanFiles(root string, keys map[string]string) (*scanResult, error) {
 		content := string(data)
 		lines := strings.Split(content, "\n")
 		for i, line := range lines {
+			ref := keyReference{File: relPath, Line: i + 1}
+			result.dynamics = append(result.dynamics, extractI18nUses(line, ref)...)
 			if commentLinePattern.MatchString(line) {
 				continue
 			}
-			ref := keyReference{File: relPath, Line: i + 1}
 
 			for _, pat := range []*regexp.Regexp{keyPattern, keyPropPattern, keyAttrPattern, vtDirectivePattern, getterCallPattern} {
 				for _, m := range pat.FindAllStringSubmatch(line, -1) {
@@ -259,7 +299,7 @@ func scanFiles(root string, keys map[string]string) (*scanResult, error) {
 }
 
 // findKeyReferences scans source files for translation key usage,
-// including dynamic template literal patterns.
+// including dynamic key patterns.
 func findKeyReferences(root string, keys map[string]string) (map[string][]keyReference, error) {
 	result, err := scanFiles(root, keys)
 	if err != nil {
@@ -298,7 +338,7 @@ func findUndefinedKeys(root string, keys map[string]string) (map[string][]keyRef
 }
 
 // findDynamicPatterns scans source files and returns only the dynamic
-// template literal patterns (without resolving them against keys).
+// key patterns (without resolving them against keys).
 func findDynamicPatterns(root string) ([]dynamicKeyRef, error) {
 	result, err := scanFiles(root, nil)
 	if err != nil {

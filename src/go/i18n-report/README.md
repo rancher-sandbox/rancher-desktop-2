@@ -232,8 +232,8 @@ i18n-report references [--format=json|text]
 
 ### dynamic
 
-Find dynamic key patterns — `t()` calls with template literals — and
-show which en-us.yaml keys they match.
+Find dynamic key patterns (`t()` calls with template literals, and
+`i18n-uses` comments) and show which en-us.yaml keys they match.
 
 ```sh
 i18n-report dynamic [--format=json|text]
@@ -391,8 +391,11 @@ Key references are found by matching several regex patterns:
   (`label-key`, `no-rows-key`, ...)
 - `v-t="'key'"` directives
 - Indirect references: property values that match en-us.yaml keys
+- `// i18n-uses nav.group.*, unit.day` comments, which declare the keys
+  that a dynamic reference resolves to
 
-Full-line comments are ignored; trailing comments on code lines are not.
+Apart from `i18n-uses`, full-line comments are ignored; trailing comments
+on code lines are not.
 
 ### Untranslated heuristics
 

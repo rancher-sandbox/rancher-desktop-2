@@ -107,6 +107,39 @@ func TestScanFilesDynamicPatternMarksKeysReferenced(t *testing.T) {
 	}
 }
 
+func TestScanFilesHonorsI18nUses(t *testing.T) {
+	source := `<script>
+// i18n-uses nav.group.*, unit.day
+const label = 'x'; // i18n-uses validation.*.min
+</script>
+`
+	dir := setupScanTestRepo(t, source)
+	keys := map[string]string{
+		"nav.group.cluster":   "Cluster",
+		`nav.group."k3s.io"`:  "K3s",
+		"unit.day":            "day",
+		"validation.port.min": "too small",
+		"unit.hour":           "hour",
+		"validation.port.max": "too large",
+		"validation.a.b.min":  "too deep",
+	}
+
+	refs, err := findKeyReferences(dir, keys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"nav.group.cluster", `nav.group."k3s.io"`, "unit.day", "validation.port.min"} {
+		if len(refs[key]) == 0 {
+			t.Errorf("expected %q to be referenced through i18n-uses", key)
+		}
+	}
+	for _, key := range []string{"unit.hour", "validation.port.max", "validation.a.b.min"} {
+		if len(refs[key]) != 0 {
+			t.Errorf("expected %q to have no references, got %v", key, refs[key])
+		}
+	}
+}
+
 func TestScanFilesUnreadableFileIsAnError(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("file modes cannot make a file unreadable on Windows")
