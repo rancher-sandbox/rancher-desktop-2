@@ -58,8 +58,7 @@ export interface IpcMainEvents {
   'transient-preferences/get': () => void;
   // #endregion
 
-  'dashboard-open':  () => void;
-  'dashboard-close': () => void;
+  'dashboard-open': () => void;
 
   'diagnostics/run': () => void;
 
