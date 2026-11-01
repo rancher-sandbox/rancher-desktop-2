@@ -43,6 +43,12 @@ var (
 	// Object-literal UI labels in script code, e.g. SortableTable headers
 	// (`label: 'Local Port'`) and inline objects (`{ label: 'Duration' }`).
 	objectLabelPattern = regexp.MustCompile(`(?:^|[\s{,(])(label|text|tooltip|placeholder):\s+['"]([A-Z][^'"]{2,})['"]`)
+	// Title Case string literals in the code forms that build display text,
+	// in templates and script alike.
+	literalShapePatterns = []*regexp.Regexp{
+		// A ternary between two strings, e.g. `on ? "Yes" : "No"`.
+		regexp.MustCompile(`\?\s*['"][A-Z][a-zA-Z ]+['"]\s*:\s*['"][A-Z][a-zA-Z ]+['"]`),
+	}
 	// A t() call anywhere on the line; such lines are already translated.
 	tCallPattern = regexp.MustCompile(`(?:^|[^a-zA-Z])t\(`)
 )
@@ -222,6 +228,12 @@ func findUntranslated(root string, includeDescriptions bool) ([]untranslatedHit,
 			// Dialog strings in both .vue and .ts files.
 			if !found && dialogPattern.MatchString(trimmed) {
 				found = true
+			}
+
+			for _, pattern := range literalShapePatterns {
+				if !found && pattern.MatchString(trimmed) {
+					found = true
+				}
 			}
 
 			if found {

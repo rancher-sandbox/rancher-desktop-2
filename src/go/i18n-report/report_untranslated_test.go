@@ -79,6 +79,32 @@ func TestFindUntranslatedSkipsCommentLines(t *testing.T) {
 	}
 }
 
+func TestFindUntranslatedLiteralShapes(t *testing.T) {
+	tests := []struct {
+		name    string
+		file    string
+		content string
+		want    int
+	}{
+		{"ternary in a template", "a.vue", "<template>\n  <span>{{ on ? \"Yes\" : \"No\" }}</span>\n</template>\n", 1},
+		{"ternary in script", "a.ts", "const label = on ? 'Yes' : 'No';\n", 1},
+		{"ternary of identifiers", "a.ts", "const state = on ? 'running' : 'stopped';\n", 0},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := setupUntranslatedRepo(t, map[string]string{tc.file: tc.content})
+			hits, err := findUntranslated(dir, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(hits) != tc.want {
+				t.Errorf("got %d hits, want %d: %+v", len(hits), tc.want, hits)
+			}
+		})
+	}
+}
+
 func TestFindUntranslatedUnreadableFileIsAnError(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("file modes cannot make a file unreadable on Windows")
