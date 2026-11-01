@@ -21,7 +21,7 @@ import paths from '@pkg/utils/paths';
 import { protocolsRegistered, setupProtocolHandlers } from '@pkg/utils/protocols';
 import getWSLVersion from '@pkg/utils/wslVersion';
 import * as window from '@pkg/window';
-import { closeDashboard, openDashboard } from '@pkg/window/dashboard';
+import { openDashboard } from '@pkg/window/dashboard';
 import { openPreferences } from '@pkg/window/preferences';
 
 // https://www.electronjs.org/docs/latest/breaking-changes#changed-gtk-4-is-default-when-running-gnome
@@ -291,10 +291,6 @@ Electron.app.on('activate', async() => {
 
 ipcMainProxy.on('dashboard-open', () => {
   openDashboard();
-});
-
-ipcMainProxy.on('dashboard-close', () => {
-  closeDashboard();
 });
 
 ipcMainProxy.on('preferences-open', () => {
