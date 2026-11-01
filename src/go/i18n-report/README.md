@@ -407,10 +407,11 @@ The untranslated scanner checks:
 - Bound string literal attributes (`:label="'text'"`)
 - Electron dialog properties (`title`, `message`, `detail`)
 - Validation error messages (`errors.push('...')`)
+- Object-literal labels in script code (`label: 'Local Port'`)
 
-It skips test files, lines already using `t()` or bound attributes, and
-values matching common non-translatable patterns (URLs, CSS classes,
-identifiers).
+It skips test files, comment lines, lines already using `t()` or bound
+attributes, and values matching common non-translatable patterns (URLs,
+CSS classes, identifiers).
 
 ### Merge pipeline
 

@@ -141,7 +141,10 @@ func findUntranslated(root string, includeDescriptions bool) ([]untranslatedHit,
 				}
 			}
 
-			// Skip lines that already use binding (:attr) or t()
+			// Skip comments and lines that already use binding (:attr) or t()
+			if commentLinePattern.MatchString(trimmed) {
+				continue
+			}
 			if strings.Contains(trimmed, ":label=") || strings.Contains(trimmed, ":legend-text=") {
 				continue
 			}

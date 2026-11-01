@@ -65,6 +65,20 @@ func TestFindUntranslatedDetectsObjectLabel(t *testing.T) {
 	}
 }
 
+func TestFindUntranslatedSkipsCommentLines(t *testing.T) {
+	dir := setupUntranslatedRepo(t, map[string]string{
+		"doc.ts":  "/**\n * props: { title: 'Hello Modal' }\n */\n// label: 'Local Port',\n",
+		"doc.vue": "<template>\n  <!-- <h1>Reset Kubernetes</h1> -->\n  <div />\n</template>\n",
+	})
+	hits, err := findUntranslated(dir, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(hits) != 0 {
+		t.Errorf("got %d hits, want 0: %+v", len(hits), hits)
+	}
+}
+
 func TestFindUntranslatedUnreadableFileIsAnError(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("file modes cannot make a file unreadable on Windows")
