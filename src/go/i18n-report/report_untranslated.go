@@ -26,7 +26,7 @@ type untranslatedHit struct {
 var (
 	// Attributes that should use t() instead of hardcoded strings.
 	// Excludes Vue directives (v-tooltip, v-clean-tooltip) since their values are expressions.
-	attrPattern = regexp.MustCompile(`(?i)(?:^|\s)(label|legend-text|placeholder|tooltip|description)="([^"]{3,})"`)
+	attrPattern = regexp.MustCompile(`(?i)(?:^|\s)((?:[a-z]{2,}-(?:[a-z]+-)*)?label|legend-text|placeholder|tooltip|description|suffix)="([^"]{3,})"`)
 	// Skip attributes that are clearly not translatable.
 	skipPattern = regexp.MustCompile(`^[a-z][a-zA-Z0-9]*$|^\d|^http|^/|^#|^\$|^@|^:|^\{`)
 	// Single-word Title Case values (e.g., "Environment", "General").
