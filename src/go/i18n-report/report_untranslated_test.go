@@ -116,6 +116,9 @@ func TestValuePatterns(t *testing.T) {
 		{"objectLabel: t() call not matched", objectLabelPattern, 2, `label: this.t('containers.title'),`, ""},
 		{"objectLabel: lowercase value not matched", objectLabelPattern, 2, `label: 'name',`, ""},
 		{"objectLabel: non-label property not matched", objectLabelPattern, 2, `name: 'Namespace',`, ""},
+		{"objectLabel: inline object", objectLabelPattern, 2, `out.push({ label: 'Duration', content: label });`, "Duration"},
+		{"objectLabel: later property", objectLabelPattern, 2, `{ value: 'pool', label: 'Pool' },`, "Pool"},
+		{"objectLabel: suffix of a longer name not matched", objectLabelPattern, 2, `sublabel: 'Namespace',`, ""},
 	}
 
 	for _, tc := range tests {
@@ -174,6 +177,9 @@ func TestSingleWordTitleCase(t *testing.T) {
 		{"ABC", false},       // not Title Case
 		{"hello", false},     // lowercase start
 		{"Two Words", false}, // has space
+		{"Up-to-date", true},
+		{"Read-only", true},
+		{"K-8s", false},
 	}
 
 	for _, tc := range tests {

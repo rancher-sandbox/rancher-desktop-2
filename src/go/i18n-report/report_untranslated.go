@@ -29,8 +29,8 @@ var (
 	attrPattern = regexp.MustCompile(`(?i)(?:^|\s)((?:[a-z]{2,}-(?:[a-z]+-)*)?label|legend-text|placeholder|tooltip|description|suffix)="([^"]{3,})"`)
 	// Skip attributes that are clearly not translatable.
 	skipPattern = regexp.MustCompile(`^[a-z][a-zA-Z0-9]*$|^\d|^http|^/|^#|^\$|^@|^:|^\{`)
-	// Single-word Title Case values (e.g., "Environment", "General").
-	singleWordTitleCase = regexp.MustCompile(`^[A-Z][a-z]{2,}$`)
+	// Single-word Title Case values (e.g., "Environment", "Up-to-date").
+	singleWordTitleCase = regexp.MustCompile(`^[A-Z][a-z]{2,}$|^[A-Z][a-z]*(?:-[a-z]+)+$`)
 	// Text between an HTML closing ">" and an opening "</" on the same line.
 	htmlTextPattern = regexp.MustCompile(`>\s*([A-Z][a-zA-Z ]{2,}?)\s*</`)
 	// Bare text between tags split across lines (e.g., ">\n Cancel\n </button>").
@@ -40,8 +40,8 @@ var (
 	// Validation error messages pushed to an errors array.
 	errorPushPattern = regexp.MustCompile(`errors\.push\(\s*['"\x60]`)
 	// Object-literal UI labels in script code, e.g. SortableTable headers
-	// (`label: 'Local Port'`).
-	objectLabelPattern = regexp.MustCompile(`^(label|text|tooltip|placeholder):\s+['"]([A-Z][^'"]{2,})['"],?$`)
+	// (`label: 'Local Port'`) and inline objects (`{ label: 'Duration' }`).
+	objectLabelPattern = regexp.MustCompile(`(?:^|[\s{,(])(label|text|tooltip|placeholder):\s+['"]([A-Z][^'"]{2,})['"]`)
 	// A t() call anywhere on the line; such lines are already translated.
 	tCallPattern = regexp.MustCompile(`(?:^|[^a-zA-Z])t\(`)
 )
