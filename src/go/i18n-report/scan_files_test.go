@@ -107,6 +107,36 @@ func TestScanFilesDynamicPatternMarksKeysReferenced(t *testing.T) {
 	}
 }
 
+func TestScanFilesCountsQuotedKeysInTernaries(t *testing.T) {
+	source := `<script>
+const label = this.t(this.canEdit ? 'action.edit' : 'action.view');
+const help = this.t(
+  hasIp ? 'page.help' : null,
+);
+</script>
+`
+	dir := setupScanTestRepo(t, source)
+	keys := map[string]string{
+		"action.edit": "Edit",
+		"action.view": "View",
+		"page.help":   "Help",
+		"page.other":  "Other",
+	}
+
+	refs, err := findKeyReferences(dir, keys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"action.edit", "action.view", "page.help"} {
+		if len(refs[key]) == 0 {
+			t.Errorf("expected %q to be referenced", key)
+		}
+	}
+	if len(refs["page.other"]) != 0 {
+		t.Errorf("expected page.other to have no references, got %v", refs["page.other"])
+	}
+}
+
 func TestScanFilesHonorsI18nUses(t *testing.T) {
 	source := `<script>
 // i18n-uses nav.group.*, unit.day

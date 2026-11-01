@@ -390,7 +390,7 @@ Key references are found by matching several regex patterns:
 - `k="..."` and `*-key="..."` Vue template attributes
   (`label-key`, `no-rows-key`, ...)
 - `v-t="'key'"` directives
-- Indirect references: property values that match en-us.yaml keys
+- Indirect references: quoted strings that match en-us.yaml keys
 - `// i18n-uses nav.group.*, unit.day` comments, which declare the keys
   that a dynamic reference resolves to
 

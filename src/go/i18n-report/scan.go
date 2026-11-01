@@ -58,13 +58,6 @@ var (
 	// Comment lines; keys mentioned in comments are not real references.
 	commentLinePattern = regexp.MustCompile(`^\s*(//|\*|/\*|<!--)`)
 
-	// String values that look like translation keys in property assignments
-	// (e.g., `bar: 'product.kubernetesVersion'`). Catches indirect references
-	// where the value is later passed to t() by a different component.
-	// Validated against the en-us.yaml key set to avoid false positives from
-	// settings paths, Kubernetes resource types, and other dotted strings.
-	indirectKeyPattern = regexp.MustCompile(`(?:\b\w+|'[^']+'|"[^"]+"):\s+['"]([a-z][a-zA-Z0-9]*(?:\.[a-z][a-zA-Z0-9]*)+)['"]`)
-
 	// Template literals that look like dynamic translation key patterns.
 	// Matches backtick strings containing at least one dot and one ${...}
 	// interpolation, with a key-like prefix (e.g., `prefix.${var}.suffix`).
@@ -279,8 +272,10 @@ func scanFiles(root string, keys map[string]string) (*scanResult, error) {
 					addDirect(m[1], ref)
 				}
 			}
-			// Indirect key references: only count matches that exist in en-us.yaml.
-			for _, m := range indirectKeyPattern.FindAllStringSubmatch(line, -1) {
+			// A quoted key can reach t() indirectly, as a property that another
+			// component reads or as a ternary inside the call. Only strings in
+			// en-us.yaml count, which excludes settings paths and resource types.
+			for _, m := range dottedKeyLiteral.FindAllStringSubmatch(line, -1) {
 				if _, exists := keys[m[1]]; exists {
 					result.refs[m[1]] = appendRef(result.refs[m[1]], ref)
 				}
@@ -320,7 +315,7 @@ func findKeyReferences(root string, keys map[string]string) (map[string][]keyRef
 
 // findUndefinedKeys returns direct references to keys that are missing from
 // the key set. Indirect references are excluded: settings paths and other
-// dotted strings match the indirect pattern, so without the key-set filter
+// dotted strings match dottedKeyLiteral, so without the key-set filter
 // they would flood this report with false positives.
 func findUndefinedKeys(root string, keys map[string]string) (map[string][]keyReference, error) {
 	result, err := scanFiles(root, keys)

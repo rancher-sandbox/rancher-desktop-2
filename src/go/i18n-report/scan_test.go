@@ -83,10 +83,10 @@ func TestKeyLiteralPatterns(t *testing.T) {
 		{"dotted: quoted dotted key", dottedKeyLiteral, `titleKey: isAdmin ? 'admin.title' : 'user.title'`, "admin.title"},
 		{"dotted: no dotted key", dottedKeyLiteral, `titleKey: 'single'`, ""},
 		{"dotted: uppercase start", dottedKeyLiteral, `"Admin.title"`, ""}, // must start lowercase
-		{"indirect: property assignment", indirectKeyPattern, `bar: 'product.kubernetesVersion'`, "product.kubernetesVersion"},
-		{"indirect: quoted property", indirectKeyPattern, `'some-prop': "container.engine"`, "container.engine"},
-		{"indirect: double-quoted property", indirectKeyPattern, `"some-prop": 'container.engine'`, "container.engine"},
-		{"indirect: no dotted value", indirectKeyPattern, `bar: 'simple'`, ""},
+		{"dotted: property assignment", dottedKeyLiteral, `bar: 'product.kubernetesVersion'`, "product.kubernetesVersion"},
+		{"dotted: quoted property", dottedKeyLiteral, `'some-prop': "container.engine"`, "container.engine"},
+		{"dotted: double-quoted property", dottedKeyLiteral, `"some-prop": 'container.engine'`, "container.engine"},
+		{"dotted: no dotted value", dottedKeyLiteral, `bar: 'simple'`, ""},
 	}
 
 	for _, tc := range tests {
