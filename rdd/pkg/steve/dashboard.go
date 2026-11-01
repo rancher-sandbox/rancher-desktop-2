@@ -41,6 +41,10 @@ func newHandler(api http.Handler, files fs.FS, port int) (http.Handler, error) {
 		http.Redirect(w, r, "/c/local/explorer", http.StatusFound)
 	})
 	mux.Handle("/c/", rewriter)
+	// The dashboard's error paths leave /c/ for these routes, and a reload there
+	// has to reach the dashboard again.
+	mux.Handle("/fail-whale", rewriter)
+	mux.Handle("/home", rewriter)
 	// The dashboard addresses the local cluster under this prefix. Websockets
 	// cannot follow a 302, so serve it directly rather than redirecting.
 	mux.Handle("/k8s/clusters/local/", http.StripPrefix("/k8s/clusters/local", api))
