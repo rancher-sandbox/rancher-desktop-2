@@ -50,6 +50,10 @@ var (
 		regexp.MustCompile(`\?\s*['"][A-Z][a-zA-Z ]+['"]\s*:\s*['"][A-Z][a-zA-Z ]+['"]`),
 		// A string pushed onto a list, e.g. `res.push('Control Plane')`.
 		regexp.MustCompile(`\.push\(\s*['"][A-Z][a-zA-Z ]{2,}['"]\s*\)`),
+		// An array of two or more strings, e.g. `['No', 'Once', 'Yes']`. Lists
+		// of field names and enum values match too; only a reader can tell
+		// them from text.
+		regexp.MustCompile(`\[\s*['"][A-Z][a-z]+['"](?:\s*,\s*['"][A-Z][a-zA-Z.]*['"])+\s*\]`),
 	}
 	// A t() call anywhere on the line; such lines are already translated.
 	tCallPattern = regexp.MustCompile(`(?:^|[^a-zA-Z])t\(`)

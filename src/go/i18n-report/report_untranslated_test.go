@@ -91,6 +91,8 @@ func TestFindUntranslatedLiteralShapes(t *testing.T) {
 		{"ternary of identifiers", "a.ts", "const state = on ? 'running' : 'stopped';\n", 0},
 		{"push of text", "a.js", "res.push('Control Plane');\n", 1},
 		{"push of an identifier", "a.js", "res.push('controlPlane');\n", 0},
+		{"array of labels", "a.ts", "return ['Custom', 'Quay.io'];\n", 1},
+		{"array of identifiers", "a.ts", "const kinds = ['pod', 'node'];\n", 0},
 	}
 
 	for _, tc := range tests {
