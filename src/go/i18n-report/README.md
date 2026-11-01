@@ -381,7 +381,8 @@ markers of keys that still await retranslation.
 
 The tool walks `pkg/rancher-desktop/` and root-level source files,
 looking for `.vue`, `.ts`, and `.js` files. It skips `node_modules`,
-`.git`, `dist`, `vendor`, and `__tests__` directories.
+`.git`, `dist`, `vendor`, and `__tests__` directories, and any file with
+`.spec.` or `.test.` in its name.
 
 Key references are found by matching several regex patterns:
 - `t('key')`, `t("key")`, `` t(`key`) ``, `this.t(...)`, `$t(...)`,

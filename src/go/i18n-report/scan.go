@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -217,7 +218,11 @@ func scanRepoSourceFiles(root string) ([]string, error) {
 			}
 		}
 	}
-	return files, nil
+	// Some tests are next to the code they cover, outside __tests__.
+	return slices.DeleteFunc(files, func(file string) bool {
+		base := filepath.Base(file)
+		return strings.Contains(base, ".spec.") || strings.Contains(base, ".test.")
+	}), nil
 }
 
 // scanResult holds everything one pass over the source tree produces.

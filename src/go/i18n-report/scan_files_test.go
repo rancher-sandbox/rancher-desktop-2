@@ -107,6 +107,24 @@ func TestScanFilesDynamicPatternMarksKeysReferenced(t *testing.T) {
 	}
 }
 
+func TestScanFilesSkipsTestFiles(t *testing.T) {
+	dir := setupScanTestRepo(t, "<template>\n  <div />\n</template>\n")
+	for _, name := range []string{"Sample.test.ts", "Sample.spec.ts"} {
+		path := filepath.Join(dir, "pkg", "rancher-desktop", "components", name)
+		if err := os.WriteFile(path, []byte("t('only.inTest')\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	undefined, err := findUndefinedKeys(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if refs := undefined["only.inTest"]; len(refs) != 0 {
+		t.Errorf("expected test files to be skipped, got %v", refs)
+	}
+}
+
 func TestScanFilesCountsQuotedKeysInTernaries(t *testing.T) {
 	source := `<script>
 const label = this.t(this.canEdit ? 'action.edit' : 'action.view');

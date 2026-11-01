@@ -115,10 +115,6 @@ func findUntranslated(root string, includeDescriptions bool) ([]untranslatedHit,
 	dialogPattern := regexp.MustCompile(`(` + dialogFields + `):\s+['"]([A-Z][^'"]{5,})['"]`)
 
 	for _, file := range files {
-		base := filepath.Base(file)
-		if strings.Contains(base, ".spec.") || strings.Contains(base, ".test.") {
-			continue
-		}
 		data, err := os.ReadFile(file)
 		if err != nil {
 			return nil, fmt.Errorf("reading %s: %w", file, err)
