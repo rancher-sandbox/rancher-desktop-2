@@ -33,6 +33,11 @@ type dynamicKeyRef struct {
 // Segments allow hyphens because keys such as reverse-sshfs and en-us do.
 const dottedKey = `[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)*`
 
+// quotedSegment matches the one key segment that a quoted interpolation fills.
+// Flattening quotes a segment that holds a dot (secret.types."kubernetes.io/tls")
+// and leaves any other bare (secret.types.opaque).
+const quotedSegment = `(?:"[^"]+"|[^."]+)`
+
 // Patterns for finding translation key references in source code.
 var (
 	// t('...'), t("..."), t(`...`), also this.t(...), $t(...), and t.value(...)
@@ -66,6 +71,10 @@ var (
 	// Splits a template string on ${...} interpolations.
 	interpolationSplit = regexp.MustCompile(`\$\{[^}]+\}`)
 
+	// Splits a template string on interpolations inside quotes, such as
+	// secret.types."${ type }".
+	quotedInterpolation = regexp.MustCompile(`["']\$\{[^}]+\}["']`)
+
 	// An i18n-uses comment names the keys that a dynamic reference resolves to.
 	// It is the annotation that the dashboard shell's check-i18n reads.
 	i18nUsesPattern = regexp.MustCompile(`//\s*i18n-uses\s+(.+)$`)
@@ -74,16 +83,19 @@ var (
 // templateToKeyRegex converts a template literal with ${...} interpolations
 // into a regex that matches translation keys. Static parts become literal
 // matches; each interpolation becomes a dottedKey wildcard spanning one or
-// more key segments.
+// more key segments, and a quoted interpolation becomes a quotedSegment.
 func templateToKeyRegex(template string) *regexp.Regexp {
-	parts := interpolationSplit.Split(template, -1)
-
 	var sb strings.Builder
 	sb.WriteString("^")
-	for i, part := range parts {
-		sb.WriteString(regexp.QuoteMeta(part))
-		if i < len(parts)-1 {
-			sb.WriteString(dottedKey)
+	for i, piece := range quotedInterpolation.Split(template, -1) {
+		if i > 0 {
+			sb.WriteString(quotedSegment)
+		}
+		for j, part := range interpolationSplit.Split(piece, -1) {
+			if j > 0 {
+				sb.WriteString(dottedKey)
+			}
+			sb.WriteString(regexp.QuoteMeta(part))
 		}
 	}
 	sb.WriteString("$")

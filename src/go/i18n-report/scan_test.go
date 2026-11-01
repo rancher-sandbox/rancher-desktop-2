@@ -185,6 +185,11 @@ func TestTemplateToKeyRegex(t *testing.T) {
 		{"snapshots.dialog.${type}.actions.ok", "snapshots.dialog.restore.actions.ok", true},
 		{"snapshots.dialog.${type}.actions.ok", "snapshots.info.create.success", false},                                 // different prefix
 		{"virtualMachine.mount.type.options.${x}.label", "virtualMachine.mount.type.options.reverse-sshfs.label", true}, // hyphenated segment
+		{`secret.types."${t}"`, `secret.types."kubernetes.io/tls"`, true},                                               // dots and a slash
+		{`secret.descriptions."${t}".text`, `secret.descriptions."kubernetes.io/tls".text`, true},
+		{`secret.descriptions."${t}".text`, `secret.descriptions.Opaque.text`, true}, // no dot, so flattening leaves it bare
+		{`workload.descriptions.'${t}'`, `workload.descriptions."apps.deployment"`, true},
+		{`secret.types."${t}"`, `secret.types.a.b`, false}, // two bare segments
 	}
 
 	for _, tc := range tests {
