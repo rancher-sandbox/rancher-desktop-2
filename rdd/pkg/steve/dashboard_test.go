@@ -44,6 +44,8 @@ func TestHandler(t *testing.T) {
 	}{
 		{name: "root redirects", path: "/", wantStatus: http.StatusFound},
 		{name: "explorer gets index", path: "/c/local/explorer", wantStatus: http.StatusOK, wantBody: `<a href="http://127.0.0.1:12345/x">`},
+		{name: "error page gets index", path: "/fail-whale", wantStatus: http.StatusOK, wantBody: `<a href="http://127.0.0.1:12345/x">`},
+		{name: "home gets index", path: "/home", wantStatus: http.StatusOK, wantBody: `<a href="http://127.0.0.1:12345/x">`},
 		{name: "js is rewritten", path: "/js/app.js", wantStatus: http.StatusOK, wantBody: `fetch("https://127.0.0.1:12345/v1")`},
 		{name: "css is not rewritten", path: "/css/site.css", wantStatus: http.StatusOK, wantBody: `/* ://127.0.0.1:6120/ */`},
 		{name: "local cluster prefix is stripped", path: "/k8s/clusters/local/v1/namespaces", wantStatus: http.StatusOK, wantBody: "api /v1/namespaces"},
