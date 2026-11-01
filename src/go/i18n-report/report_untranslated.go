@@ -48,6 +48,8 @@ var (
 	literalShapePatterns = []*regexp.Regexp{
 		// A ternary between two strings, e.g. `on ? "Yes" : "No"`.
 		regexp.MustCompile(`\?\s*['"][A-Z][a-zA-Z ]+['"]\s*:\s*['"][A-Z][a-zA-Z ]+['"]`),
+		// A string pushed onto a list, e.g. `res.push('Control Plane')`.
+		regexp.MustCompile(`\.push\(\s*['"][A-Z][a-zA-Z ]{2,}['"]\s*\)`),
 	}
 	// A t() call anywhere on the line; such lines are already translated.
 	tCallPattern = regexp.MustCompile(`(?:^|[^a-zA-Z])t\(`)

@@ -409,6 +409,7 @@ The untranslated scanner checks:
 - Validation error messages (`errors.push('...')`)
 - Object-literal labels in script code (`label: 'Local Port'`)
 - Ternaries between Title Case strings (`on ? 'Yes' : 'No'`)
+- Title Case strings pushed onto a list (`res.push('Control Plane')`)
 
 It skips test files, comment lines, lines already using `t()` or bound
 attributes, and values matching common non-translatable patterns (URLs,

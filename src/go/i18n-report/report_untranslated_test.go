@@ -89,6 +89,8 @@ func TestFindUntranslatedLiteralShapes(t *testing.T) {
 		{"ternary in a template", "a.vue", "<template>\n  <span>{{ on ? \"Yes\" : \"No\" }}</span>\n</template>\n", 1},
 		{"ternary in script", "a.ts", "const label = on ? 'Yes' : 'No';\n", 1},
 		{"ternary of identifiers", "a.ts", "const state = on ? 'running' : 'stopped';\n", 0},
+		{"push of text", "a.js", "res.push('Control Plane');\n", 1},
+		{"push of an identifier", "a.js", "res.push('controlPlane');\n", 0},
 	}
 
 	for _, tc := range tests {
