@@ -24,19 +24,22 @@
 #      reports a version as quarantined, rerun this step once it is a day old.
 #   4. Check the result with `YARN_ENABLE_HARDENED_MODE=1 make`.
 RANCHER_TAG := v2.15.3
-RANCHER_SHA256 := 6180fd3aed247f4981e77874a2960bb7e9abeb149cef08f3feb5e82d9101253d
+# This commit on rancher-sandbox/dashboard's i18n-fixes-2.15 branch is
+# RANCHER_TAG plus our shell fixes. We pin the commit because a branch archive
+# does not have a stable checksum.
+SHELL_COMMIT := 93e92088e5bfb512ab8b01e3d71cf18d07a35e04
+RANCHER_SHA256 := a1ad2b2541facc10bfaadac2adf803b6f0142affe394bfe9337404df46ecda42
 
 ARCHIVE := rancher-dashboard.tar.gz
-# GitHub names the archive's top directory without the tag's leading "v".
-ARCHIVE_ROOT := dashboard-$(RANCHER_TAG:v%=%)
+ARCHIVE_ROOT := dashboard-$(SHELL_COMMIT)
 OUTPUT := dist/embed
 STAGED := ../rdd/pkg/steve/dashboard
 
-# The tag's git tree keeps the components under pkg/rancher-components. Rancher's
+# The git tree keeps the components under pkg/rancher-components. Rancher's
 # publish-shell.sh copies them into its npm package, so the recipe does the same.
 all:
 	curl --fail --location --silent --show-error --output $(ARCHIVE) \
-		https://github.com/rancher/dashboard/archive/refs/tags/$(RANCHER_TAG).tar.gz
+		https://github.com/rancher-sandbox/dashboard/archive/$(SHELL_COMMIT).tar.gz
 	echo "$(RANCHER_SHA256)  $(ARCHIVE)" | shasum --algorithm 256 --check
 	rm -rf vendor-shell
 	mkdir -p vendor-shell
