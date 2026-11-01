@@ -120,6 +120,8 @@ func TestValuePatterns(t *testing.T) {
 		{"htmlText: single word", htmlTextPattern, 1, `<span>Environment</span>`, "Environment"},
 		{"htmlText: lowercase skipped", htmlTextPattern, 1, `<p>not a match</p>`, ""},
 		{"htmlText: short text", htmlTextPattern, 1, `<b>A</b>`, ""},
+		{"htmlText: trailing colon", htmlTextPattern, 1, `<label class="text-muted">Age:</label>`, "Age:"},
+		{"htmlText: parenthesized", htmlTextPattern, 1, `>(None)</a>`, "(None)"},
 		{"boundLiteral: bound label", boundLiteralPattern, 2, `:label="'Include Kubernetes services'"`, "Include Kubernetes services"},
 		{"boundLiteral: bound placeholder", boundLiteralPattern, 2, `:placeholder="'Search...'"`, "Search..."},
 		{"boundLiteral: too short", boundLiteralPattern, 2, `:label="'ab'"`, ""},
@@ -214,6 +216,7 @@ func TestBareTextPattern(t *testing.T) {
 		{"Cancel", true},
 		{"Reset Kubernetes", true},
 		{"Two Words Here", true},
+		{"Age:", true},
 		{"lowercase", false},
 		{"A", false},            // too short
 		{"Ab", false},           // too short

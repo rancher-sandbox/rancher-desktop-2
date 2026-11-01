@@ -31,10 +31,11 @@ var (
 	skipPattern = regexp.MustCompile(`^[a-z][a-zA-Z0-9]*$|^\d|^http|^/|^#|^\$|^@|^:|^\{`)
 	// Single-word Title Case values (e.g., "Environment", "Up-to-date").
 	singleWordTitleCase = regexp.MustCompile(`^[A-Z][a-z]{2,}$|^[A-Z][a-z]*(?:-[a-z]+)+$`)
-	// Text between an HTML closing ">" and an opening "</" on the same line.
-	htmlTextPattern = regexp.MustCompile(`>\s*([A-Z][a-zA-Z ]{2,}?)\s*</`)
+	// Text between an HTML closing ">" and an opening "</" on the same line,
+	// which may be parenthesized or end in a colon ("(None)", "Age:").
+	htmlTextPattern = regexp.MustCompile(`>\s*(\(?[A-Z][a-zA-Z ]{2,}?\)?:?)\s*</`)
 	// Bare text between tags split across lines (e.g., ">\n Cancel\n </button>").
-	bareTextPattern = regexp.MustCompile(`^[A-Z][a-zA-Z]{2,}(?: [a-zA-Z]+)*$`)
+	bareTextPattern = regexp.MustCompile(`^[A-Z][a-zA-Z]{2,}(?: [a-zA-Z]+)*:?$`)
 	// Bound string literal attributes, e.g. :label="'Include Kubernetes services'".
 	boundLiteralPattern = regexp.MustCompile(`:(label|placeholder)="'([^']{3,})'"`)
 	// Validation error messages pushed to an errors array.
