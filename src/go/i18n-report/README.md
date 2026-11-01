@@ -387,8 +387,9 @@ Key references are found by matching several regex patterns:
 - `t('key')`, `t("key")`, `` t(`key`) ``, `this.t(...)`, `$t(...)`,
   including calls with the key literal on the following line
 - `titleKey`, `descriptionKey`, `labelKey` properties
-- `k="..."` and `*-key="..."` Vue template attributes
-  (`label-key`, `no-rows-key`, ...)
+- `k="..."` and the `label-key`, `placeholder-key`, `tooltip-key`,
+  `title-key`, `message-key` and `no-rows-key` Vue template attributes,
+  with any prefix on the first five
 - `v-t="'key'"` directives
 - Indirect references: quoted strings that match en-us.yaml keys
 - `// i18n-uses nav.group.*, unit.day` comments, which declare the keys

@@ -50,10 +50,11 @@ var (
 	// Dotted key literals in quoted strings.
 	dottedKeyLiteral = regexp.MustCompile(`['"]([a-z][a-zA-Z0-9]*(?:\.[a-z][a-zA-Z0-9]*)+)['"]`)
 	// Vue template attributes that pass translation keys: bare k="..." on
-	// the <t> component and any *-key="..." attribute (label-key,
-	// no-rows-key, ...). Bound forms (:label-key="expr") are expressions,
-	// not keys, and are excluded by the leading ^|\s requirement.
-	keyAttrPattern = regexp.MustCompile(`(?:^|\s)(?:[a-z][a-z0-9]*(?:-[a-z0-9]+)*-key|k)=['"](` + dottedKey + `)['"]`)
+	// the <t> component and the listed *-key="..." attributes. Others, such as
+	// option-key and description-key, name a field of an object. Bound forms
+	// (:label-key="expr") are expressions, not keys, and are excluded by the
+	// leading ^|\s requirement.
+	keyAttrPattern = regexp.MustCompile(`(?:^|\s)(?:(?:[a-z0-9]+-)*(?:label|placeholder|tooltip|title|message)-key|no-rows-key|k)=['"](` + dottedKey + `)['"]`)
 	// v-t="'...'" Vue directive for translation.
 	vtDirectivePattern = regexp.MustCompile(`v-t="'(` + dottedKey + `)'"`)
 	// Direct store getter calls: getters['i18n/t']('key').
