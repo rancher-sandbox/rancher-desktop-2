@@ -2867,7 +2867,7 @@ __metadata:
 
 "@rancher/shell@file:./vendor-shell::locator=rancher-deskboard%40workspace%3A.":
   version: 3.0.12-rc.7
-  resolution: "@rancher/shell@file:./vendor-shell#./vendor-shell::hash=1f7545&locator=rancher-deskboard%40workspace%3A."
+  resolution: "@rancher/shell@file:./vendor-shell#./vendor-shell::hash=467ca9&locator=rancher-deskboard%40workspace%3A."
   dependencies:
     "@aws-sdk/client-ec2": "npm:3.1041.0"
     "@aws-sdk/client-eks": "npm:3.1041.0"
@@ -2978,7 +2978,7 @@ __metadata:
     xmlbuilder2: "npm:4.0.1"
     yarn: "npm:1.22.22"
     zod: "npm:3.24.3"
-  checksum: 10c0/2e829351d44565b7223f225c929d62bcfebf92108c723eac50d8ebd2d7f58e9c60d3e6fa458a0275ffb9d7b2f9d4b4796667bed7c3e1236c14735dd3cec2ff15
+  checksum: 10c0/2be3d3de402cf666c3975465ca12d9b91ea5c6bba1dd172ffdc67970b1460485cfef4fae606cace8f6aabd556dba3a0268786ad8942fb6887f6fce0e46a15ab4
   languageName: node
   linkType: hard
 
