@@ -26,9 +26,16 @@
 RANCHER_TAG := v2.15.3
 # This commit on rancher-sandbox/dashboard's i18n-fixes-2.15 branch is
 # RANCHER_TAG plus our shell fixes. We pin the commit because a branch archive
-# does not have a stable checksum.
-SHELL_COMMIT := 93e92088e5bfb512ab8b01e3d71cf18d07a35e04
-RANCHER_SHA256 := a1ad2b2541facc10bfaadac2adf803b6f0142affe394bfe9337404df46ecda42
+# does not have a stable checksum. A new pin also needs RANCHER_SHA256 set to
+# the new archive's checksum, or `make` stops at the check. yarn.lock holds a
+# hash of this shell, so `yarn install --immutable` fails on a new commit.
+# After `make` stops there, run a plain `yarn install` and commit the updated
+# lock with the new pin. When RANCHER_TAG changes too, follow step 3 above
+# instead of the plain `yarn install`. Also tag the new commit
+# rd2-shell-<its first 10 hex digits> on rancher-sandbox/dashboard, so GitHub
+# keeps serving its archive after the branch is rewritten.
+SHELL_COMMIT := d79889ccfab793c708c56ea973b38864396bdbcf
+RANCHER_SHA256 := 625f4e637d18ca912690774a722b8820e5638dec0125283f2208d3230db52044
 
 ARCHIVE := rancher-dashboard.tar.gz
 ARCHIVE_ROOT := dashboard-$(SHELL_COMMIT)
