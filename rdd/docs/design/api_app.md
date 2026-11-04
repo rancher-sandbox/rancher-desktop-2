@@ -160,6 +160,7 @@ status:
   | `Settled`              | `False`   | `PathManagementStale` | PATH management controller has not yet observed the current generation |
   | `Settled`              | `False`   | `ApplyingTemplate` | A spec change rewrote the template; the LimaVM has not yet restarted into it |
   | `Settled`              | `False`   | *(forwarded)*    | Forwarded from the blocking `Running`, `ContainerEngineReady`, `KubernetesReady`, or `PathManagementReady` reason (the latter under `front`/`back`, or under `manual` for a repairable `Failed`) |
+  | `FatalError`           | `True`    | (various)        | This status condition only exists when a fatal error has occurred. |
 
   `Running=True` means the Lima guest has finished booting and SSH is reachable. It says nothing about the container engine socket; consumers that depend on the engine (container/image/volume mirrors, `docker` against the forwarded socket) must also check `ContainerEngineReady`, which flips to `True` only after the engine controller has connected to the socket and completed its initial full sync.
 
@@ -188,6 +189,12 @@ status:
     covers it.
 
   `Settled` carries its own `observedGeneration`: the App's generation observed when the reconciler computed the condition. `rdd set` therefore waits for `Settled=True` with `observedGeneration` at least the post-patch `metadata.generation`, so it settles on its own change rather than a stale snapshot from an earlier generation.
+
+  When the `FatalError` status condition exists, something has gone catastrophically wrong and the
+  App is broken.  Reconcile will not proceed until the App spec has been modified in some way to
+  resolve the error.  It is appropriate to alert the user (e.g. via a modal dialog) when this occurs.
+  Its `observedGeneration` is stamped with the App's `metadata.generation` when it is set; this is
+  used to determine when reconcile should be retried.
 
 Deleting the `App` resource triggers the finalizer to stop and delete the owned LimaVM (and wait for the LimaVM controller to complete its own cleanup before removing the App finalizer).
 

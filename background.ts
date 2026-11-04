@@ -305,6 +305,14 @@ ipcMainProxy.on('preferences-close', () => {
   window.getWindow('preferences')?.close();
 });
 
+// Show the fatal dialog when the app has a FatalError status condition.
+ipcMainProxy.on('backend/app-status-changed', (_event, statusConditions) => {
+  const [status, reason, message] = statusConditions.FatalError ?? [];
+
+  if (status) {
+    window.openFatalErrorDialog(reason, message);
+  }
+});
 ipcMainProxy.on('error/show-logs', async(event) => {
   const error = await Electron.shell.openPath(paths.log_dir);
 
