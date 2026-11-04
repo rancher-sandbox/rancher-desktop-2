@@ -148,10 +148,6 @@ jobs:
         # Setting the default version also lets WSL finish updating.
         wsl --set-default-version 2
 
-        # Install a WSL2 distro. Lima's WSL2 driver requires at least one
-        # installed distribution, even though Lima creates its own distros.
-        wsl --install --no-launch --version 2 --name openSUSE openSUSE-Leap-16.0
-
         # Install MSYS2 packages for BATS.
         # openssh is required because Lima constructs SSH paths using cygpath
         # (/c/Users/...) which only MSYS2's ssh understands; Windows OpenSSH
