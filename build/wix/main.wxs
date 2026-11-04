@@ -34,9 +34,6 @@
 
     <DirectoryRef Id="TARGETDIR" />
 
-    <SetProperty Id="ALLUSERS" Sequence="both" After="ValidateProductID" Value="1">
-      NOT Installed
-    </SetProperty>
     <SetProperty Id="MSIINSTALLPERUSER" Sequence="first" After="ValidateProductID" Value="0">
       NOT MSIINSTALLPERUSER AND NOT Installed
     </SetProperty>

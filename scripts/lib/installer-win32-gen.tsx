@@ -195,12 +195,6 @@ export default async function generateFileList(rootPath: string): Promise<string
       // This files does not need to be packaged.
       return null;
     },
-
-    'wix-custom-action.dll': () => {
-      // This file does not need to be installed; it's used as an unnamed
-      // binary instead; see main.wxs.
-      return null;
-    },
   };
 
   const jsxElement = (<Fragment>
