@@ -58,7 +58,6 @@ win:
   - build/wix/*
   - build/license.rtf
   - { from: dist/signing-config-win.yaml, to: build/signing-config-win.yaml }
-  - { from: dist/wix-custom-action.dll, to: wix-custom-action.dll }
   - { from: dist/electron-builder.yaml, to: electron-builder.yml }
 linux:
   category: Utility

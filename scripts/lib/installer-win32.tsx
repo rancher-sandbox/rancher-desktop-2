@@ -56,17 +56,6 @@ function getProductVersion(appVersion: string): string {
   return offset ? `${ semver }.${ offset }` : semver;
 }
 
-export async function buildCustomAction(): Promise<string> {
-  const output = path.join(buildUtils.distDir, 'wix-custom-action.dll');
-
-  await buildUtils.spawn('go', 'build', '-o', output, '-buildmode=c-shared', {
-    cwd: path.join(buildUtils.rootDir, 'src', 'go', 'wix-helper'),
-    env: { ...process.env, GOOS: 'windows' },
-  });
-
-  return output;
-}
-
 /**
  * Given an unpacked build, produce a MSI installer.
  * @param workDir Directory in which we can write temporary work files.

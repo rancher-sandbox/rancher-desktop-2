@@ -128,25 +128,6 @@ jobs:
         cache: false
         go-version-file: src/go/i18n-report/go.mod
     - run: make test-i18n-report check-translations
-  test-wix-helper:
-    name: Wix Helper Tests
-    needs: get-pr-number
-    runs-on: windows-latest
-    if: ${{ ! needs.get-pr-number.outputs.number }}
-    steps:
-    - name: "Windows: Set up line endings"
-      run: |
-        git config --global --replace-all core.autocrlf false # spellchecker:ignore
-        git config --global --replace-all core.eol lf # spellchecker:ignore
-        git config --global --replace-all core.longpaths true # spellchecker:ignore
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-      with:
-        cache: false
-        go-version-file: src/go/wix-helper/go.mod
-    - run: make test-wix-helper
   lint-bats:
     name: Lint BATS
     needs: get-pr-number
@@ -182,25 +163,6 @@ jobs:
         cache: false
         go-version-file: src/go/startup-profile/go.mod
     - run: make lint-startup-profile
-  lint-wix-helper:
-    name: Lint Wix Helper
-    needs: get-pr-number
-    runs-on: windows-latest
-    if: ${{ ! needs.get-pr-number.outputs.number }}
-    steps:
-    - name: "Windows: Set up line endings"
-      run: |
-        git config --global --replace-all core.autocrlf false # spellchecker:ignore
-        git config --global --replace-all core.eol lf # spellchecker:ignore
-        git config --global --replace-all core.longpaths true # spellchecker:ignore
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-      with:
-        cache: false
-        go-version-file: src/go/wix-helper/go.mod
-    - run: make lint-wix-helper
   lint-typescript:
     name: Lint TypeScript
     needs: get-pr-number
