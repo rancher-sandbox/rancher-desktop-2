@@ -11,6 +11,7 @@ import * as path from 'path';
 
 import buildUtils from './lib/build-utils';
 
+import { artifactArch, artifactPlatform } from '@/pkg/rancher-desktop/utils/releaseArtifacts';
 import { simpleSpawn } from '@/scripts/simple_process';
 
 class Builder {
@@ -66,6 +67,8 @@ class Builder {
           ...process.env,
           RD_DOCS_URL: await buildUtils.docsUrl,
           RD_VERSION:  await buildUtils.version,
+          RD_OS:       artifactPlatform(process.platform),
+          RD_ARCH:     artifactArch(buildUtils.arch),
         },
       },
     );

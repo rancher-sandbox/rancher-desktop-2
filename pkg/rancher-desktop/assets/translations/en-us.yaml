@@ -917,13 +917,15 @@ denyRoot:
   # @no-translate Rancher Desktop
   message: Rancher Desktop cannot be run with root privileges. Please run again as a regular user.
   title: Cannot run as Root
-kubernetesError:
-  context: 'Context:'
-  lastCommand: 'Last command run:'
-  title: '{appName} Error'
-  # Translators: preserve the <a> tag and its data-action attribute exactly.
-  # The application code uses data-action to handle click events.
-  logLines: 'Some recent <a href="#" data-action="showLogs">logfile</a> lines:'
+fatalError:
+  title: '{appName} Fatal Error'
+  version: 'Version {version} &mdash; {os} ({arch})'
+  titleUnknown: Unknown Error
+  messageUnknown: An unknown error has occurred.
+  details: Additional details
+  showLogs: Show Logs
+  showLogsError: Error opening logs
+  showLogsErrorDetail: Please manually open {logDir}
 kubernetesPrefs:
   kubernetes:
     # @no-translate Kubernetes

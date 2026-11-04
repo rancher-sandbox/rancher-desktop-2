@@ -48,6 +48,8 @@ export default {
       'process.env.RD_DOCS_URL': JSON.stringify(process.env.RD_DOCS_URL || 'https://docs.rancherdesktop.io'),
       'process.env.RD_TEST':     JSON.stringify(process.env.RD_TEST || ''),
       'process.env.RD_VERSION':  JSON.stringify(rdVersion),
+      'process.env.RD_OS':       JSON.stringify(process.env.RD_OS),
+      'process.env.RD_ARCH':     JSON.stringify(process.env.RD_ARCH),
 
       'process.env.RD_PRERELEASE':             rdPrerelease,
       'process.env.FEATURE_DIAGNOSTICS_FIXES': process.env.RD_ENV_DIAGNOSTICS_FIXES === '1',

@@ -6,10 +6,12 @@ import Electron, {
 } from 'electron';
 
 import { getSettings } from '@pkg/config/settingsImpl';
+import { t } from '@pkg/main/i18n';
 import mainEvents from '@pkg/main/mainEvents';
 import { IpcRendererEvents } from '@pkg/typings/electron-ipc';
 import { removeParenthesizedAccessKey } from '@pkg/utils/accessKeys';
 import { isDevBuild } from '@pkg/utils/environment';
+import Latch from '@pkg/utils/latch';
 import Logging from '@pkg/utils/logging';
 import paths from '@pkg/utils/paths';
 import { CommandOrControl, Shortcuts } from '@pkg/utils/shortcuts';
@@ -553,10 +555,17 @@ export function openDialog(id: string, opts?: Electron.BrowserWindowConstructorO
     }
   });
 
+  let hasInitialSize = false;
   window.webContents.on('preferred-size-changed', async(_event, { width, height }) => {
     switch (process.platform) {
     case 'linux':
-      resizeWindow(window, width, height);
+      if (!hasInitialSize) {
+        // On Linux, also attempt to center the window on initial resize.
+        // Do not do this if the user may have already moved the window.
+        resizeWindow(window, width, height);
+      } else {
+        window.setContentSize(width, height);
+      }
       break;
     case 'win32': {
       // On Windows, if the primary display DPI is not the same as the current
@@ -578,6 +587,9 @@ export function openDialog(id: string, opts?: Electron.BrowserWindowConstructorO
     default:
       window.setContentSize(width, height);
     }
+    // Allow size changes for a short time after the initial open, in case
+    // things need to be updated quickly.
+    setTimeout(() => { hasInitialSize = true }, 500);
   });
 
   if (!Shortcuts.isRegistered(window) && escapeKey) {
@@ -653,24 +665,37 @@ export async function openUnmetPrerequisitesDialog(reasonId: reqMessageId, ...ar
 /**
  * Open the error message window as a modal window.
  */
-export async function openKubernetesErrorMessageWindow(titlePart: string, mainMessage: string, failureDetails: any) {
-  const window = openDialog('KubernetesError', {
-    title:  `Rancher Desktop - Error`,
-    width:  800,
-    height: 494,
+export async function openFatalErrorDialog(title: string, message: string, details?: string) {
+  // Update fatalErrorParams, in case this is called multiple times in quick succession.
+  fatalErrorParams = { title, message, details };
+  const windowID = 'FatalError';
+  const existingWindow = getWindow(windowID);
+  if (existingWindow) {
+    // The dialog is already open; update it, and focus.  Block until close.
+    existingWindow.webContents.send('dialog/populate', fatalErrorParams);
+    restoreWindow(existingWindow);
+    await fatalErrorClosed;
+    return;
+  }
+  const window = openDialog(windowID, {
+    title:  t('fatalError.title'),
     parent: getWindow('main') ?? undefined,
     frame:  true,
   });
 
   window.webContents.on('ipc-message', (event, channel) => {
     if (channel === 'dialog/load') {
-      window.webContents.send('dialog/populate', titlePart, mainMessage, failureDetails);
+      window.webContents.send('dialog/populate', fatalErrorParams);
     }
   });
-  await (new Promise<void>((resolve) => {
-    window.on('closed', resolve);
-  }));
+  window.on('closed', () => fatalErrorClosed.resolve());
+  fatalErrorClosed.reset();
+  await fatalErrorClosed;
 }
+/** fatalErrorParams holds the latest parameters for the fatal error dialog. */
+let fatalErrorParams: Record<'title' | 'message' | 'details', string | undefined>;
+/** fatalErrorClosed blocks until the fatal error dialog is closed. */
+const fatalErrorClosed = Latch();
 
 /**
  * Show the prompt describing why we would like sudo permissions.
