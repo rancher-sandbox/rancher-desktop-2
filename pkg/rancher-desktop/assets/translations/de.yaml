@@ -816,15 +816,23 @@ integrations:
   windows:
     # @source Expose Rancher Desktop's Kubernetes configuration and Docker socket to Windows Subsystem for Linux (WSL) distros
     description: Kubernetes-Konfiguration und Docker-Socket von Rancher Desktop für Windows Subsystem for Linux (WSL)-Distributionen bereitstellen
-kubernetesError:
-  # @source Context:
-  context: 'Kontext:'
-  # @source Last command run:
-  lastCommand: 'Letzter ausgeführter Befehl:'
-  # @source Some recent <a href="#" data-action="showLogs">logfile</a> lines:
-  logLines: 'Einige aktuelle <a href="#" data-action="showLogs">Logdatei</a>-Zeilen:'
-  # @source {appName} Error
-  title: '{appName}-Fehler'
+fatalError:
+  # @source {appName} Fatal Error
+  title: '{appName}: Schwerwiegender Fehler'
+  # @source Version {version} &mdash; {os} ({arch})
+  version: 'Version: {version} &mdash; {os} ({arch})'
+  # @source Unknown Error
+  titleUnknown: Unbekannter Fehler
+  # @source An unknown error has occurred.
+  messageUnknown: Ein unbekannter Fehler ist aufgetreten.
+  # @source Additional details
+  details: Weitere Details
+  # @source Show Logs
+  showLogs: Protokolle anzeigen
+  # @source Error opening logs
+  showLogsError: Fehler beim Öffnen der Protokolle
+  # @source Please manually open {logDir}
+  showLogsErrorDetail: Bitte öffnen Sie {logDir} manuell
 kubernetesPrefs:
   kubernetes:
     # @source Enable Kubernetes
