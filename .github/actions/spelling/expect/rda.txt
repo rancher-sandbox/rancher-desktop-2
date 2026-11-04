@@ -745,9 +745,7 @@ WSLENV
 WSLg
 wslify
 wslinfo
-WSLINSTALLED
 WSLIs
-WSLKERNELOUTDATED
 wslproxy
 wslutils
 WWID

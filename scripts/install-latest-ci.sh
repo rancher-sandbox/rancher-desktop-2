@@ -195,7 +195,7 @@ install_application() {
             esac
             MSYS2_ARG_CONV_EXCL='*' msiexec.exe \
                 /i "$installer" /passive /norestart \
-                ALLUSERS=$allusers WSLINSTALLED=1
+                ALLUSERS=$allusers
             # msiexec returns immediately and runs in the background; wait for that
             # process to exit before continuing.
             local deadline completed
