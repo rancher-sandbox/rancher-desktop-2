@@ -35,45 +35,11 @@
     <DirectoryRef Id="TARGETDIR" />
 
     <SetProperty Id="ALLUSERS" Sequence="both" After="ValidateProductID" Value="1">
-      NOT WSLINSTALLED AND NOT Installed
+      NOT Installed
     </SetProperty>
     <SetProperty Id="MSIINSTALLPERUSER" Sequence="first" After="ValidateProductID" Value="0">
-      (NOT WSLINSTALLED OR NOT MSIINSTALLPERUSER) AND NOT Installed
+      NOT MSIINSTALLPERUSER AND NOT Installed
     </SetProperty>
-
-    <!-- Custom action to detect if WSL is installed -->
-    <Binary Id="CustomActionBinary" SourceFile="wix-custom-action.dll" />
-    <CustomAction Id="DetectWSL" BinaryKey="CustomActionBinary" DllEntry="DetectWSL"
-      Execute="immediate" Return="check" />
-    <!-- Custom action to update WSL -->
-    <CustomAction Id="UpdateWSL" BinaryKey="CustomActionBinary" DllEntry="UpdateWSL"
-      Execute="deferred" Return="check" Impersonate="yes" />
-    <!-- Custom action to raise an error because WSL was not installed -->
-    <CustomAction Id="ErrorWSLNotInstalled" Error="100" />
-
-    <InstallUISequence>
-      <!--
-        - DetectWSL may set the WSLINSTALLED and WSLKERNELOUTDATED properties
-        - depending on the state of the system.
-        -->
-      <Custom Action="DetectWSL" After="AppSearch">
-        NOT WSLINSTALLED <!-- Skip search if user overrides -->
-      </Custom>
-      <Custom Action="ErrorWSLNotInstalled" After="RDWelcomeDlg">
-        NOT WSLINSTALLED AND NOT Installed
-      </Custom>
-    </InstallUISequence>
-    <InstallExecuteSequence>
-      <Custom Action="DetectWSL" After="AppSearch">
-        NOT WSLINSTALLED <!-- Skip search if user overrides -->
-      </Custom>
-      <Custom Action="ErrorWSLNotInstalled" After="LaunchConditions">
-        NOT WSLINSTALLED AND NOT Installed
-      </Custom>
-      <Custom Action="UpdateWSL" After="InstallFiles">
-        WSLINSTALLED AND WSLKERNELOUTDATED
-      </Custom>
-    </InstallExecuteSequence>
 
     <!-- Add Admin install registry element -->
     <Component Id="AdminInstallRegistry" Directory="APPLICATIONFOLDER" Guid="825E1B53-D47A-4630-BDD8-61071DA1245A">
