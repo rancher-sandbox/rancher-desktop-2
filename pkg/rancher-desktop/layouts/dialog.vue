@@ -58,7 +58,11 @@ onMounted(() => {
     height: initial;
   }
   body {
+    height: fit-content;
     overflow: hidden;
+  }
+  #app {
+    height: fit-content;
   }
 </style>
 
@@ -69,9 +73,12 @@ onMounted(() => {
   border: none;
   color: var(--body-text);
   min-width: 24rem;
-  width: max-content;
+  height: fit-content;
   padding: 1.25rem;
   margin: 0 auto;
+  &:has(.body[data-auto-width]) {
+    width: max-content;
+  }
 }
 
 .body {

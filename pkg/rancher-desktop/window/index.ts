@@ -678,12 +678,13 @@ export async function openFatalErrorDialog(title: string, message: string, detai
     return;
   }
   const window = openDialog(windowID, {
-    title:  t('fatalError.title'),
-    parent: getWindow('main') ?? undefined,
-    frame:  true,
+    title:     t('fatalError.title'),
+    parent:    getWindow('main') ?? undefined,
+    frame:     true,
+    resizable: true,
   });
 
-  window.webContents.on('ipc-message', (event, channel) => {
+  window.webContents.on('ipc-message', (_event, channel) => {
     if (channel === 'dialog/load') {
       window.webContents.send('dialog/populate', fatalErrorParams);
     }

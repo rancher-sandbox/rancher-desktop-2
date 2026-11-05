@@ -5,7 +5,10 @@
   -->
 
 <template>
-  <div class="container">
+  <div
+    class="container"
+    data-auto-width
+  >
     <div class="error-header">
       <img
         id="logo"
@@ -29,9 +32,15 @@
         id="message-body"
         v-text="mainMessage"
       />
-      <details v-if="failureDetails">
+      <details
+        v-if="failureDetails"
+        id="details"
+      >
         <summary v-text="t('fatalError.details')" />
-        <pre v-text="failureDetails" />
+        <pre
+          id="details-body"
+          v-text="failureDetails"
+        />
       </details>
     </div>
     <div class="button-bar">
@@ -90,6 +99,7 @@ function close() {
 <style lang="scss" scoped>
   .container {
     width: max-content;
+    height: calc-size(max-content, max(size, 100vh - 2.5rem /* from .wrapper padding */));
     max-width: 52rem;
   }
 
@@ -124,11 +134,26 @@ function close() {
       background: var(--box-bg);
       border-radius: var(--border-radius);
       margin: 5px;
-      min-width: 80vw; /* 80% of viewport-width as specified in createWindow() in window/index.ts */
-      max-height: 20lh;
+      height: calc-size(max-content, min(size, 20lh));
+      flex-grow: 1;
       overflow-y: auto;
       padding: 10px;
       white-space: pre-line;
+    }
+    #details[open] {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      &::details-content {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+      }
+    }
+    #details-body {
+      height: calc-size(max-content, min(size, 20lh));
+      flex-grow: 1;
+      overflow-y: auto;
     }
   }
   .button-bar {
