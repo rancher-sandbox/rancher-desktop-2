@@ -37,7 +37,7 @@ export default {
   setupFilesAfterEnv: [
     '<rootDir>/pkg/rancher-desktop/utils/testUtils/jestMatchers.ts',
   ],
-  testEnvironment:        'jsdom',
+  testEnvironment:        './pkg/rancher-desktop/utils/testUtils/jestEnvironmentJSDOM.ts',
   testEnvironmentOptions: {
     customExportConditions: [
       'node',
