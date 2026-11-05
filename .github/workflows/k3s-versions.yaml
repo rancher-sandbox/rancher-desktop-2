@@ -39,10 +39,7 @@ jobs:
         # we may need to checkout an existing branch, so need the full history
         fetch-depth: 0
     # Set up Go for `go run ./scripts/k3s-versions` in rdd/
-    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-      with:
-        cache: false
-        go-version-file: rdd/go.mod
+    - uses: $/.github/actions/setup-rdd-go
     - run: ./scripts/k3s-versions.sh
       env:
         GITHUB_TOKEN: ${{ steps.get-token.outputs.token }}
