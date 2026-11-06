@@ -313,7 +313,7 @@ export default {
       e.stopPropagation();
 
       this.prevNode = node;
-      const isSelected = this.selectedRows.includes(node);
+      const isSelected = this.selectedRows.some((row) => this.isSameRow(row, node));
 
       if ( !isSelected ) {
         this.update([node], this.selectedRows.slice());
@@ -425,7 +425,7 @@ export default {
       const add = [];
       const remove = [];
 
-      if (this.selectedRows.includes(node)) {
+      if (this.selectedRows.some((row) => this.isSameRow(row, node))) {
         remove.push(node);
       } else {
         add.push(node);

@@ -2,33 +2,69 @@ import { ElectronApplication, Page, expect, test } from '@playwright/test';
 
 import { NavPage } from './pages/nav-page';
 import { VolumesPage } from './pages/volumes-page';
-import { startSlowerDesktop, teardown, tool } from './utils/TestUtils';
+import { getRDDConfig, startSlowerDesktop, teardown, tool } from './utils/TestUtils';
 
-import { ContainerEngine } from '@pkg/config/settings';
+import mockVolumes from '@/rdd/pkg/controllers/mock/testdata/volumes.json' with { type: 'json' };
+import * as RDDClient from '@rdd-client';
+
+/** Button indexes in the delete confirmation, matching its `buttons` array. */
+const CONFIRM_DELETE = 0;
+const CANCEL_DELETE = 1;
+
+/**
+ * Replace the next native message box with one that answers `response` and
+ * records the options it was given, so a test can assert what the user saw.
+ */
+async function answerMessageBox(electronApp: ElectronApplication, response: number) {
+  await electronApp.evaluate(({ dialog }, response) => {
+    let resolve: (value: Electron.MessageBoxOptions) => void;
+    (globalThis as any).lastMessageBox = new Promise<Electron.MessageBoxOptions>(_resolve => { resolve = _resolve });
+    const original = dialog.showMessageBox;
+    dialog.showMessageBox = (windowOrOptions, maybeOptions?: Electron.MessageBoxOptions) => {
+      const options = maybeOptions ?? windowOrOptions as Electron.MessageBoxOptions;
+      dialog.showMessageBox = original;
+      resolve(options);
+
+      return Promise.resolve({ response, checkboxChecked: false });
+    };
+  }, response);
+}
+
+/** The options the last message box was shown with. */
+async function lastMessageBox(electronApp: ElectronApplication) {
+  return await electronApp.evaluate(() => (globalThis as any).lastMessageBox);
+}
 
 let page: Page;
 
-test.describe.fixme('Volumes Tests', () => {
+test.describe.configure({ mode: 'serial' });
+
+test.describe('Volumes Tests', () => {
   let electronApp: ElectronApplication;
-  let testVolumeName: string;
+  let client: RDDClient.ContainersRancherdesktopIoV1alpha1Api;
+  let rddConfigCleanup = () => {};
+
+  // The mock backend has no dynamic create-volume flow; it always mirrors
+  // whatever is in its static fixture.  We use the first for general testing,
+  // and the rest for testing bulk operations.
+  const testVolumeName = mockVolumes[0].Name;
+  const bulkVolumeNames = mockVolumes.slice(1).map(volume => volume.Name);
 
   test.beforeAll(async({ colorScheme }, testInfo) => {
-    [electronApp, page] = await startSlowerDesktop(testInfo, {
-      kubernetes:      { enabled: false },
-      containerEngine: { name: ContainerEngine.MOBY, allowedImages: { enabled: false } },
-    });
+    [electronApp, page] = await startSlowerDesktop(testInfo);
+    const [rddConfig, cleanup] = await getRDDConfig();
+
+    rddConfigCleanup = cleanup;
+    client = rddConfig.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api);
 
     const navPage = new NavPage(page);
+
     await navPage.waitForAppSettled();
   });
 
   test.afterAll(async({ colorScheme }, testInfo) => {
-    if (testVolumeName) {
-      try {
-        await tool('docker', 'volume', 'rm', testVolumeName);
-      } catch (error) {}
-    }
     await teardown(electronApp, testInfo);
+    rddConfigCleanup();
   });
 
   test('should navigate to volumes page', async() => {
@@ -42,34 +78,24 @@ test.describe.fixme('Volumes Tests', () => {
   test('should display volume in the list', async() => {
     const volumesPage = new VolumesPage(page);
 
-    testVolumeName = `test-volume-${ Date.now() }`;
-
-    try {
-      await tool('docker', 'volume', 'create', testVolumeName);
-    } catch (error) {
-      console.error('Failed to create test volume:', error);
-      throw error;
-    }
-
-    await page.reload();
-    await volumesPage.waitForTableToLoad();
-
     await volumesPage.waitForVolumeToAppear(testVolumeName);
+
+    // Cross-check against the RDD API directly, not just the GUI's own state.
+    const volumes = await client.listVolumeForAllNamespaces();
+
+    expect(volumes.items.some(volume => volume.status?.name === testVolumeName)).toBe(true);
   });
 
   test('should show volume information', async() => {
     const volumesPage = new VolumesPage(page);
-
-    await volumesPage.waitForVolumeToAppear(testVolumeName);
-
     const volumeInfo = volumesPage.getVolumeInfo(testVolumeName);
 
-    await expect(volumeInfo.name).not.toBeEmpty();
+    await expect(volumeInfo.name).toHaveText(testVolumeName);
     await expect(volumeInfo.driver).not.toBeEmpty();
     await expect(volumeInfo.mountpoint).not.toBeEmpty();
   });
 
-  test('should browse volume files', async() => {
+  test.fixme('should browse volume files', async() => {
     const volumesPage = new VolumesPage(page);
 
     await volumesPage.browseVolumeFiles(testVolumeName);
@@ -82,98 +108,137 @@ test.describe.fixme('Volumes Tests', () => {
     await volumesPage.waitForTableToLoad();
   });
 
-  test('should delete volume', async() => {
+  test('should handle search functionality', async() => {
     const volumesPage = new VolumesPage(page);
+
+    await volumesPage.searchVolumes(testVolumeName);
+    await expect(volumesPage.getVolumeRow(testVolumeName)).toBeVisible();
+
+    await volumesPage.searchVolumes('this-volume-does-not-exist');
+    await expect(volumesPage.getVolumeRow(testVolumeName)).toBeHidden();
+
+    // Clear the search so later tests see the full, unfiltered list again.
+    await volumesPage.searchVolumes('');
+    await expect(volumesPage.getVolumeRow(testVolumeName)).toBeVisible();
+  });
+
+  test('should allow cancelling delete', async() => {
+    const volumesPage = new VolumesPage(page);
+
+    // Disable the electron dialog box for deletion confirmation.
+    await answerMessageBox(electronApp, CANCEL_DELETE);
+
+    await volumesPage.waitForVolumeToAppear(testVolumeName);
+    await volumesPage.deleteVolume(testVolumeName);
+    await expect(lastMessageBox(electronApp)).resolves.toMatchObject({
+      message: 'Delete 1 volume?',
+      detail:  expect.stringContaining(testVolumeName),
+    });
+
+    // Reload to ensure that the deletion was not applied.
+    await page.reload();
+    await volumesPage.waitForTableToLoad();
+    await expect(volumesPage.getVolumeRow(testVolumeName)).toBeVisible();
+  });
+
+  test('should auto-refresh volumes list', async() => {
+    const volumesPage = new VolumesPage(page);
+
+    // Disable the electron dialog box for deletion confirmation.
+    await answerMessageBox(electronApp, CONFIRM_DELETE);
 
     await volumesPage.waitForVolumeToAppear(testVolumeName);
     await expect(volumesPage.errorBanner).toBeHidden();
-    await page.waitForFunction(async() => {
-      return (await window.ddClient.docker.listContainers({ all: true })).length === 0;
-    });
     await volumesPage.deleteVolume(testVolumeName);
     await expect(volumesPage.errorBanner).toBeHidden();
+    await expect(lastMessageBox(electronApp)).resolves.toMatchObject({
+      message: 'Delete 1 volume?',
+      detail:  expect.stringContaining(testVolumeName),
+    });
     await expect(volumesPage.getVolumeRow(testVolumeName)).toBeHidden({
       timeout: 20_000,
     });
 
-    testVolumeName = '';
+    // Creating the volume is not legal in the real backend, but the mock
+    // controller accepts that (and restores the mock).
+    await client.createNamespacedVolume({
+      namespace: 'rancher-desktop',
+      body:      {
+        apiVersion: 'containers.rancherdesktop.io/v1alpha1',
+        kind:       'Volume',
+        metadata:   { name: testVolumeName },
+      },
+    });
+    await volumesPage.waitForVolumeToAppear(testVolumeName);
   });
 
-  test('should create multiple volumes for bulk operations', async() => {
-    const volumeNames = [
-      `test-bulk-volume-1-${ Date.now() }`,
-      `test-bulk-volume-2-${ Date.now() }`,
-      `test-bulk-volume-3-${ Date.now() }`,
-    ];
-
-    try {
-      for (const volumeName of volumeNames) {
-        await tool('docker', 'volume', 'create', volumeName);
-      }
-
-      await page.reload();
-      const volumesPage = new VolumesPage(page);
-      await volumesPage.waitForTableToLoad();
-      await expect(volumesPage.errorBanner).toBeHidden();
-
-      for (const volumeName of volumeNames) {
-        await volumesPage.waitForVolumeToAppear(volumeName);
-      }
-
-      await volumesPage.deleteBulkVolumes(volumeNames);
-      await expect(volumesPage.errorBanner).toBeHidden();
-
-      for (const volumeName of volumeNames) {
-        await expect(volumesPage.getVolumeRow(volumeName)).toBeHidden({
-          timeout: 10_000,
-        });
-      }
-
-      await page.reload();
-      await volumesPage.waitForTableToLoad();
-
-      for (const volumeName of volumeNames) {
-        await expect(volumesPage.getVolumeRow(volumeName)).toBeHidden();
-      }
-      await expect(volumesPage.errorBanner).toBeHidden();
-    } catch (error) {
-      for (const volumeName of volumeNames) {
-        try {
-          await tool('docker', 'volume', 'rm', volumeName);
-        } catch (cleanupError) {}
-      }
-      throw error;
-    }
-  });
-
-  test('should handle search functionality', async() => {
+  test('should allow cancelling bulk operations', async() => {
     const volumesPage = new VolumesPage(page);
 
-    const searchVolumeName = `search-test-volume-${ Date.now() }`;
+    // Disable the electron dialog box for deletion confirmation.
+    await answerMessageBox(electronApp, CANCEL_DELETE);
 
-    try {
-      await tool('docker', 'volume', 'create', searchVolumeName);
+    await Promise.all(bulkVolumeNames.map(volumeName => volumesPage.waitForVolumeToAppear(volumeName)));
+    await volumesPage.deleteBulkVolumes(bulkVolumeNames);
+    await expect(lastMessageBox(electronApp)).resolves.toMatchObject({
+      message: `Delete ${ bulkVolumeNames.length } volumes?`,
+      detail:  expect.stringMatching(
+        new RegExp(bulkVolumeNames.map(name => `(?=.*\\b${ RegExp.escape(name) }\\b)`).join(''), 's'),
+      ),
+    });
 
-      await page.reload();
-      await volumesPage.waitForTableToLoad();
-      await volumesPage.waitForVolumeToAppear(searchVolumeName);
+    // Check that all volumes are still visible, and the selection state is unchanged.
+    for (const volume of mockVolumes) {
+      await expect(volumesPage.getVolumeRow(volume.Name)).toBeVisible();
+      if (bulkVolumeNames.includes(volume.Name)) {
+        await expect(volumesPage.getVolumeRow(volume.Name).locator('input[type="checkbox"]')).toBeChecked();
+      } else {
+        await expect(volumesPage.getVolumeRow(volume.Name).locator('input[type="checkbox"]')).not.toBeChecked();
+      }
+    }
+    // Clear the selection.
+    await volumesPage.table.locator('thead input[type="checkbox"]').uncheck({ force: true });
+  });
 
-      await volumesPage.searchVolumes('search-test');
+  test('should support bulk operations', async() => {
+    const volumesPage = new VolumesPage(page);
 
-      await expect(volumesPage.getVolumeRow(searchVolumeName)).toBeVisible();
+    // The mock backend can't fabricate new volumes on demand, so this
+    // exercises bulk selection/deletion against several of the fixture's
+    // other pre-existing static volumes.
+    await Promise.all(bulkVolumeNames.map(volumeName => volumesPage.waitForVolumeToAppear(volumeName)));
+    await expect(volumesPage.errorBanner).toBeHidden();
 
-      const isPresent = await volumesPage.isVolumePresent(searchVolumeName);
-      expect(isPresent).toBe(true);
+    // Disable the electron dialog box for deletion confirmation.
+    await answerMessageBox(electronApp, CONFIRM_DELETE);
 
-      await volumesPage.searchVolumes('');
-    } finally {
-      try {
-        await tool('docker', 'volume', 'rm', searchVolumeName);
-      } catch (cleanupError) {}
+    await volumesPage.deleteBulkVolumes(bulkVolumeNames);
+    await expect(volumesPage.errorBanner).toBeHidden();
+    await expect(lastMessageBox(electronApp)).resolves.toMatchObject({
+      message: `Delete ${ bulkVolumeNames.length } volumes?`,
+      detail:  expect.stringMatching(
+        new RegExp(bulkVolumeNames.map(name => `(?=.*\\b${ RegExp.escape(name) }\\b)`).join(''), 's'),
+      ),
+    });
+
+    for (const volumeName of bulkVolumeNames) {
+      await expect(volumesPage.getVolumeRow(volumeName)).toBeHidden({
+        timeout: 20_000,
+      });
+    }
+
+    // Confirm the deletions stuck against the RDD API too, rather than the
+    // mock backend's reconciler silently recreating them.
+    const volumes = await client.listVolumeForAllNamespaces();
+
+    for (const volumeName of bulkVolumeNames) {
+      expect(volumes.items.some(volume => volume.status?.name === volumeName)).toBe(false);
     }
   });
 
-  test('should display error message in banner', async() => {
+  // FIXME: we don't have a way to propogate errors from volume deletion yet.
+  // Also, the mock controller doesn't model that.
+  test.fixme('should display error message in banner', async() => {
     const volumesPage = new VolumesPage(page);
     const volumeName = `test-volume-in-use-${ Date.now() }`;
     const containerName = `test-container-${ Date.now() }`;
@@ -212,44 +277,6 @@ test.describe.fixme('Volumes Tests', () => {
         await tool('docker', 'rm', '-f', containerName);
         await tool('docker', 'volume', 'rm', volumeName);
       } catch (cleanupError) {}
-    }
-  });
-
-  test('should auto-refresh volumes list', async() => {
-    const volumesPage = new VolumesPage(page);
-    const autoRefreshVolumeName = `auto-refresh-test-${ Date.now() }`;
-
-    try {
-      await volumesPage.waitForTableToLoad();
-
-      // Remove all existing volumes to ensure clean state
-      try {
-        const existingVolumes = await tool('docker', 'volume', 'ls', '--quiet');
-        const volumeNames = existingVolumes.trim().split(/\s+/);
-
-        if (volumeNames.length > 0) {
-          await tool('docker', 'volume', 'rm', '--force', ...volumeNames);
-        }
-      } catch {}
-      await expect(volumesPage.volumes).toHaveCount(0);
-
-      await tool('docker', 'volume', 'create', autoRefreshVolumeName);
-
-      await expect(volumesPage.getVolumeRow(autoRefreshVolumeName)).toBeVisible();
-
-      const volumeInfo = volumesPage.getVolumeInfo(autoRefreshVolumeName);
-      await expect(volumeInfo.name).not.toBeEmpty();
-      await expect(volumeInfo.driver).not.toBeEmpty();
-
-      await tool('docker', 'volume', 'rm', autoRefreshVolumeName);
-
-      await expect(
-        volumesPage.getVolumeRow(autoRefreshVolumeName),
-      ).toBeHidden();
-    } finally {
-      try {
-        await tool('docker', 'volume', 'rm', autoRefreshVolumeName);
-      } catch {}
     }
   });
 });
