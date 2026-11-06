@@ -10,10 +10,52 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
-import extract from 'extract-zip';
+import unzipper from 'unzipper';
 
 import * as macos from './lib/sign-macos';
 import * as windows from './lib/sign-win32';
+
+/** Extract a zip archive to destDir, preserving symlinks. */
+async function extractZip(archive: string, destDir: string): Promise<void> {
+  // We cannot use unzipper's `extract` helper, because that does not handle
+  // symlinks; that breaks signing on macOS.
+
+  const directory = await unzipper.Open.file(archive);
+
+  for (const entry of directory.files) {
+    const destPath = path.join(destDir, entry.path);
+    const relative = path.relative(destDir, destPath);
+
+    // Skip entries outside the destination directory.
+    if (relative === '' || relative.startsWith('..') || path.isAbsolute(relative)) {
+      continue;
+    }
+
+    if (entry.type === 'Directory') {
+      await fs.promises.mkdir(destPath, { recursive: true });
+      continue;
+    }
+
+    await fs.promises.mkdir(path.dirname(destPath), { recursive: true });
+
+    const unixMode = entry.externalFileAttributes >>> 16;
+    const isSymlink = (unixMode & fs.constants.S_IFMT) === fs.constants.S_IFLNK;
+
+    if (isSymlink) {
+      const target = (await entry.buffer()).toString('utf-8');
+
+      await fs.promises.symlink(target, destPath);
+      continue;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      entry.stream()
+        .pipe(fs.createWriteStream(destPath, { mode: (unixMode & 0o777) || 0o644 }))
+        .on('finish', resolve)
+        .on('error', reject);
+    });
+  }
+}
 
 async function signArchive(archive: string): Promise<void> {
   const distDir = path.join(process.cwd(), 'dist');
@@ -27,7 +69,7 @@ async function signArchive(archive: string): Promise<void> {
     // Extract the archive
     console.log(`Extracting ${ archive } to ${ archiveDir }...`);
     await fs.promises.mkdir(archiveDir, { recursive: true });
-    await extract(archive, { dir: archiveDir });
+    await extractZip(archive, archiveDir);
 
     // Detect the archive type
     for (const file of await fs.promises.readdir(archiveDir)) {
