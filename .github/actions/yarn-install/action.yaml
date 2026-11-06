@@ -9,8 +9,7 @@ inputs:
 runs:
   using: composite
   steps:
-  # In case we're running on a self-hosted runner without `yarn` installed,
-  # set up NodeJS, enable `yarn`, and then handle the caching.
+  # Set up NodeJS; for us, caching here is basically not worth it.
   - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
     with:
       node-version-file: package.json
@@ -28,10 +27,6 @@ runs:
   - if: runner.os == 'Windows'
     run: corepack enable --install-directory $(Split-Path (Get-Command node).Source) yarn
     shell: powershell
-  - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-    with:
-      node-version-file: package.json
-      cache: yarn
 
   - uses: $/.github/actions/setup-rdd-go
 
