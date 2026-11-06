@@ -188,9 +188,6 @@ electron:
       platform: windows
       url: https://github.com/electron/electron/releases/download/v45.1.0/electron-v45.1.0-win32-arm64.zip
   version: 45.1.0
-golangci-lint:
-  assets: []
-  version: 2.15.0
 helm:
   assets:
     - arch: amd64

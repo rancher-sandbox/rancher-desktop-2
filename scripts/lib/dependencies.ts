@@ -59,7 +59,6 @@ export interface DependencyVersions {
   dockerProvidedCredentialHelpers: string;
   ECRCredentialHelper:             string;
   electron:                        string;
-  'golangci-lint':                 string;
   helm:                            string;
   steve:                           string;
   wix:                             string;
@@ -258,8 +257,8 @@ export async function writeDependencyManifest(path: string, manifest: Dependency
 }
 
 /**
- * Convenience wrapper for callers that only need versions (`lint-go`,
- * `docker-cli-monitor`).
+ * Convenience wrapper for callers that only need versions, such as
+ * `docker-cli-monitor`.
  */
 export async function readDependencyVersions(path: string): Promise<DependencyVersions> {
   const manifest = await readDependencyManifest(path);
@@ -526,7 +525,7 @@ export abstract class VersionedDependency implements Dependency {
    * Resolves every {@link DependencyAsset} for the given version, verifying
    * each against any upstream checksum file the source publishes.  rddepman
    * calls this at bump time and records the result in the manifest.  Classes
-   * that download nothing (e.g. `golangci-lint`) return an empty list.
+   * that download nothing (e.g. `check-spelling`) return an empty list.
    */
   abstract getAssets(version: Version): Promise<DependencyAsset[]>;
 

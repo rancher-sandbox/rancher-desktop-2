@@ -168,22 +168,6 @@ export class DockerCompose extends GlobalDependency(GitHubDependency) {
   }
 }
 
-export class GoLangCILint extends GlobalDependency(GitHubDependency) {
-  readonly name = 'golangci-lint';
-  readonly githubOwner = 'golangci';
-  readonly githubRepo = 'golangci-lint';
-
-  download(context: DownloadContext): Promise<void> {
-    // We don't actually download anything; when we invoke the linter, we just
-    // use `go run` with the appropriate package.
-    return Promise.resolve();
-  }
-
-  getAssets(version: string): Promise<DependencyAsset[]> {
-    return Promise.resolve([]);
-  }
-}
-
 export class CheckSpelling extends GlobalDependency(GitHubDependency) {
   readonly name = 'check-spelling';
   readonly githubOwner = 'check-spelling';
