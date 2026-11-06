@@ -7,11 +7,17 @@
     "name": "SUSE",
     "email": "containers@suse.com"
   },
-  "engines": {
-    "node": "^26.13.0"
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "26.13.0"
+    },
+    "packageManager": {
+      "name": "yarn",
+      "version": "4.15.0"
+    }
   },
   "type": "module",
-  "packageManager": "yarn@4.15.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/rancher-sandbox/rancher-desktop.git"
