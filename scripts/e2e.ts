@@ -134,7 +134,7 @@ class E2ETestRunner extends events.EventEmitter {
   }
 }
 
-(new E2ETestRunner()).run().catch((e) => {
+await (new E2ETestRunner()).run().catch((e) => {
   console.error(e);
   process.exit(1);
 });

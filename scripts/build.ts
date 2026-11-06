@@ -85,7 +85,7 @@ class Builder {
   }
 }
 
-(new Builder()).run().catch((e) => {
+await (new Builder()).run().catch((e) => {
   console.error(e);
   process.exit(1);
 });

@@ -111,7 +111,7 @@ async function checkForUnreleasedChanges(): Promise<void> {
   }));
 }
 
-checkForUnreleasedChanges().catch((e) => {
+await checkForUnreleasedChanges().catch((e) => {
   console.error(e);
   process.exit(1);
 });

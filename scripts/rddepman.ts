@@ -367,7 +367,7 @@ function parseArgs(): { config: DependencyConfig, regenerate: boolean } {
   return { config, regenerate };
 }
 
-(async() => {
+await (async() => {
   const { config, regenerate } = parseArgs();
 
   if (regenerate) {

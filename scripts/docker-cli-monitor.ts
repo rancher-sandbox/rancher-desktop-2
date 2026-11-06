@@ -87,7 +87,7 @@ async function checkDockerCli(): Promise<void> {
   }
 }
 
-checkDockerCli().catch((e) => {
+await checkDockerCli().catch((e) => {
   console.error(e);
   process.exit(1);
 });

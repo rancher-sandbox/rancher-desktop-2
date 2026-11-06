@@ -110,7 +110,7 @@ async function computeChecksum(artifact: string) {
     `${ hash.digest('hex') } *${ path.basename(artifact) }`);
 }
 
-(async() => {
+await (async() => {
   try {
     let fileCount = 0;
 

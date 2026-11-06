@@ -21,7 +21,7 @@ const command = [
 ];
 
 console.log(command.join(' '));
-simpleSpawn(command[0], command.slice(1)).catch(e => {
+await simpleSpawn(command[0], command.slice(1)).catch(e => {
   console.error(e);
   process.exit(1);
 });
