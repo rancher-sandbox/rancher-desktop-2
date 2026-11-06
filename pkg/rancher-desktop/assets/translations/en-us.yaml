@@ -160,6 +160,15 @@ containers:
         stop: Stop
         restart: Restart
         start: Start
+      group:
+        # @context Containers page, header row of the table group
+        # @meaning Containers that belong to no compose project and no Kubernetes pod
+        standalone: Standalone Containers
+  confirmDelete:
+    # @meaning '&' marks the access key, not literal text; see the README.
+    confirm: '&Delete'
+    message: Delete {count} {count, plural, one {container} other {containers}}?
+    title: Confirm container deletion
   sortableTables:
     noRows: There are no containers to show
 volumes:
@@ -176,6 +185,11 @@ volumes:
       action:
         browse: Browse Files
         delete: Delete
+  confirmDelete:
+    # @meaning '&' marks the access key, not literal text; see the README.
+    confirm: '&Delete'
+    message: Delete {count} {count, plural, one {volume} other {volumes}}?
+    title: Confirm volume deletion
   sortableTables:
     noRows: There are no volumes to show
   files:
@@ -266,7 +280,7 @@ images:
     confirm: Delete
     multiple: Delete {count} {count, plural, one {image} other {images}}?
     single: Delete image {name}:{tag}?
-    title: Confirming image deletion
+    title: Confirm image deletion
   sortableTables:
     noRows: There are no images to show
 portForwarding:

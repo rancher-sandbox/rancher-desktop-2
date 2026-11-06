@@ -15,6 +15,7 @@ mockModules({
 
 const containerEngineModule = await import('../container-engine');
 const { actions: realActions } = containerEngineModule;
+const { ApiException } = await import('@rdd-client');
 
 type actionContextType = ActionContext<State,
   typeof containerEngineModule.mutations,
@@ -109,6 +110,37 @@ describe('container-engine store', () => {
       const context = { commit, state, getters, dispatch } as unknown as actionContextType;
       setCurrentNamespace.call(null as any, context, { namespace: 'narrow-no-break' });
       expect(commit).toHaveBeenCalledWith('SET_SELECTED_NAMESPACE', 'narrow-no-break');
+    });
+  });
+  describe.each([
+    ['containerDelete', 'deleteNamespacedContainer', 'container', 'containers'],
+    ['imageDelete', 'deleteNamespacedImage', 'image', 'images'],
+    ['volumeDelete', 'deleteNamespacedVolume', 'volume', 'volumes'],
+  ] as const)('actions.%s', (action, clientMethod, argument, source) => {
+    /** Run the action with an API client whose delete call fails with the given error. */
+    async function deleteFailingWith(error: Error) {
+      const commit = jest.fn();
+      const config = { makeApiClient: () => ({ [clientMethod]: () => Promise.reject(error) }) };
+      const context = { commit, rootState: { 'rdd-connection': { config } } } as unknown as actionContextType;
+      const resource = { metadata: { name: 'gone', namespace: 'default' } };
+
+      await (realActions[action] as any)(context, { [argument]: resource });
+
+      return commit;
+    }
+
+    it('should treat a resource that no longer exists as deleted', async() => {
+      const body = JSON.stringify({ kind: 'Status', status: 'Failure', reason: 'NotFound', code: 404 });
+      const commit = await deleteFailingWith(new ApiException(404, 'Unknown API Status Code!', body, {}));
+
+      expect(commit).not.toHaveBeenCalled();
+    });
+
+    it('should report any other failure', async() => {
+      const error = new ApiException(500, 'Unknown API Status Code!', '', {});
+      const commit = await deleteFailingWith(error);
+
+      expect(commit).toHaveBeenCalledWith('SET_ERROR', { error, source });
     });
   });
   describe('rewatchResourcesPlugin', () => {

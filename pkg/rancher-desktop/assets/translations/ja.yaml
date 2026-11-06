@@ -419,6 +419,14 @@ containerStats:
     # @source Write
     write: 書き込み
 containers:
+  confirmDelete:
+    # @source &Delete
+    confirm: 削除(&D)
+    # @reason Japanese has no grammatical plural, so both branches carry the same counter phrase; dropped the space before the counter 個 as Japanese attaches counters directly to the number.
+    # @source Delete {count} {count, plural, one {container} other {containers}}?
+    message: '{count}{count, plural, one {個のコンテナー} other {個のコンテナー}}を削除しますか？'
+    # @source Confirm container deletion
+    title: コンテナー削除の確認
   manage:
     table:
       action:
@@ -430,6 +438,9 @@ containers:
         start: 開始
         # @source Stop
         stop: 停止
+      group:
+        # @source Standalone Containers
+        standalone: スタンドアロンのコンテナー
       header:
         # @source Name
         containerName: 名前
@@ -651,7 +662,7 @@ images:
     multiple: '{count}{count, plural, one {個のイメージ} other {個のイメージ}}を削除しますか？'
     # @source Delete image {name}:{tag}?
     single: イメージ {name}:{tag} を削除しますか？
-    # @source Confirming image deletion
+    # @source Confirm image deletion
     title: イメージ削除の確認
   manager:
     # @source Close Output to Continue
@@ -1549,6 +1560,14 @@ virtualMachine:
     # @source VZ Option
     legend: VZ オプション
 volumes:
+  confirmDelete:
+    # @source &Delete
+    confirm: 削除(&D)
+    # @reason Japanese has no grammatical plural, so both branches carry the same counter phrase; dropped the space before the counter 個 as Japanese attaches counters directly to the number.
+    # @source Delete {count} {count, plural, one {volume} other {volumes}}?
+    message: '{count}{count, plural, one {個のボリューム} other {個のボリューム}}を削除しますか？'
+    # @source Confirm volume deletion
+    title: ボリューム削除の確認
   files:
     # @source Available
     available: 利用可能

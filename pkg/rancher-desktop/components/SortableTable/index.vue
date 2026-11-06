@@ -854,13 +854,13 @@ export default {
     },
 
     isExpanded(row) {
-      const key = row[this.keyField];
+      const key = get(row, this.keyField);
 
       return !!this.expanded[key];
     },
 
     toggleExpand(row) {
-      const key = row[this.keyField];
+      const key = get(row, this.keyField);
       const val = !this.expanded[key];
 
       this.expanded[key] = val;
@@ -1295,7 +1295,7 @@ export default {
         </slot>
         <template
           v-for="(row, i) in groupedRows.rows"
-          :key="row.row[keyField]"
+          :key="row.key"
         >
           <slot
             name="main-row"
@@ -1336,8 +1336,8 @@ export default {
                     data-title="Toggle Expand"
                     :class="{
                       icon: true,
-                      'icon-chevron-right': !expanded[row.row[keyField]],
-                      'icon-chevron-down': !!expanded[row.row[keyField]],
+                      'icon-chevron-right': !expanded[row.key],
+                      'icon-chevron-down': !!expanded[row.key],
                     }"
                     @click.stop="toggleExpand(row.row)"
                   />
@@ -1447,7 +1447,7 @@ export default {
           >
             <tr
               v-if="row.row.stateDescription"
-              :key="row.row[keyField] + '-description'"
+              :key="row.key + '-description'"
               :data-testid="componentTestid + '-' + i + '-row-description'"
               class="state-description sub-row"
               @mouseenter="onRowMouseEnter"

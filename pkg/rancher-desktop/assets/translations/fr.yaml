@@ -428,6 +428,13 @@ containerStats:
     # @source Write
     write: Écriture
 containers:
+  confirmDelete:
+    # @source &Delete
+    confirm: '&Supprimer'
+    # @source Delete {count} {count, plural, one {container} other {containers}}?
+    message: Supprimer {count} {count, plural, one {conteneur} other {conteneurs}} ?
+    # @source Confirm container deletion
+    title: Confirmer la suppression de conteneurs
   manage:
     table:
       action:
@@ -439,6 +446,9 @@ containers:
         start: Démarrer
         # @source Stop
         stop: Arrêter
+      group:
+        # @source Standalone Containers
+        standalone: Conteneurs autonomes
       header:
         # @source Name
         containerName: Nom
@@ -661,8 +671,8 @@ images:
     multiple: Supprimer {count} {count, plural, one {image} other {images}} ?
     # @source Delete image {name}:{tag}?
     single: Supprimer l'image {name}:{tag} ?
-    # @source Confirming image deletion
-    title: Confirmation de la suppression d'images
+    # @source Confirm image deletion
+    title: Confirmer la suppression d'images
   manager:
     # @source Close Output to Continue
     close: Fermer la sortie pour continuer
@@ -1575,6 +1585,13 @@ virtualMachine:
     # @source VZ Option
     legend: Option VZ
 volumes:
+  confirmDelete:
+    # @source &Delete
+    confirm: '&Supprimer'
+    # @source Delete {count} {count, plural, one {volume} other {volumes}}?
+    message: Supprimer {count} {count, plural, one {volume} other {volumes}} ?
+    # @source Confirm volume deletion
+    title: Confirmer la suppression de volumes
   files:
     # @source Available
     available: Disponible

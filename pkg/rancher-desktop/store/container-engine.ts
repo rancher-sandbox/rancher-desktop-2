@@ -21,6 +21,14 @@ function resourceFieldSelector(untypedContext: any): string | undefined {
   return currentNamespace ? `status.namespace=${ currentNamespace }` : undefined;
 }
 
+/**
+ * Whether a delete failed because the resource no longer exists. The user
+ * wanted it gone, so the delete actions do not report this as an error.
+ */
+function isNotFound(error: unknown): boolean {
+  return error instanceof RDDClient.ApiException && error.code === 404;
+}
+
 const resources = [
   defineResource({
     name:          'containers',
@@ -171,7 +179,9 @@ export const actions = {
         });
       }
     } catch (error: any) {
-      commit('SET_ERROR', { error, source: 'containers' });
+      if (!isNotFound(error)) {
+        commit('SET_ERROR', { error, source: 'containers' });
+      }
     }
   },
   imagePush(
@@ -239,7 +249,9 @@ export const actions = {
         });
       }
     } catch (error: any) {
-      commit('SET_ERROR', { error, source: 'images' });
+      if (!isNotFound(error)) {
+        commit('SET_ERROR', { error, source: 'images' });
+      }
     }
   },
   async volumeDelete(
@@ -263,7 +275,9 @@ export const actions = {
         });
       }
     } catch (error: any) {
-      commit('SET_ERROR', { error, source: 'volumes' });
+      if (!isNotFound(error)) {
+        commit('SET_ERROR', { error, source: 'volumes' });
+      }
     }
   },
 } satisfies ActionTree<ContainerEngineState, any, typeof mutations>;

@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import * as models from './gen/models/all';
+
 export function findSuffix(quantity: string): string {
   let ix = quantity.length - 1;
   while (ix >= 0 && !/[.0-9]/.test(quantity.charAt(ix))) {
@@ -133,11 +135,19 @@ export function getSerializationType(apiVersion?: string, kind?: string): string
   if (apiVersion === undefined || kind === undefined) {
     return 'KubernetesObject';
   }
-  // Types are defined in src/gen/api/models with the format "<Version><Kind>".
-  // Version and Kind are in PascalCase.
+  // Most built-in models are named "<Version><Kind>"; rdd's own models start
+  // with the reversed group, as in "IoRancherdesktopContainersV1alpha1Volume".
+  // Use the grouped name when a model has it.  All parts are in PascalCase.
   const gv = groupVersion(apiVersion);
-  const version = gv.version.charAt(0).toUpperCase() + gv.version.slice(1);
-  return `${ version }${ kind }`;
+  const versionKind = `${ pascalCase(gv.version) }${ kind }`;
+  const groupPrefix = gv.group.split('.').reverse().map(pascalCase).join('');
+  const groupedType = `${ groupPrefix }${ versionKind }`;
+
+  return groupedType in models ? groupedType : versionKind;
+}
+
+function pascalCase(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
 interface GroupVersion {
