@@ -259,10 +259,6 @@ install_win32() {
         local -a values
         mapfile -t values < <(key=$key yq.exe "$expr" < build/signing-config-win.yaml)
         for value in "${values[@]}"; do
-            if [[ "$value" == "wix-custom-action.dll" ]]; then
-                # This file is not installed
-                continue
-            fi
             win32_verify "$installDirectory/$key/$value"
         done
     done

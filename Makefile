@@ -34,10 +34,6 @@ check-ltag:
 	"$(LTAG)" -v -t .ltag -path . --gitignore --excludes="${LTAG_EXCLUDES}" --check
 .PHONY: ltag check-ltag
 
-test-wix-helper:
-	( cd src/go/wix-helper && go$(EXE) test ./... )
-.PHONY: test-wix-helper
-
 test-i18n-report:
 	( cd src/go/i18n-report && go$(EXE) test ./... )
 .PHONY: test-i18n-report
@@ -46,10 +42,10 @@ check-translations:
 	( cd src/go/i18n-report && go$(EXE) tool i18n-report check --locale=all )
 .PHONY: check-translations
 
-lint: lint-rdd lint-bats lint-shell lint-startup-profile lint-wix-helper
+lint: lint-rdd lint-bats lint-shell lint-startup-profile
 .PHONY: lint
 
-lint-go: lint-rdd lint-startup-profile lint-wix-helper
+lint-go: lint-rdd lint-startup-profile
 .PHONY: lint-go
 
 lint-rdd:
@@ -63,10 +59,6 @@ lint-bats:
 lint-startup-profile:
 	( cd src/go/startup-profile && go$(EXE) tool golangci-lint run )
 .PHONY: lint-startup-profile
-
-lint-wix-helper:
-	( cd src/go/wix-helper && go$(EXE) tool golangci-lint run )
-.PHONY: lint-wix-helper
 
 # TODO: Currently, many of the scripts fail the check.
 # SHELL_FILES := $(shell git ls-files -- '**/*.sh' ':!rdd/bats/')
