@@ -26,22 +26,35 @@ type untranslatedHit struct {
 var (
 	// Attributes that should use t() instead of hardcoded strings.
 	// Excludes Vue directives (v-tooltip, v-clean-tooltip) since their values are expressions.
-	attrPattern = regexp.MustCompile(`(?i)(?:^|\s)(label|legend-text|placeholder|tooltip|description)="([^"]{3,})"`)
+	attrPattern = regexp.MustCompile(`(?i)(?:^|\s)((?:[a-z]{2,}-(?:[a-z]+-)*)?label|legend-text|placeholder|tooltip|description|suffix)="([^"]{3,})"`)
 	// Skip attributes that are clearly not translatable.
 	skipPattern = regexp.MustCompile(`^[a-z][a-zA-Z0-9]*$|^\d|^http|^/|^#|^\$|^@|^:|^\{`)
-	// Single-word Title Case values (e.g., "Environment", "General").
-	singleWordTitleCase = regexp.MustCompile(`^[A-Z][a-z]{2,}$`)
-	// Text between an HTML closing ">" and an opening "</" on the same line.
-	htmlTextPattern = regexp.MustCompile(`>\s*([A-Z][a-zA-Z ]{2,}?)\s*</`)
+	// Single-word Title Case values (e.g., "Environment", "Up-to-date").
+	singleWordTitleCase = regexp.MustCompile(`^[A-Z][a-z]{2,}$|^[A-Z][a-z]*(?:-[a-z]+)+$`)
+	// Text between an HTML closing ">" and an opening "</" on the same line,
+	// which may be parenthesized or end in a colon ("(None)", "Age:").
+	htmlTextPattern = regexp.MustCompile(`>\s*(\(?[A-Z][a-zA-Z ]{2,}?\)?:?)\s*</`)
 	// Bare text between tags split across lines (e.g., ">\n Cancel\n </button>").
-	bareTextPattern = regexp.MustCompile(`^[A-Z][a-zA-Z]{2,}(?: [a-zA-Z]+)*$`)
+	bareTextPattern = regexp.MustCompile(`^[A-Z][a-zA-Z]{2,}(?: [a-zA-Z]+)*:?$`)
 	// Bound string literal attributes, e.g. :label="'Include Kubernetes services'".
 	boundLiteralPattern = regexp.MustCompile(`:(label|placeholder)="'([^']{3,})'"`)
 	// Validation error messages pushed to an errors array.
 	errorPushPattern = regexp.MustCompile(`errors\.push\(\s*['"\x60]`)
 	// Object-literal UI labels in script code, e.g. SortableTable headers
-	// (`label: 'Local Port'`).
-	objectLabelPattern = regexp.MustCompile(`^(label|text|tooltip|placeholder):\s+['"]([A-Z][^'"]{2,})['"],?$`)
+	// (`label: 'Local Port'`) and inline objects (`{ label: 'Duration' }`).
+	objectLabelPattern = regexp.MustCompile(`(?:^|[\s{,(])(label|text|tooltip|placeholder):\s+['"]([A-Z][^'"]{2,})['"]`)
+	// Title Case string literals in the code forms that build display text,
+	// in templates and script alike.
+	literalShapePatterns = []*regexp.Regexp{
+		// A ternary between two strings, e.g. `on ? "Yes" : "No"`.
+		regexp.MustCompile(`\?\s*['"][A-Z][a-zA-Z ]+['"]\s*:\s*['"][A-Z][a-zA-Z ]+['"]`),
+		// A string pushed onto a list, e.g. `res.push('Control Plane')`.
+		regexp.MustCompile(`\.push\(\s*['"][A-Z][a-zA-Z ]{2,}['"]\s*\)`),
+		// An array of two or more strings, e.g. `['No', 'Once', 'Yes']`. Lists
+		// of field names and enum values match too; only a reader can tell
+		// them from text.
+		regexp.MustCompile(`\[\s*['"][A-Z][a-z]+['"](?:\s*,\s*['"][A-Z][a-zA-Z.]*['"])+\s*\]`),
+	}
 	// A t() call anywhere on the line; such lines are already translated.
 	tCallPattern = regexp.MustCompile(`(?:^|[^a-zA-Z])t\(`)
 )
@@ -115,10 +128,6 @@ func findUntranslated(root string, includeDescriptions bool) ([]untranslatedHit,
 	dialogPattern := regexp.MustCompile(`(` + dialogFields + `):\s+['"]([A-Z][^'"]{5,})['"]`)
 
 	for _, file := range files {
-		base := filepath.Base(file)
-		if strings.Contains(base, ".spec.") || strings.Contains(base, ".test.") {
-			continue
-		}
 		data, err := os.ReadFile(file)
 		if err != nil {
 			return nil, fmt.Errorf("reading %s: %w", file, err)
@@ -145,7 +154,10 @@ func findUntranslated(root string, includeDescriptions bool) ([]untranslatedHit,
 				}
 			}
 
-			// Skip lines that already use binding (:attr) or t()
+			// Skip comments and lines that already use binding (:attr) or t()
+			if commentLinePattern.MatchString(trimmed) {
+				continue
+			}
 			if strings.Contains(trimmed, ":label=") || strings.Contains(trimmed, ":legend-text=") {
 				continue
 			}
@@ -222,6 +234,12 @@ func findUntranslated(root string, includeDescriptions bool) ([]untranslatedHit,
 			// Dialog strings in both .vue and .ts files.
 			if !found && dialogPattern.MatchString(trimmed) {
 				found = true
+			}
+
+			for _, pattern := range literalShapePatterns {
+				if !found && pattern.MatchString(trimmed) {
+					found = true
+				}
 			}
 
 			if found {

@@ -24,7 +24,7 @@ export default {
   data() {
     return {
       // Indirect reference to a missing key: must NOT be reported,
-      // because the indirect pattern also matches settings paths.
+      // because dottedKeyLiteral also matches settings paths.
       barKey: 'settings.some.path',
     };
   },
