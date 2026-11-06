@@ -17,27 +17,37 @@ import { artifactPlatform } from '@pkg/utils/releaseArtifacts';
  */
 interface RDDPaths {
   /** RDD: file holding server arguments. */
-  readonly args_file:     string;
+  readonly args_file:          string;
+  /** RDD: directory containing user-facing executables. */
+  readonly bin_dir:            string;
   /** RDD: Kubernetes connection configuration file. */
-  readonly config:        string;
+  readonly config:             string;
+  /** RDD: containerd socket file. */
+  readonly containerd_socket:  string;
   /** RDD: application data directory. */
-  readonly dir:           string;
+  readonly dir:                string;
+  /** RDD: Docker CLI plugins directory. */
+  readonly docker_cli_plugins: string;
   /** RDD: Docker socket file. */
-  readonly docker_socket: string;
+  readonly docker_socket:      string;
+  /** RDD: Raw in-VM Kubernetes configuration file. */
+  readonly k3s_config:         string;
   /** RDD: Lima home directory. */
-  readonly lima_home:     string;
+  readonly lima_home:          string;
   /** RDD: log directory. */
-  readonly log_dir:       string;
+  readonly log_dir:            string;
+  /** RDD: marker file indicating path management is enabled. */
+  readonly path_marker:        string;
   /** RDD: PID file. */
-  readonly pid_file:      string;
+  readonly pid_file:           string;
   /** RDD: short user data directory. */
-  readonly short_dir:     string;
+  readonly short_dir:          string;
   /** RDD: control plane stderr log file. */
-  readonly stderr_log:    string;
+  readonly stderr_log:         string;
   /** RDD: control plane stdout log file. */
-  readonly stdout_log:    string;
+  readonly stdout_log:         string;
   /** RDD: TLS certificate directory. */
-  readonly tls_dir:       string;
+  readonly tls_dir:            string;
 }
 
 /**
@@ -294,4 +304,10 @@ export function getPaths(rddOverride?: string, platformOverride?: supportedPlatf
   }
 }
 
-export default getPaths();
+const paths = getPaths();
+export default paths;
+/**
+ * The keys available for paths.  If we failed to get paths, this may not
+ * include all values.
+ */
+export const pathKeys = Object.keys(paths) as (keyof Paths)[];

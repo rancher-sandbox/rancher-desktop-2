@@ -102,6 +102,10 @@ export default defineComponent({
       return !!this.$slots.description;
     },
 
+    hasDescription(): boolean {
+      return this.hasDescriptionSlot || !!this.description || !!this.descriptionKey;
+    },
+
     hasLabelSlot(): boolean {
       return !!this.$slots.label;
     },
@@ -156,13 +160,11 @@ export default defineComponent({
       :tabindex="isDisabled ? -1 : 0"
       :aria-label="label"
       :aria-checked="isChecked"
+      :aria-describedby="hasDescription ? randomString + '-description' : undefined"
       role="radio"
     />
     <div class="labeling">
-      <label
-        :class="[muteLabel ? 'text-muted' : '', 'radio-label', 'm-0']"
-        :for="name"
-      >
+      <span :class="[muteLabel ? 'text-muted' : '', 'radio-label', 'm-0']">
         <slot
           v-if="hasLabelSlot"
           name="label"
@@ -173,9 +175,10 @@ export default defineComponent({
           v-else-if="label"
           v-clean-html="label"
         />
-      </label>
+      </span>
       <div
         v-if="descriptionKey || description"
+        :id="randomString + '-description'"
         class="radio-button-outer-container-description"
       >
         <t
@@ -188,6 +191,7 @@ export default defineComponent({
       </div>
       <div
         v-else-if="hasDescriptionSlot"
+        :id="randomString + '-description'"
         class="radio-button-outer-container-description"
       >
         <slot name="description" />

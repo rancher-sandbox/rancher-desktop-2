@@ -3,6 +3,8 @@ import { test, expect } from '@playwright/test';
 import FirstRunPage from './pages/first-run-page';
 import { startRancherDesktop, teardown } from './utils/TestUtils';
 
+import { IoRancherdesktopAppV1alpha1AppSpecApplicationAddPathEnum as AddPath } from '@rdd-client';
+
 import type { ElectronApplication } from '@playwright/test';
 
 test.describe.configure({ mode: 'serial' });
@@ -47,6 +49,17 @@ test.describe('First Run Dialog', () => {
       await expect(radio).toBeEnabled();
     }
     await expect(firstRunPage.engineSelector).toHaveAttribute('data-value', 'moby');
+  });
+
+  test('should allow selecting path management', async() => {
+    await expect(firstRunPage.pathManagementSelector).toBeVisible();
+    for (const value of Object.values(AddPath)) {
+      const radio = firstRunPage.pathManagementSelector.getByTestId(`path-management-${ value }`);
+      await expect(radio).toBeVisible();
+      await expect(radio.locator('input[type="radio"]')).toBeEnabled();
+      await radio.click();
+      await expect(firstRunPage.pathManagementSelector).toHaveAttribute('data-value', value);
+    }
   });
 
   test('should close window when accepted', async() => {

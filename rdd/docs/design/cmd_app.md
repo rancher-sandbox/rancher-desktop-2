@@ -8,7 +8,7 @@ Set one or more properties on the App singleton resource. Properties use dot not
 
 Valid property names and types are derived from the App CRD's OpenAPI schema at runtime, so the command automatically supports new properties as they are added to the CRD.
 
-If the App resource does not exist, it is created with default settings before the specified values are applied. Unless `application.addPath` is given, `rdd set` also sets it to `manual` when the App is new or the field is still `unset`; see [`spec.application.addPath`](api_app.md#app-object).
+If the App resource does not exist, it is created with default settings before the specified values are applied.
 
 By default, `rdd set` waits for the reconcile chain to settle before returning. Every property change — `running`, `containerEngine.name`, `kubernetes.enabled`, or any combination — waits for the App's `Settled` condition to reach `True` with `ObservedGeneration` matching the post-patch generation.
 
@@ -77,7 +77,7 @@ rdd lima shell rd "$@"
 
 `rdd run` prepends `~/.rd2/bin` to `PATH`, sets the Docker context to `rancher-desktop-2`, and points `KUBECONFIG` at `~/.rd2/kube.config`, whose current context is `rancher-desktop-2`. It clears `DOCKER_HOST` so the Docker context takes effect. `rdd run` itself leaves your selected Docker context and the current context in `~/.kube/config` unchanged. Starting the App still merges the `rancher-desktop-2` entry into `~/.kube/config`, and on the moby backend creates its Docker context; as a normal startup does, it switches your current context only when the existing one is missing or not working (see [api_app.md](api_app.md)).
 
-Rancher Desktop starts first if it is not already running. When the App does not exist yet and the command is `kubectl` or `helm`, `rdd run` also enables Kubernetes so the command has a cluster to talk to; the App defaulter then picks the default version. When the command is `nerdctl`, it selects the containerd engine instead of the default moby. `rdd run` only starts an existing App, except that, like `rdd set`, it changes an `application.addPath` that is still `unset` to `manual`.
+Rancher Desktop starts first if it is not already running. When the App does not exist yet and the command is `kubectl` or `helm`, `rdd run` also enables Kubernetes so the command has a cluster to talk to; the App defaulter then picks the default version. When the command is `nerdctl`, it selects the containerd engine instead of the default moby. `rdd run` only starts an existing App.
 
 For example, `rdd run docker run --rm hello-world` effectively executes:
 

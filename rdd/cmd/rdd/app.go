@@ -40,7 +40,7 @@ func newStartCommand() *cobra.Command {
 		`),
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return setAction(cmd.Context(), []string{"running=true"}, true, false, wait, timeout)
+			return setAction(cmd.Context(), []string{"running=true"}, false, wait, timeout)
 		},
 	}
 	command.Flags().BoolVar(&wait, "wait", true,
@@ -102,5 +102,5 @@ func stopAction(ctx context.Context, wait bool, timeout time.Duration) error {
 		}
 		return fmt.Errorf("failed to get App: %w", err)
 	}
-	return setAction(ctx, []string{"running=false"}, false, false, wait, timeout)
+	return setAction(ctx, []string{"running=false"}, false, wait, timeout)
 }

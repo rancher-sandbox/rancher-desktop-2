@@ -10,7 +10,8 @@ const prefItemData = defineNavItems([
     labelKey: 'preferences.nav.application',
     tabs:     [
       ['general', 'preferences.tabs.general'],
-      /* 'behavior', 'environment' */
+      // ['behavior', 'preferences.tabs.behavior'],
+      ['environment', 'preferences.tabs.environment'],
     ],
   },
   {

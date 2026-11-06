@@ -47,9 +47,7 @@ func newRunCommand() *cobra.Command {
 			is missing or not working. When the App does not exist yet,
 			rdd run enables Kubernetes for kubectl and helm, so they have
 			a cluster to talk to, and selects the containerd engine for
-			nerdctl. An existing App is only started, except that rdd run,
-			like rdd set, changes an application.addPath that is still
-			unset to manual.
+			nerdctl. An existing App is only started.
 
 			Examples:
 			  rdd run docker run --rm hello-world
@@ -92,8 +90,7 @@ func runAction(cmd *cobra.Command, args []string) error {
 // App does not exist yet and command invokes a Kubernetes client, it enables
 // Kubernetes so the client has a cluster to talk to; the App defaulter then
 // picks the default Kubernetes version. For nerdctl it selects the containerd
-// engine instead of the default moby. An existing App is only started, except
-// that setAction pins a still-unset addPath to manual.
+// engine instead of the default moby. An existing App is only started.
 func ensureAppRunning(ctx context.Context, command string) error {
 	c, _, err := getAppKubeClient(ctx)
 	if err != nil {
@@ -114,7 +111,7 @@ func ensureAppRunning(ctx context.Context, command string) error {
 		return fmt.Errorf("failed to get App: %w", err)
 	}
 
-	return setAction(ctx, props, true, false, true, limaLongWaitTimeout)
+	return setAction(ctx, props, false, true, limaLongWaitTimeout)
 }
 
 // commandBaseName returns the program that name invokes, without its

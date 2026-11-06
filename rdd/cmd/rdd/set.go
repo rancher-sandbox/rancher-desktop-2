@@ -65,9 +65,7 @@ func newSetCommand() *cobra.Command {
 
 			Valid property names and types are derived from the App CRD at
 			runtime. If the App resource does not exist, it is created with
-			default settings before applying the specified values. Unless
-			application.addPath is given, rdd set also sets it to manual
-			when the App is new or the field is still unset.
+			default settings before applying the specified values.
 
 			By default, rdd set waits for the App's Settled condition
 			to reach True at the new generation. The wait covers every
@@ -84,7 +82,7 @@ func newSetCommand() *cobra.Command {
 		`),
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return setAction(cmd.Context(), args, true, dryRun, wait, timeout)
+			return setAction(cmd.Context(), args, dryRun, wait, timeout)
 		},
 	}
 	command.Flags().BoolVar(&dryRun, "dry-run", false,
@@ -253,7 +251,7 @@ func collectEntries(schema *apiextensionsv1.JSONSchemaProps, prefix string, out 
 	}
 }
 
-func setAction(ctx context.Context, args []string, pinUnset, dryRun, wait bool, timeout time.Duration) error {
+func setAction(ctx context.Context, args []string, dryRun, wait bool, timeout time.Duration) error {
 	// Parse PROPERTY=VALUE arguments.
 	properties := make(map[string]string, len(args))
 	for _, arg := range args {
@@ -302,17 +300,6 @@ func setAction(ctx context.Context, args []string, pinUnset, dryRun, wait bool, 
 	err = c.Get(ctx, client.ObjectKey{Name: "app"}, &app)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to get App: %w", err)
-	}
-
-	// When pinUnset is set and the caller doesn't name a strategy, pin a new or
-	// still-unset App to "manual", so a CLI-created or CLI-started instance never
-	// gets the app's first-run dialog. rdd stop passes pinUnset=false, so stopping
-	// a GUI-created App that has never started leaves it undecided. An App that
-	// already holds front/back/manual keeps its value.
-	if _, named := properties["application.addPath"]; pinUnset && !named {
-		if apierrors.IsNotFound(err) || app.Spec.Application.AddPath == appv1alpha1.AddPathUnset {
-			coerced["application.addPath"] = string(appv1alpha1.AddPathManual)
-		}
 	}
 
 	specMap := buildNestedMap(coerced)

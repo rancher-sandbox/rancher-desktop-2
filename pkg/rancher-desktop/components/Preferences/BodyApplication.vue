@@ -45,15 +45,11 @@ function tabSelected({ selectedName }: { selectedName: tabName }) {
     @changed="tabSelected"
   >
     <template #tabs>
-      <!--
-      Environment has nothing yet
       <tab
-        v-if="!isPlatformWindows"
         label-key="preferences.tabs.environment"
         name="environment"
         :weight="1"
       />
-      -->
       <!--
       <tab
         label-key="preferences.tabs.behavior"

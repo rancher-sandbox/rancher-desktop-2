@@ -227,10 +227,7 @@ type ApplicationSpec struct {
 	//   - "front":  prepend, so the bin directory wins   (bin:$PATH)
 	//   - "back":   append,  so existing PATH entries win ($PATH:bin)
 	//   - "manual": leave PATH alone; remove any lines a previous front/back added.
-	// It defaults to "unset", which means nobody has picked a value yet: rdd
-	// treats it exactly like "manual", the field can't be changed back to it once
-	// it holds another value, and `rdd set` replaces it with "manual" for a
-	// CLI-created instance. The GUI sends "front" when the user opts in.
+	//               This is the default value.
 	//
 	// On Windows the user Environment Path is a plain semicolon-separated list
 	// with nowhere to fence our entry, so under "manual" we can't tell an entry
@@ -251,9 +248,8 @@ type ApplicationSpec struct {
 	// "back" the bundled plugins win over the user's own copies there; "back"
 	// yields only to other tools' cliPluginsExtraDirs entries.
 	// +optional
-	// +kubebuilder:validation:Enum=unset;front;back;manual
-	// +kubebuilder:default=unset
-	// +kubebuilder:validation:XValidation:rule="self != 'unset' || oldSelf == 'unset'",message="addPath cannot be changed back to unset"
+	// +kubebuilder:validation:Enum=front;back;manual
+	// +kubebuilder:default=manual
 	AddPath AddPathStrategy `json:"addPath,omitempty"`
 	// locale is the language/locale to use for the Rancher Desktop App.
 	// +optional
@@ -266,19 +262,16 @@ type ApplicationSpec struct {
 type AddPathStrategy string
 
 const (
-	// AddPathUnset means nobody has picked a strategy yet. It is the default,
-	// behaves like "manual", and a CEL rule forbids changing the field back to it.
-	AddPathUnset AddPathStrategy = "unset"
 	// AddPathFront prepends the bin directory (bin:$PATH).
 	AddPathFront AddPathStrategy = "front"
 	// AddPathBack appends the bin directory ($PATH:bin).
 	AddPathBack AddPathStrategy = "back"
-	// AddPathManual leaves PATH unmanaged.
+	// AddPathManual leaves PATH unmanaged.  This is the default value.
 	AddPathManual AddPathStrategy = "manual"
 )
 
 // IsAdding reports whether the strategy adds the bin directory to PATH, i.e.
-// "front" or "back". "unset" and "manual" leave PATH alone.
+// "front" or "back". "manual" leaves PATH alone.
 func (s AddPathStrategy) IsAdding() bool {
 	return s == AddPathFront || s == AddPathBack
 }

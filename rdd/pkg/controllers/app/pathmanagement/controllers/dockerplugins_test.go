@@ -91,12 +91,6 @@ func TestComputePluginDirs(t *testing.T) {
 		assert.DeepEqual(t, got, []string{dir, other})
 	})
 
-	t.Run("unset without marker leaves entries alone", func(t *testing.T) {
-		got, changed := computePluginDirs([]string{dir, other}, dir, appv1alpha1.AddPathUnset, false)
-		assert.Assert(t, !changed)
-		assert.DeepEqual(t, got, []string{dir, other})
-	})
-
 	t.Run("manual with marker removes our entry", func(t *testing.T) {
 		got, changed := computePluginDirs([]string{dir, other}, dir, appv1alpha1.AddPathManual, true)
 		assert.Assert(t, changed)
@@ -157,17 +151,6 @@ func TestApplyDockerPluginsManualKeepsUserEntryWithoutMarker(t *testing.T) {
 	assert.NilError(t, r.applyDockerPlugins(context.Background(), appv1alpha1.AddPathManual, false))
 
 	assert.DeepEqual(t, readPluginDirs(t, configFile), []string{r.PluginDir})
-}
-
-func TestApplyDockerPluginsUnsetKeepsUserEntryWithoutMarker(t *testing.T) {
-	r, configFile := newPluginTestReconciler(t)
-	seed := []byte(`{"cliPluginsExtraDirs":["` + jsonEscape(r.PluginDir) + `"]}` + "\n")
-	assert.NilError(t, os.WriteFile(configFile, seed, 0o600))
-
-	assert.NilError(t, r.applyDockerPlugins(context.Background(), appv1alpha1.AddPathUnset, false))
-
-	assert.DeepEqual(t, readPluginDirs(t, configFile), []string{r.PluginDir})
-	assert.Assert(t, !r.dockerPluginsMarkerExists(), "unset must not claim the entry")
 }
 
 // TestApplyDockerPluginsManualWithoutMarkerSkipsConfig checks that manual with no

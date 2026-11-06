@@ -88,7 +88,7 @@ type PathManagementReconciler struct {
 }
 
 // Reconcile applies spec.application.addPath: front/back add the bin directory
-// (prepended or appended); manual (or unset) removes any block we added before.
+// (prepended or appended); manual removes any block we added before.
 // It is idempotent, so extra reconciles are harmless.
 func (r *PathManagementReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
