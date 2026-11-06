@@ -4280,15 +4280,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/tar-stream@npm:3.1.5":
-  version: 3.1.5
-  resolution: "@types/tar-stream@npm:3.1.5"
-  dependencies:
-    "@types/node": "npm:*"
-  checksum: 10c0/15fb31e5641892e8a9b85663879fdbe000bfd5d6fd91ce67fec98859bfea702d43e1cb9a0793e9b65006ddb86556248eab0672190abfa86910aabed67db93cf8
-  languageName: node
-  linkType: hard
-
 "@types/tough-cookie@npm:*":
   version: 4.0.5
   resolution: "@types/tough-cookie@npm:4.0.5"
@@ -14552,7 +14543,6 @@ __metadata:
     "@types/plist": "npm:3.0.5"
     "@types/ps-tree": "npm:1.1.6"
     "@types/semver": "npm:7.8.0"
-    "@types/tar-stream": "npm:3.1.5"
     "@types/unzipper": "npm:0.10.11"
     "@types/which": "npm:3.0.4"
     "@vue/cli-plugin-babel": "npm:5.0.9"
