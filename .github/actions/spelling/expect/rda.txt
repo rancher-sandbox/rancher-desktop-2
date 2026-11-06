@@ -249,7 +249,6 @@ googleoauth
 gopacket
 GOTOOLCHAIN
 govet
-GOWORK
 gpu
 gtk
 guestagent

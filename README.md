@@ -74,7 +74,7 @@ with an existing Windows installation.
    git config --global --replace-all core.autocrlf false
    git config --global --replace-all core.eol lf
    ```
-If you find the `lint:go` tests are failing mysteriously, it's possible that the line-endings are incorrect.
+If `make lint-go` fails mysteriously, the line endings may be wrong.
 
 You can now clone the repository and run `yarn`.
 
@@ -98,7 +98,7 @@ You can now clone the repository and run `yarn`.
    git config --global --replace-all core.autocrlf false
    git config --global --replace-all core.eol lf
    ```
-If you find the `lint:go` tests are failing mysteriously, it's possible that the line-endings are incorrect.
+If `make lint-go` fails mysteriously, the line endings may be wrong.
 9. Ensure `msbuild_path` and `msvs_version` are configured correctly in `.npmrc` file. Run the following commands to set these properties:
 
    ```
