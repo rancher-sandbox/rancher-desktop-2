@@ -14,8 +14,20 @@ runs:
   - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
     with:
       node-version-file: package.json
-  - run: corepack enable yarn
+  # Install yarn, which requires installing corepack.  We need to handle Windows
+  # separately, because it falls over in git-bash.
+  - if: runner.os != 'Windows'
+    run: |
+      npm install -g corepack
+      corepack enable yarn
     shell: bash
+  - if: runner.os == 'Windows'
+    run: npm install -g corepack
+    shell: powershell
+    continue-on-error: true
+  - if: runner.os == 'Windows'
+    run: corepack enable --install-directory $(Split-Path (Get-Command node).Source) yarn
+    shell: powershell
   - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
     with:
       node-version-file: package.json
