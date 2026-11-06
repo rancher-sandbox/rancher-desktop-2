@@ -52,7 +52,7 @@ updates:
     # These pin shared @jest/* packages exactly, so separate bumps break the
     # lockfile.
     jest:
-      patterns: ["jest", "babel-jest", "jest-environment-jsdom"]
+      patterns: ["jest", "babel-jest", "@jest/environment-jsdom-abstract"]
 
 # Maintain dependencies for Golang
 - package-ecosystem: "gomod"
