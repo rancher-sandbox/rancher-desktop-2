@@ -144,7 +144,7 @@ async function findExisting(owner: string, repo: string, branch: string) {
   }
 }
 
-(async() => {
+await (async() => {
   const rawPayload = await fs.promises.readFile(getEnv('GITHUB_EVENT_PATH'), 'utf-8');
   const payload: GitHubReleasePayload = JSON.parse(rawPayload);
   const tagName = payload.release.tag_name;
@@ -182,7 +182,4 @@ async function findExisting(owner: string, repo: string, branch: string) {
   });
 
   console.log(`Created PR #${ item.number }: ${ item.html_url }`);
-})().catch((ex) => {
-  console.error(ex);
-  process.exit(1);
-});
+})();

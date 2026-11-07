@@ -367,7 +367,7 @@ function parseArgs(): { config: DependencyConfig, regenerate: boolean } {
   return { config, regenerate };
 }
 
-(async() => {
+await (async() => {
   const { config, regenerate } = parseArgs();
 
   if (regenerate) {
@@ -375,7 +375,4 @@ function parseArgs(): { config: DependencyConfig, regenerate: boolean } {
   } else {
     await checkDependencies([...config.manifest, ...config.extras()]);
   }
-})().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+})();
