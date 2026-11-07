@@ -15,6 +15,5 @@ export const globalDependencies: VersionedDependency[] = [
   new tools.DockerProvidedCredHelpers(),
   new tools.ECRCredHelper(),
   new tools.Helm(),
-  new tools.Steve(),
   new Wix(),
 ];

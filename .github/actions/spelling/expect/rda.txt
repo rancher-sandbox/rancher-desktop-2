@@ -686,7 +686,6 @@ tvf
 typeperf
 typeutils
 ubuntu
-ucmonitor
 udhcpc
 UEFI
 unexpose
