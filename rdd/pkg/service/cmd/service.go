@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -283,11 +282,10 @@ func Start(ctx context.Context, args []string) error {
 	// Then add any additional args provided (e.g., --controllers override)
 	cmdArgs = append(cmdArgs, args...)
 
-	executable, err := os.Executable()
+	cmd, err := instance.Command(ctx, cmdArgs...)
 	if err != nil {
 		return err
 	}
-	cmd := exec.CommandContext(ctx, executable, cmdArgs...)
 	process.SetGroup(cmd)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr

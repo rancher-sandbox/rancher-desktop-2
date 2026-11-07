@@ -30,11 +30,13 @@ Supporting multiple RDD instances in parallel allows developers to run BATS inte
 
 It also makes it possible to compare 2 different configurations running concurrently without having to switch back and forth using snapshots. This makes it easy to test a new release without affecting the current "production" version.
 
-This is controlled by the `RDD_INSTANCE` environment variable (defaults to `2`) or the global `--instance` flag. With `RDD_INSTANCE=bats` or `rdd --instance=bats` the service directory becomes `$APPDATA/rancher-desktop-bats` and the short directory becomes `~/.rdbats`. <!-- spellchecker:ignore -->
+The `RDD_INSTANCE` environment variable (defaults to `2`), the global `--instance` flag, and the command name select the instance. With `RDD_INSTANCE=bats` or `rdd --instance=bats` the service directory becomes `$APPDATA/rancher-desktop-bats` and the short directory becomes `~/.rdbats`. <!-- spellchecker:ignore -->
 
 Similarly the docker and kube contexts (normally `rancher-desktop-2`) become `rancher-desktop-bats`.
 
-The `--instance` flag takes precedence over the `RDD_INSTANCE` environment variable if both are specified.
+Running `rdd` through a symlink or copy named `rdd-<instance>` (`rdd-<instance>.exe` on Windows) works like `RDD_INSTANCE=<instance> rdd`. The `rdd-` prefix matches in any letter case, but the instance name keeps its case. The instance name ends at the first `.` in the file name.
+
+The `--instance` flag takes precedence over the command name, and the command name over the `RDD_INSTANCE` environment variable. So `rdd-3 --instance 2` uses instance `2`, and `RDD_INSTANCE=4 rdd-3` uses instance `3`.
 
 [^profile]: The only exception is the system [deployment profile](profile.md), which applies to all instances.
 
