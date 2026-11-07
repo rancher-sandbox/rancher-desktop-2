@@ -15,6 +15,8 @@ import psTree from 'ps-tree';
 
 import buildUtils from './lib/build-utils';
 
+import { artifactPlatform, artifactArch } from '@/pkg/rancher-desktop/utils/releaseArtifacts';
+
 interface RendererEnv {
   home:   string;
   agent?: https.Agent | undefined;
@@ -135,6 +137,8 @@ class DevRunner extends events.EventEmitter {
           ...process.env,
           RD_DOCS_URL: await buildUtils.docsUrl,
           RD_VERSION:  await buildUtils.version,
+          RD_OS:       artifactPlatform(process.platform),
+          RD_ARCH:     artifactArch(buildUtils.arch),
         },
       },
     );

@@ -808,15 +808,23 @@ integrations:
   windows:
     # @source Expose Rancher Desktop's Kubernetes configuration and Docker socket to Windows Subsystem for Linux (WSL) distros
     description: 将 Rancher Desktop 的 Kubernetes 配置和 Docker 套接字暴露给 Windows Subsystem for Linux (WSL) 发行版
-kubernetesError:
-  # @source Context:
-  context: 上下文：
-  # @source Last command run:
-  lastCommand: 上次运行的命令：
-  # @source Some recent <a href="#" data-action="showLogs">logfile</a> lines:
-  logLines: 最近的一些<a href="#" data-action="showLogs">日志文件</a>行：
-  # @source {appName} Error
-  title: '{appName} 错误'
+fatalError:
+  # @source {appName} Fatal Error
+  title: '{appName} 致命错误'
+  # @source Version {version} &mdash; {os} ({arch})
+  version: 版本：{version} &mdash; {os} ({arch})
+  # @source Unknown Error
+  titleUnknown: 未知错误
+  # @source An unknown error has occurred.
+  messageUnknown: 发生未知错误
+  # @source Additional details
+  details: 更多详情
+  # @source Show Logs
+  showLogs: 显示日志
+  # @source Error opening logs
+  showLogsError: 打开日志时出错
+  # @source Please manually open {logDir}
+  showLogsErrorDetail: 请手动打开 {logDir}
 kubernetesPrefs:
   kubernetes:
     # @source Enable Kubernetes

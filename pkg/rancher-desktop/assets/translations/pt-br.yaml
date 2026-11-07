@@ -772,15 +772,23 @@ integrations:
     # @reason "Subsistema do Windows para Linux" is Microsoft's official pt-br name for WSL
     # @source Expose Rancher Desktop's Kubernetes configuration and Docker socket to Windows Subsystem for Linux (WSL) distros
     description: Expor a configuração do Kubernetes e o socket do Docker do Rancher Desktop para as distribuições do Subsistema do Windows para Linux (WSL)
-kubernetesError:
-  # @source Context:
-  context: 'Contexto:'
-  # @source Last command run:
-  lastCommand: 'Último comando executado:'
-  # @source Some recent <a href="#" data-action="showLogs">logfile</a> lines:
-  logLines: 'Algumas linhas recentes do <a href="#" data-action="showLogs">arquivo de log</a>:'
-  # @source {appName} Error
-  title: Erro do {appName}
+fatalError:
+  # @source {appName} Fatal Error
+  title: Erro fatal do {appName}
+  # @source Version {version} &mdash; {os} ({arch})
+  version: Versão {version} &mdash; {os} ({arch})
+  # @source Unknown Error
+  titleUnknown: Erro desconhecido
+  # @source An unknown error has occurred.
+  messageUnknown: Ocorreu um erro desconhecido.
+  # @source Additional details
+  details: Detalhes adicionais
+  # @source Show Logs
+  showLogs: Mostrar logs
+  # @source Error opening logs
+  showLogsError: Erro ao abrir os logs
+  # @source Please manually open {logDir}
+  showLogsErrorDetail: Abra {logDir} manualmente
 kubernetesPrefs:
   kubernetes:
     # @source Enable Kubernetes

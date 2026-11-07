@@ -5,10 +5,6 @@
   - emit    'dialog/load':     the dialog has been mounted.
   - receive 'dialog/populate': any additional data for the dialog.
   - emit    'dialog/ready':    the dialog is ready to be displayed.
-  - The page component may set "data-flex" on the root element to a whitespace-
-  - separated list of "width" or "height" to help implement flexbox behaviour;
-  - however, this interacts badly with automatic resizing, and should only be
-  - used for larger dialogs.
   -->
 
 <template>
@@ -62,7 +58,11 @@ onMounted(() => {
     height: initial;
   }
   body {
+    height: fit-content;
     overflow: hidden;
+  }
+  #app {
+    height: fit-content;
   }
 </style>
 
@@ -73,8 +73,12 @@ onMounted(() => {
   border: none;
   color: var(--body-text);
   min-width: 24rem;
+  height: fit-content;
   padding: 1.25rem;
   margin: 0 auto;
+  &:has(.body[data-auto-width]) {
+    width: max-content;
+  }
 }
 
 .body {

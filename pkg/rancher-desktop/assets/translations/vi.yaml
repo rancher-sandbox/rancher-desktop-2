@@ -752,15 +752,23 @@ integrations:
   windows:
     # @source Expose Rancher Desktop's Kubernetes configuration and Docker socket to Windows Subsystem for Linux (WSL) distros
     description: Chia sẻ cấu hình Kubernetes và Docker socket của Rancher Desktop với các bản phân phối Windows Subsystem for Linux (WSL)
-kubernetesError:
-  # @source Context:
-  context: 'Ngữ cảnh:'
-  # @source Last command run:
-  lastCommand: 'Lệnh chạy gần nhất:'
-  # @source Some recent <a href="#" data-action="showLogs">logfile</a> lines:
-  logLines: 'Một số dòng gần đây trong <a href="#" data-action="showLogs">tệp nhật ký</a>:'
-  # @source {appName} Error
-  title: Lỗi {appName}
+fatalError:
+  # @source {appName} Fatal Error
+  title: Lỗi nghiêm trọng {appName}
+  # @source Version {version} &mdash; {os} ({arch})
+  version: Phiên bản {version} &mdash; {os} ({arch})
+  # @source Unknown Error
+  titleUnknown: Lỗi không xác định
+  # @source An unknown error has occurred.
+  messageUnknown: Đã xảy ra lỗi không xác định.
+  # @source Additional details
+  details: Chi tiết bổ sung
+  # @source Show Logs
+  showLogs: Hiển thị nhật ký
+  # @source Error opening logs
+  showLogsError: Lỗi khi mở nhật ký
+  # @source Please manually open {logDir}
+  showLogsErrorDetail: Vui lòng mở {logDir} theo cách thủ công
 kubernetesPrefs:
   kubernetes:
     # @source Enable Kubernetes

@@ -5,10 +5,10 @@ import DenyRoot from '../pages/DenyRoot.vue';
 import Diagnostics from '../pages/Diagnostics.vue';
 import Dialog from '../pages/Dialog.vue';
 import Extensions from '../pages/Extensions.vue';
+import FatalError from '../pages/FatalError.vue';
 import FirstRun from '../pages/FirstRun.vue';
 import General from '../pages/General.vue';
 import Images from '../pages/Images.vue';
-import KubernetesError from '../pages/KubernetesError.vue';
 import PortForwarding from '../pages/PortForwarding.vue';
 import Preferences from '../pages/Preferences.vue';
 import Snapshots from '../pages/Snapshots.vue';
@@ -82,7 +82,7 @@ export default createRouter({
       path: '/FirstRun', component: FirstRun, name: 'FirstRun',
     },
     {
-      path: '/KubernetesError', component: KubernetesError, name: 'KubernetesError',
+      path: '/FatalError', component: FatalError, name: 'FatalError',
     },
     {
       path: '/preferences', component: Preferences, name: 'Preferences',
