@@ -24,19 +24,21 @@ RDD can be installed side-by-side with "Rancher Desktop 1.x". They can be instal
 
 [^ports]: There may be port conflicts between the GUIs of "Rancher Desktop 1" and "Rancher Desktop 2", so the GUIs may not be able to run concurrently. Ideally this should be resolved.
 
-Multiple instances of RDD (same or different versions) can be running at the same time; they will use separate service and path directories and are completely independent of each other[^profile].
+Multiple instances of RDD (same or different versions) can be running at the same time; they will use separate service and path directories and are completely independent of each other[^exceptions].
 
 Supporting multiple RDD instances in parallel allows developers to run BATS integration tests without interfering with their regular RDD configuration.
 
 It also makes it possible to compare 2 different configurations running concurrently without having to switch back and forth using snapshots. This makes it easy to test a new release without affecting the current "production" version.
 
-This is controlled by the `RDD_INSTANCE` environment variable (defaults to `2`) or the global `--instance` flag. With `RDD_INSTANCE=bats` or `rdd --instance=bats` the service directory becomes `$APPDATA/rancher-desktop-bats` and the short directory becomes `~/.rdbats`. <!-- spellchecker:ignore -->
+The `RDD_INSTANCE` environment variable (defaults to `2`), the global `--instance` flag, and the command name select the instance. With `RDD_INSTANCE=bats` or `rdd --instance=bats` the service directory becomes `$APPDATA/rancher-desktop-bats` and the short directory becomes `~/.rdbats`. <!-- spellchecker:ignore -->
 
 Similarly the docker and kube contexts (normally `rancher-desktop-2`) become `rancher-desktop-bats`.
 
-The `--instance` flag takes precedence over the `RDD_INSTANCE` environment variable if both are specified.
+Running `rdd` through a symlink or copy named `rdd-<instance>` (`rdd-<instance>.exe` on Windows) works like `RDD_INSTANCE=<instance> rdd`. The `rdd-` prefix matches in any letter case, but the instance name keeps the case of the command name, which can differ from the file name. For example, running a file named `rdd-dev` as `RDD-DEV` in a macOS shell selects instance `DEV`. The instance name ends at the first `.` in the command name.
 
-[^profile]: The only exception is the system [deployment profile](profile.md), which applies to all instances.
+The `--instance` flag takes precedence over the command name, and the command name over the `RDD_INSTANCE` environment variable. So `rdd-3 --instance 2` uses instance `2`, and `RDD_INSTANCE=4 rdd-3` uses instance `3`.
+
+[^exceptions]: The `rancher-desktop-2` system [deployment profile](profile.md) applies to every instance without its own system profile. Instance names that differ only in letter case, such as `dev` and `DEV`, also share their directories on a case-insensitive file system, the default on macOS and Windows. So spell each instance's name in one letter case in `RDD_INSTANCE`, `--instance`, and the command name.
 
 ### Commands
 

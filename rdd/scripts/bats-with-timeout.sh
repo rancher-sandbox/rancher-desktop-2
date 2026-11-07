@@ -407,8 +407,8 @@ our_leaked_pids() {
 }
 
 # SIGQUIT the rdd service so its goroutine stacks land in rdd.stderr.log.
-# The service's cmdline does not carry the instance suffix (only env vars
-# do), so matches_our_instance cannot find it; we read the pidfile instead.
+# matches_our_instance does not match the service's --instance=<suffix>
+# argument, so we read the pidfile instead.
 # No-op if the pidfile is missing or the process is gone.
 sig_quit_rdd_service() {
     local pid_file pid

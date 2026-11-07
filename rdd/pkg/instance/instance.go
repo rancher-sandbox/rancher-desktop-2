@@ -224,8 +224,6 @@ var DockerEndpoint = sync.OnceValue(func() string {
 // serves, \\.\pipe\containerd-<instance name>. The name is per instance
 // because \\.\pipe\containerd-containerd is native Windows containerd's
 // default address, which a host running its own containerd already uses.
-// The hostagent inherits RDD_INSTANCE from the service, so both sides compute
-// the same name.
 var ContainerdSocket = sync.OnceValue(func() string {
 	if runtime.GOOS == "windows" {
 		return `\\.\pipe\containerd-` + Name()

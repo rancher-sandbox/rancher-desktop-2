@@ -8,7 +8,7 @@ These variables control RDD behavior. Set them before running `rdd` commands.
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `RDD_INSTANCE` | Instance identifier. Determines which control plane and directories to use. Also settable via `rdd --instance`. | `2` |
+| `RDD_INSTANCE` | Instance identifier. Determines which control plane and directories to use. The `rdd --instance` flag and an `rdd-<instance>` command name override it; see [Side-by-Side Operation](README.md#side-by-side-operation). | `2` |
 | `RDD_DEVELOPER_MODE` | Enables developer mode: exposes hidden CLI flags, detects source tree for local builds. | unset |
 | `RDD_KEEP_LOGS` | Preserves logs for post-mortem debugging. See [Log Preservation](#log-preservation) for details. | unset |
 | `RDD_LOG_DIR` | Override the logging directory; usually used for tests. | unset |

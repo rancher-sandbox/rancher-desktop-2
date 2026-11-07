@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -381,16 +380,6 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 		}
 	}
 
-	// Get the path to our own executable (rdd) to use as the hostagent launcher
-	rddPath, err := os.Executable()
-	if err != nil {
-		logger.Error(err, "Failed to get executable path")
-		if updateErr := r.updateCondition(ctx, limaVM, ConditionRunning, metav1.ConditionFalse, ReasonStartFailed, err.Error()); updateErr != nil {
-			logger.Error(updateErr, "Failed to update status after start failure")
-		}
-		return ctrl.Result{}, err
-	}
-
 	// Build hostagent command arguments
 	haPIDPath := filepath.Join(inst.Dir, filenames.HostAgentPID)
 	haSockPath := filepath.Join(inst.Dir, filenames.HostAgentSock)
@@ -405,6 +394,16 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 		args = append(args, "--debug")
 	}
 	args = append(args, inst.Name)
+
+	// Our own executable is the hostagent launcher.
+	haCmd, err := instance.Command(ctx, args...)
+	if err != nil {
+		logger.Error(err, "Failed to get executable path")
+		if updateErr := r.updateCondition(ctx, limaVM, ConditionRunning, metav1.ConditionFalse, ReasonStartFailed, err.Error()); updateErr != nil {
+			logger.Error(updateErr, "Failed to update status after start failure")
+		}
+		return ctrl.Result{}, err
+	}
 
 	// Create rotated log files. The active names (ha.stdout.log, ha.stderr.log)
 	// match what Lima expects (e.g. StopForcibly, store.Inspect).
@@ -451,7 +450,6 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 	// SetGroup makes the hostagent a new process-group leader (pgid == pid
 	// on Unix), which lets bats-with-timeout.sh attribute leaked qemu
 	// grandchildren back to their hostagent ancestor via pgid.
-	haCmd := exec.CommandContext(ctx, rddPath, args...)
 	process.SetGroup(haCmd)
 	haCmd.Stdout = haStdoutW
 	haCmd.Stderr = haStderrW
