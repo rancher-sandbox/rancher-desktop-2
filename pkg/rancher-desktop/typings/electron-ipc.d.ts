@@ -21,7 +21,7 @@ export interface IpcMainEvents {
 
   // #region backend
   /** The app status has changed.  The input is the status conditions on the app. */
-  'backend/app-status-changed': (status: Record<string, readonly [boolean | undefined, string]>) => void;
+  'backend/app-status-changed': (status: Record<string, readonly [boolean | undefined, string, string]>) => void;
   /** Trigger the corresponding IPC renderer event. */
   'backend/steve-fetch-port':   () => void;
   // #endregion
@@ -62,6 +62,8 @@ export interface IpcMainEvents {
   'dashboard-close': () => void;
 
   'diagnostics/run': () => void;
+
+  'error/show-logs': () => void;
 
   /** Only for the preferences window */
   'preferences/load': () => void;
@@ -134,16 +136,12 @@ export interface IpcRendererEvents {
   'settings-update': (
     settings: import('@pkg/config/settings').Settings
   ) => void;
-  'settings-read':             (settings: import('@pkg/config/settings').Settings) => void;
-  'update-state':              (state: import('@pkg/main/update').UpdateState) => void;
-  'always-debugging':          (status: boolean) => void;
-  'is-debugging':              (status: boolean) => void;
+  'settings-read':         (settings: import('@pkg/config/settings').Settings) => void;
+  'update-state':          (state: import('@pkg/main/update').UpdateState) => void;
+  'always-debugging':      (status: boolean) => void;
+  'is-debugging':          (status: boolean) => void;
   /** The steve port may have changed. */
-  'backend/steve-port':        (port: number) => void;
-  'kubernetes-errors-details': (
-    titlePart: string,
-    mainMessage: string,
-  ) => void;
+  'backend/steve-port':    (port: number) => void;
   'update-network-status': (status: boolean) => void;
   'diagnostics/update':    () => void;
 
