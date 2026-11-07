@@ -6,7 +6,7 @@ Service commands are for working with the control plane. The [Service API](api_s
 
 ### Service Directory
 
-In this document all filenames are relative to the service directory `$APPDATA/rancher-desktop-$INSTANCE_NAME`, where `$INSTANCE_NAME` comes from the `RDD_INSTANCE` environment variable or the `--instance` flag.
+In this document all filenames are relative to the service directory `$APPDATA/rancher-desktop-$INSTANCE_NAME`, where `$INSTANCE_NAME` comes from the `RDD_INSTANCE` environment variable, the `--instance` flag, or an `rdd-<instance>` command name ([Side-by-Side Operation](README.md#side-by-side-operation)).
 
 This service directory contains the following files:
 

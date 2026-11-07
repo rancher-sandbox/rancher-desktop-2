@@ -28,51 +28,9 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/help"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/developer"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/hostagent"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/version"
 )
-
-// parseInstanceFlag handles --instance flag parsing before Cobra processes any flags.
-//
-// This special handling is required because:
-//  1. The instance package (pkg/instance/instance.go) uses sync.OnceValue to cache instance
-//     names, suffixes, and directories on first access
-//  2. Once cached, these values never change, even if RDD_INSTANCE is modified later
-//  3. Many commands (especially kubectl/ctl) use DisableFlagParsing:true and manipulate
-//     os.Args directly, requiring --instance to be filtered out before they run
-//  4. The kubectl command passes os.Args to kubectlcmd.NewDefaultKubectlCommand() which
-//     would fail if it encountered unknown --instance flags
-//
-// Regular Cobra flag parsing happens too late - the instance package may already be
-// initialized by the time PersistentPreRun executes, making the environment variable
-// change ineffective.
-//
-// This function removes --instance from os.Args before Cobra processes it, ensuring
-// the RDD_INSTANCE environment variable is set early enough to affect instance package
-// initialization.
-func parseInstanceFlag() {
-	if len(os.Args) < 2 {
-		return
-	}
-	if after, ok := strings.CutPrefix(os.Args[1], "--instance="); ok {
-		instance := after
-		if instance != "" {
-			_ = os.Setenv("RDD_INSTANCE", instance)
-		}
-		os.Args = append(os.Args[:1], os.Args[2:]...)
-		return
-	}
-	if os.Args[1] == "--instance" {
-		if len(os.Args) > 2 {
-			instance := os.Args[2]
-			if instance != "" && !strings.HasPrefix(instance, "-") {
-				_ = os.Setenv("RDD_INSTANCE", instance)
-				os.Args = append(os.Args[:1], os.Args[3:]...)
-				return
-			}
-		}
-		os.Args = append(os.Args[:1], os.Args[2:]...)
-	}
-}
 
 // setLogOptions sets the log level from command flags or RDD_LOG_LEVEL.
 func setLogOptions(cmd *cobra.Command, _ []string) error {
@@ -125,7 +83,12 @@ func newVersionCommand() *cobra.Command {
 
 func main() {
 	os.Args = multiCallArgs(os.Args)
-	parseInstanceFlag()
+	// An rdd-<instance> name overrides RDD_INSTANCE. ParseFlag runs after it,
+	// so --instance overrides both.
+	if name := instanceFromName(os.Args[0]); name != "" {
+		_ = os.Setenv("RDD_INSTANCE", name)
+	}
+	os.Args = instance.ParseFlag(os.Args)
 
 	cmd := &cobra.Command{
 		Use:   "rdd",
