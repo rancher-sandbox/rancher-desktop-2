@@ -29,7 +29,4 @@ async function run() {
   await buildInstaller(distDir, appDir, distDir);
 }
 
-await run().catch((ex) => {
-  console.error(ex);
-  process.exit(1);
-});
+await run();

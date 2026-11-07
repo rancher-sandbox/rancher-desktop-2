@@ -375,7 +375,4 @@ await (async() => {
   } else {
     await checkDependencies([...config.manifest, ...config.extras()]);
   }
-})().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+})();

@@ -182,7 +182,4 @@ await (async() => {
   });
 
   console.log(`Created PR #${ item.number }: ${ item.html_url }`);
-})().catch((ex) => {
-  console.error(ex);
-  process.exit(1);
-});
+})();

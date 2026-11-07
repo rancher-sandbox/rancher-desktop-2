@@ -21,6 +21,9 @@ const command = [
 ];
 
 console.log(command.join(' '));
+// When ESLint fails, `simpleSpawn` rejects with a JSON string, not an
+// Error. Without this handler, node would print that string under a
+// frame from its own internals and add a `--trace-uncaught` hint.
 await simpleSpawn(command[0], command.slice(1)).catch(e => {
   console.error(e);
   process.exit(1);
