@@ -43,6 +43,7 @@
   "exclude": [
     "node_modules",
     "dist",
+    "dashboard",
     "scripts/lib/installer-*.tsx",
     "scripts/lib/installer-win32-gen.tsx"
   ],

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 25.2.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+
+<svg
+   version="1.1"
+   id="Layer_1"
+   x="0px"
+   y="0px"
+   viewBox="0 0 154.30664 165"
+   xml:space="preserve"
+   sodipodi:docname="logo.svg"
+   width="154.30664"
+   height="165"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs6" /><sodipodi:namedview
+   id="namedview6"
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1.0"
+   inkscape:showpageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="0"
+   inkscape:deskcolor="#d1d1d1"
+   inkscape:zoom="1.3481772"
+   inkscape:cx="373.09636"
+   inkscape:cy="-1.1126134"
+   inkscape:window-width="2524"
+   inkscape:window-height="1414"
+   inkscape:window-x="0"
+   inkscape:window-y="0"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="Layer_1" />
+<style
+   type="text/css"
+   id="style1">
+	.st0{fill:#A453B9;}
+	.st1{fill:rgb(0, 117, 168);}
+	.st2{fill:rgb(89, 89, 91);}
+	.st3{fill:#D13306;}
+	.st4{fill:#004D93;}
+	.st5{fill:#0081BE;}
+	.st6{fill:#1167F1;}
+	.st7{fill:#FFC400;}
+	.st8{fill:#FF7A3D;}
+	.st9{fill:#00A580;}
+	.st10{fill:#53C3D0;}
+	.st11{fill:#671C4C;}
+	.st12{fill:#00E3C2;}
+	.st13{fill:#BC2A46;}
+	.st14{fill:#FF192E;}
+	.st15{fill:#00B056;}
+  @media screen and (prefers-color-scheme: dark) {
+    .st2{fill:white;}
+  }
+</style>
+<g
+   id="g6"
+   transform="translate(-22.84668)">
+	<g
+   id="g5">
+		<g
+   id="g4">
+			<g
+   id="g3">
+				<rect
+   x="39.380859"
+   y="112.07812"
+   class="st1"
+   width="121.23828"
+   height="15"
+   id="rect1" />
+				<path
+   class="st1"
+   d="m 142.14502,55.706055 c 0,-9.649414 -7.85059,-17.5 -17.5,-17.5 H 75.899902 c -9.649414,0 -17.5,7.850586 -17.5,17.5 v 46.884765 h 83.745118 z m -15,31.884765 H 73.399902 V 55.706055 c 0,-1.355469 1.14502,-2.5 2.5,-2.5 h 48.745118 c 1.35498,0 2.5,1.144531 2.5,2.5 z"
+   id="path1" />
+				<path
+   class="st1"
+   d="m 48.411133,74.141602 v -15 h -9.030274 c -0.831543,0 -1.534179,-0.702149 -1.534179,-1.53418 V 37.921875 h -15 v 19.685547 c 0,9.117187 7.416992,16.53418 16.534179,16.53418 z"
+   id="path2" />
+				<path
+   class="st1"
+   d="m 162.15332,37.921875 v 19.685547 c 0,0.832031 -0.70264,1.53418 -1.53418,1.53418 h -8.48535 v 15 h 8.48535 c 9.11719,0 16.53418,-7.416993 16.53418,-16.53418 V 37.921875 Z"
+   id="path3" />
+			</g>
+		</g>
+	</g>
+</g>
+</svg>

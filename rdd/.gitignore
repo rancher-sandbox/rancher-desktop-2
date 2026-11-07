@@ -2,4 +2,5 @@
 /overlay/build/
 /pkg/guestagent/lima-guestagent.*
 /pkg/embedded/distro.*.xz*
+/pkg/steve/dashboard/
 /rdd-logs/

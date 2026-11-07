@@ -1,0 +1,19 @@
+{
+  "name": "rancher-deskboard",
+  "packageManager": "yarn@4.15.0",
+  "dependencies": {
+    "@rancher/shell": "file:./vendor-shell"
+  },
+  "resolutions": {
+    "@cypress/request": "4.0.1",
+    "form-data": "2.5.5",
+    "html-webpack-plugin": "5.0.0",
+    "qs": "6.15.2"
+  },
+  "scripts": {
+    "build": "./node_modules/.bin/vue-cli-service build"
+  },
+  "browserslist": [
+    "defaults"
+  ]
+}
