@@ -257,6 +257,17 @@ nav:
     Storage: 스토리지
     Project: 프로젝트
     resources: 리소스
+    Authentication: 인증
+    Authorization: 인가
+    Autoscaling: 오토스케일링
+    Batch: 배치
+    Certificates: 인증서
+    Gateway.Networking: 게이트웨이 네트워킹
+    Helm: Helm
+    Metrics: 메트릭
+    Node: 노드
+    Resource: 리소스
+    Storagemigration: 스토리지 마이그레이션
   ns:
     all: 모든 네임스페이스
     clusterLevel: 클러스터 리소스만
@@ -8556,6 +8567,194 @@ typeLabel:
   turtles-capi.cattle.io.capiprovider: |-
     {count, plural,
       other { Cluster API 공급자 }
+    }
+  admissionregistration.k8s.io.mutatingadmissionpolicy: |-
+    {count, plural,
+      other { MutatingAdmissionPolicy }
+    }
+  admissionregistration.k8s.io.mutatingadmissionpolicybinding: |-
+    {count, plural,
+      other { MutatingAdmissionPolicyBinding }
+    }
+  admissionregistration.k8s.io.validatingadmissionpolicy: |-
+    {count, plural,
+      other { ValidatingAdmissionPolicy }
+    }
+  admissionregistration.k8s.io.validatingadmissionpolicybinding: |-
+    {count, plural,
+      other { ValidatingAdmissionPolicyBinding }
+    }
+  apps.controllerrevision: |-
+    {count, plural,
+      other { 컨트롤러 리비전 }
+    }
+  authentication.k8s.io.selfsubjectreview: |-
+    {count, plural,
+      other { SelfSubjectReview }
+    }
+  authentication.k8s.io.tokenreview: |-
+    {count, plural,
+      other { TokenReview }
+    }
+  authorization.k8s.io.selfsubjectaccessreview: |-
+    {count, plural,
+      other { SelfSubjectAccessReview }
+    }
+  authorization.k8s.io.selfsubjectrulesreview: |-
+    {count, plural,
+      other { SelfSubjectRulesReview }
+    }
+  authorization.k8s.io.subjectaccessreview: |-
+    {count, plural,
+      other { SubjectAccessReview }
+    }
+  authorization.k8s.io.localsubjectaccessreview: |-
+    {count, plural,
+      other { LocalSubjectAccessReview }
+    }
+  certificates.k8s.io.certificatesigningrequest: |-
+    {count, plural,
+      other { 인증서 서명 요청 }
+    }
+  certificates.k8s.io.clustertrustbundle: |-
+    {count, plural,
+      other { 클러스터 신뢰 번들 }
+    }
+  certificates.k8s.io.podcertificaterequest: |-
+    {count, plural,
+      other { 파드 인증서 요청 }
+    }
+  apigroup: |-
+    {count, plural,
+      other { APIGroup }
+    }
+  componentstatus: |-
+    {count, plural,
+      other { 컴포넌트 상태 }
+    }
+  binding: |-
+    {count, plural,
+      other { 바인딩 }
+    }
+  podtemplate: |-
+    {count, plural,
+      other { 파드 템플릿 }
+    }
+  gateway.networking.k8s.io.gatewayclass: |-
+    {count, plural,
+      other { GatewayClass }
+    }
+  gateway.networking.k8s.io.backendtlspolicy: |-
+    {count, plural,
+      other { BackendTLSPolicy }
+    }
+  gateway.networking.k8s.io.gateway: |-
+    {count, plural,
+      other { Gateway }
+    }
+  gateway.networking.k8s.io.grpcroute: |-
+    {count, plural,
+      other { GRPCRoute }
+    }
+  gateway.networking.k8s.io.httproute: |-
+    {count, plural,
+      other { HTTPRoute }
+    }
+  gateway.networking.k8s.io.listenerset: |-
+    {count, plural,
+      other { ListenerSet }
+    }
+  gateway.networking.k8s.io.referencegrant: |-
+    {count, plural,
+      other { ReferenceGrant }
+    }
+  gateway.networking.k8s.io.tcproute: |-
+    {count, plural,
+      other { TCPRoute }
+    }
+  gateway.networking.k8s.io.tlsroute: |-
+    {count, plural,
+      other { TLSRoute }
+    }
+  gateway.networking.k8s.io.udproute: |-
+    {count, plural,
+      other { UDPRoute }
+    }
+  helm.cattle.io.helmchartconfig: |-
+    {count, plural,
+      other { HelmChartConfig }
+    }
+  helm.cattle.io.helmchart: |-
+    {count, plural,
+      other { HelmChart }
+    }
+  k3s.cattle.io.etcdsnapshotfile: |-
+    {count, plural,
+      other { ETCDSnapshotFile }
+    }
+  metrics.k8s.io.nodemetrics: |-
+    {count, plural,
+      other { 노드 메트릭 }
+    }
+  metrics.k8s.io.podmetrics: |-
+    {count, plural,
+      other { 파드 메트릭 }
+    }
+  networking.k8s.io.ingressclass: |-
+    {count, plural,
+      other { 인그레스 클래스 }
+    }
+  networking.k8s.io.ipaddress: |-
+    {count, plural,
+      other { IPAddress }
+    }
+  networking.k8s.io.servicecidr: |-
+    {count, plural,
+      other { ServiceCIDR }
+    }
+  node.k8s.io.runtimeclass: |-
+    {count, plural,
+      other { 런타임 클래스 }
+    }
+  resource.k8s.io.deviceclass: |-
+    {count, plural,
+      other { 디바이스 클래스 }
+    }
+  resource.k8s.io.devicetaintrule: |-
+    {count, plural,
+      other { 디바이스 테인트 규칙 }
+    }
+  resource.k8s.io.resourceslice: |-
+    {count, plural,
+      other { 리소스 슬라이스 }
+    }
+  resource.k8s.io.resourceclaim: |-
+    {count, plural,
+      other { 리소스 클레임 }
+    }
+  resource.k8s.io.resourceclaimtemplate: |-
+    {count, plural,
+      other { 리소스 클레임 템플릿 }
+    }
+  storage.k8s.io.csidriver: |-
+    {count, plural,
+      other { CSIDriver }
+    }
+  storage.k8s.io.volumeattachment: |-
+    {count, plural,
+      other { 볼륨 연결 }
+    }
+  storage.k8s.io.volumeattributesclass: |-
+    {count, plural,
+      other { 볼륨 속성 클래스 }
+    }
+  storage.k8s.io.csistoragecapacity: |-
+    {count, plural,
+      other { CSIStorageCapacity }
+    }
+  storagemigration.k8s.io.storageversionmigration: |-
+    {count, plural,
+      other { StorageVersionMigration }
     }
 oidcclient:
   a11y:

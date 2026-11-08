@@ -256,6 +256,17 @@ nav:
     Storage: Stockage
     Project: Projet
     resources: Ressources
+    Authentication: Authentification
+    Authorization: Autorisation
+    Autoscaling: Mise à l’échelle automatique
+    Batch: Traitement par lots
+    Certificates: Certificats
+    Gateway.Networking: Réseau Gateway
+    Helm: Helm
+    Metrics: Métriques
+    Node: Nœud
+    Resource: Ressource
+    Storagemigration: Migration du stockage
   ns:
     all: Tous les espaces de noms
     clusterLevel: Ressources du cluster uniquement
@@ -8581,6 +8592,241 @@ typeLabel:
     {count, plural,
       one { Fournisseur Cluster API }
       other { Fournisseurs Cluster API }
+    }
+  admissionregistration.k8s.io.mutatingadmissionpolicy: |-
+    {count, plural,
+      one { MutatingAdmissionPolicy }
+      other { MutatingAdmissionPolicies }
+    }
+  admissionregistration.k8s.io.mutatingadmissionpolicybinding: |-
+    {count, plural,
+      one { MutatingAdmissionPolicyBinding }
+      other { MutatingAdmissionPolicyBindings }
+    }
+  admissionregistration.k8s.io.validatingadmissionpolicy: |-
+    {count, plural,
+      one { ValidatingAdmissionPolicy }
+      other { ValidatingAdmissionPolicies }
+    }
+  admissionregistration.k8s.io.validatingadmissionpolicybinding: |-
+    {count, plural,
+      one { ValidatingAdmissionPolicyBinding }
+      other { ValidatingAdmissionPolicyBindings }
+    }
+  apps.controllerrevision: |-
+    {count, plural,
+      one { ControllerRevision }
+      other { ControllerRevisions }
+    }
+  authentication.k8s.io.selfsubjectreview: |-
+    {count, plural,
+      one { SelfSubjectReview }
+      other { SelfSubjectReviews }
+    }
+  authentication.k8s.io.tokenreview: |-
+    {count, plural,
+      one { TokenReview }
+      other { TokenReviews }
+    }
+  authorization.k8s.io.selfsubjectaccessreview: |-
+    {count, plural,
+      one { SelfSubjectAccessReview }
+      other { SelfSubjectAccessReviews }
+    }
+  authorization.k8s.io.selfsubjectrulesreview: |-
+    {count, plural,
+      one { SelfSubjectRulesReview }
+      other { SelfSubjectRulesReviews }
+    }
+  authorization.k8s.io.subjectaccessreview: |-
+    {count, plural,
+      one { SubjectAccessReview }
+      other { SubjectAccessReviews }
+    }
+  authorization.k8s.io.localsubjectaccessreview: |-
+    {count, plural,
+      one { LocalSubjectAccessReview }
+      other { LocalSubjectAccessReviews }
+    }
+  certificates.k8s.io.certificatesigningrequest: |-
+    {count, plural,
+      one { CertificateSigningRequest }
+      other { CertificateSigningRequests }
+    }
+  certificates.k8s.io.clustertrustbundle: |-
+    {count, plural,
+      one { ClusterTrustBundle }
+      other { ClusterTrustBundles }
+    }
+  certificates.k8s.io.podcertificaterequest: |-
+    {count, plural,
+      one { PodCertificateRequest }
+      other { PodCertificateRequests }
+    }
+  apigroup: |-
+    {count, plural,
+      one { Groupe d’API }
+      other { Groupes d’API }
+    }
+  componentstatus: |-
+    {count, plural,
+      one { ComponentStatus }
+      other { ComponentStatuses }
+    }
+  binding: |-
+    {count, plural,
+      one { Binding }
+      other { Bindings }
+    }
+  podtemplate: |-
+    {count, plural,
+      one { PodTemplate }
+      other { PodTemplates }
+    }
+  gateway.networking.k8s.io.gatewayclass: |-
+    {count, plural,
+      one { GatewayClass }
+      other { GatewayClasses }
+    }
+  gateway.networking.k8s.io.backendtlspolicy: |-
+    {count, plural,
+      one { BackendTLSPolicy }
+      other { BackendTLSPolicies }
+    }
+  gateway.networking.k8s.io.gateway: |-
+    {count, plural,
+      one { Gateway }
+      other { Gateways }
+    }
+  gateway.networking.k8s.io.grpcroute: |-
+    {count, plural,
+      one { GRPCRoute }
+      other { GRPCRoutes }
+    }
+  gateway.networking.k8s.io.httproute: |-
+    {count, plural,
+      one { HTTPRoute }
+      other { HTTPRoutes }
+    }
+  gateway.networking.k8s.io.listenerset: |-
+    {count, plural,
+      one { ListenerSet }
+      other { ListenerSets }
+    }
+  gateway.networking.k8s.io.referencegrant: |-
+    {count, plural,
+      one { ReferenceGrant }
+      other { ReferenceGrants }
+    }
+  gateway.networking.k8s.io.tcproute: |-
+    {count, plural,
+      one { TCPRoute }
+      other { TCPRoutes }
+    }
+  gateway.networking.k8s.io.tlsroute: |-
+    {count, plural,
+      one { TLSRoute }
+      other { TLSRoutes }
+    }
+  gateway.networking.k8s.io.udproute: |-
+    {count, plural,
+      one { UDPRoute }
+      other { UDPRoutes }
+    }
+  helm.cattle.io.helmchartconfig: |-
+    {count, plural,
+      one { HelmChartConfig }
+      other { HelmChartConfigs }
+    }
+  helm.cattle.io.helmchart: |-
+    {count, plural,
+      one { HelmChart }
+      other { HelmCharts }
+    }
+  k3s.cattle.io.etcdsnapshotfile: |-
+    {count, plural,
+      one { ETCDSnapshotFile }
+      other { ETCDSnapshotFiles }
+    }
+  metrics.k8s.io.nodemetrics: |-
+    {count, plural,
+      one { NodeMetrics }
+      other { NodeMetrics }
+    }
+  metrics.k8s.io.podmetrics: |-
+    {count, plural,
+      one { PodMetrics }
+      other { PodMetrics }
+    }
+  networking.k8s.io.ingressclass: |-
+    {count, plural,
+      one { Classe d’Ingress }
+      other { Classes d’Ingress }
+    }
+  networking.k8s.io.ipaddress: |-
+    {count, plural,
+      one { Adresse IP }
+      other { Adresses IP }
+    }
+  networking.k8s.io.servicecidr: |-
+    {count, plural,
+      one { ServiceCIDR }
+      other { ServiceCIDRs }
+    }
+  node.k8s.io.runtimeclass: |-
+    {count, plural,
+      one { RuntimeClass }
+      other { RuntimeClasses }
+    }
+  resource.k8s.io.deviceclass: |-
+    {count, plural,
+      one { DeviceClass }
+      other { DeviceClasses }
+    }
+  resource.k8s.io.devicetaintrule: |-
+    {count, plural,
+      one { DeviceTaintRule }
+      other { DeviceTaintRules }
+    }
+  resource.k8s.io.resourceslice: |-
+    {count, plural,
+      one { ResourceSlice }
+      other { ResourceSlices }
+    }
+  resource.k8s.io.resourceclaim: |-
+    {count, plural,
+      one { ResourceClaim }
+      other { ResourceClaims }
+    }
+  resource.k8s.io.resourceclaimtemplate: |-
+    {count, plural,
+      one { ResourceClaimTemplate }
+      other { ResourceClaimTemplates }
+    }
+  storage.k8s.io.csidriver: |-
+    {count, plural,
+      one { CSIDriver }
+      other { CSIDrivers }
+    }
+  storage.k8s.io.volumeattachment: |-
+    {count, plural,
+      one { VolumeAttachment }
+      other { VolumeAttachments }
+    }
+  storage.k8s.io.volumeattributesclass: |-
+    {count, plural,
+      one { VolumeAttributesClass }
+      other { VolumeAttributesClasses }
+    }
+  storage.k8s.io.csistoragecapacity: |-
+    {count, plural,
+      one { CSIStorageCapacity }
+      other { CSIStorageCapacities }
+    }
+  storagemigration.k8s.io.storageversionmigration: |-
+    {count, plural,
+      one { StorageVersionMigration }
+      other { StorageVersionMigrations }
     }
 oidcclient:
   a11y:
