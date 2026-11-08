@@ -58,3 +58,8 @@ local_setup_file() {
     run -1 rdd svc status --instance vampire
     assert_line --partial "unknown flag: --instance"
 }
+
+@test '--instance with an invalid name is rejected' {
+    run -1 rdd --instance DEV version
+    assert_output --partial "invalid instance name"
+}

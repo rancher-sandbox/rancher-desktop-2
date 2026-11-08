@@ -49,6 +49,10 @@ export function appArtifactName(version: string, platform: NodeJS.Platform, arch
   return `rancher-desktop-${ version }${ appArtifactSuffix(platform, arch, ext) }`;
 }
 
+/**
+ * rdd runs under this name only as long as it starts with `rdd.` and a digit
+ * (see isReleaseName in rdd/cmd/rdd/multicall.go).
+ */
 export function rddArtifactName(version: string, platform: NodeJS.Platform, arch: NodeJS.Architecture): string {
   const exe = platform === 'win32' ? '.exe' : '';
 

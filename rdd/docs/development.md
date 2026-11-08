@@ -103,3 +103,15 @@ To tell whether upstream already has a fork commit, compare the code. Lima
 squashes pull requests and backports fixes to release branches as new commits,
 so `git cherry` and `git merge-base --is-ancestor` report such commits as
 missing even after they have merged.
+
+## Debugging with Delve
+
+`dlv debug` names the binary that it builds `__debug_bin` or
+`__debug_bin<random>`, and rdd rejects both. So give the binary an
+[accepted name](design/cmd_other.md#rdd-kubectl) with `--output`. rdd turns
+on [developer mode](design/environment.md) by itself only when its binary is
+in a directory beside `cmd/`, so set `RDD_DEVELOPER_MODE=1` for the debug
+build, as in
+`RDD_DEVELOPER_MODE=1 dlv debug --output /tmp/rdd ./cmd/rdd -- svc status`.
+Set the output path and the variable in your editor's launch configuration
+too.

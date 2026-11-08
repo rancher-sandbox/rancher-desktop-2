@@ -96,7 +96,8 @@ export function reportAsset(testInfo: TestInfo, type: 'trace' | 'log' | 'instanc
   }[type];
 
   if (type === 'instance') {
-    return 'e2e-' + name.replace(/-$/, '');
+    // rdd accepts only lowercase instance names.
+    return 'e2e-' + name.replace(/-$/, '').toLowerCase();
   }
 
   return path.join(import.meta.dirname, '..', 'reports', name);

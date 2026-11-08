@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -21,6 +23,27 @@ var Suffix = sync.OnceValue(func() string {
 	}
 	return instance
 })
+
+var validSuffix = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+
+// logDirSuffix ends the name of each instance's log directory on Windows.
+const logDirSuffix = "-logs"
+
+// ValidateSuffix rejects an instance suffix unless it consists of lowercase
+// letters, digits and "-" and starts with a letter or digit. The suffix
+// becomes part of directory, socket, pipe and Kubernetes context names, so it
+// must be safe in all of them. It also rejects a suffix that ends in "-logs",
+// because, on Windows, instance <name>-logs would use the log directory of
+// instance <name> as its own data directory.
+func ValidateSuffix(suffix string) error {
+	if !validSuffix.MatchString(suffix) {
+		return fmt.Errorf("invalid instance name %q: use lowercase letters, digits and \"-\", starting with a letter or digit", suffix)
+	}
+	if other, ok := strings.CutSuffix(suffix, logDirSuffix); ok {
+		return fmt.Errorf("invalid instance name %q: on Windows its data directory would be the log directory of instance %q", suffix, other)
+	}
+	return nil
+}
 
 // Index returns unique number for the control plane instance as long as the
 // instance suffix is numeric and in the range from 1 to 99. Otherwise, it is
@@ -85,7 +108,7 @@ var LogDir = sync.OnceValue(func() string {
 	}
 	switch runtime.GOOS {
 	case "windows":
-		return filepath.Join(home, "AppData", "Local", Name()+"-logs")
+		return filepath.Join(home, "AppData", "Local", Name()+logDirSuffix)
 	case "linux":
 		return filepath.Join(home, ".local", "state", Name())
 	case "darwin":

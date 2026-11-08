@@ -168,3 +168,16 @@ func TestContainerdSocket(t *testing.T) {
 		}
 	}, "RDD_INSTANCE=test")
 }
+
+func TestValidateSuffix(t *testing.T) {
+	for _, suffix := range []string{"2", "0", "99", "bats-cli", "a", "logs"} {
+		t.Run("valid "+suffix, func(t *testing.T) {
+			assert.NilError(t, ValidateSuffix(suffix))
+		})
+	}
+	for _, suffix := range []string{"", "DEV", "Dev", "-x", "1.2", "a/b", "a b", `a\b`, "a_b", "2-logs", "bats-logs"} {
+		t.Run("invalid "+suffix, func(t *testing.T) {
+			assert.ErrorContains(t, ValidateSuffix(suffix), fmt.Sprintf("invalid instance name %q", suffix))
+		})
+	}
+}

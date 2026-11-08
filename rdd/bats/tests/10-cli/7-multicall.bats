@@ -26,15 +26,15 @@ link_rdd_as() { # <name>
     assert_output --regexp '^yq .*mikefarah.* version v'
 }
 
-@test 'multi-call detection strips all extensions' {
-    # A name like yq.rdd or yq.rdd.exe still dispatches to yq.
+@test 'a multi-call name with another extension is rejected' {
+    # Only a Windows .exe extension is stripped, so yq.rdd is not yq.
     link_rdd_as "yq.rdd${EXE}"
-    run -0 "${BATS_TEST_TMPDIR}/yq.rdd${EXE}" -n .foo=42
-    assert_output 'foo: 42'
+    run -1 "${BATS_TEST_TMPDIR}/yq.rdd${EXE}" -n .foo=42
+    assert_output --partial 'unsupported command name'
 }
 
-@test 'an unrecognized name runs rdd normally' {
+@test 'an unrecognized name is rejected' {
     link_rdd_as "notacommand${EXE}"
-    run -0 "${BATS_TEST_TMPDIR}/notacommand${EXE}" --help
-    assert_line --partial 'RDD manages the Rancher Desktop 2 background services.'
+    run -1 "${BATS_TEST_TMPDIR}/notacommand${EXE}" --help
+    assert_output --partial 'unsupported command name'
 }

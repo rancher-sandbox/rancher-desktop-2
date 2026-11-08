@@ -82,13 +82,22 @@ func newVersionCommand() *cobra.Command {
 }
 
 func main() {
-	os.Args = multiCallArgs(os.Args)
+	args, err := multiCallArgs(os.Args)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	os.Args = args
 	// An rdd-<instance> name overrides RDD_INSTANCE. ParseFlag runs after it,
 	// so --instance overrides both.
 	if name := instanceFromName(os.Args[0]); name != "" {
 		_ = os.Setenv("RDD_INSTANCE", name)
 	}
 	os.Args = instance.ParseFlag(os.Args)
+	// One check covers RDD_INSTANCE, --instance and the command name. It runs
+	// before anything else reads the instance.
+	if err := instance.ValidateSuffix(instance.Suffix()); err != nil {
+		logrus.Fatal(err)
+	}
 
 	cmd := &cobra.Command{
 		Use:   "rdd",

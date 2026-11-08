@@ -4,7 +4,7 @@
 
 Runs the regular `kubectl` program. Since `rdd` needs to be a kube client anyways, this functionality is basically available for free (at least from a code size point of view).
 
-`rdd` is a multi-call binary (like `busybox`), so `rdd kubectl` can also be invoked via a symlink called `kubectl`.
+`rdd` is a multi-call binary (like `busybox`), so `rdd kubectl` can also be invoked via a symlink called `kubectl`. `rdd` runs only under the lowercase names `rdd`, `kubectl`, `nerdctl`, `yq` and [`rdd-<instance>`](README.md#side-by-side-operation), and under any name that starts with `rdd.` and a digit. That last rule covers the file name `rdd.<version>.<platform>.<arch>` that releases give the standalone `rdd`. On Windows each of these names can also end in `.exe`, in any letter case. Under any other name, such as `RDD` or `rdd.old` on any platform, or `kubectl.exe` on macOS, it exits with an error. On Linux, when `rdd` runs through a symlink, it starts its service and hostagent processes from the file that the symlink points to, so that file needs the name `rdd`, `rdd-<instance>` or a name that starts with `rdd.` and a digit.
 
 There is also the [rdd ctl](cmd_service.md#rdd-ctl) command that automatically sets the kube config and context to the rdd control plane before executing `kubectl`.
 
