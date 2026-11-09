@@ -110,21 +110,16 @@ async function computeChecksum(artifact: string) {
     `${ hash.digest('hex') } *${ path.basename(artifact) }`);
 }
 
-(async() => {
-  try {
-    let fileCount = 0;
+await (async() => {
+  let fileCount = 0;
 
-    for (const path of process.argv) {
-      if (path.endsWith('.zip')) {
-        fileCount++;
-        await signArchive(path);
-      }
+  for (const path of process.argv) {
+    if (path.endsWith('.zip')) {
+      fileCount++;
+      await signArchive(path);
     }
-    if (fileCount < 1) {
-      throw new Error('No files provided to sign!');
-    }
-  } catch (e) {
-    console.error(e);
-    process.exit(1);
+  }
+  if (fileCount < 1) {
+    throw new Error('No files provided to sign!');
   }
 })();

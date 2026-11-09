@@ -138,10 +138,7 @@ class E2ETestRunner extends events.EventEmitter {
   }
 }
 
-(new E2ETestRunner()).run().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+await new E2ETestRunner().run();
 
 function isCiOrDevelopmentTimeout() {
   const ciTimeout = 40000;

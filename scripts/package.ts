@@ -310,7 +310,4 @@ class Builder {
   }
 }
 
-(new Builder()).run().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+await new Builder().run();

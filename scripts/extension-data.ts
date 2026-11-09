@@ -6,7 +6,4 @@
 
 import { generateExtensionMarketplaceData } from './lib/extension-data';
 
-generateExtensionMarketplaceData().catch((ex) => {
-  console.error(ex);
-  process.exit(1);
-});
+await generateExtensionMarketplaceData();
