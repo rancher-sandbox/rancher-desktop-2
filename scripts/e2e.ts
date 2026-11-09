@@ -10,6 +10,8 @@ import util from 'util';
 
 import buildUtils from './lib/build-utils';
 
+import { artifactPlatform, artifactArch } from '@/pkg/rancher-desktop/utils/releaseArtifacts';
+
 const sleep = util.promisify(setTimeout);
 
 class E2ETestRunner extends events.EventEmitter {
@@ -110,6 +112,8 @@ class E2ETestRunner extends events.EventEmitter {
           ...process.env,
           RD_DOCS_URL: await buildUtils.docsUrl,
           RD_VERSION:  await buildUtils.version,
+          RD_OS:       artifactPlatform(process.platform),
+          RD_ARCH:     artifactArch(buildUtils.arch),
         },
       },
     );

@@ -754,15 +754,23 @@ integrations:
   windows:
     # @source Expose Rancher Desktop's Kubernetes configuration and Docker socket to Windows Subsystem for Linux (WSL) distros
     description: Rancher Desktop의 Kubernetes 구성과 Docker 소켓을 WSL(Windows Subsystem for Linux) 배포판에 노출합니다
-kubernetesError:
-  # @source Context:
-  context: '컨텍스트:'
-  # @source Last command run:
-  lastCommand: '마지막으로 실행한 명령:'
-  # @source Some recent <a href="#" data-action="showLogs">logfile</a> lines:
-  logLines: '최근 <a href="#" data-action="showLogs">로그 파일</a> 내용 일부:'
-  # @source {appName} Error
-  title: '{appName} 오류'
+fatalError:
+  # @source {appName} Fatal Error
+  title: '{appName} 치명적 오류'
+  # @source Version {version} &mdash; {os} ({arch})
+  version: '버전: {version} &mdash; {os} ({arch})'
+  # @source Unknown Error
+  titleUnknown: 알 수 없는 오류
+  # @source An unknown error has occurred.
+  messageUnknown: 알 수 없는 오류가 발생했습니다.
+  # @source Additional details
+  details: 추가 세부 정보
+  # @source Show Logs
+  showLogs: 로그 보기
+  # @source Error opening logs
+  showLogsError: 로그를 여는 중 오류가 발생했습니다
+  # @source Please manually open {logDir}
+  showLogsErrorDetail: '{logDir}을(를) 수동으로 열어 주세요'
 kubernetesPrefs:
   kubernetes:
     # @source Enable Kubernetes

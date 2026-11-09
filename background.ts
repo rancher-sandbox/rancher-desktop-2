@@ -305,6 +305,27 @@ ipcMainProxy.on('preferences-close', () => {
   window.getWindow('preferences')?.close();
 });
 
+ipcMainProxy.on('error/show-logs', async(event) => {
+  const error = await Electron.shell.openPath(paths.log_dir);
+
+  if (error) {
+    const browserWindow = Electron.BrowserWindow.fromWebContents(event.sender);
+    const options: Electron.MessageBoxOptions = {
+      message: error,
+      type:    'error',
+      title:   t('fatalError.showLogsError'),
+      detail:  t('fatalError.showLogsErrorDetail', { logDir: paths.log_dir }),
+    };
+
+    console.error(`Failed to open logs at ${ paths.log_dir }: ${ error }`);
+    if (browserWindow) {
+      await Electron.dialog.showMessageBox(browserWindow, options);
+    } else {
+      await Electron.dialog.showMessageBox(options);
+    }
+  }
+});
+
 mainEvents.on('dialog-info', (args) => {
   window.getWindow(args.dialog)?.webContents.send('dialog/info', args);
 });
