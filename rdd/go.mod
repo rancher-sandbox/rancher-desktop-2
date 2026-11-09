@@ -41,7 +41,7 @@ require (
 	github.com/ulikunitz/xz v0.5.17
 	go.etcd.io/etcd/api/v3 v3.6.16
 	golang.org/x/mod v0.42.0
-	golang.org/x/sync v0.24.0
+	golang.org/x/sync v0.25.0
 	golang.org/x/sys v0.49.0
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 	gotest.tools/v3 v3.5.2
