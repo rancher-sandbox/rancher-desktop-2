@@ -50,10 +50,14 @@ export function appArtifactName(version: string, platform: NodeJS.Platform, arch
 }
 
 /**
- * rdd runs under this name only as long as it starts with `rdd.` and a digit
- * (see isReleaseName in rdd/cmd/rdd/multicall.go).
+ * rdd runs under this name only when it starts with `rdd.` and a digit (see
+ * isReleaseName in rdd/cmd/rdd/multicall.go), so rddArtifactName throws
+ * unless the version starts with a digit.
  */
 export function rddArtifactName(version: string, platform: NodeJS.Platform, arch: NodeJS.Architecture): string {
+  if (!/^\d/.test(version)) {
+    throw new Error(`No rdd artifact name for version ${ version }: rdd runs under its release file name only if the version starts with a digit`);
+  }
   const exe = platform === 'win32' ? '.exe' : '';
 
   return `rdd.${ version }.${ artifactPlatform(platform) }.${ artifactArch(arch) }${ exe }`;

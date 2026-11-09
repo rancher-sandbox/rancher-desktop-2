@@ -21,6 +21,10 @@ describe(rddArtifactName, () => {
   ] as const)('names the %s %s binary', (platform, arch, expected) => {
     expect(rddArtifactName('2.0.0-alpha.3', platform, arch)).toEqual(expected);
   });
+
+  test('rejects a version that does not start with a digit', () => {
+    expect(() => rddArtifactName('v2.1.0', 'darwin', 'arm64')).toThrow(/v2\.1\.0/);
+  });
 });
 
 test('rejects a platform without an artifact name', () => {
