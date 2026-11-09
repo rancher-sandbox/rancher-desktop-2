@@ -55,10 +55,7 @@ local_setup() {
 }
 
 # fake_rdd runs the bundled rdd copy. It closes BATS fds 3 and 4 so the daemon
-# it spawns cannot inherit them and hang bats, matching the rdd() helper. A
-# daemon fake_rdd starts must be stopped with fake_rdd too: on Windows rdd only
-# recognizes a control plane running its own binary, so the repo rdd in
-# local_setup cannot stop the bundled copy's daemon, and would orphan it.
+# it spawns cannot inherit them and hang bats, matching the rdd() helper.
 fake_rdd() {
     "${FAKE_BIN}/rdd${EXE}" "$@" 3>&- 4>&-
 }
@@ -135,7 +132,6 @@ assert_not_published() { # <name>
     # kubectl and nerdctl are not bundled; they forward to rdd.
     assert_published "${FAKE_BIN}/rdd${EXE}" "kubectl${EXE}"
     assert_published "${FAKE_BIN}/rdd${EXE}" "nerdctl${EXE}"
-    # Stop the bundled daemon with fake_rdd; the repo rdd cannot (see fake_rdd).
     fake_rdd svc stop
 }
 

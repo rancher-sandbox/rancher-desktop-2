@@ -15,9 +15,13 @@ import (
 	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/lima/limavm"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/external"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/hostagent"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 )
 
 func main() {
+	// The limavm controller starts the hostagent through instance.Command,
+	// which puts --instance first.
+	os.Args = instance.ParseFlag(os.Args)
 	// Check if first arg is "hostagent" to handle it via cobra
 	// Otherwise use the existing external.RunControllers which handles its own flags
 	if len(os.Args) > 1 && os.Args[1] == "hostagent" {
