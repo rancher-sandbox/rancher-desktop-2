@@ -39,7 +39,7 @@ const (
 	socketInterval         = 5 * time.Second
 	socketRetryTimeout     = 2 * time.Minute
 	dockerSocketFile       = "/var/run/docker.sock"
-	containerdSocketFile   = "/run/k3s/containerd/containerd.sock"
+	containerdSocketFile   = "/run/containerd/containerd.sock"
 )
 
 func main() {

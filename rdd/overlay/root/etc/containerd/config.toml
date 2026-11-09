@@ -1,9 +1,5 @@
 version = 2
 
-# Set the GRPC socket address for compatibility with Rancher Desktop 1.x
-[grpc]
-address = "/run/k3s/containerd/containerd.sock"
-
 # It is unclear why the `cni-plugins` package puts the CNI plugins in
 # `/usr/libexec/cni` but doesn't update the default path.
 [plugins."io.containerd.grpc.v1.cri".cni]

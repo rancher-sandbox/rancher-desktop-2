@@ -26,7 +26,7 @@ const (
 	dockerVsockPort     = 6660
 	dockerSockPath      = "/var/run/docker.sock"
 	containerdVsockPort = 6661
-	containerdSockPath  = "/run/k3s/containerd/containerd.sock"
+	containerdSockPath  = "/run/containerd/containerd.sock"
 )
 
 // forwards maps each vsock port to the guest socket it serves.

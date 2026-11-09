@@ -16,10 +16,8 @@
 /usr/local/lib/systemd/system/buildkitd.socket
 /usr/local/lib/systemd/system/console-getty.service.d/exclude-containers.conf
 /usr/local/lib/systemd/system/containerd.service.d/allowed-images.conf
-/usr/local/lib/systemd/system/containerd.service.d/conditional.conf
 /usr/local/lib/systemd/system/containerd.service.d/environment.conf
 /usr/local/lib/systemd/system/containerd.service.d/network-namespace.conf
-/usr/local/lib/systemd/system/containerd.service.d/target.conf
 /usr/local/lib/systemd/system/docker.service.d/allowed-images.conf
 /usr/local/lib/systemd/system/docker.service.d/conditional.conf
 /usr/local/lib/systemd/system/docker.service.d/environment.conf
