@@ -23,18 +23,28 @@ Summary:    Kubernetes and container management on the desktop
 License:    Apache-2.0
 BuildRoot:  %{_tmppath}/%{name}-%{version}-build
 Group:      Development/Tools/Other
-Source0:    %{name}.zip
 URL:        https://github.com/rancher-sandbox/rancher-desktop#readme
+
+%define RD_ARCH %{_arch}
 
 %if "%{_vendor}" == "debbuild"
 # Needed to set Maintainer in output debs
 Packager:       SUSE <containers@suse.com>
+
+# Debian arch mapping; see https://github.com/debbuild/debbuild/issues/123
+%ifarch amd64
+%define RD_ARCH x86_64
+%endif
+%ifarch arm64
+%define RD_ARCH aarch64
+%endif
 %endif
 
 %if 0%{?fedora} || 0%{?rhel}
 %global debug_package %{nil}
 %endif
 
+Source0:    %{name}.%{RD_ARCH}.zip
 AutoReqProv:    no
 
 BuildRequires:  unzip
@@ -46,8 +56,9 @@ BuildRequires:  ImageMagick
 
 %if 0%{?debian}
 Requires: qemu-utils
-%ifarch aarch64
+%ifarch aarch64 arm64
 Requires: qemu-system-arm
+Requires: qemu-efi-aarch64
 %else
 Requires: qemu-system-x86
 %endif
@@ -82,20 +93,14 @@ Requires: libxfixes3
 Requires: libxkbcommon0
 Requires: libxrandr2
 %else
+# Not Debian
 Requires: qemu
 Requires: openssh-clients
-
-%if 0%{?fedora} || 0%{?rhel}
-Requires: (pass or libsecret)
-%else
-Requires: (password-store or libsecret-1-0)
-Requires: qemu-img
-%endif
-
 Requires: glibc
 Requires: desktop-file-utils
 
 %if 0%{?fedora} || 0%{?rhel}
+Requires: (pass or libsecret)
 Requires: libX11
 Requires: libXcomposite
 Requires: libXdamage
@@ -123,7 +128,13 @@ Requires: libxcb
 Requires: libxkbcommon
 Requires: nspr
 Requires: nss
+%ifarch aarch64
+Requires: edk2-aarch64
+%endif
 %else
+# OpenSUSE
+Requires: (password-store or libsecret-1-0)
+Requires: qemu-img
 # To enumerate system certificates
 Requires: gnutls
 Requires: libX11-6
@@ -154,8 +165,10 @@ Requires: libxcb1
 Requires: libxkbcommon0
 Requires: mozilla-nspr
 Requires: mozilla-nss
+%ifarch aarch64
+Requires: qemu-uefi-aarch64
 %endif
-
+%endif
 %endif
 
 %description

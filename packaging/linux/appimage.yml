@@ -8,7 +8,7 @@ build:
 
 script:
   - rm -rf $BUILD_APPDIR/* && mkdir -p $BUILD_APPDIR/opt/rancher-desktop-2 $BUILD_APPDIR/usr/share/metainfo $BUILD_APPDIR/usr/bin $BUILD_APPDIR/usr/lib64
-  - unzip $BUILD_SOURCE_DIR/rancher-desktop*.zip -d $BUILD_APPDIR/opt/rancher-desktop-2
+  - unzip $BUILD_SOURCE_DIR/rancher-desktop*.$(uname -m).zip -d $BUILD_APPDIR/opt/rancher-desktop-2
   - chmod 04755 $BUILD_APPDIR/opt/rancher-desktop-2/chrome-sandbox
   - mv $BUILD_APPDIR/opt/rancher-desktop-2/resources/linux/rancher-desktop-2.desktop $BUILD_APPDIR
   - convert -resize 512x512 $BUILD_APPDIR/opt/rancher-desktop-2/resources/icons/logo-square-512.png $BUILD_APPDIR/rancher-desktop-2.png
