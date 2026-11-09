@@ -519,21 +519,20 @@ class Watcher<
   K extends string,
   T extends RDDClient.KubernetesObject,
 > {
-  #type:               K;
-  #path:               () => string;
-  #listFn:             () => Promise<RDDClient.KubernetesListObject<T>>;
-  #doneFn:             (error?: any) => void;
-  #watch:              RDDClient.Watch;
-  #commit:             Commit<any>;
-  #namespace?:         string;
-  #labelSelector?:     () => string | undefined;
-  #fieldSelector?:     () => string | undefined;
-  #items:              readonly T[] = [];
+  #type:           K;
+  #path:           () => string;
+  #listFn:         () => Promise<RDDClient.KubernetesListObject<T>>;
+  #doneFn:         (error?: any) => void;
+  #watch:          RDDClient.Watch;
+  #commit:         Commit<any>;
+  #namespace?:     string;
+  #labelSelector?: () => string | undefined;
+  #fieldSelector?: () => string | undefined;
+  #items:          readonly T[] = [];
   #loaded = Latch();
-  #notifyDelay:        ReturnType<typeof setTimeout> | undefined;
-  #watcher:            RDDClient.ListWatch<T> | undefined;
-  #restartTimeout:     ReturnType<typeof setTimeout> | undefined;
-  #initialListTimeout: ReturnType<typeof setTimeout> | undefined;
+  #notifyDelay:    ReturnType<typeof setTimeout> | undefined;
+  #watcher:        RDDClient.ListWatch<T> | undefined;
+  #restartTimeout: ReturnType<typeof setTimeout> | undefined;
 
   /**
    * Create a new watcher.
@@ -570,10 +569,25 @@ class Watcher<
   start() {
     // Stop any existing watcher before starting a new one.
     this.#watcher?.stop(errorManuallyStopped);
-    const watcher = new RDDClient.ListWatch<T>(
+    // ListWatch emits only for the items that a list adds, changes or removes.
+    // Each `start()` builds a new ListWatch, so an empty first list would emit
+    // nothing.  The store would keep `null` or a restarted watch's old items,
+    // and `waitForResources` would wait until an item appears.  So trigger a
+    // change after every list.  The trigger runs before ListWatch applies the
+    // list, but `onChange()` commits on a timer that fires after.
+    const listFn = async() => {
+      const list = await this.#listFn();
+
+      if (Object.is(watcher, this.#watcher)) {
+        this.onChange();
+      }
+
+      return list;
+    };
+    const watcher: RDDClient.ListWatch<T> = new RDDClient.ListWatch<T>(
       this.#path(),
       this.#watch,
-      this.#listFn,
+      listFn,
       false,
       this.#labelSelector,
       this.#fieldSelector,
@@ -589,25 +603,12 @@ class Watcher<
         watcher.stop(errorManuallyStopped);
       }
     });
-    watcher.on('connect', () => {
-      // If there are no existing resources, we should still eventually call the
-      // change handler at some point.  However, we need an extra long timeout
-      // here because the initial list could take a while.
-      clearTimeout(this.#initialListTimeout);
-      this.#initialListTimeout = setTimeout(() => {
-        // Only trigger a change if this is the current watcher.
-        if (Object.is(watcher, this.#watcher)) {
-          this.onChange();
-        }
-      }, 1_000);
-    });
     watcher.on('error', (err) => {
       if (!Object.is(watcher, this.#watcher)) {
         // This error is from a stale watcher; ignore it.
         return;
       }
       clearTimeout(this.#restartTimeout);
-      clearTimeout(this.#initialListTimeout);
       this.#loaded.reset();
       this.#loaded.catch(() => { /* ignore */ });
       if (Object.is(err, errorManuallyStopped)) {
@@ -649,7 +650,6 @@ class Watcher<
   }
 
   protected onChange() {
-    clearTimeout(this.#initialListTimeout);
     // ListWatch calls this synchronously once per element, but we only need to
     // batch the results, so set up a delay that gets triggered soon.  Ideally
     // we'd use `queueMicrotask`, but that doesn't allow us to check if it's
@@ -670,8 +670,6 @@ class Watcher<
     clearTimeout(this.#restartTimeout);
     clearTimeout(this.#notifyDelay);
     this.#notifyDelay = undefined;
-    clearTimeout(this.#initialListTimeout);
-    this.#initialListTimeout = undefined;
     this.#loaded.reset();
     this.#loaded.catch(() => { /* ignore */ });
     return this.#watcher?.stop(errorManuallyStopped);

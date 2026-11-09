@@ -166,8 +166,15 @@ export const plugins: Plugin<RootState>[] = [
   // When the app state changes, tell the backend about it.
   function(store) {
     store.watch(
-      (_state, getters) => getters['rdd/app'],
-      (app: RDDClient.IoRancherdesktopAppV1alpha1App | undefined) => {
+      // null until this window has listed the Apps, so that the callback
+      // also runs when the first list comes back without an App.
+      (state, getters) => state.rdd.apps === null ? null : getters['rdd/app'],
+      (app: RDDClient.IoRancherdesktopAppV1alpha1App | undefined | null) => {
+        if (app === null) {
+          // The main process stops Steve on a report without conditions, so
+          // do not report before this window has listed the Apps.
+          return;
+        }
         const conditions = app?.status?.conditions ?? [];
         const data = Object.fromEntries(conditions.map(condition => {
           const { type, status, reason } = condition;
