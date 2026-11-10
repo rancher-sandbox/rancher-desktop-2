@@ -66,6 +66,12 @@ export async function openDashboard() {
     window.show();
   });
 
+  // reload() returns void, and Electron attaches a no-op rejection handler to
+  // the promise that loadURL() returns, so log failed loads from this event.
+  window.webContents.on('did-fail-load', (_event, errorCode, errorDescription, url) => {
+    console.error(`Failed to load ${ url }: ${ errorCode } (${ errorDescription })`);
+  });
+
   await setDashboardLocale(window, port);
   if (!window.isDestroyed()) {
     window.loadURL(`http://127.0.0.1:${ port }/c/local/explorer`);

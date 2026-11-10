@@ -8,6 +8,7 @@ const port = 9443;
 const onIPCMainProxy = jest.fn((event: unknown, cb: (event: unknown, locale: string) => void) => {});
 const windowMapping: Record<string, number> = {};
 const cookieWrites: { cookie: unknown, resolve: () => void }[] = [];
+const log = { error: jest.fn() };
 
 class FakeWindow extends EventEmitter {
   static windows: FakeWindow[] = [];
@@ -18,7 +19,7 @@ class FakeWindow extends EventEmitter {
   reload = jest.fn();
   setTitle = jest.fn();
   isDestroyed = () => this.destroyed;
-  webContents = {
+  webContents = Object.assign(new EventEmitter(), {
     session: {
       cookies: {
         set: (cookie: unknown) => new Promise<void>((resolve) => {
@@ -26,7 +27,7 @@ class FakeWindow extends EventEmitter {
         }),
       },
     },
-  };
+  });
 
   constructor() {
     super();
@@ -40,7 +41,7 @@ class FakeWindow extends EventEmitter {
 }
 
 mockModules({
-  '@pkg/utils/logging': undefined,
+  '@pkg/utils/logging': { default: new Proxy({}, { get: () => log }) },
   '@pkg/main/ipcMain':  {
     getIpcMainProxy: jest.fn(() => ({
       on:   onIPCMainProxy,
@@ -118,5 +119,14 @@ describe('openDashboard', () => {
     cookieWrites[1].resolve();
     await settle();
     expect(FakeWindow.windows[0].reload).not.toHaveBeenCalled();
+  });
+
+  it('logs a failed load', async() => {
+    const opened = openDashboard();
+
+    cookieWrites[0].resolve();
+    await opened;
+    FakeWindow.windows[0].webContents.emit('did-fail-load', {}, -102, 'ERR_CONNECTION_REFUSED', `http://127.0.0.1:${ port }/c/local/explorer`);
+    expect(log.error).toHaveBeenCalledWith(expect.stringContaining('ERR_CONNECTION_REFUSED'));
   });
 });
