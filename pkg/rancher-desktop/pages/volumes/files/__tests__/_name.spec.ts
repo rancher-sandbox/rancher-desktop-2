@@ -17,12 +17,9 @@ mockModules({
 const { default: VolumeFiles } = await import('@pkg/pages/volumes/files/_name.vue');
 
 describe('volume files', () => {
-  /**
-   * Mount the page for the given volume name, translating with the given t,
-   * and show its content instead of the loading indicator.
-   */
-  async function mountPage(name: string, translate: typeof t) {
-    const wrapper = shallowMount(VolumeFiles, {
+  /** Mount the page for the given volume name, translating with the given t. */
+  function mountPage(name: string, translate: typeof t) {
+    return shallowMount(VolumeFiles, {
       global: {
         mocks: {
           $route: { params: { name }, query: {} },
@@ -32,15 +29,11 @@ describe('volume files', () => {
         stubs: { Banner: { template: '<div><slot /></div>' } },
       },
     });
-
-    await wrapper.setData({ isLoading: false });
-
-    return wrapper;
   }
 
   it('shows its error in the current locale', async() => {
     const translator = switchableT();
-    const wrapper = await mountPage('no/such volume', translator.t);
+    const wrapper = mountPage('no/such volume', translator.t);
 
     translator.switched.value = true;
     await nextTick();
@@ -49,8 +42,10 @@ describe('volume files', () => {
 
   it('translates its headers after a locale switch', async() => {
     const translator = switchableT();
-    const wrapper = await mountPage('data', translator.t);
+    const wrapper = mountPage('data', translator.t);
 
+    // Show the file table instead of the loading indicator.
+    await wrapper.setData({ isLoading: false });
     translator.switched.value = true;
     await nextTick();
     expect(wrapper.getComponent({ name: 'SortableTable' }).props('headers'))

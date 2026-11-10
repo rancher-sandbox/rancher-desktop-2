@@ -29,21 +29,21 @@
       </template>
     </div>
 
-    <loading-indicator
-      v-if="isLoading"
-      class="content-state"
-    >
-      {{ t('volumes.files.loading') }}
-    </loading-indicator>
-
     <banner
-      v-else-if="error"
+      v-if="error"
       class="content-state"
       color="error"
     >
       <span class="icon icon-info-circle icon-lg" />
       {{ errorText }}
     </banner>
+
+    <loading-indicator
+      v-else-if="isLoading"
+      class="content-state"
+    >
+      {{ t('volumes.files.loading') }}
+    </loading-indicator>
 
     <div
       v-else
