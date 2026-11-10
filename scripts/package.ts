@@ -20,9 +20,10 @@ import yaml from 'yaml';
 
 import buildUtils from './lib/build-utils';
 import buildInstaller from './lib/installer-win32';
+import { simpleSpawn } from './simple_process';
 
 import { spawnFile } from '@pkg/utils/childProcess';
-import { appArtifactName, EXT_MACRO, rddArtifactName } from '@pkg/utils/releaseArtifacts';
+import { appArtifactName, artifactPlatform, EXT_MACRO, rddArtifactName } from '@pkg/utils/releaseArtifacts';
 import { ReadWrite } from '@pkg/utils/typeUtils';
 
 class Builder {
@@ -208,11 +209,21 @@ class Builder {
 
     await build(options);
 
-    // Releases also publish rdd by itself.
+    // Releases also publish rdd by itself, built without steve and the
+    // dashboard, which only the app uses.
+    const rddDir = path.join(buildUtils.rootDir, 'rdd');
     const rdd = process.platform === 'win32' ? 'rdd.exe' : 'rdd';
 
+    await simpleSpawn('make', ['build-rdd-standalone'], {
+      cwd: rddDir,
+      env: {
+        ...process.env,
+        GOOS:   artifactPlatform(process.platform),
+        GOARCH: buildUtils.goArch,
+      },
+    });
     await fs.promises.copyFile(
-      path.join(buildUtils.rootDir, 'rdd', 'bin', rdd),
+      path.join(rddDir, 'bin', 'standalone', rdd),
       path.join(buildUtils.distDir, rddArtifactName(version, process.platform, buildUtils.arch)));
 
     return options;

@@ -126,13 +126,36 @@ jobs:
       with:
         GOARCH: ${{ env.GOARCH }}
     # rdd/Makefile builds rdd without the dashboard when none is staged, so
-    # fail here instead of shipping a package without it.
-    - name: Check that rdd embeds the dashboard
-      run: >-
-        go version -m rdd/bin/rdd${{ case(matrix.platform == 'windows', '.exe', '') }}
-        | grep --extended-regexp -- '-tags=(.*,)?with_dashboard(,|$)'
+    # fail here instead of shipping a package without it. The tag alone would
+    # miss a steve command whose build constraint does not match the tag.
+    - name: Check that rdd embeds steve and the dashboard
+      run: |
+        rdd=rdd/bin/rdd${{ case(matrix.platform == 'windows', '.exe', '') }}
+        go version -m "${rdd}" | grep --extended-regexp -- '-tags=(.*,)?with_dashboard(,|$)'
+        go version -m "${rdd}" | grep --extended-regexp -- '^[[:space:]]+dep[[:space:]]+github\.com/rancher/steve[[:space:]]'
     - run: yarn build
     - run: yarn package
+    # Releases publish this rdd by itself; only the app's rdd needs steve and
+    # the dashboard.
+    - name: Check that the standalone rdd leaves out steve and the dashboard
+      run: |
+        tags="$(go version -m dist/rdd.* | grep --extended-regexp -- '-tags=')"
+        echo "${tags}"
+        echo "${tags}" | grep --extended-regexp -- '-tags=(.*,)?with_distro(,|$)'
+        if echo "${tags}" | grep --extended-regexp --quiet -- '-tags=(.*,)?with_dashboard(,|$)'; then
+          echo "::error::The standalone rdd embeds the dashboard"
+          exit 1
+        fi
+        if go version -m dist/rdd.* | grep --extended-regexp -- '^[[:space:]]+dep[[:space:]]+github\.com/rancher/steve[[:space:]]'; then
+          echo "::error::The standalone rdd links steve"
+          exit 1
+        fi
+    # yarn package builds this rdd apart from the app's, and the macOS x86_64
+    # leg cross-compiles it on an arm64 runner.
+    - name: Check that the standalone rdd targets the leg's architecture
+      run: >-
+        go version -m dist/rdd.*
+        | grep --extended-regexp -- '^[[:space:]]+build[[:space:]]+GOARCH=${{ case(matrix.arch == 'aarch64', 'arm64', 'amd64') }}$'
     - name: Upload RDD
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
@@ -330,6 +353,10 @@ jobs:
       name: Download artifact
       with:
         name: rancher-desktop.windows.x86_64.zip
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      name: Download rdd
+      with:
+        name: rdd.windows.x86_64.exe
     - name: Generate test signing certificate
       shell: powershell
       run: |
@@ -346,7 +373,7 @@ jobs:
       timeout-minutes: 1
     - name: Sign artifact
       shell: powershell
-      run: yarn sign (Get-Item "rancher-desktop-*.windows.*.zip")
+      run: yarn sign (Get-Item "rancher-desktop-*.windows.*.zip") (Get-Item "rdd.*.windows.*.exe")
       timeout-minutes: 10
     - name: Verify installer signature
       shell: powershell
@@ -355,6 +382,15 @@ jobs:
         Write-Output $usedCert
         if ($usedCert.Thumbprint -ne $env:CSC_FINGERPRINT) {
           Throw "Installer signed with wrong certificate"
+        }
+      timeout-minutes: 1
+    - name: Verify rdd signature
+      shell: powershell
+      run: |
+        $usedCert = (Get-AuthenticodeSignature -FilePath 'dist\rdd.*.exe').SignerCertificate
+        Write-Output $usedCert
+        if ($usedCert.Thumbprint -ne $env:CSC_FINGERPRINT) {
+          Throw "rdd signed with wrong certificate"
         }
       timeout-minutes: 1
 
@@ -383,6 +419,10 @@ jobs:
       name: Download artifact
       with:
         name: rancher-desktop.darwin.${{ matrix.arch }}.zip
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      name: Download rdd
+      with:
+        name: rdd.darwin.${{ matrix.arch }}
     - name: Generate test signing certificate
       run: |
         openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem \
@@ -410,7 +450,7 @@ jobs:
       run: |
         for zip in rancher-desktop-*.darwin.*.zip; do
           echo "::group::Signing ${zip}"
-          yarn sign --skip-notarize --skip-constraints "${zip}"
+          yarn sign --skip-notarize --skip-constraints "${zip}" rdd.*.darwin.${{ matrix.arch }}
           echo "::endgroup::"
         done
       timeout-minutes: 15
@@ -418,4 +458,7 @@ jobs:
       run: |
         codesign --verify --deep --strict --verbose=2 dist/*.dmg
         codesign --verify --deep --strict --verbose=2 dist/*.zip
+        codesign --verify --strict --verbose=2 dist/rdd.*.darwin.${{ matrix.arch }}
+        codesign --display --entitlements - dist/rdd.*.darwin.${{ matrix.arch }} \
+          | grep --fixed-strings com.apple.security.virtualization
       timeout-minutes: 5

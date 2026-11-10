@@ -32,6 +32,11 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/version"
 )
 
+// optionalCommands holds constructors for commands that only some builds
+// include. Files behind a build constraint, such as steve.go, append to it from
+// init(), so main.go compiles without them.
+var optionalCommands []func() *cobra.Command
+
 // setLogOptions sets the log level from command flags or RDD_LOG_LEVEL.
 func setLogOptions(cmd *cobra.Command, _ []string) error {
 	if logFormat, err := cmd.Root().Flags().GetString("log-format"); err == nil {
@@ -135,9 +140,9 @@ func main() {
 	yqCmd.Hidden = !developer.Mode()
 	cmd.AddCommand(yqCmd)
 
-	steveCmd := newSteveCommand()
-	steveCmd.Hidden = !developer.Mode()
-	cmd.AddCommand(steveCmd)
+	for _, newCommand := range optionalCommands {
+		cmd.AddCommand(newCommand())
+	}
 
 	cmd.AddCommand(
 		hostagent.NewCommand(),

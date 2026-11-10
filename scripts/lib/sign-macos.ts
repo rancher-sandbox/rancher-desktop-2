@@ -16,7 +16,7 @@ import * as plist from 'plist';
 import yaml from 'yaml';
 
 import buildUtils from '@/scripts/lib/build-utils';
-import { spawnFile } from '@pkg/utils/childProcess';
+import { spawnFile, SpawnError } from '@pkg/utils/childProcess';
 import { appArtifactName, EXT_MACRO, rddArtifactName } from '@pkg/utils/releaseArtifacts';
 
 interface SigningConfig {
@@ -37,7 +37,10 @@ interface SigningConfig {
   remove: string[];
 }
 
-export async function sign(workDir: string): Promise<string[]> {
+/** The app's rdd, whose entitlements the standalone rdd gets too. */
+const APP_RDD = 'Contents/Resources/darwin/bin/rdd';
+
+export async function sign(workDir: string, rddFiles: string[]): Promise<string[]> {
   const certFingerprint = process.env.CSC_FINGERPRINT ?? '';
   const appleId = process.env.APPLEID;
   const appleIdPassword = process.env.AC_PASSWORD;
@@ -60,11 +63,14 @@ export async function sign(workDir: string): Promise<string[]> {
   const config: Configuration = yaml.parse(configText);
 
   buildUtils.checkArchiveArch(config.mac?.artifactName, config.extraMetadata.version, 'darwin');
+  const { version } = config.extraMetadata;
+  const rddSource = buildUtils.findStandaloneRdd(rddFiles, version, 'darwin');
 
   const signingConfigPath = path.join(appDir, 'Contents/build/signing-config-mac.yaml');
   const signingConfigText = await fs.promises.readFile(signingConfigPath, 'utf-8');
   const signingConfig: SigningConfig = yaml.parse(signingConfigText, { merge: true });
   const plistsDir = path.join(workDir, 'plists');
+  const signArgs = ['--sign', certFingerprint, '--force', '--timestamp', '--options', 'runtime'];
   let wroteDefaultEntitlements = false;
   let constraintSkipped = false;
 
@@ -79,38 +85,16 @@ export async function sign(workDir: string): Promise<string[]> {
   for await (const filePath of findFilesToSign(appDir)) {
     const relPath = path.relative(appDir, filePath);
     const fileHash = createHash('sha256').update(relPath, 'utf-8').digest('base64url');
-    const args = ['--sign', certFingerprint, '--force', '--timestamp', '--options', 'runtime'];
+    const args = [...signArgs];
 
     // Determine the entitlements
-    const entitlementsOverride = signingConfig.entitlements.overrides.find(e => e.paths.includes(relPath));
-    let entitlementName = 'default';
-    let entitlements = signingConfig.entitlements.default;
-
-    if (entitlementsOverride) {
-      entitlementName = fileHash;
-      if (Array.isArray(entitlementsOverride.entitlements)) {
-        entitlements = entitlementsOverride.entitlements;
-      } else {
-        // Use existing entitlements
-        const { stdout } = await spawnFile(
-          'codesign', ['--display', '--entitlements', '-', '--xml', filePath], { stdio: ['ignore', 'pipe', 'inherit'] });
-        const xml = stdout.split(/\r?\n/).find(line => line.startsWith('<?xml'));
-        if (!xml) {
-          throw new Error(`Could not read existing entitlements from ${ relPath }`);
-        }
-        const parsed = plist.parse(xml);
-        if (parsed && [null, Object.prototype].includes(Object.getPrototypeOf(parsed))) {
-          entitlements = Object.keys(parsed);
-        } else {
-          throw new Error(`Could not parse existing entitlements from ${ relPath }: got ${ JSON.stringify(parsed) }`);
-        }
-      }
-    }
+    const entitlementsOverride = await overrideEntitlements(signingConfig, appDir, relPath);
+    const entitlementName = entitlementsOverride ? fileHash : 'default';
+    const entitlements = entitlementsOverride ?? signingConfig.entitlements.default;
     const entitlementFile = path.join(plistsDir, `${ entitlementName }-entitlement.plist`);
 
     if (!wroteDefaultEntitlements || entitlementName !== 'default') {
-      await fs.promises.writeFile(entitlementFile,
-        plist.build(Object.fromEntries(entitlements.map(k => [k, true]))));
+      await fs.promises.writeFile(entitlementFile, entitlementsPlist(entitlements));
       wroteDefaultEntitlements ||= entitlementName === 'default';
     }
     args.push('--entitlements', entitlementFile);
@@ -144,6 +128,20 @@ export async function sign(workDir: string): Promise<string[]> {
   await spawnFile('codesign', ['--verify', '--deep', '--strict', '--verbose=2', appDir], { stdio: 'inherit' });
   await spawnFile('codesign', ['--display', '--entitlements', '-', appDir], { stdio: 'inherit' });
 
+  // The standalone rdd does not get launch constraints, because it runs
+  // outside the app.
+  log.info('Signing standalone rdd...');
+  const rddTarget = path.join(process.cwd(), 'dist', rddArtifactName(version, 'darwin', buildUtils.arch));
+  const rddEntitlements = await overrideEntitlements(signingConfig, appDir, APP_RDD);
+  const rddEntitlementFile = path.join(plistsDir, 'rdd-entitlement.plist');
+
+  if (path.resolve(rddSource) !== rddTarget) {
+    await fs.promises.copyFile(rddSource, rddTarget, fs.constants.COPYFILE_FICLONE);
+  }
+  await fs.promises.writeFile(rddEntitlementFile, entitlementsPlist(rddEntitlements ?? signingConfig.entitlements.default));
+  await spawnFile('codesign', [...signArgs, '--entitlements', rddEntitlementFile, rddTarget], { stdio: 'inherit' });
+  await spawnFile('codesign', ['--verify', '--strict', '--verbose=2', rddTarget], { stdio: 'inherit' });
+
   if (process.argv.includes('--skip-notarize')) {
     log.warn('Skipping notarization: --skip-notarize given.');
   } else if (appleId && appleIdPassword && teamId) {
@@ -154,6 +152,8 @@ export async function sign(workDir: string): Promise<string[]> {
       appleIdPassword,
       teamId,
     });
+    log.info('Notarizing standalone rdd...');
+    await notarizeFile(rddTarget, workDir, ['--apple-id', appleId, '--password', appleIdPassword, '--team-id', teamId]);
   } else {
     const message = [
       'APPLEID, AC_PASSWORD, or AC_TEAMID environment variables not given, cannot notarize.',
@@ -165,7 +165,6 @@ export async function sign(workDir: string): Promise<string[]> {
 
   log.info('Building disk image and update archive...');
   const arch = buildUtils.arch === 'arm64' ? Arch.arm64 : Arch.x64;
-  const { version } = config.extraMetadata;
   const artifactName = appArtifactName(version, 'darwin', buildUtils.arch, EXT_MACRO);
   const formats = ['dmg', 'zip'];
 
@@ -202,11 +201,89 @@ export async function sign(workDir: string): Promise<string[]> {
     return spawnFile('codesign', ['--sign', certFingerprint, '--timestamp', f], { stdio: 'inherit' });
   }));
 
-  const rddSource = path.join(appDir, 'Contents/Resources/darwin/bin/rdd');
-  const rddTarget = path.join(process.cwd(), 'dist', rddArtifactName(version, 'darwin', buildUtils.arch));
-  await fs.promises.copyFile(rddSource, rddTarget, fs.constants.COPYFILE_FICLONE);
-
   return [dmgFile, zipFile, rddTarget];
+}
+
+/** Build the plist that grants each of the entitlements. */
+function entitlementsPlist(entitlements: string[]): string {
+  return plist.build(Object.fromEntries(entitlements.map(k => [k, true])));
+}
+
+/**
+ * Return the entitlements that signingConfig overrides for relPath in the app,
+ * or undefined when relPath gets the default ones. An override without an
+ * entitlements list keeps the ones the file already has.
+ */
+async function overrideEntitlements(signingConfig: SigningConfig, appDir: string, relPath: string): Promise<string[] | undefined> {
+  const entitlementsOverride = signingConfig.entitlements.overrides.find(e => e.paths.includes(relPath));
+
+  if (!entitlementsOverride) {
+    return undefined;
+  }
+  if (Array.isArray(entitlementsOverride.entitlements)) {
+    return entitlementsOverride.entitlements;
+  }
+  // Use existing entitlements
+  const { stdout } = await spawnFile(
+    'codesign', ['--display', '--entitlements', '-', '--xml', path.join(appDir, relPath)], { stdio: ['ignore', 'pipe', 'inherit'] });
+  const xml = stdout.split(/\r?\n/).find(line => line.startsWith('<?xml'));
+  if (!xml) {
+    throw new Error(`Could not read existing entitlements from ${ relPath }`);
+  }
+  const parsed = plist.parse(xml);
+  if (parsed && [null, Object.prototype].includes(Object.getPrototypeOf(parsed))) {
+    return Object.keys(parsed);
+  }
+  throw new Error(`Could not parse existing entitlements from ${ relPath }: got ${ JSON.stringify(parsed) }`);
+}
+
+/**
+ * Notarize a bare executable. Apple cannot staple a ticket to one, so
+ * Gatekeeper has to look the ticket up online. The steps follow
+ * @electron/notarize, but its notarize() cannot do this, because it always
+ * staples.
+ * @param credentials The notarytool arguments that authenticate to Apple.
+ */
+async function notarizeFile(filePath: string, workDir: string, credentials: string[]): Promise<void> {
+  const zipPath = path.join(workDir, `${ path.basename(filePath) }.zip`);
+
+  await spawnFile('ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', filePath, zipPath], { stdio: 'inherit' });
+
+  // Catch notarytool's SpawnError instead of throwing it, because its
+  // `command` property holds the password.
+  const notarytool = async(args: string[]) => {
+    try {
+      const { stdout, stderr } = await spawnFile('xcrun', ['notarytool', ...args, ...credentials], { stdio: ['ignore', 'pipe', 'pipe'] });
+
+      return { code: 0, stdout, stderr };
+    } catch (ex) {
+      if (!(ex instanceof SpawnError)) {
+        throw ex;
+      }
+
+      return { code: ex.code ?? -1, stdout: ex.stdout ?? '', stderr: ex.stderr ?? '' };
+    }
+  };
+  const result = await notarytool(['submit', zipPath, '--wait', '--output-format', 'json']);
+  let parsed: { id?: unknown, status?: unknown };
+
+  try {
+    parsed = JSON.parse(result.stdout.trim());
+  } catch {
+    throw new Error(`Failed to notarize ${ filePath }: notarytool exited with code ${ result.code }:\n${ result.stdout }${ result.stderr }`);
+  }
+  if (result.code === 0 && parsed.status === 'Accepted') {
+    return;
+  }
+
+  const message = [`Failed to notarize ${ filePath }: notarytool exited with code ${ result.code }:\n${ result.stdout }${ result.stderr }`];
+
+  if (typeof parsed.id === 'string') {
+    const logResult = await notarytool(['log', parsed.id]);
+
+    message.push(`notarytool log:\n${ logResult.stdout }${ logResult.stderr }`);
+  }
+  throw new Error(message.join('\n\n'));
 }
 
 /**

@@ -1,9 +1,8 @@
 /**
- * This script signs existing builds.
+ * This script signs existing macOS and Windows builds, and the standalone rdd
+ * built with each.
  *
- * Usage: yarn sign -- blahblah.zip
- *
- * Currently, only Windows is supported; mac support is planned.
+ * Usage: yarn sign -- rancher-desktop-<version>.<platform>.<arch>.zip rdd.<version>.<platform>.<arch>[.exe]
  */
 
 import crypto from 'crypto';
@@ -57,7 +56,7 @@ async function extractZip(archive: string, destDir: string): Promise<void> {
   }
 }
 
-async function signArchive(archive: string): Promise<void> {
+async function signArchive(archive: string, rddFiles: string[]): Promise<void> {
   const distDir = path.join(process.cwd(), 'dist');
 
   await fs.promises.mkdir(distDir, { recursive: true });
@@ -74,11 +73,11 @@ async function signArchive(archive: string): Promise<void> {
     // Detect the archive type
     for (const file of await fs.promises.readdir(archiveDir)) {
       if (file.endsWith('.exe')) {
-        artifacts = await windows.sign(workDir, distDir);
+        artifacts = await windows.sign(workDir, distDir, rddFiles);
         break;
       }
       if (file.endsWith('.app')) {
-        artifacts = await macos.sign(workDir);
+        artifacts = await macos.sign(workDir, rddFiles);
         break;
       }
     }
@@ -111,15 +110,13 @@ async function computeChecksum(artifact: string) {
 }
 
 await (async() => {
-  let fileCount = 0;
+  const archives = process.argv.filter(f => f.endsWith('.zip'));
+  const rddFiles = process.argv.filter(f => path.basename(f).startsWith('rdd.') && !f.endsWith('.zip'));
 
-  for (const path of process.argv) {
-    if (path.endsWith('.zip')) {
-      fileCount++;
-      await signArchive(path);
-    }
+  for (const archive of archives) {
+    await signArchive(archive, rddFiles);
   }
-  if (fileCount < 1) {
+  if (archives.length < 1) {
     throw new Error('No files provided to sign!');
   }
 })();

@@ -257,17 +257,31 @@ bin/.dashboard-tag: FORCE
 	@mkdir -p $(@D)
 	@test -f $@ && test "$$(cat $@)" = '$(DASHBOARD_TAG)' || echo '$(DASHBOARD_TAG)' > $@
 
-# Only bin/rdd and bin/lima-controller embed the distro. Tests, lint and the
-# other standalone controllers build without with_distro and need no image.
+# BUILD_RDD builds ./cmd/rdd with the distro into $(1), adding the tags in $(2).
+define BUILD_RDD
+WSLENV=${WSLENV}:CGO_CFLAGS:CGO_ENABLED:GOOS:GOARCH \
+CGO_CFLAGS="$(SQLITE_CFLAGS)" CGO_ENABLED=1 \
+GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) \
+go$(EXE) build -tags="$(strip $(TAGS) with_distro $(2))" -gcflags="all=${GCFLAGS}" -ldflags="$(LDFLAGS)" -o $(1) ./cmd/rdd
+$(call ATTACH_ENTITLEMENTS,$(1))
+ls -lh $(1)
+endef
+
+# Only the rdd builds and bin/lima-controller embed the distro. Tests, lint and
+# the other standalone controllers build without with_distro and do not need
+# the image.
 bin/rdd$(EXE): $(GOLANG_SOURCES) $(EMBEDDED_SOURCES) $(GUESTAGENT_GZ) $(DISTRO_IMAGE) $(DASHBOARD_INDEX) bin/.dashboard-tag
-	WSLENV=${WSLENV}:CGO_CFLAGS:CGO_ENABLED:GOOS:GOARCH \
-	CGO_CFLAGS="$(SQLITE_CFLAGS)" CGO_ENABLED=1 \
-	GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) \
-	go$(EXE) build -tags="$(TAGS) with_distro $(DASHBOARD_TAG)" -gcflags="all=${GCFLAGS}" -ldflags="$(LDFLAGS)" -o $@ ./cmd/rdd
-	$(call ATTACH_ENTITLEMENTS,$@)
-	ls -lh $@
+	$(call BUILD_RDD,$@,$(DASHBOARD_TAG))
 build-rdd: bin/rdd$(EXE)
 .PHONY: build-rdd
+
+# Releases also publish rdd by itself. Only the app uses steve and the
+# dashboard, so this build always leaves them out.
+bin/standalone/rdd$(EXE): $(GOLANG_SOURCES) $(EMBEDDED_SOURCES) $(GUESTAGENT_GZ) $(DISTRO_IMAGE)
+	@mkdir -p $(@D)
+	$(call BUILD_RDD,$@,)
+build-rdd-standalone: bin/standalone/rdd$(EXE)
+.PHONY: build-rdd-standalone
 
 # The rdd-forwarder is a small Win32 shim (vendored from ScoopInstaller/Shim,
 # see src/rdd-forwarder) that the instance bin directory publishes per tool on
