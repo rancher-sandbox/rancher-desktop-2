@@ -106,9 +106,13 @@ export default defineComponent({
   components: { SortableTable, Banner },
   data() {
     return {
-      settings:       undefined as Settings | undefined,
-      // Without a `search` key, the table searches the row field named after the column.
-      headers:        [
+      settings: undefined as Settings | undefined,
+    };
+  },
+  computed: {
+    // Without a `search` key, the table searches the row field named after the column.
+    headers() {
+      return [
         {
           name:   'Name',
           label:  this.t('volumes.manage.table.header.volumeName'),
@@ -134,10 +138,8 @@ export default defineComponent({
           sort:   ['status.createdAt', 'status.name'],
           width:  120,
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     ...mapTypedState('container-engine', ['error', 'volumes']),
     ...mapTypedGetters('container-engine', ['supportsNamespaces', 'namespaces', 'currentNamespace']),
     rows(): RowItem[] {

@@ -147,9 +147,9 @@ export default defineComponent({
     },
   },
 
-  data() {
-    return {
-      headers: [
+  computed: {
+    headers() {
+      return [
         {
           name:  'namespace',
           label: this.t('portForwarding.manage.table.header.namespace'),
@@ -170,10 +170,8 @@ export default defineComponent({
           label: this.t('portForwarding.manage.table.header.listenPort'),
           sort:  ['listenPort', 'namespace', 'name'],
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     isRunning(): boolean {
       return this.k8sState === 'STARTED';
     },

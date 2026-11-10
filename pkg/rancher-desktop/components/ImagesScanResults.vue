@@ -38,9 +38,9 @@ export default {
     },
   },
 
-  data() {
-    return {
-      headers: [
+  computed: {
+    headers() {
+      return [
         {
           name:  'Severity',
           label: this.t('images.scan.results.headers.severity'),
@@ -64,11 +64,8 @@ export default {
           name:  'FixedVersion',
           label: this.t('images.scan.results.headers.fixed'),
         },
-      ],
-    };
-  },
-
-  computed: {
+      ];
+    },
     rows() {
       return this.tableData
         .map(({ Severity, ...rest }) => {

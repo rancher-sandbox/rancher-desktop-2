@@ -183,8 +183,12 @@ export default defineComponent({
       // The type cast is necessary to correctly type `collapsed`.
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       collapsed: {} as Record<string, boolean>,
-      // Without a `search` key, the table searches the row field named after the column.
-      headers:   [
+    };
+  },
+  computed: {
+    // Without a `search` key, the table searches the row field named after the column.
+    headers() {
+      return [
         {
           name:   'containerState',
           label:  this.t('containers.manage.table.header.state'),
@@ -214,10 +218,8 @@ export default defineComponent({
           sort:  ['status.startedAt', 'status.name', 'imageName'],
           width: 120,
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     ...mapTypedState('container-engine', ['containers', 'images', 'error']),
     ...mapTypedGetters('container-engine', ['supportsNamespaces', 'namespaces', 'currentNamespace']),
     rows(): RowItem[] {
