@@ -2781,9 +2781,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kubernetes/client-node@npm:2.0.1":
-  version: 2.0.1
-  resolution: "@kubernetes/client-node@npm:2.0.1"
+"@kubernetes/client-node@npm:2.0.2":
+  version: 2.0.2
+  resolution: "@kubernetes/client-node@npm:2.0.2"
   dependencies:
     "@types/js-yaml": "npm:^4.0.1"
     "@types/node": "npm:^26.0.0"
@@ -2801,7 +2801,7 @@ __metadata:
     tar-fs: "npm:^3.0.9"
     undici: "npm:^8.7.0"
     ws: "npm:^8.18.2"
-  checksum: 10c0/8e0953e129b40543b4b2cc14108863d360b9c91a466813018184ce66e19725634a3651d0b944054c7077aa66643f100837954ae1a46f534b2ceb32aed0de9fff
+  checksum: 10c0/c10e6e9877eef264da639618b0e7450da6dbd42fd4be9949fcef29bf89b884242294dd67ef50ccd2a2f36cc4177f8a622aef787069d7ecd1200ff9eef22dc4a9
   languageName: node
   linkType: hard
 
@@ -14529,7 +14529,7 @@ __metadata:
     "@eslint/config-helpers": "npm:0.7.0"
     "@eslint/js": "npm:10.0.1"
     "@jest/environment-jsdom-abstract": "npm:30.5.2"
-    "@kubernetes/client-node": "npm:2.0.1"
+    "@kubernetes/client-node": "npm:2.0.2"
     "@playwright/test": "npm:1.64.1"
     "@types/cross-spawn": "npm:6.0.6"
     "@types/dompurify": "npm:3.2.0"
