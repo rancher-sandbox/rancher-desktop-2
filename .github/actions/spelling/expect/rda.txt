@@ -214,7 +214,6 @@ fcrypt
 fdx
 FEEEFEEE
 femto
-ffi
 Fflags
 ficlone
 filekey
@@ -384,7 +383,6 @@ MSIINSTALLPERUSER
 MSIX
 msixbundle
 msize
-msvs
 multierror
 multiport
 mungers

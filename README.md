@@ -29,48 +29,20 @@ Rancher Desktop, running unit tests, and running end-to-end tests, are done thro
 1. Install [Windows Subsystem for Linux (WSL)] on your machine. Skip this step, if WSL is already installed.
 2. Open a PowerShell prompt (hit Windows Key + `X` and open `Windows PowerShell`).
 3. Install [Scoop] via `iwr -useb get.scoop.sh | iex`.
-4. Install 7zip, git, go, mingw, nvm, and unzip via `scoop install 7zip git go mingw nvm python unzip`.
+4. Install 7zip, git, go, mingw, nvm, and unzip via `scoop install 7zip git go mingw nvm unzip`.
    Check node version with `nvm list`. If node v26 is not installed or set as the current version, then install using `nvm install 26` and set as current using `nvm use 26.xx.xx`.
 5. Install the yarn package manager via `npm install --global yarn`
-6. Install Visual Studio 2017 or higher. As of this writing the latest version is available at [https://visualstudio.microsoft.com/downloads/]; if that's changed, a good search engine should find it.
-7. Make sure you have the `Windows SDK` component installed. This [Visual Studio docs] describes steps to install components.
-   The [Desktop development with C++] workload needs to be selected, too.
-8. Configure `git` to work with linux- and macos-originated files:
+6. Configure `git` to work with linux- and macos-originated files:
    ```
    git config --global --replace-all core.autocrlf false
    git config --global --replace-all core.eol lf
    ```
 If `make lint-go` fails mysteriously, the line endings may be wrong.
-9. Ensure `msbuild_path` and `msvs_version` are configured correctly in `.npmrc` file. Run the following commands to set these properties:
-
-   ```
-   npm config set msvs_version <visual-studio-version-number>
-   npm config set msbuild_path <path/to/MSBuild.exe>
-   ```
-
-   For example for Visual Studio 2022:
-
-   ```
-   npm config set msvs_version 2022
-   npm config set msbuild_path "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
-   ```
-
-   If you get an error message when trying to run `npm config set...`, run `npm config edit` and then add lines like
-
-   ```
-   msvs_version=2022
-   msbuild_path=C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe
-   ```
-
-   Do not quote the values to the right side of the equal sign. They aren't needed, and it's possible that some
-   processor will treat them as literal parts of the path, and then fail.
 
 You can now clone the repository and run `yarn`.
 
 [Scoop]: https://scoop.sh/
-[Visual Studio docs]: https://docs.microsoft.com/en-us/visualstudio/install/modify-visual-studio?view=vs-2022
 [Windows Subsystem for Linux (WSL)]: https://docs.microsoft.com/en-us/windows/wsl/install
-[Desktop development with C++]: https://learn.microsoft.com/en-us/visualstudio/install/modify-visual-studio?view=vs-2022#change-workloads-or-individual-components
 
 ### macOS
 
@@ -106,17 +78,13 @@ yarn
 
 Ensure you have the following installed:
 
-- [Node.js][Node.js] v26. **Make sure you have any development packages
-  installed.** For example, on openSUSE Tumbleweed you would need to install
-  `nodejs26` and `nodejs26-devel`.
+- [Node.js][Node.js] v26.
 
 - [yarn classic][yarn-classic]
 
 - Go 1.22 or later.
 
-- Dependencies described in the [`node-gyp` docs][node-gyp] installation.
-  This is required to install the [`ffi-napi`][ffi-napi] npm package. These docs mention
-  "a proper C/C++ compiler toolchain". You can install `gcc` and `g++` for this.
+- A C compiler such as `gcc`, which cgo needs to build the `rdd` daemon.
 
 Then you can install dependencies with:
 
@@ -129,8 +97,6 @@ if this happens, try doing a factory reset and re-running, which has been known
 to solve this issue.
 
 [Node.js]: https://nodejs.org/
-[ffi-napi]: https://www.npmjs.com/package/ffi-napi
-[node-gyp]: https://github.com/nodejs/node-gyp#on-unix
 [yarn-classic]: https://classic.yarnpkg.com/lang/en/docs/install/#debian-stable
 
 
