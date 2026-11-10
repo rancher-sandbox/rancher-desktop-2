@@ -54,6 +54,19 @@ updates:
     jest:
       patterns: ["jest", "babel-jest", "@jest/environment-jsdom-abstract"]
 
+# dashboard/yarn.lock starts from Rancher's lock at the tag that
+# dashboard/Makefile pins. Our CI builds the dashboard but doesn't run
+# Rancher's tests, so a green build wouldn't show that a bump works. The lock
+# changes only when we move to a newer tag. Dependabot opens security PRs for
+# every lockfile it finds, even in a directory that this file leaves out, and
+# `ignore` stops those too.
+- package-ecosystem: npm
+  directory: /dashboard
+  schedule:
+    interval: daily
+  ignore:
+  - dependency-name: "*"
+
 # Maintain dependencies for Golang
 - package-ecosystem: "gomod"
   directories:
