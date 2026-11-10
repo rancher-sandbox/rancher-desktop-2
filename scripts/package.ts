@@ -19,7 +19,7 @@ import * as plist from 'plist';
 import yaml from 'yaml';
 
 import buildUtils from './lib/build-utils';
-import buildInstaller, { buildCustomAction } from './lib/installer-win32';
+import buildInstaller from './lib/installer-win32';
 
 import { spawnFile } from '@pkg/utils/childProcess';
 import { appArtifactName, EXT_MACRO, rddArtifactName } from '@pkg/utils/releaseArtifacts';
@@ -274,20 +274,6 @@ class Builder {
 
     await runIconsTool({ inputFile: imageFile, outputFormat: 'ico', outDir: workDir });
     await fs.promises.rename(path.join(workDir, 'icon.ico'), iconFile);
-
-    // Create the custom action for the installer
-    log.info('building Windows Installer custom action...');
-    const customActionFile = await buildCustomAction();
-
-    // Wait for the virus scanner to be done with the new DLL file
-    for (let i = 0; i < 30; i++) {
-      try {
-        await fs.promises.readFile(customActionFile);
-        break;
-      } catch {
-        await buildUtils.sleep(5_000);
-      }
-    }
 
     // Ensure that the signing config contains the proper name for the excutable.
     // This is needed because the smoke test script uses that config file to find

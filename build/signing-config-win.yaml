@@ -5,7 +5,6 @@
 # negation (prefixed with "!").  Any files not listed is an error.
 .:
 - Rancher Desktop 2.exe
-- wix-custom-action.dll
 - Rancher Desktop 2_wer.dll
 - '!dxcompiler.dll'     # spellcheck-ignore-line
 - '!ffmpeg.dll'

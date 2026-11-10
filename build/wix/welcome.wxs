@@ -22,11 +22,7 @@
             <![CDATA[RDLicenseAccepted <> "1"]]>
           </Condition>
           <Condition Action="enable">RDLicenseAccepted = "1"</Condition>
-          <!-- If WSL is not installed, we abort the installation now as we are
-            - no longer able to install WSL as part of our process.
-            -->
           <Publish Event="NewDialog" Order="1" Value="RDInstallScopeDlg">1</Publish>
-          <Publish Event="DoAction" Order="2" Value="ErrorWSLNotInstalled">NOT WSLINSTALLED</Publish>
         </Control>
         <Control Id="Cancel" Type="PushButton" Cancel="yes"
           X="304" Y="243" Width="56" Height="17" Text="!(loc.WixUICancel)">

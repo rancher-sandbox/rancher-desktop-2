@@ -2,8 +2,7 @@
 <!--
   - This describes the install scope dialog; we are customizing this one to
   - emphasize per-machine installation, as that is required for privileged
-  - service. (If WSL needs to be installed, this dialog is skipped and we
-  - always install per-machine.)
+  - service.
   -->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Fragment>
@@ -24,7 +23,7 @@
               Text="!(loc.InstallScopeDlgPerUser)"
               X="0" Y="72" Width="295" Height="16" />
           </RadioButtonGroup>
-          <Condition Action="show">Privileged AND WSLINSTALLED</Condition>
+          <Condition Action="show">Privileged</Condition>
         </Control>
 
         <Control Id="PerMachineDescription" Type="Text" Hidden="yes"
