@@ -12,8 +12,6 @@
 - '!libGLESv2.dll'      # spellcheck-ignore-line
 - '!vk_swiftshader.dll' # spellcheck-ignore-line
 - '!vulkan-1.dll'       # spellcheck-ignore-line
-resources/internal:
-- steve.exe
 resources/windows/bin:
 - docker-credential-ecr-login.exe
 - docker-credential-wincred.exe

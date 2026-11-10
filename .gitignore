@@ -12,7 +12,6 @@
 # buildUtils.prepareIcons() generates these from the -release/-prerelease masters.
 /resources/icons/logo-square-512.png
 /resources/icons/mac-icon.png
-/resources/internal/
 /resources/linux/
 /resources/preload.js*
 /resources/windows/

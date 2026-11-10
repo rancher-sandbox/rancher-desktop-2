@@ -24,6 +24,7 @@ export default defineConfigWithVueTs(
   includeIgnoreFile(path.resolve('.gitignore')),
   globalIgnores([
     'pkg/rdd-client/gen/', // Ignore generated files
+    'dashboard/', // A separate Yarn project
   ]),
   {
     name:            'rancher-desktop',
