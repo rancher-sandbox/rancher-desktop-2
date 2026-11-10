@@ -31,7 +31,7 @@ Rancher Desktop, running unit tests, and running end-to-end tests, are done thro
 3. Install [Scoop] via `iwr -useb get.scoop.sh | iex`.
 4. Install 7zip, git, go, mingw, nvm, and unzip via `scoop install 7zip git go mingw nvm unzip`.
    Check node version with `nvm list`. If node v26 is not installed or set as the current version, then install using `nvm install 26` and set as current using `nvm use 26.xx.xx`.
-5. Install the yarn package manager via `npm install --global yarn`
+5. Install Yarn as described under [Yarn](#yarn).
 6. Configure `git` to work with linux- and macos-originated files:
    ```
    git config --global --replace-all core.autocrlf false
@@ -61,11 +61,7 @@ Currently we build Rancher Desktop with Node 26. To install it, run:
 nvm install 26
 ```
 
-Next, you'll need to install the yarn package manager:
-
-```
-npm install --global yarn
-```
+Next, install Yarn as described under [Yarn](#yarn).
 
 You'll also need to run `brew install go` if you haven't installed go.
 
@@ -80,7 +76,7 @@ Ensure you have the following installed:
 
 - [Node.js][Node.js] v26.
 
-- [yarn classic][yarn-classic]
+- Yarn, as described under [Yarn](#yarn).
 
 - Go 1.22 or later.
 
@@ -97,7 +93,22 @@ if this happens, try doing a factory reset and re-running, which has been known
 to solve this issue.
 
 [Node.js]: https://nodejs.org/
-[yarn-classic]: https://classic.yarnpkg.com/lang/en/docs/install/#debian-stable
+
+### Yarn
+
+Install Yarn through Corepack, which runs the Yarn version that
+`package.json` names. The `yarn` package on npm is Yarn 1, which cannot
+install this repository. Node 26 doesn't include Corepack, so install it
+with npm, then enable its `yarn` command:
+
+```
+npm install --global corepack
+corepack enable yarn
+```
+
+If you installed Yarn 1 with `npm install --global yarn` before, run
+`npm uninstall --global yarn` first. Otherwise npm refuses to install
+Corepack and reports `EEXIST` for the `yarn` command.
 
 
 ## Running
