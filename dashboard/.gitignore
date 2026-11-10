@@ -1,6 +1,2 @@
-/node_modules/
-/dist/
-/vendor-shell/
+/rancher-dashboard/
 /rancher-dashboard.tar.gz
-/.yarn/
-/.pnp.*
