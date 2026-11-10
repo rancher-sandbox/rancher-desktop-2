@@ -26,64 +26,6 @@ Rancher Desktop, running unit tests, and running end-to-end tests, are done thro
 
 ### Windows
 
-There are two options for building from source on Windows: with a
-[Development VM Setup](#development-vm-setup) or
-[Manual Development Environment Setup](#manual-development-environment-setup)
-with an existing Windows installation.
-
-
-#### Development VM Setup
-
-1. Download a Microsoft Windows 10 [development virtual machine].
-   All of the following steps should be done in that virtual machine.
-2. Open a PowerShell prompt (hit Windows Key + `X` and open
-   `Windows PowerShell`).
-3. Run the [automated setup script]:
-
-   ```powershell
-   Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-   iwr -useb 'https://github.com/rancher-sandbox/rancher-desktop/raw/main/scripts/windows-setup.ps1' | iex
-   ```
-
-4. Close the privileged PowerShell prompt.
-5. Ensure `msbuild_path` and `msvs_version` are configured correctly in `.npmrc` file. Run the following commands to set these properties:
-
-   ```
-   npm config set msvs_version <visual-studio-version-number>
-   npm config set msbuild_path <path/to/MSBuild.exe>
-   ```
-
-   For example for Visual Studio 2022:
-
-   ```
-   npm config set msvs_version 2022
-   npm config set msbuild_path "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
-   ```
-
-   If you get an error message when trying to run `npm config set...`, run `npm config edit` and then add lines like
-
-   ```
-   msvs_version=2022
-   msbuild_path=C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe
-   ```
-
-   Do not quote the values to the right side of the equal sign. The quotes aren't needed, and it's possible that some
-   processors will treat them as literal parts of the path, and then fail.
-7. Configure `git` to work with linux- and macos-originated files:
-   ```
-   git config --global --replace-all core.autocrlf false
-   git config --global --replace-all core.eol lf
-   ```
-If `make lint-go` fails mysteriously, the line endings may be wrong.
-
-You can now clone the repository and run `yarn`.
-
-[development virtual machine]: https://developer.microsoft.com/en-us/windows/downloads/virtual-machines/
-[automated setup script]: ./scripts/windows-setup.ps1
-
-
-#### Manual Development Environment Setup
-
 1. Install [Windows Subsystem for Linux (WSL)] on your machine. Skip this step, if WSL is already installed.
 2. Open a PowerShell prompt (hit Windows Key + `X` and open `Windows PowerShell`).
 3. Install [Scoop] via `iwr -useb get.scoop.sh | iex`.
