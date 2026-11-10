@@ -17,6 +17,8 @@ export default defineComponent({
       message:           '',
       snapshot:          null as any,
       info:              '',
+      // A translation key that, when set, replaces `info`.
+      infoKey:           '',
       bodyStyle:         {},
       error:             '',
       errorTitle:        '',
@@ -35,6 +37,12 @@ export default defineComponent({
     };
   },
 
+  computed: {
+    infoText(): string {
+      return this.infoKey ? this.t(this.infoKey) : this.info;
+    },
+  },
+
   mounted() {
     ipcRenderer.on('dialog/error', (_event, args) => {
       this.error = args.error;
@@ -44,7 +52,7 @@ export default defineComponent({
     });
 
     ipcRenderer.on('dialog/info', (_event, args) => {
-      this.info = this.t(args.infoKey);
+      this.infoKey = args.infoKey;
     });
 
     ipcRenderer.on('dialog/options', (_event, { window, format }) => {
@@ -52,6 +60,7 @@ export default defineComponent({
       this.message = format.message;
       this.snapshot = format.snapshot;
       this.info = format.info;
+      this.infoKey = '';
       this.snapshotEventType = format.snapshotEventType;
       this.showProgressBar = format.showProgressBar;
       this.bodyStyle = this.calculateBodyStyle(format.type);
@@ -207,7 +216,7 @@ export default defineComponent({
         </slot>
       </div>
       <div
-        v-if="info"
+        v-if="infoText"
         class="info"
       >
         <slot name="info">
@@ -215,7 +224,7 @@ export default defineComponent({
             class="banner mb-20 info-banner"
             color="info"
           >
-            <span v-clean-html="info" />
+            <span v-clean-html="infoText" />
           </Banner>
         </slot>
       </div>

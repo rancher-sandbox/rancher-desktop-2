@@ -1,7 +1,9 @@
 import { jest } from '@jest/globals';
 import { shallowMount } from '@vue/test-utils';
+import { nextTick } from 'vue';
 
 import mockModules from '@pkg/utils/testUtils/mockModules';
+import { switchableT, t } from '@pkg/utils/testUtils/translations';
 
 const componentStub = { template: '<div />' };
 const sortableTableStub = {
@@ -35,8 +37,8 @@ const { default: InstalledExtensions } = await import('@pkg/pages/extensions/ins
 const methods = (InstalledExtensions as any).methods;
 
 describe('extensions installed table', () => {
-  it('sorts installed extensions by displayed name by default', () => {
-    const wrapper = shallowMount(InstalledExtensions, {
+  function mountTable(translate: (key: string) => string = key => key) {
+    return shallowMount(InstalledExtensions, {
       computed: {
         ...(InstalledExtensions as any).computed,
         installedExtensions: () => [],
@@ -46,12 +48,26 @@ describe('extensions installed table', () => {
           $store: {
             dispatch: jest.fn(),
           },
-          t: (key: string) => key,
+          t: translate,
         },
       },
     });
+  }
+
+  it('sorts installed extensions by displayed name by default', () => {
+    const wrapper = mountTable();
 
     expect(wrapper.getComponent(sortableTableStub).props('defaultSortBy')).toBe('title');
+  });
+
+  it('translates its headers after a locale switch', async() => {
+    const translator = switchableT();
+    const wrapper = mountTable(translator.t);
+
+    translator.switched.value = true;
+    await nextTick();
+    expect(wrapper.getComponent(sortableTableStub).props('headers'))
+      .toContainEqual(expect.objectContaining({ label: `[${ t('marketplace.installed.table.header.vendor') }]` }));
   });
 });
 

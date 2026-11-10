@@ -246,7 +246,7 @@
       data-testid="info-error"
     >
       <i class="icon icon-warning" />
-      {{ error || t('containerInspect.error.unknown') }}
+      {{ errorText }}
     </div>
   </div>
 </template>
@@ -268,7 +268,15 @@ const data = computed<ContainerInspectData | undefined>(
   () => store.state['container-engine'].inspectData[props.containerId],
 );
 const loading = ref(true);
-const error = ref<string | null>(null);
+// Set when loading failed, with the error's message if it had one.
+const error = ref<{ message?: string } | null>(null);
+const errorText = computed(() => {
+  if (error.value) {
+    return error.value.message || t('containerInspect.error.loadFailed');
+  }
+
+  return t('containerInspect.error.unknown');
+});
 
 const fetchInspect = async() => {
   if (!props.containerId) {
@@ -283,7 +291,7 @@ const fetchInspect = async() => {
       namespace:   props.namespace,
     });
   } catch (err: any) {
-    error.value = err?.message ?? t('containerInspect.error.loadFailed');
+    error.value = { message: err?.message };
   } finally {
     loading.value = false;
   }

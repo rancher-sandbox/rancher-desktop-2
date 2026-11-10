@@ -6,6 +6,7 @@
  */
 
 import { IntlMessageFormat } from 'intl-messageformat';
+import { ref } from 'vue';
 
 import { availableLocales, loadTranslations } from '../translationLoader';
 
@@ -40,4 +41,24 @@ export function t(key: string, args?: Record<string, string | number>): string {
   } catch {
     return msg;
   }
+}
+
+/**
+ * Return a t() for tests, and a `switched` ref that fakes a locale switch.
+ * Setting `switched` to true wraps every translation in brackets, which
+ * stands in for another locale's text.  Each call reads `switched`, so when
+ * a test sets it, Vue recomputes every computed property that translates
+ * through this t().  In the app, a computed property that translates
+ * through the store's `i18n/t` getter recomputes the same way after a real
+ * locale switch.
+ */
+export function switchableT() {
+  const switched = ref(false);
+
+  return {
+    switched,
+    t(key: string, args?: Record<string, string | number>): string {
+      return switched.value ? `[${ t(key, args) }]` : t(key, args);
+    },
+  };
 }
