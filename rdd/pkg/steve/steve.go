@@ -36,6 +36,9 @@ type Options struct {
 // Run serves steve, and the dashboard if the build embeds it, on a random
 // localhost port until ctx ends.
 func Run(ctx context.Context, opts Options) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	restConfig, err := kubeconfig.GetNonInteractiveClientConfigWithContext(opts.Kubeconfig, opts.Context).ClientConfig()
 	if err != nil {
 		return err
@@ -73,7 +76,6 @@ func Run(ctx context.Context, opts Options) error {
 	if err := os.Stdout.Close(); err != nil {
 		return err
 	}
-	os.Stdout = os.Stderr
 
 	srv := &http.Server{Handler: handler}
 	shutdownDone := make(chan struct{})
@@ -86,9 +88,11 @@ func Run(ctx context.Context, opts Options) error {
 			logrus.Errorf("error shutting down server: %v", err)
 		}
 	}()
-	if err := srv.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
-	}
+	err = srv.Serve(listener)
+	cancel()
 	<-shutdownDone
-	return nil
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return err
 }
