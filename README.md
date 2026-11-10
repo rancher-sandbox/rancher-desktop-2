@@ -96,19 +96,17 @@ to solve this issue.
 
 ### Yarn
 
-Install Yarn through Corepack, which runs the Yarn version that
-`package.json` names. The `yarn` package on npm is Yarn 1, which cannot
-install this repository. Node 26 doesn't include Corepack, so install it
-with npm, then enable its `yarn` command:
+We use Corepack to manage Yarn. Node 26 no longer includes Corepack, so
+install it with npm and then enable Yarn:
 
 ```
 npm install --global corepack
 corepack enable yarn
 ```
 
-If you installed Yarn 1 with `npm install --global yarn` before, run
-`npm uninstall --global yarn` first. Otherwise npm refuses to install
-Corepack and reports `EEXIST` for the `yarn` command.
+If you previously installed Yarn 1 with `npm install --global yarn`,
+remove it first with `npm uninstall --global yarn`. Otherwise installing
+Corepack fails with an `EEXIST` error.
 
 
 ## Running
