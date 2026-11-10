@@ -15,7 +15,7 @@
       class="content-state"
       data-testid="loading-indicator"
     >
-      Loading logs...
+      {{ t('containerInfo.loadingLogs') }}
     </loading-indicator>
 
     <div

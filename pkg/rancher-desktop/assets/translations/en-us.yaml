@@ -160,6 +160,10 @@ containers:
         stop: Stop
         restart: Restart
         start: Start
+        # @meaning Freeze the container's processes without stopping it
+        pause: Pause
+        # @meaning Let a paused container's processes run again
+        unpause: Unpause
       group:
         # @context Containers page, header row of the table group
         # @meaning Containers that belong to no compose project and no Kubernetes pod
@@ -196,6 +200,9 @@ volumes:
     available: Available
     notFound: Not Found
     title: Volume Files
+    # @context Volume Files page, first item of the folder path above the file list
+    # @meaning The volume's top-level folder, not the root user
+    root: root
     loading: Loading volume files...
     volumeNotFound: Volume "{name}" not found
     invalidVolumeName: Invalid volume name "{name}"
@@ -588,6 +595,9 @@ labelSelect:
   pagination:
     counts: '{count} / {totalCount} items'
     more: Load More...
+loadingIndicator:
+  # @context Hover text and screen-reader name of the spinning loading icon
+  title: Loading
 prefs:
   experimental: Experimental
   onlyFromVentura_x64: This setting requires macOS 13.0 (Ventura) or later.
@@ -834,6 +844,7 @@ containerInfo:
   fallbackTitle: Container Info
   info: Info
   logs: Logs
+  loadingLogs: Loading logs...
   shell: Shell
   stats: Stats
   search:

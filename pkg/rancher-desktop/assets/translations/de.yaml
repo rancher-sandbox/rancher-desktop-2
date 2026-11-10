@@ -338,6 +338,8 @@ containerInfo:
   # @reason 'Info' is standard German (die Info)
   # @source Info
   info: Info
+  # @source Loading logs...
+  loadingLogs: Protokolle werden geladen...
   # @source Logs
   logs: Protokolle
   search:
@@ -486,12 +488,16 @@ containers:
         # @reason 'Info' is standard German (die Info)
         # @source Info
         info: Info
+        # @source Pause
+        pause: Pausieren
         # @source Restart
         restart: Neu starten
         # @source Start
         start: Starten
         # @source Stop
         stop: Stoppen
+        # @source Unpause
+        unpause: Fortsetzen
       group:
         # @source Standalone Containers
         standalone: Eigenständige Container
@@ -874,6 +880,9 @@ labelSelect:
     counts: '{count} / {totalCount} Einträge'
     # @source Load More...
     more: Mehr laden...
+loadingIndicator:
+  # @source Loading
+  title: Wird geladen
 locale:
   # @source German
   de: Deutsch
@@ -1680,6 +1689,8 @@ volumes:
     noFiles: Dieses Volume ist leer
     # @source Not Found
     notFound: Nicht gefunden
+    # @source root
+    root: Stammverzeichnis
     table:
       header:
         # @source Modified

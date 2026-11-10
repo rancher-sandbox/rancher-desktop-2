@@ -13,7 +13,7 @@
         class="breadcrumb-item"
         @click="navigateToPath('/')"
       >
-        <i class="icon icon-folder-open" />root</span>
+        <i class="icon icon-folder-open" />{{ t('volumes.files.root') }}</span>
       <template
         v-for="(segment, index) in pathSegments"
         :key="`path-${index}`"

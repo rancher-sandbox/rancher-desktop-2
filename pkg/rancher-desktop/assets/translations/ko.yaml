@@ -292,6 +292,8 @@ containerInfo:
   fallbackTitle: 컨테이너 정보
   # @source Info
   info: 정보
+  # @source Loading logs...
+  loadingLogs: 로그를 불러오는 중...
   # @source Logs
   logs: 로그
   search:
@@ -430,12 +432,16 @@ containers:
       action:
         # @source Info
         info: 정보
+        # @source Pause
+        pause: 일시 중지
         # @source Restart
         restart: 다시 시작
         # @source Start
         start: 시작
         # @source Stop
         stop: 중지
+        # @source Unpause
+        unpause: 재개
       group:
         # @source Standalone Containers
         standalone: 독립 실행형 컨테이너
@@ -811,6 +817,9 @@ labelSelect:
     counts: '{count} / {totalCount}개 항목'
     # @source Load More...
     more: 더 보기...
+loadingIndicator:
+  # @source Loading
+  title: 불러오는 중
 locale:
   # @source German
   de: 독일어
@@ -1576,6 +1585,8 @@ volumes:
     noFiles: 이 볼륨은 비어 있습니다
     # @source Not Found
     notFound: 찾을 수 없음
+    # @source root
+    root: 루트
     table:
       header:
         # @source Modified
