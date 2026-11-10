@@ -212,10 +212,8 @@ fanotify
 fav
 fcrypt
 fdx
-featurename
 FEEEFEEE
 femto
-ffi
 Fflags
 ficlone
 filekey
@@ -385,7 +383,6 @@ MSIINSTALLPERUSER
 MSIX
 msixbundle
 msize
-msvs
 multierror
 multiport
 mungers
@@ -509,7 +506,6 @@ PROMPTROLLBACKCOST
 protip
 PROXYLIST
 PSelected
-PSHOME
 psps
 ptn
 publicdomain
@@ -529,7 +525,6 @@ rcompare
 rdctl
 rdd
 rddepman
-rdinstall
 RDRUNAFTERINSTALL
 rdshell
 rdsudo
@@ -586,7 +581,6 @@ scinfo
 screencapture
 scriptdir
 scriptname
-scriptpath
 scrollback
 scrolllock
 sdl
