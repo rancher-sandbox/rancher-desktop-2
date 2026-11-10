@@ -50,6 +50,7 @@ func TestMultiCallArgs(t *testing.T) {
 		{name: "kubectl with path", args: []string{"/usr/local/bin/kubectl", "get"}, want: []string{"/usr/local/bin/kubectl", "kubectl", "get"}},
 		{name: "kubectl no args", args: []string{"kubectl"}, want: []string{"kubectl", "kubectl"}},
 		{name: "nerdctl symlink", args: []string{"nerdctl", "run", "-it"}, want: []string{"nerdctl", "nerdctl", "run", "-it"}},
+		{name: "steve symlink", args: []string{"steve", "--context", "foo"}, want: []string{"steve", "steve", "--context", "foo"}},
 		{name: "yq symlink", args: []string{"yq", ".foo"}, want: []string{"yq", "yq", ".foo"}},
 		{name: "invalid instance", args: []string{"rdd-1.2"}, wantErr: `unsupported command name "rdd-1.2": invalid instance name "1.2"`},
 		{name: "empty instance", args: []string{"rdd-"}, wantErr: `invalid instance name ""`},
@@ -67,6 +68,7 @@ func TestMultiCallArgs(t *testing.T) {
 			testCase{name: "rdd.exe runs normally", args: []string{"rdd.exe", "start"}, want: []string{"rdd.exe", "start"}},
 			testCase{name: "release file name with .exe", args: []string{"rdd.2.0.0-alpha.3.windows.x86_64.exe", "version"}, want: []string{"rdd.2.0.0-alpha.3.windows.x86_64.exe", "version"}},
 			testCase{name: "kubectl.exe", args: []string{"kubectl.exe", "version"}, want: []string{"kubectl.exe", "kubectl", "version"}},
+			testCase{name: "steve.exe", args: []string{"steve.exe"}, want: []string{"steve.exe", "steve"}},
 			testCase{name: "error keeps the extension", args: []string{"rdd-1.2.exe"}, wantErr: `unsupported command name "rdd-1.2.exe": invalid instance name "1.2"`},
 		)
 	} else {
