@@ -53,7 +53,7 @@
   },
   "main": "dist/app/background.js",
   "dependencies": {
-    "@kubernetes/client-node": "2.0.1",
+    "@kubernetes/client-node": "2.0.2",
     "electron-updater": "6.8.11",
     "express": "5.3.0",
     "fs-extra": "11.4.1",
