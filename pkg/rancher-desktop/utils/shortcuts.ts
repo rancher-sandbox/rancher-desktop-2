@@ -140,7 +140,11 @@ class ShortcutsImpl {
     if (!this.windows[id]) {
       this.windows[id] = new WindowShortcuts(window);
 
-      window.on('close', () => {
+      // `close` fires even when the window's page then cancels its unload
+      // and the window stays open.  So drop the shortcuts only once the
+      // window is gone.  Otherwise the next register() for a window that
+      // stayed open would add a second set of listeners to it.
+      window.on('closed', () => {
         delete this.windows[id];
       });
     }

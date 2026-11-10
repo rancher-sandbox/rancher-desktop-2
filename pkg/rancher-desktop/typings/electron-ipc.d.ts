@@ -48,7 +48,6 @@ export interface IpcMainEvents {
   // #region Preferences
   'preferences-open':       () => void;
   'preferences-close':      () => void;
-  'preferences-set-dirty':  (isDirty: boolean) => void;
   'get-debugging-statuses': () => void;
 
   /**

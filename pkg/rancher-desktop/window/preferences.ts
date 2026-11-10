@@ -6,14 +6,24 @@ import { webRoot, createWindow, getWindow } from '.';
 
 import { Help } from '@pkg/config/help';
 import { onLocaleChange, t } from '@pkg/main/i18n';
+import mainEvents from '@pkg/main/mainEvents';
 import paths from '@pkg/utils/paths';
 import { CommandOrControl, Shortcuts } from '@pkg/utils/shortcuts';
 import { preferencesNavItems } from '@pkg/window/preferenceConstants';
 
-let isDirty = false;
+/**
+ * Set once the app starts quitting, so the window drops unsaved changes
+ * without asking.  By then the app has stopped steve, so a Cancel would
+ * abort the quit and leave the app running half shut down.
+ */
+let quitting = false;
+
+mainEvents.on('before-quit', () => {
+  quitting = true;
+});
 
 /**
- * Open the main window; if it is already open, focus it.
+ * Open the Preferences window; if it is already open, focus it.
  */
 export function openPreferences() {
   const window = createWindow('preferences', `${ webRoot }/index.html#preferences`, {
@@ -96,43 +106,46 @@ export function openPreferences() {
     });
 
     window.on('closed', offLocaleChange);
+
+    window.webContents.on('ipc-message', (_event, channel) => {
+      if (channel === 'preferences/load') {
+        window.show();
+      }
+    });
+
+    // The page cancels its unload while it has unsaved changes, and
+    // Electron then emits `will-prevent-unload`.  Calling preventDefault()
+    // here overrides the page and lets the window close.  Do that when the
+    // user agrees to discard the changes, and without asking while the app
+    // quits or an e2e test runs.
+    window.webContents.on('will-prevent-unload', (event) => {
+      if (quitting || (process.env.RD_TEST ?? '').includes('e2e')) {
+        event.preventDefault();
+
+        return;
+      }
+
+      const cancelPosition = 1;
+
+      const result = dialog.showMessageBoxSync(
+        window,
+        {
+          title:    t('preferencesWindow.close.title'),
+          type:     'warning',
+          message:  t('preferencesWindow.close.message'),
+          detail:   t('preferencesWindow.close.detail'),
+          cancelId: cancelPosition,
+          buttons:  [
+            t('preferencesWindow.close.discardChanges'),
+            t('generic.cancel'),
+          ],
+        });
+
+      if (result !== cancelPosition) {
+        event.preventDefault();
+      }
+    });
   }
 
-  window.webContents.on('ipc-message', (_event, channel) => {
-    if (channel === 'preferences/load') {
-      window.show();
-    }
-  });
-
-  window.on('close', (event) => {
-    if (!isDirty || (process.env.RD_TEST ?? '').includes('e2e')) {
-      return;
-    }
-
-    const cancelPosition = 1;
-
-    const result = dialog.showMessageBoxSync(
-      window,
-      {
-        title:    t('preferencesWindow.close.title'),
-        type:     'warning',
-        message:  t('preferencesWindow.close.message'),
-        detail:   t('preferencesWindow.close.detail'),
-        cancelId: cancelPosition,
-        buttons:  [
-          t('preferencesWindow.close.discardChanges'),
-          t('generic.cancel'),
-        ],
-      });
-
-    if (result === cancelPosition) {
-      event.preventDefault();
-    }
-  });
-
   app.dock?.show();
-}
-
-export function preferencesSetDirtyFlag(dirtyFlag: boolean) {
-  isDirty = dirtyFlag;
 }

@@ -33,9 +33,41 @@ async function closePreferences() {
   await store.dispatch('preferences/clear');
   window.close();
 }
+/**
+ * True once Apply has succeeded.  confirmUnload() and restoreLocale() then do
+ * nothing, because the committed state may not have reached this window yet.
+ * Without the flag, they would take the applied changes for unsaved ones, ask
+ * whether to discard them, and switch back to the old locale.
+ */
+let applied = false;
+
 async function applyPreferences() {
   if (await store.dispatch('preferences/commit')) {
+    applied = true;
     window.close();
+  }
+}
+/**
+ * Cancel the unload while there are unsaved changes.  The main process
+ * then asks the user whether to discard them.
+ */
+function confirmUnload(event: BeforeUnloadEvent) {
+  if (!applied && Object.keys(store.state.preferences.changes).length > 0) {
+    event.preventDefault();
+  }
+}
+/**
+ * Picking a locale in Preferences switches the app to it before Apply.  When
+ * the page goes away, switch the app back to the committed locale.  The switch
+ * must finish before this listener returns, since the page is gone after that.
+ * It finishes in time, because i18n/switchTo waits only when it has to load
+ * a locale's translations, and i18n/init has already loaded them all.
+ */
+function restoreLocale() {
+  const locale = committed.value.application?.locale;
+
+  if (!applied && locale && locale !== store.state.i18n.selected) {
+    store.dispatch('i18n/switchTo', locale);
   }
 }
 async function navigateToTab(_event: Electron.IpcRendererEvent, args: { name?: preferencesNavItemName, direction?: Direction }) {
@@ -59,9 +91,17 @@ async function navigateToTab(_event: Electron.IpcRendererEvent, args: { name?: p
 onBeforeMount(() => {
   store.dispatch('rdd/watchResources', ['apps']);
   ipcRenderer.on('route', navigateToTab);
+  // Closing the main window destroys this child window without firing
+  // `beforeunload` or `pagehide`, so it drops unsaved changes without
+  // asking.  A previewed locale then stays in effect until the next window
+  // to open loads the App and switches to the App's locale.
+  window.addEventListener('beforeunload', confirmUnload);
+  window.addEventListener('pagehide', restoreLocale);
 });
 onBeforeUnmount(() => {
   ipcRenderer.removeListener('route', navigateToTab);
+  window.removeEventListener('beforeunload', confirmUnload);
+  window.removeEventListener('pagehide', restoreLocale);
   store.dispatch('rdd/unwatchResources', ['apps']);
   store.dispatch('preferences/clear');
 });
