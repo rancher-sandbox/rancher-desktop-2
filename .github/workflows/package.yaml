@@ -44,13 +44,7 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
-    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-      with:
-        node-version-file: package.json
-    # Node no longer bundles corepack, which runs the yarn version that
-    # dashboard/package.json names.
-    - run: npm install --global corepack
-    - run: corepack enable yarn
+    - uses: $/.github/actions/setup-yarn
     - run: make --directory=dashboard
     - name: Upload dashboard
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

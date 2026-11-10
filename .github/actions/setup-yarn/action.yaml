@@ -1,0 +1,24 @@
+name: Setup Yarn
+description: >-
+  Installs the Node.js version that package.json names and the Corepack
+  version that this action's lockfile pins, then puts that Corepack and its
+  Yarn shim first on PATH.
+
+runs:
+  using: composite
+  steps:
+  # Set up NodeJS; for us, caching here is basically not worth it.
+  - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+    with:
+      node-version-file: package.json
+
+  # Node no longer bundles Corepack. The lockfile beside this file pins it, so
+  # that Dependabot can bump it and npm checks the download's hash.
+  - shell: bash
+    working-directory: ${{ github.action_path }}
+    run: npm ci
+
+  # Put the corepack and yarn commands on PATH for later steps, ahead of any
+  # Corepack or Yarn that the runner image has.
+  - shell: bash
+    run: echo "${GITHUB_ACTION_PATH}/node_modules/.bin" >> "$GITHUB_PATH"

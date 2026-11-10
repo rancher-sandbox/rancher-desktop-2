@@ -6,6 +6,7 @@
 (?:^|/)\.gitmodules$
 (?:^|/)go\.mod$
 (?:^|/)go\.sum$
+(?:^|/)package-lock\.json$
 # Cluster Explorer plugin, a separate Yarn project
 ^dashboard/
 # configuration for check-spelling itself
