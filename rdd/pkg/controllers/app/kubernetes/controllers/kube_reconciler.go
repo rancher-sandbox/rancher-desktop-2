@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptrace"
 	"os"
 	"sync"
 	"syscall"
@@ -303,11 +304,12 @@ func (r *KubernetesReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (c
 
 	case probeHealthy:
 		r.resetProbeFailures()
-		// Fall through to manageKubeContext / setReady below.
+		// Fall through to mergeKubeContext / setReady below.
 	}
 
-	// k3s is healthy — merge the context into ~/.kube/config.
-	if err := r.manageKubeContext(ctx); err != nil {
+	// k3s is healthy — merge the context into ~/.kube/config on every healthy
+	// reconcile, so the rancher-desktop-2 entry stays current.
+	if err := r.mergeKubeContext(ctx); err != nil {
 		if condErr := r.setKubeCondition(ctx, &app,
 			metav1.ConditionFalse,
 			appv1alpha1.AppKubernetesReasonMergeFailed,
@@ -332,6 +334,12 @@ func (r *KubernetesReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (c
 			}
 			return ctrl.Result{RequeueAfter: kubeProbeRequeue}, nil
 		}
+		// This reconcile turns KubernetesReady True. Check the user's
+		// current-context once, here, and take it over only if its cluster is
+		// unreachable. While Kubernetes keeps running, later reconciles leave
+		// current-context alone, even when it is empty, because another cluster
+		// may be restarting.
+		r.checkCurrentKubeContext(ctx)
 	}
 
 	// Requeue periodically so a later k3s death surfaces even if no other
@@ -427,6 +435,54 @@ func newProbeHTTPClient(cfg *rest.Config) (*http.Client, error) {
 	}, nil
 }
 
+// reachabilityHTTPClient builds the client for the current-context reachability
+// probe. It reaches the cluster the way client-go does — trusting the
+// kubeconfig's certificate-authority (inline data or a file path), sending
+// tls-server-name, and going through proxy-url or else the environment's proxy
+// — but sends no credentials. A certificate it cannot verify is handled by the
+// caller, which still counts the cluster as reachable, so the probe needs no
+// InsecureSkipVerify. It does not follow a redirect, whose target may be another
+// host. Keep-alives are off so each probe closes its connection when done.
+func reachabilityHTTPClient(cfg *rest.Config) *http.Client {
+	tlsCfg := &tls.Config{ServerName: cfg.ServerName}
+	if pool := caCertPool(cfg); pool != nil {
+		tlsCfg.RootCAs = pool
+	}
+	proxy := cfg.Proxy
+	if proxy == nil {
+		proxy = http.ProxyFromEnvironment
+	}
+	return &http.Client{
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+		Transport: &http.Transport{
+			Proxy:             proxy,
+			TLSClientConfig:   tlsCfg,
+			DisableKeepAlives: true,
+		},
+	}
+}
+
+// caCertPool returns a cert pool holding the kubeconfig's inline CA data and the
+// contents of its CA file, or nil when the kubeconfig names neither or neither
+// parses. Unlike the k3s probe, this reads certificate-authority given as a
+// file path, which client-go leaves in CAFile.
+func caCertPool(cfg *rest.Config) *x509.CertPool {
+	pool := x509.NewCertPool()
+	added := false
+	if len(cfg.CAData) > 0 && pool.AppendCertsFromPEM(cfg.CAData) {
+		added = true
+	}
+	if cfg.CAFile != "" {
+		if data, err := os.ReadFile(cfg.CAFile); err == nil && pool.AppendCertsFromPEM(data) {
+			added = true
+		}
+	}
+	if !added {
+		return nil
+	}
+	return pool
+}
+
 // classifyProbeError maps a transport-level failure from the healthz probe
 // to a probeResult. Only timeouts count as ambiguous; everything else is
 // treated as decisively unreachable so the reconciler reports the state
@@ -440,12 +496,10 @@ func classifyProbeError(err error) probeResult {
 	return probeUnreachable
 }
 
-// manageKubeContext merges the instance kubeconfig into ~/.kube/config and
-// launches a goroutine to set current-context if the existing one is unhealthy.
-// Returns an error if the synchronous merge fails; failures from the async
-// current-context probe are logged but not returned.
-// At most one probe runs at a time.
-func (r *KubernetesReconciler) manageKubeContext(ctx context.Context) error {
+// mergeKubeContext merges the instance kubeconfig into ~/.kube/config and
+// writes the standalone instance kubeconfig. It runs on every healthy
+// reconcile and returns an error if either write fails.
+func (r *KubernetesReconciler) mergeKubeContext(ctx context.Context) error {
 	contextName := instance.Name()
 	log := logf.FromContext(ctx).WithName("kube-context")
 
@@ -458,6 +512,18 @@ func (r *KubernetesReconciler) manageKubeContext(ctx context.Context) error {
 		log.Error(err, "Failed to write instance kubeconfig", "context", contextName)
 		return fmt.Errorf("write instance kubeconfig for %q: %w", contextName, err)
 	}
+	return nil
+}
+
+// checkCurrentKubeContext launches a goroutine that probes the user's
+// current-context and switches it to the instance context when that cluster is
+// unreachable. Reconcile calls it only on the reconcile that turns
+// KubernetesReady True, so a running cluster never takes current-context over.
+// Failures from the async probe are logged but not returned. At most one probe
+// runs at a time.
+func (r *KubernetesReconciler) checkCurrentKubeContext(ctx context.Context) {
+	contextName := instance.Name()
+	log := logf.FromContext(ctx).WithName("kube-context")
 
 	r.contextMu.Lock()
 	if r.contextProbeCancel != nil {
@@ -491,20 +557,27 @@ func (r *KubernetesReconciler) manageKubeContext(ctx context.Context) error {
 
 		// Guard against writing after removeKubeContext cancelled probeCtx.
 		if !healthy && probeCtx.Err() == nil {
-			if err := setCurrentKubeContext(contextName); err != nil {
+			// switchCurrentKubeContext only writes if current-context still
+			// names the context we probed, so a context the user picked while
+			// the probe ran is left alone.
+			if err := switchCurrentKubeContext(current, contextName); err != nil {
 				log.Error(err, "Failed to set current Kubernetes context", "context", contextName)
 			}
 		}
 	})
-	return nil
 }
 
-// probeCurrentKubeContext returns true if the named context's API server is
-// healthy. Empty or "default" contexts are treated as unhealthy.
+// probeCurrentKubeContext returns true if the named context's cluster is
+// reachable. Empty or "default" contexts are treated as unreachable, as are a
+// missing context or cluster entry. The probe sends no credentials and counts
+// any HTTP response as reachable, as well as a server that completes the TLS
+// handshake or whose certificate it cannot verify, so a 401, a slow answer, an
+// untrusted certificate, or a cluster behind a proxy-url still count as alive;
+// only a failure to connect counts as unreachable.
 //
-// Returns true on unexpected internal errors (path lookup, kubeconfig parse,
-// TLS setup) to leave the user's current-context alone; each such path logs
-// the underlying error.
+// Returns true on unexpected internal errors (path lookup, kubeconfig parse) to
+// leave the user's current-context alone; each such path logs the underlying
+// error.
 func probeCurrentKubeContext(ctx context.Context, current string) bool {
 	log := logf.FromContext(ctx).WithName("kube-context-probe").WithValues("context", current)
 	if current == "" || current == "default" {
@@ -529,7 +602,9 @@ func probeCurrentKubeContext(ctx context.Context, current string) bool {
 		return false
 	}
 
-	// Build a REST config from the extracted cluster+user for the TLS probe.
+	// Build a REST config from the extracted cluster+user. Only its proxy, TLS
+	// server name and certificate-authority are used; the probe does not send
+	// credentials.
 	merged := *cfg
 	merged.CurrentContext = current
 	data, err := clientcmd.Write(merged)
@@ -543,11 +618,6 @@ func probeCurrentKubeContext(ctx context.Context, current string) bool {
 		return true
 	}
 
-	httpClient, err := newProbeHTTPClient(restCfg)
-	if err != nil {
-		log.Error(err, "Failed to build probe HTTP client")
-		return true
-	}
 	probeCtx, cancel := context.WithTimeout(ctx, kubeProbeTimeout)
 	defer cancel()
 
@@ -557,15 +627,29 @@ func probeCurrentKubeContext(ctx context.Context, current string) bool {
 		log.Error(err, "Failed to build healthz request", "url", url)
 		return true
 	}
-	if restCfg.BearerToken != "" {
-		req.Header.Set("Authorization", "Bearer "+restCfg.BearerToken)
+	// A reachable cluster answers the request whatever HTTP status it returns,
+	// so a 401 or 403 still proves the server is up. It is also up if it reached
+	// the request stage: a trusted certificate completed the handshake (GotConn
+	// fires only after the dial, any proxy CONNECT and the cluster's own
+	// handshake), or an untrusted one failed only the probe's own verification.
+	// A failure after that, such as a slow answer or a TLS 1.3 server that
+	// requires a client certificate, still proves the server is up. Only a
+	// failure to connect counts as unreachable.
+	var connected bool
+	req = req.WithContext(httptrace.WithClientTrace(req.Context(), &httptrace.ClientTrace{
+		GotConn: func(httptrace.GotConnInfo) { connected = true },
+	}))
+	resp, err := reachabilityHTTPClient(restCfg).Do(req)
+	if err == nil {
+		_ = resp.Body.Close()
+		return true
 	}
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return false
+	var certErr *tls.CertificateVerificationError
+	if errors.As(err, &certErr) || (connected && req.URL.Scheme == "https") {
+		return true
 	}
-	defer resp.Body.Close()
-	return resp.StatusCode == http.StatusOK
+	log.V(1).Info("current-context cluster unreachable", "url", url, "err", err)
+	return false
 }
 
 // removeKubeContext cancels any in-flight probe, waits for it to finish, then

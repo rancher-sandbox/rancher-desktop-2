@@ -20,7 +20,7 @@ import (
 // load and write; regression tests use it to interleave a concurrent writer.
 var testAfterLoadKubeConfig func()
 
-// testBeforeSetCurrentKubeContext, when non-nil, runs before setCurrentKubeContext
+// testBeforeSetCurrentKubeContext, when non-nil, runs before switchCurrentKubeContext
 // takes atomicfile's lock, so a test can hold the probe's write open without also
 // blocking the writes removeKubeContext makes while it waits.
 var testBeforeSetCurrentKubeContext func()
@@ -193,6 +193,21 @@ func getCurrentKubeContext() (string, error) {
 
 // setCurrentKubeContext sets current-context in ~/.kube/config. No-op if already set.
 func setCurrentKubeContext(name string) error {
+	destPath, err := kubeConfigPath()
+	if err != nil {
+		return err
+	}
+	return updateKubeConfig(destPath, func(cfg *clientcmdapi.Config) error {
+		cfg.CurrentContext = name
+		return nil
+	})
+}
+
+// switchCurrentKubeContext points current-context at name, but only when it
+// still equals expected. The compare and the write share one atomic update, so
+// a context that the user selects while the health probe runs is left alone
+// instead of being overwritten by a stale takeover decision.
+func switchCurrentKubeContext(expected, name string) error {
 	if testBeforeSetCurrentKubeContext != nil {
 		testBeforeSetCurrentKubeContext()
 	}
@@ -201,7 +216,9 @@ func setCurrentKubeContext(name string) error {
 		return err
 	}
 	return updateKubeConfig(destPath, func(cfg *clientcmdapi.Config) error {
-		cfg.CurrentContext = name
+		if cfg.CurrentContext == expected {
+			cfg.CurrentContext = name
+		}
 		return nil
 	})
 }

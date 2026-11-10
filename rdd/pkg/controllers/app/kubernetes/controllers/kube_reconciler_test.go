@@ -6,6 +6,7 @@ package controllers
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -212,8 +213,8 @@ func Test_Reconcile_KubernetesReady_Ready(t *testing.T) {
 		clientsetFn:            fakeClientset(readyNode()),
 	}
 	// removeKubeContext cancels the in-flight current-context probe and waits
-	// for the goroutine started by manageKubeContext to finish, so it cannot
-	// still be reading tempdir state after the test returns.
+	// for the goroutine started by checkCurrentKubeContext to finish, so it
+	// cannot still be reading tempdir state after the test returns.
 	t.Cleanup(func() { r.removeKubeContext(context.Background()) })
 
 	req := ctrl.Request{Name: appName}
@@ -853,7 +854,8 @@ func Test_RemoveKubeContext_WaitsForProbeWrite(t *testing.T) {
 
 	// The kubeconfig has no current-context, so the probe reports it unhealthy
 	// and goes on to write one, parking in the seam above.
-	assert.NilError(t, r.manageKubeContext(context.Background()))
+	assert.NilError(t, r.mergeKubeContext(context.Background()))
+	r.checkCurrentKubeContext(context.Background())
 	select {
 	case <-inWrite:
 	case <-time.After(10 * time.Second):
@@ -883,8 +885,9 @@ func Test_RemoveKubeContext_WaitsForProbeWrite(t *testing.T) {
 }
 
 // Test_Probes_CloseConnections checks that both healthz probes close their
-// connections, because the reconciler repeats them for as long as Kubernetes
-// runs.
+// connections, because the reconciler calls probeK3sAPI for as long as
+// Kubernetes runs and probeCurrentKubeContext each time KubernetesReady turns
+// True.
 func Test_Probes_CloseConnections(t *testing.T) {
 	probes := map[string]func(t *testing.T, srcPath string){
 		"probeK3sAPI": func(t *testing.T, srcPath string) {
@@ -934,4 +937,199 @@ func Test_Probes_CloseConnections(t *testing.T) {
 			}, poll.WithTimeout(2*time.Second))
 		})
 	}
+}
+
+// writeContextKubeconfig writes destPath with a single context named name
+// whose cluster points at server (trusting caPEM when non-nil) and makes it
+// current.
+func writeContextKubeconfig(t *testing.T, destPath, name, server string, caPEM []byte) {
+	t.Helper()
+	assert.NilError(t, os.MkdirAll(filepath.Dir(destPath), 0o700))
+	cfg := clientcmdapi.NewConfig()
+	cfg.Clusters[name] = &clientcmdapi.Cluster{Server: server, CertificateAuthorityData: caPEM}
+	cfg.Contexts[name] = &clientcmdapi.Context{Cluster: name}
+	cfg.CurrentContext = name
+	assert.NilError(t, clientcmd.WriteToFile(*cfg, destPath))
+}
+
+// serverCAPEM returns srv's certificate in PEM form, for a kubeconfig that
+// should trust it.
+func serverCAPEM(t *testing.T, srv *httptest.Server) []byte {
+	t.Helper()
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: srv.Certificate().Raw})
+}
+
+// Test_probeCurrentKubeContext_Reachability checks that the current-context
+// probe reports a cluster alive whenever its server answers at all, so a 401
+// and a certificate the kubeconfig cannot verify both count as alive, and only
+// a connection that cannot be made counts as dead.
+func Test_probeCurrentKubeContext_Reachability(t *testing.T) {
+	t.Run("a 401 counts as reachable", func(t *testing.T) {
+		srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusUnauthorized)
+		}))
+		t.Cleanup(srv.Close)
+		destPath := filepath.Join(t.TempDir(), "config")
+		t.Setenv("KUBECONFIG", destPath)
+		writeContextKubeconfig(t, destPath, "other", srv.URL, serverCAPEM(t, srv))
+		assert.Assert(t, probeCurrentKubeContext(t.Context(), "other"))
+	})
+
+	t.Run("an unverifiable certificate counts as reachable", func(t *testing.T) {
+		srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		t.Cleanup(srv.Close)
+		destPath := filepath.Join(t.TempDir(), "config")
+		t.Setenv("KUBECONFIG", destPath)
+		// This CA data does not parse, so verification falls back to the system
+		// roots and fails; the probe must still count the server as reachable.
+		bogusCA := []byte("-----BEGIN CERTIFICATE-----\nMIIBogus\n-----END CERTIFICATE-----\n")
+		writeContextKubeconfig(t, destPath, "other", srv.URL, bogusCA)
+		assert.Assert(t, probeCurrentKubeContext(t.Context(), "other"))
+	})
+
+	t.Run("a cluster behind its proxy-url counts as reachable", func(t *testing.T) {
+		// The cluster address is dead; only its proxy answers for it.
+		closed := httptest.NewServer(http.NotFoundHandler())
+		server := closed.URL
+		closed.Close()
+		proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusUnauthorized)
+		}))
+		t.Cleanup(proxy.Close)
+		destPath := filepath.Join(t.TempDir(), "config")
+		t.Setenv("KUBECONFIG", destPath)
+		writeContextKubeconfig(t, destPath, "other", server, nil)
+		cfg := loadDest(t, destPath)
+		cfg.Clusters["other"].ProxyURL = proxy.URL
+		assert.NilError(t, clientcmd.WriteToFile(*cfg, destPath))
+		assert.Assert(t, probeCurrentKubeContext(t.Context(), "other"))
+	})
+
+	t.Run("a server routed by tls-server-name counts as reachable", func(t *testing.T) {
+		srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		// Like an SNI router, the server completes a handshake only for the name
+		// it routes, so the probe must send tls-server-name to reach it.
+		srv.TLS = &tls.Config{GetConfigForClient: func(hello *tls.ClientHelloInfo) (*tls.Config, error) {
+			if hello.ServerName != "example.com" {
+				return nil, errors.New("no route for this server name")
+			}
+			return nil, nil
+		}}
+		srv.StartTLS()
+		t.Cleanup(srv.Close)
+		destPath := filepath.Join(t.TempDir(), "config")
+		t.Setenv("KUBECONFIG", destPath)
+		writeContextKubeconfig(t, destPath, "other", srv.URL, serverCAPEM(t, srv))
+		cfg := loadDest(t, destPath)
+		cfg.Clusters["other"].TLSServerName = "example.com"
+		assert.NilError(t, clientcmd.WriteToFile(*cfg, destPath))
+		assert.Assert(t, probeCurrentKubeContext(t.Context(), "other"))
+	})
+
+	t.Run("a server that fails the request after the handshake counts as reachable", func(t *testing.T) {
+		// A trusted cert completes the handshake, then the server drops the
+		// connection before replying, as one demanding a client certificate
+		// does after a TLS 1.3 handshake. The probe counts it reachable.
+		srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			if conn, _, err := w.(http.Hijacker).Hijack(); err == nil {
+				_ = conn.Close()
+			}
+		}))
+		t.Cleanup(srv.Close)
+		destPath := filepath.Join(t.TempDir(), "config")
+		t.Setenv("KUBECONFIG", destPath)
+		writeContextKubeconfig(t, destPath, "other", srv.URL, serverCAPEM(t, srv))
+		assert.Assert(t, probeCurrentKubeContext(t.Context(), "other"))
+	})
+
+	t.Run("a closed port counts as unreachable", func(t *testing.T) {
+		srv := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+		url := srv.URL
+		srv.Close() // free the port so the probe's connection is refused
+		destPath := filepath.Join(t.TempDir(), "config")
+		t.Setenv("KUBECONFIG", destPath)
+		writeContextKubeconfig(t, destPath, "other", url, nil)
+		assert.Assert(t, !probeCurrentKubeContext(t.Context(), "other"))
+	})
+}
+
+// Test_Reconcile_AlreadyReady_LeavesCurrentContext checks that a reconcile
+// which finds KubernetesReady already True does not probe or take over the
+// user's current-context, even when that context's cluster is unreachable.
+func Test_Reconcile_AlreadyReady_LeavesCurrentContext(t *testing.T) {
+	dir := t.TempDir()
+	srcPath := fakeK3sServer(t, filepath.Join(dir, "k3s.yaml"), http.StatusOK)
+	isolateKubeconfig(t, dir)
+
+	// current-context names a cluster that refuses connections; the old
+	// periodic check would take it over.
+	refusing := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	refusingURL := refusing.URL
+	refusing.Close()
+	writeContextKubeconfig(t, filepath.Join(dir, ".kube", "config"), "other", refusingURL, nil)
+
+	scheme := newKubeScheme(t)
+	app := newAppRunningKubeReady()
+	c := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(app).
+		WithStatusSubresource(app).
+		Build()
+
+	r := &KubernetesReconciler{
+		Client:                 c,
+		K3sConfigPath:          srcPath,
+		InstanceKubeConfigPath: filepath.Join(dir, "kube.config"),
+		clientsetFn:            fakeClientset(readyNode()),
+	}
+	t.Cleanup(func() { r.removeKubeContext(context.Background()) })
+
+	_, err := r.Reconcile(context.Background(), ctrl.Request{Name: appName})
+	assert.NilError(t, err)
+	// No probe goroutine should have started; wait in case one wrongly did.
+	r.contextProbeWg.Wait()
+
+	cfg := loadDest(t, filepath.Join(dir, ".kube", "config"))
+	assert.Equal(t, cfg.CurrentContext, "other",
+		"an already-Ready reconcile must not take over current-context")
+	_, merged := cfg.Contexts[instance.Name()]
+	assert.Assert(t, merged, "the instance context should still be merged in")
+}
+
+// Test_CheckCurrentKubeContext_LeavesUserChoiceAlone checks that when the user
+// selects another context while the probe runs, the takeover does not overwrite
+// that choice, because the switch compares current-context inside the write.
+func Test_CheckCurrentKubeContext_LeavesUserChoiceAlone(t *testing.T) {
+	dir := t.TempDir()
+	isolateKubeconfig(t, dir)
+	destPath := filepath.Join(dir, ".kube", "config")
+
+	// current-context "other" points at a refusing server, so the probe reports
+	// it unreachable and goes on to take it over.
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	url := srv.URL
+	srv.Close()
+	writeContextKubeconfig(t, destPath, "other", url, nil)
+
+	// The user picks another context in the seam before the takeover writes.
+	testBeforeSetCurrentKubeContext = func() {
+		assert.NilError(t, setCurrentKubeContext("user-choice"))
+	}
+	t.Cleanup(func() { testBeforeSetCurrentKubeContext = nil })
+
+	r := &KubernetesReconciler{
+		K3sConfigPath:          makeSrcKubeconfig(t, dir),
+		InstanceKubeConfigPath: filepath.Join(dir, "kube.config"),
+	}
+	assert.NilError(t, r.mergeKubeContext(context.Background()))
+	r.checkCurrentKubeContext(context.Background())
+	r.contextProbeWg.Wait()
+
+	cfg := loadDest(t, destPath)
+	assert.Equal(t, cfg.CurrentContext, "user-choice",
+		"a context the user selected during the probe must stay current")
 }
