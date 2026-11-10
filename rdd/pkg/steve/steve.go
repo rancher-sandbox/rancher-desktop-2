@@ -77,18 +77,25 @@ func Run(ctx context.Context, opts Options) error {
 		return err
 	}
 
+	return serve(ctx, listener, handler)
+}
+
+// serve serves handler on listener until ctx ends or serving fails, and
+// returns once the server has shut down.
+func serve(ctx context.Context, listener net.Listener, handler http.Handler) error {
+	ctx, cancel := context.WithCancel(ctx)
 	srv := &http.Server{Handler: handler}
 	shutdownDone := make(chan struct{})
 	go func() {
 		defer close(shutdownDone)
 		<-ctx.Done()
-		timeoutCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-		defer cancel()
+		timeoutCtx, cancelTimeout := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancelTimeout()
 		if err := srv.Shutdown(timeoutCtx); err != nil {
 			logrus.Errorf("error shutting down server: %v", err)
 		}
 	}()
-	err = srv.Serve(listener)
+	err := srv.Serve(listener)
 	cancel()
 	<-shutdownDone
 	if errors.Is(err, http.ErrServerClosed) {
