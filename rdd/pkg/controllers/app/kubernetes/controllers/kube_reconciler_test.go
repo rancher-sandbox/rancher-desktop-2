@@ -48,13 +48,17 @@ import (
 // server.
 func fakeK3sServer(t *testing.T, srcPath string, healthzStatus int) string {
 	t.Helper()
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/healthz" {
 			w.WriteHeader(healthzStatus)
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
 	}))
+	// Demand a client certificate, so a probe that stops presenting the
+	// kubeconfig's certificate fails.
+	srv.TLS = &tls.Config{ClientAuth: tls.RequireAnyClientCert}
+	srv.StartTLS()
 	t.Cleanup(srv.Close)
 	return writeK3sKubeconfig(t, srv, srcPath)
 }

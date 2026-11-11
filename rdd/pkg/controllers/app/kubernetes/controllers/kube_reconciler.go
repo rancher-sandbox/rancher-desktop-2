@@ -8,7 +8,6 @@ package controllers
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"net/http"
@@ -381,10 +380,12 @@ func (r *KubernetesReconciler) probeK3sAPI(ctx context.Context) (probeResult, er
 		return probeUnreachable, fmt.Errorf("parse instance kubeconfig: %w", err)
 	}
 
-	httpClient, err := newProbeHTTPClient(cfg)
+	// The kubeconfig's client certificate authenticates the probe to k3s.
+	transport, err := probeTransport(cfg)
 	if err != nil {
 		return probeUnreachable, err
 	}
+	httpClient := &http.Client{Transport: transport}
 
 	probeCtx, cancel := context.WithTimeout(ctx, kubeProbeTimeout)
 	defer cancel()
@@ -413,51 +414,34 @@ func (r *KubernetesReconciler) probeK3sAPI(ctx context.Context) (probeResult, er
 	return probeHealthy, nil
 }
 
-// newProbeHTTPClient builds the TLS-aware HTTP client for a one-shot healthz
-// probe; keep-alives are off so each probe closes its connection when done.
-func newProbeHTTPClient(cfg *rest.Config) (*http.Client, error) {
-	tlsCfg := &tls.Config{ServerName: cfg.ServerName}
-	if len(cfg.CAData) > 0 {
-		pool := x509.NewCertPool()
-		pool.AppendCertsFromPEM(cfg.CAData)
-		tlsCfg.RootCAs = pool
+// probeTransport returns a transport with the TLS settings that client-go
+// builds from cfg, as kubectl does. Keep-alives are off so each probe closes
+// its connection when done.
+func probeTransport(cfg *rest.Config) (*http.Transport, error) {
+	tlsCfg, err := rest.TLSConfigFor(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("build TLS settings: %w", err)
 	}
-	// Load client cert for mTLS auth (k3s kubeconfig uses client cert, not bearer token).
-	if len(cfg.CertData) > 0 && len(cfg.KeyData) > 0 {
-		cert, err := tls.X509KeyPair(cfg.CertData, cfg.KeyData)
-		if err != nil {
-			return nil, fmt.Errorf("load client cert: %w", err)
-		}
-		tlsCfg.Certificates = []tls.Certificate{cert}
-	}
-	return &http.Client{
-		Transport: &http.Transport{TLSClientConfig: tlsCfg, DisableKeepAlives: true},
-	}, nil
+	return &http.Transport{TLSClientConfig: tlsCfg, DisableKeepAlives: true}, nil
 }
 
 // reachabilityHTTPClient builds the client for the current-context reachability
-// probe. It gets its TLS settings from client-go, as kubectl does, and goes
-// through proxy-url or else the environment's proxy, but it does not send
-// credentials. It does not follow a redirect, whose target may be another
-// host. Keep-alives are off so each probe closes its connection when
-// done. It returns an error for TLS settings that client-go refuses, such as a
-// certificate-authority together with insecure-skip-tls-verify.
+// probe. It goes through proxy-url or else the environment's proxy, but it does
+// not send credentials. It does not follow a redirect, whose target may be
+// another host. It returns an error for TLS settings that client-go refuses,
+// such as a certificate-authority together with insecure-skip-tls-verify.
 func reachabilityHTTPClient(cfg *rest.Config) (*http.Client, error) {
-	tlsCfg, err := rest.TLSConfigFor(rest.AnonymousClientConfig(cfg))
+	transport, err := probeTransport(rest.AnonymousClientConfig(cfg))
 	if err != nil {
 		return nil, err
 	}
-	proxy := cfg.Proxy
-	if proxy == nil {
-		proxy = http.ProxyFromEnvironment
+	transport.Proxy = cfg.Proxy
+	if transport.Proxy == nil {
+		transport.Proxy = http.ProxyFromEnvironment
 	}
 	return &http.Client{
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
-		Transport: &http.Transport{
-			Proxy:             proxy,
-			TLSClientConfig:   tlsCfg,
-			DisableKeepAlives: true,
-		},
+		Transport:     transport,
 	}, nil
 }
 
@@ -594,7 +578,7 @@ func probeCurrentKubeContext(ctx context.Context, current string) bool {
 	}
 	client, err := reachabilityHTTPClient(restCfg)
 	if err != nil {
-		log.Error(err, "Failed to build probe TLS settings")
+		log.Error(err, "Failed to build probe client")
 		return true
 	}
 
