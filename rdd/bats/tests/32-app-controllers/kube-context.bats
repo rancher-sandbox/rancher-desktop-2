@@ -163,6 +163,27 @@ kube_current_context_is() { # <expected-context>
     assert_output "${CONTEXT_NAME}"
 }
 
+@test "a running cluster does not take over the user's current-context" {
+    # Point current-context at a context whose server refuses connections. The
+    # takeover check runs only on the reconcile that turns KubernetesReady
+    # True, so while Kubernetes keeps running the user's choice must survive,
+    # even though its cluster is unreachable. (The old check switched it to the
+    # instance within 15s.)
+    rdd kubectl config set-cluster unreachable --server="https://127.0.0.1:1"
+    rdd kubectl config set-context unreachable --cluster=unreachable
+    rdd kubectl config use-context unreachable
+
+    # Wait past the 15s healthy-requeue interval so at least one reconcile runs
+    # without flipping KubernetesReady; none should probe current-context.
+    sleep 20
+
+    run -0 kube_current_context
+    assert_output "unreachable"
+
+    # Restore the instance context for the tests that follow.
+    rdd kubectl config use-context "${CONTEXT_NAME}"
+}
+
 # --- Host connectivity ---
 
 # k3s applies coredns and traefik asynchronously, so wait for each to exist
