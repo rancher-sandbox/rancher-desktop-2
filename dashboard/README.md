@@ -14,8 +14,7 @@ through Corepack.
 
 We download a checksummed archive instead of adding rancher-sandbox/dashboard
 as a git submodule. With a submodule, every clone and worktree would have to
-initialize it, and GitHub's source archives of this repository would leave the
-dashboard source out.
+initialize it.
 
 The comments in the Makefile say how to move to a new Rancher tag or shell
 commit.

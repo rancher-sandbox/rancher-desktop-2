@@ -15,7 +15,9 @@
     "preserveSymlinks": true,
     "typeRoots": [
       "../../node_modules",
-      "../../shell/types"
+      "../../shell/types",
+      "../../rancher-dashboard/node_modules",
+      "../../rancher-dashboard/shell/types"
     ],
     "types": [
       "@types/node",
@@ -29,10 +31,12 @@
     ],
     "paths": {
       "@shell/*": [
-        "../../shell/*"
+        "../../shell/*",
+        "../../rancher-dashboard/shell/*"
       ],
       "@components/*": [
-        "../../pkg/rancher-components/src/components/*"
+        "../../pkg/rancher-components/src/components/*",
+        "../../rancher-dashboard/pkg/rancher-components/src/components/*"
       ]
     }
   },

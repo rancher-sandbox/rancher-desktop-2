@@ -29,8 +29,11 @@ SHELL_COMMIT := d79889ccfab793c708c56ea973b38864396bdbcf
 RANCHER_SHA256 := 625f4e637d18ca912690774a722b8820e5638dec0125283f2208d3230db52044
 
 # Rancher's yarn.lock is a Yarn 1 lockfile. Naming the version keeps Corepack
-# from picking the Yarn 4 that the repo root's package.json names.
-YARN := corepack yarn@1.22.22
+# from picking the Yarn 4 that the repo root's package.json names under
+# devEngines. Corepack before 0.32 doesn't read devEngines, so with no
+# packageManager field in any package.json it writes one for this version
+# into the repo root's package.json. COREPACK_ENABLE_AUTO_PIN=0 turns that off.
+YARN := COREPACK_ENABLE_AUTO_PIN=0 corepack yarn@1.22.22
 
 ARCHIVE := rancher-dashboard.tar.gz
 TREE := rancher-dashboard
