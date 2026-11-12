@@ -85,9 +85,14 @@ func getCurrentDockerContext() (string, error) {
 	return cf.CurrentContext, nil
 }
 
-func setCurrentDockerContext(ctx context.Context, name string) error {
+// setCurrentDockerContext points currentContext at name, but only when it still
+// equals expected — the context the probe found unhealthy. The compare and the
+// write share one dockerconfig.Edit, so a context the user selects with
+// `docker context use` while the probe runs is left alone instead of being
+// overwritten by a stale takeover decision.
+func setCurrentDockerContext(ctx context.Context, expected, name string) error {
 	return dockerconfig.Edit(ctx, func(cf *configfile.ConfigFile) (bool, error) {
-		if cf.CurrentContext == name {
+		if cf.CurrentContext != expected || cf.CurrentContext == name {
 			return false, nil
 		}
 		cf.CurrentContext = name
