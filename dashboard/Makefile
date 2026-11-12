@@ -22,7 +22,17 @@
 #      .yarnrc.yml, run `yarn install`, and delete .yarnrc.yml. Yarn's lockfile
 #      migration turns the age gate off unless that file sets it. If Yarn
 #      reports a version as quarantined, rerun this step once it is a day old.
-#   4. Check the result with `YARN_ENABLE_HARDENED_MODE=1 make`.
+#   4. A new shell can add keys to its en-us.yaml, change their English or
+#      remove them. In each YAML file under pkg/rancher-deskboard/translations,
+#      translate the new and changed keys and delete the removed ones.
+#      To list them, run
+#      `git diff <old> <new> -- shell/assets/translations/en-us.yaml` with
+#      the old and new SHELL_COMMIT in a rancher-sandbox/dashboard checkout.
+#      But keep the typeLabel and nav.group keys that en-us lacks, even the
+#      ones that en-us just removed. They name types and groups that the shell
+#      would otherwise show in English. If en-us's typeLabel messages change
+#      their arguments, change the extra ones too.
+#   5. Check the result with `YARN_ENABLE_HARDENED_MODE=1 make`.
 RANCHER_TAG := v2.15.3
 # This commit on rancher-sandbox/dashboard's i18n-fixes-2.15 branch is
 # RANCHER_TAG plus our shell fixes. We pin the commit because a branch archive
@@ -31,7 +41,8 @@ RANCHER_TAG := v2.15.3
 # hash of this shell, so `yarn install --immutable` fails on a new commit.
 # After `make` stops there, run a plain `yarn install` and commit the updated
 # lock with the new pin. When RANCHER_TAG changes too, follow step 3 above
-# instead of the plain `yarn install`. Also tag the new commit
+# instead of the plain `yarn install`. In either case, follow step 4 above,
+# because a new pin can change en-us.yaml. Also tag the new commit
 # rd2-shell-<its first 10 hex digits> on rancher-sandbox/dashboard, so GitHub
 # keeps serving its archive after the branch is rewritten.
 SHELL_COMMIT := d79889ccfab793c708c56ea973b38864396bdbcf

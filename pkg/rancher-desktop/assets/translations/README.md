@@ -207,9 +207,25 @@ Without file arguments, it reads from stdin.
    `i18n-report merge --locale={code}`.
 5. Run `i18n-report check --locale=all` to verify the
    registration.
+6. Add the language to the Cluster Explorer dashboard as well, or the
+   dashboard stays in English. In `dashboard/pkg/rancher-deskboard/`:
+   - Run `make` in `dashboard/`, which extracts the shell's `en-us.yaml`
+     to `dashboard/vendor-shell/assets/translations/`. Translate that
+     file into `translations/{code}.yaml`. Also translate the `typeLabel`
+     and `nav.group` keys that the other files in `translations/` have and
+     en-us lacks.
+   - Put the header's product label in `l10n/{code}.yaml`.
+   - Add the code and the language's own name, such as `Deutsch`, to
+     `addedLocales` in `index.ts`, and import its `dayjs/locale/` file
+     there. When dayjs names the language differently (it calls zh-hans
+     `zh-cn`), also map the code to that name in `dayjsLocales`.
+   - To check the result, rebuild the dashboard and rdd as the
+     repository README's [Running](../../../../README.md#running) section
+     describes. Then set the app to the new language and open the Cluster
+     Dashboard. It should be in that language too.
 
-Webpack discovers new YAML files automatically — no other code changes are
-needed.
+Webpack discovers the app's new YAML files automatically, so the app does
+not need code changes beyond step 2.
 
 ## Maintenance workflow
 
