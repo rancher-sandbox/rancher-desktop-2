@@ -35,7 +35,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
 	github.com/rancher/steve v0.9.23
-	github.com/rancher/wrangler/v3 v3.7.2
+	github.com/rancher/wrangler/v3 v3.8.0
 	github.com/sirupsen/logrus v1.10.2
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.1.0
@@ -47,15 +47,15 @@ require (
 	golang.org/x/sys v0.49.0
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 	gotest.tools/v3 v3.5.2
-	k8s.io/api v0.37.0
-	k8s.io/apiextensions-apiserver v0.37.0
-	k8s.io/apimachinery v0.37.0
-	k8s.io/apiserver v0.37.0
+	k8s.io/api v0.37.2
+	k8s.io/apiextensions-apiserver v0.37.2
+	k8s.io/apimachinery v0.37.2
+	k8s.io/apiserver v0.37.2
 	k8s.io/cli-runtime v0.36.4
-	k8s.io/client-go v0.37.0
-	k8s.io/component-base v0.37.0
+	k8s.io/client-go v0.37.2
+	k8s.io/component-base v0.37.2
 	k8s.io/klog/v2 v2.140.0
-	k8s.io/kube-aggregator v0.36.4
+	k8s.io/kube-aggregator v0.37.2
 	k8s.io/kubectl v0.36.4
 	k8s.io/kubernetes v1.36.4
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd
@@ -242,7 +242,7 @@ require (
 	github.com/golangci/swaggoswag v0.0.0-20250504205917-77f2aca3143e // indirect
 	github.com/golangci/unconvert v0.0.0-20250410112200-a129a6e6413e // indirect
 	github.com/google/btree v1.1.3 // indirect
-	github.com/google/cel-go v0.29.2 // indirect
+	github.com/google/cel-go v0.30.0 // indirect
 	github.com/google/gnostic-models v0.7.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
@@ -374,7 +374,7 @@ require (
 	github.com/rancher/apiserver v0.9.10 // indirect
 	github.com/rancher/dynamiclistener v0.9.3 // indirect
 	github.com/rancher/kubernetes-provider-detector v0.1.6-0.20240606163014-fcae75779379 // indirect
-	github.com/rancher/lasso v0.2.9 // indirect
+	github.com/rancher/lasso v0.2.10 // indirect
 	github.com/rancher/norman v0.9.11 // indirect
 	github.com/rancher/remotedialer v0.6.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
@@ -462,7 +462,7 @@ require (
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
 	golang.org/x/exp/typeparams v0.0.0-20260811152304-ee035b5b010f // indirect
 	golang.org/x/image v0.47.0 // indirect
-	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/term v0.47.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
@@ -486,7 +486,7 @@ require (
 	honnef.co/go/tools v0.8.2 // indirect
 	k8s.io/cloud-provider v0.36.4 // indirect
 	k8s.io/cluster-bootstrap v0.36.4 // indirect
-	k8s.io/code-generator v0.37.0 // indirect
+	k8s.io/code-generator v0.37.2 // indirect
 	k8s.io/component-helpers v0.36.4 // indirect
 	k8s.io/controller-manager v0.36.4 // indirect
 	k8s.io/csi-translation-lib v0.36.4 // indirect
