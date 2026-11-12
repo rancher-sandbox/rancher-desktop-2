@@ -19,7 +19,9 @@ updates:
 
 # Maintain dependencies for npm
 - package-ecosystem: "npm"
-  directory: "/"
+  directories:
+  - "/"
+  - "/.github/actions/setup-yarn"
   schedule:
     interval: "daily"
   cooldown:
