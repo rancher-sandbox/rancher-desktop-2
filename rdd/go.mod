@@ -34,7 +34,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
-	github.com/rancher/steve v0.9.23
+	github.com/rancher/steve v0.9.24
 	github.com/rancher/wrangler/v3 v3.8.0
 	github.com/sirupsen/logrus v1.10.2
 	github.com/spf13/cobra v1.10.2
@@ -437,7 +437,7 @@ require (
 	go.augendre.info/arangolint v0.4.0 // indirect
 	go.augendre.info/fatcontext v0.10.1 // indirect
 	go.etcd.io/bbolt v1.5.0 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.6.8 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.6.14 // indirect
 	go.etcd.io/etcd/client/v3 v3.6.8 // indirect
 	go.etcd.io/etcd/pkg/v3 v3.6.8 // indirect
 	go.etcd.io/etcd/server/v3 v3.6.8 // indirect
@@ -494,7 +494,7 @@ require (
 	k8s.io/endpointslice v0.36.4 // indirect
 	k8s.io/externaljwt v0.36.4 // indirect
 	k8s.io/gengo/v2 v2.0.0-20260408192533-25e2208e0dc3 // indirect
-	k8s.io/kms v0.36.4 // indirect
+	k8s.io/kms v0.36.6 // indirect
 	k8s.io/kube-controller-manager v0.36.4 // indirect
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
 	k8s.io/kube-proxy v0.36.4 // indirect
