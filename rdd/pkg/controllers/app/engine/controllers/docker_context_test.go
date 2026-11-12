@@ -142,14 +142,14 @@ func Test_currentDockerContext(t *testing.T) {
 	})
 
 	t.Run("set then get", func(t *testing.T) {
-		assert.NilError(t, setCurrentDockerContext(context.Background(), "rancher-desktop-2"))
+		assert.NilError(t, setCurrentDockerContext(context.Background(), "", "rancher-desktop-2"))
 		name, err := getCurrentDockerContext()
 		assert.NilError(t, err)
 		assert.Equal(t, name, "rancher-desktop-2")
 	})
 
 	t.Run("clear only when context matches", func(t *testing.T) {
-		assert.NilError(t, setCurrentDockerContext(context.Background(), "rancher-desktop-2"))
+		assert.NilError(t, setCurrentDockerContext(context.Background(), "", "rancher-desktop-2"))
 		// Different name — should not clear.
 		assert.NilError(t, clearCurrentDockerContext(context.Background(), "rancher-desktop-3"))
 		name, err := getCurrentDockerContext()
@@ -168,7 +168,7 @@ func Test_currentDockerContext(t *testing.T) {
 		seed := []byte(`{"auths":{"example.com":{}}}` + "\n")
 		assert.NilError(t, os.WriteFile(configFile, seed, 0o600))
 
-		assert.NilError(t, setCurrentDockerContext(context.Background(), "rancher-desktop-2"))
+		assert.NilError(t, setCurrentDockerContext(context.Background(), "", "rancher-desktop-2"))
 
 		data, err := os.ReadFile(configFile)
 		assert.NilError(t, err)
@@ -185,7 +185,7 @@ func Test_currentDockerContext(t *testing.T) {
 		seed := []byte(`{"rancherDesktopCustom":"keep-me"}` + "\n")
 		assert.NilError(t, os.WriteFile(configFile, seed, 0o600))
 
-		assert.NilError(t, setCurrentDockerContext(context.Background(), "rancher-desktop-2"))
+		assert.NilError(t, setCurrentDockerContext(context.Background(), "", "rancher-desktop-2"))
 
 		data, err := os.ReadFile(configFile)
 		assert.NilError(t, err)
@@ -212,6 +212,20 @@ func Test_currentDockerContext(t *testing.T) {
 		assert.NilError(t, json.Unmarshal(data, &cfg))
 		_, hasAuths := cfg["auths"]
 		assert.Assert(t, hasAuths, "auths key must be preserved across clear")
+	})
+
+	t.Run("leaves a context the user switched to during the probe", func(t *testing.T) {
+		// The probe read "old-context", but the user ran `docker context use`
+		// before the write, so currentContext now names their choice.
+		seed := []byte(`{"currentContext":"user-choice"}` + "\n")
+		assert.NilError(t, os.WriteFile(configFile, seed, 0o600))
+
+		assert.NilError(t, setCurrentDockerContext(context.Background(), "old-context", "rancher-desktop-2"))
+
+		name, err := getCurrentDockerContext()
+		assert.NilError(t, err)
+		assert.Equal(t, name, "user-choice",
+			"must not overwrite a context the user selected while the probe ran")
 	})
 }
 
