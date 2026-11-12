@@ -50,7 +50,7 @@ interface ElectronBuilderConfiguration {
   }
 }
 
-export async function sign(workDir: string, outDir: string): Promise<string[]> {
+export async function sign(workDir: string, outDir: string, rddFiles: string[]): Promise<string[]> {
   const certFingerprint = process.env.CSC_FINGERPRINT ?? '';
   const certPassword = process.env.CSC_KEY_PASSWORD ?? '';
 
@@ -67,6 +67,7 @@ export async function sign(workDir: string, outDir: string): Promise<string[]> {
   const config = yaml.parse(configText) as ElectronBuilderConfiguration;
 
   buildUtils.checkArchiveArch(config.win?.artifactName, config.extraMetadata.version, 'win32');
+  const rddSource = buildUtils.findStandaloneRdd(rddFiles, config.extraMetadata.version, 'win32');
 
   const signingConfigPath = path.join(unpackedDir, 'build', 'signing-config-win.yaml');
   const signingConfigText = await fs.promises.readFile(signingConfigPath, 'utf-8');
@@ -118,9 +119,12 @@ export async function sign(workDir: string, outDir: string): Promise<string[]> {
   await signFn(...filesToSign);
   const signedInstaller = await buildWiX(workDir, unpackedDir, outDir, signFn);
 
-  const rddSource = path.join(unpackedDir, 'resources', 'windows', 'bin', 'rdd.exe');
   const rddDest = path.join(outDir, rddArtifactName(config.extraMetadata.version, 'win32', buildUtils.arch));
-  await fs.promises.copyFile(rddSource, rddDest, fs.constants.COPYFILE_FICLONE);
+
+  if (path.resolve(rddSource) !== rddDest) {
+    await fs.promises.copyFile(rddSource, rddDest, fs.constants.COPYFILE_FICLONE);
+  }
+  await signFn(rddDest);
 
   return [signedInstaller, rddDest];
 }

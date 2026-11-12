@@ -15,7 +15,7 @@ import webpack from 'webpack';
 
 import babelConfig from '@/babel.config.cjs';
 import packageJson from '@/package.json' with { type: 'json' };
-import { appArtifactName, EXT_MACRO } from '@pkg/utils/releaseArtifacts';
+import { appArtifactName, EXT_MACRO, rddArtifactName } from '@pkg/utils/releaseArtifacts';
 import { isReleaseVersion } from '@pkg/utils/version';
 
 /**
@@ -462,6 +462,11 @@ export default {
     return process.arch === 'arm64' ? 'arm64' : 'x64';
   },
 
+  /** The `GOARCH` for `arch`. */
+  get goArch(): keyof typeof archByGoarch {
+    return _.findKey(archByGoarch, arch => arch === this.arch) as keyof typeof archByGoarch;
+  },
+
   /**
    * The architecture suffix electron-builder appends to the names it chooses,
    * which is empty for x64: it leaves the default architecture unmarked.
@@ -484,6 +489,24 @@ export default {
     if (archByGoarch[goArch] !== this.arch) {
       throw new Error(`The archive was built for ${ archByGoarch[goArch] }, but GOARCH or the Node.js architecture selects ${ this.arch }; set GOARCH=${ goArch } to sign it`);
     }
+  },
+
+  /**
+   * Pick the standalone rdd for `platform` and `arch` from the files given to
+   * `yarn sign`. A release publishes it signed, so throw when it is missing.
+   */
+  findStandaloneRdd(files: string[], version: string, platform: NodeJS.Platform): string {
+    const expected = rddArtifactName(version, platform, this.arch);
+    const rdd = files.find(f => path.basename(f) === expected);
+
+    if (!rdd) {
+      throw new Error(`Signing needs the standalone rdd ${ expected }; pass its path along with the archive`);
+    }
+    if (!fs.existsSync(rdd)) {
+      throw new Error(`The standalone rdd ${ rdd } does not exist`);
+    }
+
+    return rdd;
   },
 
   /**

@@ -2,8 +2,8 @@
 
 - [ ] Update version number in package.json if not done after last release.
 - [ ] Tag release branch. Wait for the CI to build artifacts.
-- [ ] Sign windows installer (both architectures).
-- [ ] Sign mac zips for both architectures.
+- [ ] Sign windows installer and standalone `rdd.exe` for both architectures.
+- [ ] Sign mac zips and standalone `rdd` for both architectures.
 
 ### Release Documentation
 - [ ] Release notes. Update on the GitHub draft Release page.
