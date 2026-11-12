@@ -146,7 +146,7 @@ jobs:
         branch=$(cut -d. -f1,2 <<< "${RELEASE_TAG#v}")
         read -r artifact_name < <(
           curl "${OBS_DOWNLOAD_URL}?jsontable" \
-            | jq --raw-output ".data[].name | select(endswith(\".AppImage\")) | select(contains(\".release${branch}.\"))"
+            | jq --raw-output ".data[].name | select(endswith(\"-x86_64.AppImage\")) | select(contains(\".release${branch}.\"))"
           )
         curl -L -o rancher-desktop.AppImage "${OBS_DOWNLOAD_URL}${artifact_name}"
         # The AppImage does not have a checksum; make one up.

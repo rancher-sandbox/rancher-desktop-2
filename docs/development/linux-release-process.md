@@ -67,7 +67,7 @@ intrepid users. It corresponds to the
    (for example `release-1.2` or `release-1.11`), which triggers the
    `package.yml` github actions workflow. It builds Rancher Desktop and
    uploads the resultant .zip file to an S3 bucket under a name of the form
-   `rancher-desktop-linux-<branch_name>.zip`.
+   `rancher-desktop-2-<branch_name>-linux-<arch>.zip`.
 3. As its last step, the `package.yml` workflow triggers a service run in
    the OBS package that corresponds to the branch that triggered the workflow
    run.it. This causes OBS to download and unpack the .zip file that was uploaded
@@ -91,7 +91,8 @@ releases rather than new commits on branches of a particular format.
 1. A new release is published, causing the `linux-release.yml` github
    actions workflow to run. This workflow fetches the linux .zip file
    from the release, and uploads it to AWS S3 with a name in the format
-   `rancher-desktop-linux-X.Y.zip` (for example, `rancher-desktop-linux-1.12.zip`).
+   `rancher-desktop-linux-X.Y-arch.zip` (for example,
+   `rancher-desktop-linux-1.12-aarch64.zip`).
 2. The `linux-release.yml` workflow triggers a service run in the OBS
    package that corresponds to the major and minor version of the tag
    of the published release. This causes OBS to download and unpack the
