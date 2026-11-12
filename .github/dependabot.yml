@@ -101,6 +101,12 @@ updates:
     # updates; drop this once kine and k8s move to 3.7.
     dependency-name: go.etcd.io/etcd/*
     update-types: [version-update:semver-minor, version-update:semver-major]
+  - # Keep Steve on 0.9 to match dashboard 2.15. Steve 0.10 requires
+    # Kubernetes 1.37, controller-runtime 0.25 and etcd 3.7, but rdd builds
+    # against Kubernetes 1.36, controller-runtime 0.24 and etcd 3.6. Drop this
+    # once the dashboard moves to 2.16.
+    dependency-name: github.com/rancher/steve
+    versions: [">= 0.10.0"]
   - { dependency-name: k8s.io/api }
   - { dependency-name: k8s.io/apiextensions-apiserver }
   - { dependency-name: k8s.io/apimachinery }
