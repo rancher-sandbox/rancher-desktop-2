@@ -376,10 +376,7 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 		// retry after a failed removal would skip the heal and boot the new
 		// distro against the old key.
 		err := os.Remove(filepath.Join(inst.Dir, filenames.SSHKnownHosts))
-		if errors.Is(err, os.ErrNotExist) {
-			err = nil
-		}
-		if err == nil {
+		if err == nil || errors.Is(err, os.ErrNotExist) {
 			err = wsl.Unregister(ctx, wsl.DistroName(limaVM.Name))
 		}
 		if err != nil {
