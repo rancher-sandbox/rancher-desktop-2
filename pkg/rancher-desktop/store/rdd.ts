@@ -1,3 +1,4 @@
+import { watch } from 'vue';
 import { Plugin } from 'vuex';
 
 import type { RootState } from '@pkg/entry/store';
@@ -165,9 +166,14 @@ export const plugins: Plugin<RootState>[] = [
   },
   // When the app state changes, tell the backend about it.
   function(store) {
-    store.watch(
-      (_state, getters) => getters['rdd/app'],
-      (app: RDDClient.IoRancherdesktopAppV1alpha1App | undefined) => {
+    watch(
+      [() => !!store.state.rdd.apps, () => store.getters['rdd/app']],
+      ([loaded, app]: [boolean, RDDClient.IoRancherdesktopAppV1alpha1App | undefined]) => {
+        if (!loaded) {
+          // The main process stops Steve on an empty report, so do not send
+          // one before this window has listed the Apps.
+          return;
+        }
         const conditions = app?.status?.conditions ?? [];
         const data = Object.fromEntries(conditions.map(condition => {
           const { type, status, reason } = condition;
@@ -180,7 +186,6 @@ export const plugins: Plugin<RootState>[] = [
         }));
         ipcRenderer.send('backend/app-status-changed', data);
       },
-      { immediate: true },
     );
   },
 ];
