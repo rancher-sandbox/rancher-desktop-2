@@ -369,12 +369,26 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 	if wsl2RegistrationIsOrphaned(inst) {
 		logger.Info("WSL2 distro is registered but its root disk is missing; unregistering to force re-import",
 			"instance", limaVM.Name, "disk", wsl2RootDisk)
-		if err := wsl.Unregister(ctx, wsl.DistroName(limaVM.Name)); err != nil {
-			// Booting now would hit ERROR_FILE_NOT_FOUND again, so fail the start
-			// and requeue to retry the unregister.
-			logger.Error(err, "Failed to unregister orphaned WSL2 distro", "instance", limaVM.Name)
+		// The re-imported distro generates new SSH host keys, so remove the key
+		// that Lima pinned for the old one and let the hostagent pin the new key
+		// on its first boot. Remove it before the unregister. Once the distro is
+		// unregistered, wsl2RegistrationIsOrphaned no longer reports it, so a
+		// retry after a failed removal would skip the heal and boot the new
+		// distro against the old key.
+		err := os.Remove(filepath.Join(inst.Dir, filenames.SSHKnownHosts))
+		if errors.Is(err, os.ErrNotExist) {
+			err = nil
+		}
+		if err == nil {
+			err = wsl.Unregister(ctx, wsl.DistroName(limaVM.Name))
+		}
+		if err != nil {
+			// The distro is still registered without its root disk, so booting
+			// now would hit ERROR_FILE_NOT_FOUND again. Fail the start and
+			// requeue to retry the heal.
+			logger.Error(err, "Failed to heal orphaned WSL2 distro", "instance", limaVM.Name)
 			if updateErr := r.updateCondition(ctx, limaVM, ConditionRunning, metav1.ConditionFalse, ReasonStartFailed, err.Error()); updateErr != nil {
-				logger.Error(updateErr, "Failed to update status after unregister failure")
+				logger.Error(updateErr, "Failed to update status after heal failure")
 			}
 			return ctrl.Result{}, err
 		}
