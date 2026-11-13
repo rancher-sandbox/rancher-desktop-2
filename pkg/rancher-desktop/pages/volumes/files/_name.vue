@@ -42,7 +42,7 @@
       color="error"
     >
       <span class="icon icon-info-circle icon-lg" />
-      {{ error }}
+      {{ errorText }}
     </banner>
 
     <div
@@ -116,6 +116,12 @@ interface fileEntry {
   isDirectory: boolean;
 }
 
+/** A translation key and its arguments, translated when shown. */
+interface errorMessage {
+  key:   string;
+  args?: Record<string, string>;
+}
+
 export default defineComponent({
   name:       'VolumeFiles',
   components: {
@@ -130,13 +136,17 @@ export default defineComponent({
     return {
       ddClient:        null as typeof window.ddClient | null,
       isLoading:       true,
-      error:           null as string | null,
+      error:           null as errorMessage | null,
       volumeExists:    false,
       currentPath:     Array.isArray(queryPath) ? queryPath.join('/') : queryPath || '/',
       files:           [] as fileEntry[],
       refreshInterval: null as ReturnType<typeof setInterval> | null,
       process:         undefined as ExecProcess | undefined,
-      headers:         [
+    };
+  },
+  computed: {
+    headers() {
+      return [
         {
           name:  'name',
           label: this.t('volumes.files.table.header.name'),
@@ -160,11 +170,12 @@ export default defineComponent({
           sort:  ['permissions', 'name'],
           width: 120,
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     ...mapTypedState('preferences', { settings: 'initialPreferences' }),
+    errorText(): string {
+      return this.error ? this.t(this.error.key, this.error.args) : '';
+    },
     volumeName(): string {
       return Array.isArray(this.$route.params.name) ? this.$route.params.name.join('.') : this.$route.params.name || '';
     },
@@ -205,7 +216,7 @@ export default defineComponent({
   },
   mounted() {
     if (!this.isValidVolumeName) {
-      this.error = this.t('volumes.files.invalidVolumeName', { name: this.volumeName });
+      this.error = { key: 'volumes.files.invalidVolumeName', args: { name: this.volumeName } };
       return;
     }
 
@@ -249,12 +260,12 @@ export default defineComponent({
         this.volumeExists = volumes?.some(v => v.Name === this.volumeName) || false;
 
         if (!this.volumeExists) {
-          this.error = this.t('volumes.files.volumeNotFound', { name: this.volumeName });
+          this.error = { key: 'volumes.files.volumeNotFound', args: { name: this.volumeName } };
         }
       } catch (error) {
         console.error('Error checking volume:', error);
         this.volumeExists = false;
-        this.error = this.t('volumes.files.checkError');
+        this.error = { key: 'volumes.files.checkError' };
       }
     },
     async listFiles() {
@@ -325,7 +336,7 @@ export default defineComponent({
         ];
 
         console.error('Error listing files:', error);
-        this.error = this.t('volumes.files.listError', { error: errorSources.find(msg => msg) });
+        this.error = { key: 'volumes.files.listError', args: { error: errorSources.find(msg => msg) } };
         this.isLoading = false;
       }
     },

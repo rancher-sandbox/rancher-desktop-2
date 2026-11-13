@@ -1,9 +1,10 @@
 import { jest } from '@jest/globals';
 import { mount } from '@vue/test-utils';
+import { nextTick } from 'vue';
 
 import mockModules from '@pkg/utils/testUtils/mockModules';
 import { sortableTableGlobal } from '@pkg/utils/testUtils/sortableTable';
-import { t } from '@pkg/utils/testUtils/translations';
+import { switchableT, t } from '@pkg/utils/testUtils/translations';
 import {
   IoRancherdesktopContainersV1alpha1Container as Container,
   IoRancherdesktopContainersV1alpha1ContainerStatusStatusEnum as ContainerStatus,
@@ -184,7 +185,7 @@ describe('Containers methods', () => {
       const table = mount(SortableTable, {
         global: sortableTableGlobal(),
         props:  {
-          headers:     (Containers as any).data.call({ t }).headers,
+          headers:     (Containers as any).computed.headers.call({ t }),
           rows:        rowsFor([web, container('db')], { getPortList: methods.getPortList }),
           keyField:    'id',
           rowsPerPage: 10,
@@ -354,5 +355,17 @@ describe('Containers cell clicks', () => {
     methods.onPortClick.call(helpers, clickThatAddsToSelection(), publishedHostPort);
 
     expect(helpers.openUrl).not.toHaveBeenCalled();
+  });
+});
+
+describe('Containers headers', () => {
+  it('follow a locale switch', async() => {
+    const translator = switchableT();
+    const wrapper = mount(Containers, { global: sortableTableGlobal({ t: translator.t }) });
+
+    translator.switched.value = true;
+    await nextTick();
+    expect(wrapper.getComponent(SortableTable).props('headers'))
+      .toContainEqual(expect.objectContaining({ label: `[${ t('containers.manage.table.header.containerName') }]` }));
   });
 });
