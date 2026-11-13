@@ -11,7 +11,14 @@ defineOptions({ name: 'preferences-application-general' });
 const store = useStore();
 const isPreferenceLocked = computed(() => store.getters['preferences/isPreferenceLocked']);
 const availableLocales = computed(() => store.getters['i18n/availableLocales']);
-const selectedLocale = computed(() => store.getters['i18n/current']);
+// `i18n/current` follows the committed App, so show the language picked in
+// Preferences. But a locale without a translation is missing from the list
+// and would leave the picker blank, so show `i18n/current` then.
+const selectedLocale = computed(() => {
+  const locale = store.getters['preferences/preferences'].application?.locale;
+
+  return Object.hasOwn(availableLocales.value, locale) ? locale : store.getters['i18n/current'];
+});
 const showLocaleDisclaimer = computed(() => selectedLocale.value !== 'en-us');
 
 function onLocaleChange(newLocale: string) {

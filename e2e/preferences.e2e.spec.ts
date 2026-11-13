@@ -32,16 +32,24 @@ test.describe('Preferences Dialog', () => {
     await teardown(electronApp, testInfo);
   });
 
-  test('should finish loading', () => mainNav.waitForAppSettled());
-
-  test('should open preferences modal', async() => {
+  async function openPreferences() {
     await mainNav.preferencesButton.click();
     const prefWindow = await electronApp.waitForEvent('window', page => /preferences/i.test(page.url()));
-    expect(prefWindow).toBeDefined();
-    prefPage = new PreferencesPage(prefWindow);
 
+    prefPage = new PreferencesPage(prefWindow);
     await prefPage.waitForLoad();
-  });
+  }
+
+  /** Apply the pending changes, which closes Preferences, then open it again. */
+  async function applyAndReopen() {
+    await expect(prefPage.apply).toBeEnabled();
+    await Promise.all([prefPage.page.waitForEvent('close'), prefPage.apply.click()]);
+    await openPreferences();
+  }
+
+  test('should finish loading', () => mainNav.waitForAppSettled());
+
+  test('should open preferences modal', openPreferences);
 
   test.describe('Application', () => {
     test('should show application page and render general tab', async() => {
@@ -59,20 +67,25 @@ test.describe('Preferences Dialog', () => {
       // TODO: path management (in)visibility.
     });
 
-    test('should show locale selection', async() => {
-      const { application } = prefPage;
+    test('should switch the locale on Apply', async() => {
+      await expect(prefPage.application.localeSelect).toBeEnabled();
+      await expect(prefPage.application.localeSelect).toHaveValue('en-us');
+      await prefPage.application.localeSelect.selectOption('ko');
+      // Switching tabs mounts the picker again.
+      await prefPage.application.tabEnvironment.click();
+      await prefPage.application.tabGeneral.click();
+      await expect(prefPage.application.localeSelect).toHaveValue('ko');
+      await expect(prefPage.application.tabGeneral).toHaveText('General');
 
-      await expect(application.localeSelect).toBeEnabled();
-      await expect(application.localeSelect).toHaveValue('en-us');
-      try {
-        await application.localeSelect.selectOption('ko');
-        // Changing the selected option should change the locale
-        await expect(application.tabGeneral).toHaveText(/^\p{Script=Hangul}+$/u);
-      } finally {
-        // Change the option back for future tests
-        await application.localeSelect.selectOption('en-us');
-      }
-      await expect(application.tabGeneral).toHaveText('General');
+      await applyAndReopen();
+      await expect(prefPage.application.tabGeneral).toHaveText(/^\p{Script=Hangul}+$/u);
+
+      // Switch back for the tests that follow.  A failure above doesn't need
+      // cleanup, because serial mode skips the rest of this file and the next
+      // run starts with a new instance.
+      await prefPage.application.localeSelect.selectOption('en-us');
+      await applyAndReopen();
+      await expect(prefPage.application.tabGeneral).toHaveText('General');
     });
 
     test.fixme('should render behavior tab', async() => {
@@ -342,12 +355,7 @@ test.describe('Preferences Dialog', () => {
       }
     });
 
-    test.beforeEach(async() => {
-      await mainNav.preferencesButton.click();
-      const prefWindow = await electronApp.waitForEvent('window', page => /preferences/i.test(page.url()));
-      expect(prefWindow).toBeDefined();
-      prefPage = new PreferencesPage(prefWindow);
-    });
+    test.beforeEach(openPreferences);
 
     test.afterEach(async() => {
       if (prefPage) {

@@ -454,7 +454,7 @@ test.describe.serial('Main App Test', () => {
     });
 
     test.afterAll(async({ colorScheme }) => {
-      await preferencesPage.close({ runBeforeUnload: true });
+      await preferencesPage.close();
     });
 
     test.describe('Application Page', () => {
@@ -623,7 +623,7 @@ test.describe.serial('Main App Test', () => {
     });
 
     test.afterAll(async({ colorScheme }) => {
-      await preferencesPage.close({ runBeforeUnload: true });
+      await preferencesPage.close();
     });
 
     test('Allowed Images - locked fields', async() => {

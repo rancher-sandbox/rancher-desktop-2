@@ -1,4 +1,6 @@
 import { jest } from '@jest/globals';
+import { nextTick } from 'vue';
+import { createStore } from 'vuex';
 
 import packageJSON from '@/package.json' with { type: 'json' };
 import mockModules from '@pkg/utils/testUtils/mockModules';
@@ -239,5 +241,43 @@ describe('switchTo action', () => {
     expect(spy).toHaveBeenCalledWith(expect.stringContaining('"zh-hans"'), expect.any(Error));
     spy.mockRestore();
     expect(document.documentElement.lang).toBe('en-us');
+  });
+});
+
+describe('locale plugin', () => {
+  function makeStore() {
+    const switchTo = jest.fn();
+    const store = createStore<any>({
+      modules: {
+        i18n:        { namespaced: true, state: { selected: 'en-us' }, actions: { switchTo: (_ctx, locale) => switchTo(locale) } },
+        preferences: {
+          namespaced: true,
+          state:      { committedLocale: 'en-us', changes: {} as Record<string, string> },
+          getters:    {
+            committed:   state => ({ application: { locale: state.committedLocale } }),
+            preferences: state => ({ application: { locale: state.changes['application.locale'] ?? state.committedLocale } }),
+          },
+        },
+      },
+      plugins: [i18n.plugins[0]] as any,
+    });
+
+    return { store, switchTo };
+  }
+
+  it('ignores a locale picked but not applied', async() => {
+    const { store, switchTo } = makeStore();
+
+    store.state.preferences.changes = { 'application.locale': 'de' };
+    await nextTick();
+    expect(switchTo).not.toHaveBeenCalled();
+  });
+
+  it('follows the App\'s locale', async() => {
+    const { store, switchTo } = makeStore();
+
+    store.state.preferences.committedLocale = 'de';
+    await nextTick();
+    expect(switchTo).toHaveBeenCalledWith('de');
   });
 });
