@@ -138,8 +138,8 @@ jobs:
       shell: pwsh
       working-directory: ${{ runner.temp }}
       run: |
-        # Stop unwanted services
-        Get-Service -ErrorAction Continue -Name @('W3SVC', 'docker') |
+        # Stop unwanted services; sshd would answer Lima's WSL2 SSH probe on port 22.
+        Get-Service -ErrorAction Continue -Name @('W3SVC', 'docker', 'sshd') |
           Stop-Service
 
         # Update any pre-installed WSL
