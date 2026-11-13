@@ -569,15 +569,20 @@ class Watcher<
   start() {
     // Stop any existing watcher before starting a new one.
     this.#watcher?.stop(errorManuallyStopped);
-    // ListWatch emits only for the items that a list adds, changes or removes.
-    // Each `start()` builds a new ListWatch, so an empty first list would emit
-    // nothing.  The store would keep `null` or a restarted watch's old items,
-    // and `waitForResources` would wait until an item appears.  So trigger a
-    // change after every list.  The trigger runs before ListWatch applies the
-    // list, but `onChange()` commits on a timer that fires after.
+    // ListWatch only tells us when items are added, changed or removed.
+    // Each `start()` creates a new ListWatch that starts out empty, so if the
+    // list is empty too, there is no change, and ListWatch doesn't tell us
+    // anything.  A new window would then keep `null` in the store, a restarted
+    // watch would keep its old items (even ones that were deleted), and
+    // `waitForResources` would wait forever.  So call `onChange()` after every
+    // list.  ListWatch stores the list as soon as this function returns it,
+    // before the timer from `onChange()` can fire.
     const listFn = async() => {
       const list = await this.#listFn();
 
+      // Only trigger a change if this is the current watcher.  After a
+      // restart, the old watcher's list can still arrive while the new
+      // watcher is empty, and we would clear the store.
       if (Object.is(watcher, this.#watcher)) {
         this.onChange();
       }

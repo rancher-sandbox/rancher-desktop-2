@@ -26,8 +26,9 @@ function appList(items: any[]) {
 }
 
 /**
- * Build a store with the real rdd module and a fake network: each `listApp`
- * call returns a pending list, and each watch is recorded.
+ * Build a store with the real rdd module and a fake rdd client.  The test
+ * resolves each `listApp` call through `lists`, and sends watch events
+ * through `watches`.
  */
 function makeStore() {
   const lists: PromiseWithResolvers<any>[] = [];
@@ -95,7 +96,7 @@ describe('rdd store', () => {
     return network;
   }
 
-  it('sends no status report before the App list returns', async() => {
+  it('does not send a status report before the App list returns', async() => {
     const { lists } = await watchApps();
 
     await jest.advanceTimersByTimeAsync(5_000);
@@ -108,7 +109,7 @@ describe('rdd store', () => {
     ]);
   });
 
-  it('reports no conditions when the first list has no App', async() => {
+  it('sends an empty status report when the first list does not have an App', async() => {
     const { lists } = await watchApps();
 
     lists[0].resolve(appList([]));
@@ -137,7 +138,7 @@ describe('rdd store', () => {
     ]);
   });
 
-  it('reports no conditions when a restarted watch lists no App', async() => {
+  it('sends an empty status report when the list after a watch restart does not have an App', async() => {
     const { store, lists } = await watchApps();
 
     lists[0].resolve(appList([app]));
@@ -182,7 +183,7 @@ describe('rdd store', () => {
     expect(loaded).toBe(true);
   });
 
-  it('reports no conditions when the App is deleted', async() => {
+  it('sends an empty status report when the App is deleted', async() => {
     const { lists, watches } = await watchApps();
 
     lists[0].resolve(appList([app]));

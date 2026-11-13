@@ -7,7 +7,8 @@ const console = Logging.steve;
 type StatusConditions = Record<string, readonly [boolean | undefined, ...unknown[]]>;
 
 /**
- * Run Steve while Kubernetes is ready, and close the dashboard when it stops.
+ * Start Steve when Kubernetes is ready; otherwise stop Steve and close the
+ * dashboard window.
  */
 export function followAppStatus(statusConditions: StatusConditions) {
   if (statusConditions.KubernetesReady?.[0]) {
@@ -16,7 +17,8 @@ export function followAppStatus(statusConditions: StatusConditions) {
     });
   } else {
     Steve.getInstance().stop();
-    // The next Steve listens on a new port, which this window cannot reach.
+    // The dashboard window connects to this Steve's port, but the next Steve
+    // listens on a different one, so the open window would stay disconnected.
     closeDashboard();
   }
 }
