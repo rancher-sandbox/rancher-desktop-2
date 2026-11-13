@@ -8,7 +8,6 @@ package controllers
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"net/http"
@@ -381,10 +380,12 @@ func (r *KubernetesReconciler) probeK3sAPI(ctx context.Context) (probeResult, er
 		return probeUnreachable, fmt.Errorf("parse instance kubeconfig: %w", err)
 	}
 
-	httpClient, err := newProbeHTTPClient(cfg)
+	// The kubeconfig's client certificate authenticates the probe to k3s.
+	transport, err := probeTransport(cfg)
 	if err != nil {
 		return probeUnreachable, err
 	}
+	httpClient := &http.Client{Transport: transport}
 
 	probeCtx, cancel := context.WithTimeout(ctx, kubeProbeTimeout)
 	defer cancel()
@@ -413,74 +414,35 @@ func (r *KubernetesReconciler) probeK3sAPI(ctx context.Context) (probeResult, er
 	return probeHealthy, nil
 }
 
-// newProbeHTTPClient builds the TLS-aware HTTP client for a one-shot healthz
-// probe; keep-alives are off so each probe closes its connection when done.
-func newProbeHTTPClient(cfg *rest.Config) (*http.Client, error) {
-	tlsCfg := &tls.Config{ServerName: cfg.ServerName}
-	if len(cfg.CAData) > 0 {
-		pool := x509.NewCertPool()
-		pool.AppendCertsFromPEM(cfg.CAData)
-		tlsCfg.RootCAs = pool
+// probeTransport returns a transport with the TLS settings that client-go
+// builds from cfg, as kubectl does. Keep-alives are off so each probe closes
+// its connection when done.
+func probeTransport(cfg *rest.Config) (*http.Transport, error) {
+	tlsCfg, err := rest.TLSConfigFor(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("build TLS settings: %w", err)
 	}
-	// Load client cert for mTLS auth (k3s kubeconfig uses client cert, not bearer token).
-	if len(cfg.CertData) > 0 && len(cfg.KeyData) > 0 {
-		cert, err := tls.X509KeyPair(cfg.CertData, cfg.KeyData)
-		if err != nil {
-			return nil, fmt.Errorf("load client cert: %w", err)
-		}
-		tlsCfg.Certificates = []tls.Certificate{cert}
-	}
-	return &http.Client{
-		Transport: &http.Transport{TLSClientConfig: tlsCfg, DisableKeepAlives: true},
-	}, nil
+	return &http.Transport{TLSClientConfig: tlsCfg, DisableKeepAlives: true}, nil
 }
 
 // reachabilityHTTPClient builds the client for the current-context reachability
-// probe. It reaches the cluster the way client-go does — trusting the
-// kubeconfig's certificate-authority (inline data or a file path), sending
-// tls-server-name, and going through proxy-url or else the environment's proxy
-// — but sends no credentials. A certificate it cannot verify is handled by the
-// caller, which still counts the cluster as reachable, so the probe needs no
-// InsecureSkipVerify. It does not follow a redirect, whose target may be another
-// host. Keep-alives are off so each probe closes its connection when done.
-func reachabilityHTTPClient(cfg *rest.Config) *http.Client {
-	tlsCfg := &tls.Config{ServerName: cfg.ServerName}
-	if pool := caCertPool(cfg); pool != nil {
-		tlsCfg.RootCAs = pool
+// probe. It goes through proxy-url or else the environment's proxy, but it does
+// not send credentials. It does not follow a redirect, whose target may be
+// another host. It returns an error for TLS settings that client-go refuses,
+// such as a certificate-authority together with insecure-skip-tls-verify.
+func reachabilityHTTPClient(cfg *rest.Config) (*http.Client, error) {
+	transport, err := probeTransport(rest.AnonymousClientConfig(cfg))
+	if err != nil {
+		return nil, err
 	}
-	proxy := cfg.Proxy
-	if proxy == nil {
-		proxy = http.ProxyFromEnvironment
+	transport.Proxy = cfg.Proxy
+	if transport.Proxy == nil {
+		transport.Proxy = http.ProxyFromEnvironment
 	}
 	return &http.Client{
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
-		Transport: &http.Transport{
-			Proxy:             proxy,
-			TLSClientConfig:   tlsCfg,
-			DisableKeepAlives: true,
-		},
-	}
-}
-
-// caCertPool returns a cert pool holding the kubeconfig's inline CA data and the
-// contents of its CA file, or nil when the kubeconfig names neither or neither
-// parses. Unlike the k3s probe, this reads certificate-authority given as a
-// file path, which client-go leaves in CAFile.
-func caCertPool(cfg *rest.Config) *x509.CertPool {
-	pool := x509.NewCertPool()
-	added := false
-	if len(cfg.CAData) > 0 && pool.AppendCertsFromPEM(cfg.CAData) {
-		added = true
-	}
-	if cfg.CAFile != "" {
-		if data, err := os.ReadFile(cfg.CAFile); err == nil && pool.AppendCertsFromPEM(data) {
-			added = true
-		}
-	}
-	if !added {
-		return nil
-	}
-	return pool
+		Transport:     transport,
+	}, nil
 }
 
 // classifyProbeError maps a transport-level failure from the healthz probe
@@ -569,15 +531,15 @@ func (r *KubernetesReconciler) checkCurrentKubeContext(ctx context.Context) {
 
 // probeCurrentKubeContext returns true if the named context's cluster is
 // reachable. Empty or "default" contexts are treated as unreachable, as are a
-// missing context or cluster entry. The probe sends no credentials and counts
-// any HTTP response as reachable, as well as a server that completes the TLS
-// handshake or whose certificate it cannot verify, so a 401, a slow answer, an
-// untrusted certificate, or a cluster behind a proxy-url still count as alive;
-// only a failure to connect counts as unreachable.
+// missing context or cluster entry. The probe does not send credentials, so it
+// counts any HTTP response as reachable, a 401 included. An https cluster also
+// counts as reachable when it completes the TLS handshake, even if the request
+// then fails, and when the probe cannot verify its certificate. An http
+// cluster must answer before the probe times out.
 //
-// Returns true on unexpected internal errors (path lookup, kubeconfig parse) to
-// leave the user's current-context alone; each such path logs the underlying
-// error.
+// If a path lookup or kubeconfig parse fails, or client-go refuses the TLS
+// settings, it returns true to leave the user's current-context alone; each
+// such path logs the underlying error.
 func probeCurrentKubeContext(ctx context.Context, current string) bool {
 	log := logf.FromContext(ctx).WithName("kube-context-probe").WithValues("context", current)
 	if current == "" || current == "default" {
@@ -593,6 +555,11 @@ func probeCurrentKubeContext(ctx context.Context, current string) bool {
 		log.Error(err, "Failed to load kubeconfig", "path", destPath)
 		return true
 	}
+	// Read relative file paths from the kubeconfig's directory, as kubectl does.
+	if err := clientcmd.ResolveLocalPaths(cfg); err != nil {
+		log.Error(err, "Failed to resolve kubeconfig paths", "path", destPath)
+		return true
+	}
 	kctx, ok := cfg.Contexts[current]
 	if !ok {
 		return false
@@ -602,19 +569,16 @@ func probeCurrentKubeContext(ctx context.Context, current string) bool {
 		return false
 	}
 
-	// Build a REST config from the extracted cluster+user. Only its proxy, TLS
-	// server name and certificate-authority are used; the probe does not send
-	// credentials.
-	merged := *cfg
-	merged.CurrentContext = current
-	data, err := clientcmd.Write(merged)
-	if err != nil {
-		log.Error(err, "Failed to serialize kubeconfig")
-		return true
-	}
-	restCfg, err := clientcmd.RESTConfigFromKubeConfig(data)
+	// Build a REST config for the context. Only its proxy and TLS settings are
+	// used; the probe does not send credentials.
+	restCfg, err := clientcmd.NewDefaultClientConfig(*cfg, &clientcmd.ConfigOverrides{CurrentContext: current}).ClientConfig()
 	if err != nil {
 		log.Error(err, "Failed to build REST config from kubeconfig")
+		return true
+	}
+	client, err := reachabilityHTTPClient(restCfg)
+	if err != nil {
+		log.Error(err, "Failed to build probe client")
 		return true
 	}
 
@@ -633,13 +597,18 @@ func probeCurrentKubeContext(ctx context.Context, current string) bool {
 	// fires only after the dial, any proxy CONNECT and the cluster's own
 	// handshake), or an untrusted one failed only the probe's own verification.
 	// A failure after that, such as a slow answer or a TLS 1.3 server that
-	// requires a client certificate, still proves the server is up. Only a
-	// failure to connect counts as unreachable.
+	// requires a client certificate, still proves the server is up. Over https,
+	// only a failure to connect counts as unreachable.
+	//
+	// A certificate error can also come from an https proxy, which Go checks
+	// with the cluster's TLS settings. The probe then cannot see the cluster
+	// behind the proxy, and neither can kubectl, so it leaves current-context
+	// alone.
 	var connected bool
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), &httptrace.ClientTrace{
 		GotConn: func(httptrace.GotConnInfo) { connected = true },
 	}))
-	resp, err := reachabilityHTTPClient(restCfg).Do(req)
+	resp, err := client.Do(req)
 	if err == nil {
 		_ = resp.Body.Close()
 		return true

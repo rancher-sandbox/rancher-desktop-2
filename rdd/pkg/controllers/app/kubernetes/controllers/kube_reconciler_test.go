@@ -11,6 +11,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -47,13 +48,17 @@ import (
 // server.
 func fakeK3sServer(t *testing.T, srcPath string, healthzStatus int) string {
 	t.Helper()
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/healthz" {
 			w.WriteHeader(healthzStatus)
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
 	}))
+	// Demand a client certificate, so a probe that stops presenting the
+	// kubeconfig's certificate fails.
+	srv.TLS = &tls.Config{ClientAuth: tls.RequireAnyClientCert}
+	srv.StartTLS()
 	t.Cleanup(srv.Close)
 	return writeK3sKubeconfig(t, srv, srcPath)
 }
@@ -944,9 +949,16 @@ func Test_Probes_CloseConnections(t *testing.T) {
 // current.
 func writeContextKubeconfig(t *testing.T, destPath, name, server string, caPEM []byte) {
 	t.Helper()
+	writeClusterKubeconfig(t, destPath, name, &clientcmdapi.Cluster{Server: server, CertificateAuthorityData: caPEM})
+}
+
+// writeClusterKubeconfig writes destPath with a single context named name
+// that uses cluster, and makes it current.
+func writeClusterKubeconfig(t *testing.T, destPath, name string, cluster *clientcmdapi.Cluster) {
+	t.Helper()
 	assert.NilError(t, os.MkdirAll(filepath.Dir(destPath), 0o700))
 	cfg := clientcmdapi.NewConfig()
-	cfg.Clusters[name] = &clientcmdapi.Cluster{Server: server, CertificateAuthorityData: caPEM}
+	cfg.Clusters[name] = cluster
 	cfg.Contexts[name] = &clientcmdapi.Context{Cluster: name}
 	cfg.CurrentContext = name
 	assert.NilError(t, clientcmd.WriteToFile(*cfg, destPath))
@@ -959,10 +971,39 @@ func serverCAPEM(t *testing.T, srv *httptest.Server) []byte {
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: srv.Certificate().Raw})
 }
 
+// httpsConnectProxy starts an https proxy that tunnels each CONNECT to backend,
+// or answers it with 502 Bad Gateway when backend is "". It serves httptest's
+// built-in certificate, which the probe cannot verify unless the kubeconfig
+// trusts it.
+func httpsConnectProxy(t *testing.T, backend string) *httptest.Server {
+	t.Helper()
+	proxy := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if backend == "" {
+			http.Error(w, "cannot reach the cluster", http.StatusBadGateway)
+			return
+		}
+		up, err := (&net.Dialer{}).DialContext(r.Context(), "tcp", backend)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		conn, buf, err := w.(http.Hijacker).Hijack()
+		if err != nil {
+			_ = up.Close()
+			return
+		}
+		_, _ = conn.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
+		go func() { _, _ = io.Copy(up, buf.Reader); _ = up.Close() }()
+		go func() { _, _ = io.Copy(conn, up); _ = conn.Close() }()
+	}))
+	t.Cleanup(proxy.Close)
+	return proxy
+}
+
 // Test_probeCurrentKubeContext_Reachability checks that the current-context
 // probe reports a cluster alive whenever its server answers at all, so a 401
-// and a certificate the kubeconfig cannot verify both count as alive, and only
-// a connection that cannot be made counts as dead.
+// and a certificate the kubeconfig cannot verify both count as alive. Over
+// https, only a connection that cannot be made counts as dead.
 func Test_probeCurrentKubeContext_Reachability(t *testing.T) {
 	t.Run("a 401 counts as reachable", func(t *testing.T) {
 		srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -982,10 +1023,10 @@ func Test_probeCurrentKubeContext_Reachability(t *testing.T) {
 		t.Cleanup(srv.Close)
 		destPath := filepath.Join(t.TempDir(), "config")
 		t.Setenv("KUBECONFIG", destPath)
-		// This CA data does not parse, so verification falls back to the system
-		// roots and fails; the probe must still count the server as reachable.
-		bogusCA := []byte("-----BEGIN CERTIFICATE-----\nMIIBogus\n-----END CERTIFICATE-----\n")
-		writeContextKubeconfig(t, destPath, "other", srv.URL, bogusCA)
+		// Without a certificate-authority the probe checks the server against
+		// the system roots, which do not trust httptest's certificate; the probe
+		// must still count the server as reachable.
+		writeContextKubeconfig(t, destPath, "other", srv.URL, nil)
 		assert.Assert(t, probeCurrentKubeContext(t.Context(), "other"))
 	})
 
@@ -1000,10 +1041,7 @@ func Test_probeCurrentKubeContext_Reachability(t *testing.T) {
 		t.Cleanup(proxy.Close)
 		destPath := filepath.Join(t.TempDir(), "config")
 		t.Setenv("KUBECONFIG", destPath)
-		writeContextKubeconfig(t, destPath, "other", server, nil)
-		cfg := loadDest(t, destPath)
-		cfg.Clusters["other"].ProxyURL = proxy.URL
-		assert.NilError(t, clientcmd.WriteToFile(*cfg, destPath))
+		writeClusterKubeconfig(t, destPath, "other", &clientcmdapi.Cluster{Server: server, ProxyURL: proxy.URL})
 		assert.Assert(t, probeCurrentKubeContext(t.Context(), "other"))
 	})
 
@@ -1023,10 +1061,11 @@ func Test_probeCurrentKubeContext_Reachability(t *testing.T) {
 		t.Cleanup(srv.Close)
 		destPath := filepath.Join(t.TempDir(), "config")
 		t.Setenv("KUBECONFIG", destPath)
-		writeContextKubeconfig(t, destPath, "other", srv.URL, serverCAPEM(t, srv))
-		cfg := loadDest(t, destPath)
-		cfg.Clusters["other"].TLSServerName = "example.com"
-		assert.NilError(t, clientcmd.WriteToFile(*cfg, destPath))
+		writeClusterKubeconfig(t, destPath, "other", &clientcmdapi.Cluster{
+			Server:                   srv.URL,
+			CertificateAuthorityData: serverCAPEM(t, srv),
+			TLSServerName:            "example.com",
+		})
 		assert.Assert(t, probeCurrentKubeContext(t.Context(), "other"))
 	})
 
@@ -1054,6 +1093,87 @@ func Test_probeCurrentKubeContext_Reachability(t *testing.T) {
 		t.Setenv("KUBECONFIG", destPath)
 		writeContextKubeconfig(t, destPath, "other", url, nil)
 		assert.Assert(t, !probeCurrentKubeContext(t.Context(), "other"))
+	})
+
+	t.Run("a dead cluster with a certificate-authority path relative to the kubeconfig counts as unreachable", func(t *testing.T) {
+		srv := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+		url := srv.URL
+		srv.Close()
+		dir := t.TempDir()
+		assert.NilError(t, os.WriteFile(filepath.Join(dir, "ca.crt"), serverCAPEM(t, srv), 0o600))
+		destPath := filepath.Join(dir, "config")
+		t.Setenv("KUBECONFIG", destPath)
+		// kubectl reads ca.crt from the kubeconfig's directory. A probe that
+		// cannot read it leaves current-context alone, even for a dead cluster.
+		writeClusterKubeconfig(t, destPath, "other", &clientcmdapi.Cluster{Server: url, CertificateAuthority: "ca.crt"})
+		assert.Assert(t, !probeCurrentKubeContext(t.Context(), "other"))
+	})
+
+	t.Run("a kubeconfig with TLS settings that client-go refuses leaves current-context alone", func(t *testing.T) {
+		srv := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+		url := srv.URL
+		srv.Close()
+		destPath := filepath.Join(t.TempDir(), "config")
+		t.Setenv("KUBECONFIG", destPath)
+		// client-go, which kubectl uses, refuses a certificate-authority together
+		// with insecure-skip-tls-verify. The probe then leaves current-context
+		// alone, though the cluster is down.
+		writeClusterKubeconfig(t, destPath, "other", &clientcmdapi.Cluster{
+			Server:                   url,
+			CertificateAuthorityData: serverCAPEM(t, srv),
+			InsecureSkipTLSVerify:    true,
+		})
+		assert.Assert(t, probeCurrentKubeContext(t.Context(), "other"))
+	})
+
+	t.Run("a dead cluster behind an https proxy with insecure-skip-tls-verify counts as unreachable", func(t *testing.T) {
+		proxy := httpsConnectProxy(t, "")
+		destPath := filepath.Join(t.TempDir(), "config")
+		t.Setenv("KUBECONFIG", destPath)
+		writeClusterKubeconfig(t, destPath, "other", &clientcmdapi.Cluster{
+			Server:                "https://cluster.invalid:6443",
+			ProxyURL:              proxy.URL,
+			InsecureSkipTLSVerify: true,
+		})
+		assert.Assert(t, !probeCurrentKubeContext(t.Context(), "other"))
+	})
+
+	t.Run("a live cluster behind an https proxy with insecure-skip-tls-verify counts as reachable", func(t *testing.T) {
+		cluster := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		t.Cleanup(cluster.Close)
+		proxy := httpsConnectProxy(t, cluster.Listener.Addr().String())
+		destPath := filepath.Join(t.TempDir(), "config")
+		t.Setenv("KUBECONFIG", destPath)
+		writeClusterKubeconfig(t, destPath, "other", &clientcmdapi.Cluster{
+			Server:                cluster.URL,
+			ProxyURL:              proxy.URL,
+			InsecureSkipTLSVerify: true,
+		})
+		assert.Assert(t, probeCurrentKubeContext(t.Context(), "other"))
+	})
+
+	t.Run("the probe does not send a client certificate", func(t *testing.T) {
+		var served, sawCert atomic.Bool
+		srv := httptest.NewUnstartedServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+			served.Store(true)
+			sawCert.Store(len(r.TLS.PeerCertificates) > 0)
+		}))
+		srv.TLS = &tls.Config{ClientAuth: tls.RequestClientCert}
+		srv.StartTLS()
+		t.Cleanup(srv.Close)
+		destPath := filepath.Join(t.TempDir(), "config")
+		t.Setenv("KUBECONFIG", destPath)
+		certPEM := serverCAPEM(t, srv)
+		cfg := clientcmdapi.NewConfig()
+		cfg.Clusters["other"] = &clientcmdapi.Cluster{Server: srv.URL, CertificateAuthorityData: certPEM}
+		cfg.AuthInfos["other"] = &clientcmdapi.AuthInfo{ClientCertificateData: certPEM, ClientKeyData: clientKeyPEM(t, srv)}
+		cfg.Contexts["other"] = &clientcmdapi.Context{Cluster: "other", AuthInfo: "other"}
+		assert.NilError(t, clientcmd.WriteToFile(*cfg, destPath))
+		assert.Assert(t, probeCurrentKubeContext(t.Context(), "other"))
+		assert.Assert(t, served.Load())
+		assert.Assert(t, !sawCert.Load())
 	})
 }
 
