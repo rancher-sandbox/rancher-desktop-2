@@ -47,19 +47,22 @@ all:
 	rm -rf $(TREE)
 	mkdir -p $(TREE)
 	tar --extract --gzip --file=$(ARCHIVE) --directory=$(TREE) --strip-components=1
-# The shell's build includes every plugin under the tree's pkg/ folder, so we
-# keep only rancher-components (the shell imports it) and add ours.
+
+	# The shell's build includes every plugin under the tree's pkg/ folder, so we
+	# keep only rancher-components (the shell imports it) and add ours.
 	find $(TREE)/pkg -mindepth 1 -maxdepth 1 ! -name rancher-components -exec rm -rf {} +
 	cp -R pkg/rancher-deskboard $(TREE)/pkg/
-# --ignore-scripts keeps install scripts off, as the repo root's .yarnrc.yml
-# does for Yarn 4. Yarn 1 enforces engines fields. @achrinza/node-ipc, a Vue
-# CLI dependency, lists Node only up to 25, so --ignore-engines lets it install
-# on Node 26.
+
+	# --ignore-scripts keeps install scripts off, as the repo root's .yarnrc.yml
+	# does for Yarn 4. Yarn 1 enforces engines fields. @achrinza/node-ipc, a Vue
+	# CLI dependency, lists Node only up to 25, so --ignore-engines lets it install
+	# on Node 26.
 	cd $(TREE) && $(YARN) install --frozen-lockfile --ignore-scripts --ignore-engines
-# Rancher's package.json doesn't have a browserslist field, so Browserslist
-# would fall back to the repo root's list. That list targets Node 26, which is
-# too new for the Browserslist data in Rancher's lock. BROWSERSLIST=defaults
-# gives the build the same targets as Rancher's own build.
+
+	# Rancher's package.json doesn't have a browserslist field, so Browserslist
+	# would fall back to the repo root's list. That list targets Node 26, which is
+	# too new for the Browserslist data in Rancher's lock. BROWSERSLIST=defaults
+	# gives the build the same targets as Rancher's own build.
 	cd $(TREE) && BROWSERSLIST=defaults RANCHER_ENV=desktop RESOURCE_BASE=http://127.0.0.1:6120 \
 		OUTPUT_DIR=$(OUTPUT) COMMIT=$(RANCHER_TAG) DASHBOARD_VERSION=$(RANCHER_TAG) $(YARN) build
 	find $(TREE)/$(OUTPUT) -name '*.map' -delete
