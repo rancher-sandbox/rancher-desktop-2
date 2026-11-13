@@ -61,6 +61,7 @@ Requires: qemu-system-arm
 Requires: qemu-efi-aarch64
 %else
 Requires: qemu-system-x86
+Requires: ovmf
 %endif
 Requires: pass
 Requires: openssh-client
