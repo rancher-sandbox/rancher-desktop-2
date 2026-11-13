@@ -41,6 +41,14 @@ func TestKeyPatterns(t *testing.T) {
 		{"k attr", `      k="generic.loading"`, "generic.loading"},
 		{"bound key attr is an expression", `:label-key="expr"`, ""},
 		{"key-field is not a key attr", `key-field="Name"`, ""},
+		{"placeholder-key attr", `placeholder-key="form.name"`, "form.name"},
+		{"tooltip-key attr", `tooltip-key="form.hint"`, "form.hint"},
+		{"title-key attr", `title-key="form.title"`, "form.title"},
+		{"message-key attr", `message-key="form.empty"`, "form.empty"},
+		{"prefixed label-key attr", `no-options-label-key="form.none"`, "form.none"},
+		{"option-key names a field", `option-key="metadata.name"`, ""},
+		{"description-key names a field", `description-key="spec.description"`, ""},
+		{"url-key names a field", `url-key="source.value"`, ""},
 		{"key attr leading dot", `label-key=".badkey"`, ""},
 		{"key attr trailing dot", `label-key="badkey."`, ""},
 		{"key attr consecutive dots", `label-key="bad..key"`, ""},
@@ -83,10 +91,10 @@ func TestKeyLiteralPatterns(t *testing.T) {
 		{"dotted: quoted dotted key", dottedKeyLiteral, `titleKey: isAdmin ? 'admin.title' : 'user.title'`, "admin.title"},
 		{"dotted: no dotted key", dottedKeyLiteral, `titleKey: 'single'`, ""},
 		{"dotted: uppercase start", dottedKeyLiteral, `"Admin.title"`, ""}, // must start lowercase
-		{"indirect: property assignment", indirectKeyPattern, `bar: 'product.kubernetesVersion'`, "product.kubernetesVersion"},
-		{"indirect: quoted property", indirectKeyPattern, `'some-prop': "container.engine"`, "container.engine"},
-		{"indirect: double-quoted property", indirectKeyPattern, `"some-prop": 'container.engine'`, "container.engine"},
-		{"indirect: no dotted value", indirectKeyPattern, `bar: 'simple'`, ""},
+		{"dotted: property assignment", dottedKeyLiteral, `bar: 'product.kubernetesVersion'`, "product.kubernetesVersion"},
+		{"dotted: quoted property", dottedKeyLiteral, `'some-prop': "container.engine"`, "container.engine"},
+		{"dotted: double-quoted property", dottedKeyLiteral, `"some-prop": 'container.engine'`, "container.engine"},
+		{"dotted: no dotted value", dottedKeyLiteral, `bar: 'simple'`, ""},
 	}
 
 	for _, tc := range tests {
@@ -185,6 +193,11 @@ func TestTemplateToKeyRegex(t *testing.T) {
 		{"snapshots.dialog.${type}.actions.ok", "snapshots.dialog.restore.actions.ok", true},
 		{"snapshots.dialog.${type}.actions.ok", "snapshots.info.create.success", false},                                 // different prefix
 		{"virtualMachine.mount.type.options.${x}.label", "virtualMachine.mount.type.options.reverse-sshfs.label", true}, // hyphenated segment
+		{`secret.types."${t}"`, `secret.types."kubernetes.io/tls"`, true},                                               // dots and a slash
+		{`secret.descriptions."${t}".text`, `secret.descriptions."kubernetes.io/tls".text`, true},
+		{`secret.descriptions."${t}".text`, `secret.descriptions.Opaque.text`, true}, // no dot, so flattening leaves it bare
+		{`workload.descriptions.'${t}'`, `workload.descriptions."apps.deployment"`, true},
+		{`secret.types."${t}"`, `secret.types.a.b`, false}, // two bare segments
 	}
 
 	for _, tc := range tests {

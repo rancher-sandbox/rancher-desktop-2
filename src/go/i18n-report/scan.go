@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -18,11 +19,12 @@ type keyReference struct {
 	Line int    `json:"line"`
 }
 
-// dynamicKeyRef records a template literal pattern that references
-// translation keys via interpolation (e.g., `prefix.${var}.suffix`).
+// dynamicKeyRef records a pattern that references translation keys at
+// runtime, either a template literal with interpolation
+// (e.g., `prefix.${var}.suffix`) or an i18n-uses entry (e.g., `nav.group.*`).
 type dynamicKeyRef struct {
-	Template string         // raw template content
-	Pattern  string         // human-readable: "prefix.{}.suffix"
+	Template string         // raw template content or i18n-uses entry
+	Pattern  string         // human-readable: "prefix.{}.suffix" or "nav.group.*"
 	Regex    *regexp.Regexp // compiled regex for matching keys
 	Ref      keyReference   // source location
 }
@@ -31,6 +33,11 @@ type dynamicKeyRef struct {
 // by single dots. It rejects leading, trailing, and consecutive dots.
 // Segments allow hyphens because keys such as reverse-sshfs and en-us do.
 const dottedKey = `[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)*`
+
+// quotedSegment matches the one key segment that a quoted interpolation fills.
+// Flattening quotes a segment that holds a dot (secret.types."kubernetes.io/tls")
+// and leaves any other bare (secret.types.opaque).
+const quotedSegment = `(?:"[^"]+"|[^."]+)`
 
 // Patterns for finding translation key references in source code.
 var (
@@ -44,10 +51,11 @@ var (
 	// Dotted key literals in quoted strings.
 	dottedKeyLiteral = regexp.MustCompile(`['"]([a-z][a-zA-Z0-9]*(?:\.[a-z][a-zA-Z0-9]*)+)['"]`)
 	// Vue template attributes that pass translation keys: bare k="..." on
-	// the <t> component and any *-key="..." attribute (label-key,
-	// no-rows-key, ...). Bound forms (:label-key="expr") are expressions,
-	// not keys, and are excluded by the leading ^|\s requirement.
-	keyAttrPattern = regexp.MustCompile(`(?:^|\s)(?:[a-z][a-z0-9]*(?:-[a-z0-9]+)*-key|k)=['"](` + dottedKey + `)['"]`)
+	// the <t> component and the listed *-key="..." attributes. Others, such as
+	// option-key and description-key, name a field of an object. Bound forms
+	// (:label-key="expr") are expressions, not keys, and are excluded by the
+	// leading ^|\s requirement.
+	keyAttrPattern = regexp.MustCompile(`(?:^|\s)(?:(?:[a-z0-9]+-)*(?:label|placeholder|tooltip|title|message)-key|no-rows-key|k)=['"](` + dottedKey + `)['"]`)
 	// v-t="'...'" Vue directive for translation.
 	vtDirectivePattern = regexp.MustCompile(`v-t="'(` + dottedKey + `)'"`)
 	// Direct store getter calls: getters['i18n/t']('key').
@@ -57,13 +65,6 @@ var (
 	// Comment lines; keys mentioned in comments are not real references.
 	commentLinePattern = regexp.MustCompile(`^\s*(//|\*|/\*|<!--)`)
 
-	// String values that look like translation keys in property assignments
-	// (e.g., `bar: 'product.kubernetesVersion'`). Catches indirect references
-	// where the value is later passed to t() by a different component.
-	// Validated against the en-us.yaml key set to avoid false positives from
-	// settings paths, Kubernetes resource types, and other dotted strings.
-	indirectKeyPattern = regexp.MustCompile(`(?:\b\w+|'[^']+'|"[^"]+"):\s+['"]([a-z][a-zA-Z0-9]*(?:\.[a-z][a-zA-Z0-9]*)+)['"]`)
-
 	// Template literals that look like dynamic translation key patterns.
 	// Matches backtick strings containing at least one dot and one ${...}
 	// interpolation, with a key-like prefix (e.g., `prefix.${var}.suffix`).
@@ -71,21 +72,32 @@ var (
 
 	// Splits a template string on ${...} interpolations.
 	interpolationSplit = regexp.MustCompile(`\$\{[^}]+\}`)
+
+	// Splits a template string on interpolations inside quotes, such as
+	// secret.types."${ type }".
+	quotedInterpolation = regexp.MustCompile(`["']\$\{[^}]+\}["']`)
+
+	// An i18n-uses comment names the keys that a dynamic reference resolves to.
+	// It is the annotation that the dashboard shell's check-i18n reads.
+	i18nUsesPattern = regexp.MustCompile(`//\s*i18n-uses\s+(.+)$`)
 )
 
 // templateToKeyRegex converts a template literal with ${...} interpolations
 // into a regex that matches translation keys. Static parts become literal
 // matches; each interpolation becomes a dottedKey wildcard spanning one or
-// more key segments.
+// more key segments, and a quoted interpolation becomes a quotedSegment.
 func templateToKeyRegex(template string) *regexp.Regexp {
-	parts := interpolationSplit.Split(template, -1)
-
 	var sb strings.Builder
 	sb.WriteString("^")
-	for i, part := range parts {
-		sb.WriteString(regexp.QuoteMeta(part))
-		if i < len(parts)-1 {
-			sb.WriteString(dottedKey)
+	for i, piece := range quotedInterpolation.Split(template, -1) {
+		if i > 0 {
+			sb.WriteString(quotedSegment)
+		}
+		for j, part := range interpolationSplit.Split(piece, -1) {
+			if j > 0 {
+				sb.WriteString(dottedKey)
+			}
+			sb.WriteString(regexp.QuoteMeta(part))
 		}
 	}
 	sb.WriteString("$")
@@ -116,6 +128,40 @@ func extractDynamicPatterns(line string, ref keyReference) []dynamicKeyRef {
 			Template: template,
 			Pattern:  templateToHumanPattern(template),
 			Regex:    re,
+			Ref:      ref,
+		})
+	}
+	return dynamics
+}
+
+// extractI18nUses returns the key patterns that an i18n-uses comment on the line
+// declares. A trailing * spans the remaining segments, and any other * spans one.
+func extractI18nUses(line string, ref keyReference) []dynamicKeyRef {
+	m := i18nUsesPattern.FindStringSubmatch(line)
+	if m == nil {
+		return nil
+	}
+	var dynamics []dynamicKeyRef
+	for _, pattern := range strings.Split(m[1], ",") {
+		pattern = strings.TrimSpace(pattern)
+		if pattern == "" {
+			continue
+		}
+		segments := strings.Split(pattern, ".")
+		for i, segment := range segments {
+			switch {
+			case segment != "*":
+				segments[i] = regexp.QuoteMeta(segment)
+			case i == len(segments)-1:
+				segments[i] = ".*"
+			default:
+				segments[i] = `[^.]*`
+			}
+		}
+		dynamics = append(dynamics, dynamicKeyRef{
+			Template: pattern,
+			Pattern:  pattern,
+			Regex:    regexp.MustCompile("^" + strings.Join(segments, `\.`) + "$"),
 			Ref:      ref,
 		})
 	}
@@ -172,7 +218,11 @@ func scanRepoSourceFiles(root string) ([]string, error) {
 			}
 		}
 	}
-	return files, nil
+	// Some tests are next to the code they cover, outside __tests__.
+	return slices.DeleteFunc(files, func(file string) bool {
+		base := filepath.Base(file)
+		return strings.Contains(base, ".spec.") || strings.Contains(base, ".test.")
+	}), nil
 }
 
 // scanResult holds everything one pass over the source tree produces.
@@ -223,10 +273,11 @@ func scanFiles(root string, keys map[string]string) (*scanResult, error) {
 		content := string(data)
 		lines := strings.Split(content, "\n")
 		for i, line := range lines {
+			ref := keyReference{File: relPath, Line: i + 1}
+			result.dynamics = append(result.dynamics, extractI18nUses(line, ref)...)
 			if commentLinePattern.MatchString(line) {
 				continue
 			}
-			ref := keyReference{File: relPath, Line: i + 1}
 
 			for _, pat := range []*regexp.Regexp{keyPattern, keyPropPattern, keyAttrPattern, vtDirectivePattern, getterCallPattern} {
 				for _, m := range pat.FindAllStringSubmatch(line, -1) {
@@ -239,8 +290,10 @@ func scanFiles(root string, keys map[string]string) (*scanResult, error) {
 					addDirect(m[1], ref)
 				}
 			}
-			// Indirect key references: only count matches that exist in en-us.yaml.
-			for _, m := range indirectKeyPattern.FindAllStringSubmatch(line, -1) {
+			// A quoted key can reach t() indirectly, as a property that another
+			// component reads or as a ternary inside the call. Only strings in
+			// en-us.yaml count, which excludes settings paths and resource types.
+			for _, m := range dottedKeyLiteral.FindAllStringSubmatch(line, -1) {
 				if _, exists := keys[m[1]]; exists {
 					result.refs[m[1]] = appendRef(result.refs[m[1]], ref)
 				}
@@ -259,7 +312,7 @@ func scanFiles(root string, keys map[string]string) (*scanResult, error) {
 }
 
 // findKeyReferences scans source files for translation key usage,
-// including dynamic template literal patterns.
+// including dynamic key patterns.
 func findKeyReferences(root string, keys map[string]string) (map[string][]keyReference, error) {
 	result, err := scanFiles(root, keys)
 	if err != nil {
@@ -280,7 +333,7 @@ func findKeyReferences(root string, keys map[string]string) (map[string][]keyRef
 
 // findUndefinedKeys returns direct references to keys that are missing from
 // the key set. Indirect references are excluded: settings paths and other
-// dotted strings match the indirect pattern, so without the key-set filter
+// dotted strings match dottedKeyLiteral, so without the key-set filter
 // they would flood this report with false positives.
 func findUndefinedKeys(root string, keys map[string]string) (map[string][]keyReference, error) {
 	result, err := scanFiles(root, keys)
@@ -298,7 +351,7 @@ func findUndefinedKeys(root string, keys map[string]string) (map[string][]keyRef
 }
 
 // findDynamicPatterns scans source files and returns only the dynamic
-// template literal patterns (without resolving them against keys).
+// key patterns (without resolving them against keys).
 func findDynamicPatterns(root string) ([]dynamicKeyRef, error) {
 	result, err := scanFiles(root, nil)
 	if err != nil {
