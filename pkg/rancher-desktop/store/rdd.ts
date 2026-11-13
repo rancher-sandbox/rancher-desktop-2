@@ -176,13 +176,13 @@ export const plugins: Plugin<RootState>[] = [
         }
         const conditions = app?.status?.conditions ?? [];
         const data = Object.fromEntries(conditions.map(condition => {
-          const { type, status, reason } = condition;
+          const { type, status, reason, message } = condition;
           const mappedStatus = {
             True:    true,
             False:   false,
             Unknown: undefined,
           }[status];
-          return [type, [mappedStatus, reason] as const] as const;
+          return [type, [mappedStatus, reason, message] as const] as const;
         }));
         ipcRenderer.send('backend/app-status-changed', data);
       },
