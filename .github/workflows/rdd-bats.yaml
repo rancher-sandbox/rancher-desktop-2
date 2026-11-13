@@ -138,8 +138,11 @@ jobs:
       shell: pwsh
       working-directory: ${{ runner.temp }}
       run: |
-        # Stop unwanted services
-        Get-Service -ErrorAction Continue -Name @('W3SVC', 'docker') |
+        # Stop unwanted services. The image runs the Windows OpenSSH Server
+        # (sshd) on port 22, and Lima's hostagent reaches a WSL2 guest's sshd
+        # through 127.0.0.1:22. If the runner's sshd answers before the guest's
+        # is up, Lima pins the runner's host key and then refuses the guest.
+        Get-Service -ErrorAction Continue -Name @('W3SVC', 'docker', 'sshd') |
           Stop-Service
 
         # Update any pre-installed WSL
