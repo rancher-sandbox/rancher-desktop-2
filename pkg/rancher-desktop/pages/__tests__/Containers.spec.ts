@@ -136,6 +136,15 @@ describe('Containers methods', () => {
     ]));
   });
 
+  it('translates every action label', () => {
+    // Wrap the English text so a translated label is told apart from a hardcoded one.
+    // The test t() returns `%key%` for a missing key, so a `%` fails the check too.
+    const marked = { ...methods, t: (key: string) => `[${ t(key) }]` };
+    const labels: string[] = methods.getContainerActions.call(marked, container('web')).map((action: any) => action.label);
+
+    expect(labels.filter(label => !/^\[[^%]+\]$/.test(label))).toEqual([]);
+  });
+
   describe('grouping', () => {
     it.each([
       ['no grouping labels', {}, 'Standalone Containers'],

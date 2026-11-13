@@ -288,6 +288,8 @@ containerInfo:
   fallbackTitle: Thông tin container
   # @source Info
   info: Thông tin
+  # @source Loading logs...
+  loadingLogs: Đang tải nhật ký...
   # @source Logs
   logs: Nhật ký
   search:
@@ -429,12 +431,16 @@ containers:
       action:
         # @source Info
         info: Thông tin
+        # @source Pause
+        pause: Tạm dừng
         # @source Restart
         restart: Khởi động lại
         # @source Start
         start: Khởi động
         # @source Stop
         stop: Dừng
+        # @source Unpause
+        unpause: Tiếp tục
       group:
         # @source Standalone Containers
         standalone: Container độc lập
@@ -809,6 +815,9 @@ labelSelect:
     counts: '{count} / {totalCount} mục'
     # @source Load More...
     more: Tải thêm...
+loadingIndicator:
+  # @source Loading
+  title: Đang tải
 locale:
   # @source German
   de: Tiếng Đức
@@ -1575,6 +1584,8 @@ volumes:
     noFiles: Volume này trống
     # @source Not Found
     notFound: Không tìm thấy
+    # @source root
+    root: thư mục gốc
     table:
       header:
         # @source Modified

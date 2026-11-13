@@ -290,6 +290,8 @@ containerInfo:
   fallbackTitle: Información del contenedor
   # @source Info
   info: Información
+  # @source Loading logs...
+  loadingLogs: Cargando los registros...
   # @source Logs
   logs: Registros
   search:
@@ -434,12 +436,16 @@ containers:
       action:
         # @source Info
         info: Información
+        # @source Pause
+        pause: Pausar
         # @source Restart
         restart: Reiniciar
         # @source Start
         start: Iniciar
         # @source Stop
         stop: Detener
+        # @source Unpause
+        unpause: Reanudar
       group:
         # @source Standalone Containers
         standalone: Contenedores independientes
@@ -821,6 +827,9 @@ labelSelect:
     counts: '{count} / {totalCount} elementos'
     # @source Load More...
     more: Cargar más...
+loadingIndicator:
+  # @source Loading
+  title: Cargando
 locale:
   # @source German
   de: Alemán
@@ -1602,6 +1611,8 @@ volumes:
     noFiles: Este volumen está vacío
     # @source Not Found
     notFound: No encontrado
+    # @source root
+    root: raíz
     table:
       header:
         # @source Modified

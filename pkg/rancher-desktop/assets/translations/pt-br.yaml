@@ -293,6 +293,8 @@ containerInfo:
   fallbackTitle: Informações do contêiner
   # @source Info
   info: Informações
+  # @source Loading logs...
+  loadingLogs: Carregando logs...
   # @reason 'Logs' kept in English: standard term among Brazilian developers; 'registros' would be less clear
   # @source Logs
   logs: Logs
@@ -439,12 +441,16 @@ containers:
       action:
         # @source Info
         info: Informações
+        # @source Pause
+        pause: Pausar
         # @source Restart
         restart: Reiniciar
         # @source Start
         start: Iniciar
         # @source Stop
         stop: Parar
+        # @source Unpause
+        unpause: Retomar
       group:
         # @source Standalone Containers
         standalone: Contêineres independentes
@@ -829,6 +835,9 @@ labelSelect:
     counts: '{count} / {totalCount} itens'
     # @source Load More...
     more: Carregar mais...
+loadingIndicator:
+  # @source Loading
+  title: Carregando
 locale:
   # @source German
   de: Alemão
@@ -1618,6 +1627,8 @@ volumes:
     noFiles: Este volume está vazio
     # @source Not Found
     notFound: Não encontrado
+    # @source root
+    root: raiz
     table:
       header:
         # @source Modified

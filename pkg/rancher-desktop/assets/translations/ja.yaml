@@ -292,6 +292,8 @@ containerInfo:
   fallbackTitle: コンテナー情報
   # @source Info
   info: 情報
+  # @source Loading logs...
+  loadingLogs: ログを読み込んでいます...
   # @source Logs
   logs: ログ
   search:
@@ -432,12 +434,16 @@ containers:
       action:
         # @source Info
         info: 情報
+        # @source Pause
+        pause: 一時停止
         # @source Restart
         restart: 再起動
         # @source Start
         start: 開始
         # @source Stop
         stop: 停止
+        # @source Unpause
+        unpause: 再開
       group:
         # @source Standalone Containers
         standalone: スタンドアロンのコンテナー
@@ -816,6 +822,9 @@ labelSelect:
     counts: '{count} / {totalCount} 件'
     # @source Load More...
     more: さらに読み込む...
+loadingIndicator:
+  # @source Loading
+  title: 読み込み中
 locale:
   # @source German
   de: ドイツ語
@@ -1596,6 +1605,8 @@ volumes:
     noFiles: このボリュームは空です
     # @source Not Found
     notFound: 見つかりません
+    # @source root
+    root: ルート
     table:
       header:
         # @source Modified

@@ -293,6 +293,8 @@ containerInfo:
   # @reason "Info" is standard Italian.
   # @source Info
   info: Info
+  # @source Loading logs...
+  loadingLogs: Caricamento dei log...
   # @reason "Log" is the standard term in Italian, invariable in the plural.
   # @source Logs
   logs: Log
@@ -442,12 +444,16 @@ containers:
         # @reason 'Info' is standard Italian shorthand for 'informazioni'; matches containerInfo.info
         # @source Info
         info: Info
+        # @source Pause
+        pause: Metti in pausa
         # @source Restart
         restart: Riavvia
         # @source Start
         start: Avvia
         # @source Stop
         stop: Arresta
+        # @source Unpause
+        unpause: Riprendi
       group:
         # @source Standalone Containers
         standalone: Container autonomi
@@ -835,6 +841,9 @@ labelSelect:
     counts: '{count} / {totalCount} elementi'
     # @source Load More...
     more: Carica altri...
+loadingIndicator:
+  # @source Loading
+  title: Caricamento
 locale:
   # @source German
   de: Tedesco
@@ -1632,6 +1641,8 @@ volumes:
     noFiles: Questo volume è vuoto
     # @source Not Found
     notFound: Non trovato
+    # @source root
+    root: radice
     table:
       header:
         # @source Modified

@@ -344,13 +344,13 @@ export default defineComponent({
           bulkable:   true,
         },
         {
-          label:      'Pause',
+          label:      this.t('containers.manage.table.action.pause'),
           action:     'pauseContainer',
           enabled:    this.isRunning(container),
           bulkable:   true,
         },
         {
-          label:      'Unpause',
+          label:      this.t('containers.manage.table.action.unpause'),
           action:     'unpauseContainer',
           enabled:    this.isPaused(container),
           bulkable:   true,

@@ -365,6 +365,8 @@ containerInfo:
   fallbackTitle: 容器信息
   # @source Info
   info: 信息
+  # @source Loading logs...
+  loadingLogs: 正在加载日志...
   # @source Logs
   logs: 日志
   search:
@@ -499,12 +501,16 @@ containers:
       action:
         # @source Info
         info: 信息
+        # @source Pause
+        pause: 暂停
         # @source Restart
         restart: 重启
         # @source Start
         start: 启动
         # @source Stop
         stop: 停止
+        # @source Unpause
+        unpause: 恢复
       group:
         # @source Standalone Containers
         standalone: 独立容器
@@ -865,6 +871,9 @@ labelSelect:
     counts: '{count} / {totalCount} 项'
     # @source Load More...
     more: 加载更多...
+loadingIndicator:
+  # @source Loading
+  title: 正在加载
 locale:
   # @source German
   de: 德语
@@ -1662,6 +1671,8 @@ volumes:
     noFiles: 此卷为空
     # @source Not Found
     notFound: 未找到
+    # @source root
+    root: 根目录
     table:
       header:
         # @source Modified
