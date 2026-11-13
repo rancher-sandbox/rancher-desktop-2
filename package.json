@@ -78,7 +78,7 @@
     "@eslint/config-helpers": "0.7.0",
     "@eslint/js": "10.0.1",
     "@jest/environment-jsdom-abstract": "30.5.2",
-    "@playwright/test": "1.64.1",
+    "@playwright/test": "1.65.0",
     "@types/cross-spawn": "6.0.6",
     "@types/dompurify": "3.2.0",
     "@types/ejs": "3.1.5",
