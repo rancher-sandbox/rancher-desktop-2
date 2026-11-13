@@ -3,75 +3,69 @@
 # SPDX-FileCopyrightText: The Rancher Desktop Authors
 
 # Builds the Cluster Explorer dashboard and stages it for rdd to embed.
+# README.md says why the build runs inside Rancher's dashboard tree.
 
 # Rancher pairs this tag's shell with the steve version in rancher/rancher's
-# go.mod at the same tag, so rdd/go.mod pins that version.
-#
-# yarn.lock starts from Rancher's lock at this tag, so every dependency range
-# that Rancher's lock resolves gets Rancher's version, and the ranges it lacks
-# resolve fresh. package.json repeats the tag's resolutions. Some of them force
-# a version outside the range that asks for it, and Rancher's lock records that
-# pairing. Without the resolution, Yarn rejects such an entry in hardened mode,
-# which it turns on in GitHub Actions runs for public pull requests. To move to
-# a new tag:
-#   1. Set RANCHER_TAG, SHELL_COMMIT and RANCHER_SHA256, and replace the
-#      resolutions in package.json with the tag's.
-#   2. Run `make`, which extracts the new shell and then stops at
-#      `yarn install --immutable`.
-#   3. Copy Rancher's yarn.lock over ours, write `npmMinimalAgeGate: 1d` to
-#      .yarnrc.yml, run `yarn install`, and delete .yarnrc.yml. Yarn's lockfile
-#      migration turns the age gate off unless that file sets it. If Yarn
-#      reports a version as quarantined, rerun this step once it is a day old.
-#   4. A new shell can add keys to its en-us.yaml, change their English or
-#      remove them. In each YAML file under pkg/rancher-deskboard/translations,
-#      translate the new and changed keys and delete the removed ones.
-#      To list them, run
-#      `git diff <old> <new> -- shell/assets/translations/en-us.yaml` with
-#      the old and new SHELL_COMMIT in a rancher-sandbox/dashboard checkout.
-#      But keep the typeLabel and nav.group keys that en-us lacks, even the
-#      ones that en-us just removed. They name types and groups that the shell
-#      would otherwise show in English. If en-us's typeLabel messages change
-#      their arguments, change the extra ones too.
-#   5. Check the result with `YARN_ENABLE_HARDENED_MODE=1 make`.
+# go.mod at the same tag, so rdd/go.mod pins that version. A new tag also
+# needs a new SHELL_COMMIT with our shell fixes on top of it.
 RANCHER_TAG := v2.15.3
 # This commit on rancher-sandbox/dashboard's i18n-fixes-2.15 branch is
 # RANCHER_TAG plus our shell fixes. We pin the commit because a branch archive
-# does not have a stable checksum. A new pin also needs RANCHER_SHA256 set to
-# the new archive's checksum, or `make` stops at the check. yarn.lock holds a
-# hash of this shell, so `yarn install --immutable` fails on a new commit.
-# After `make` stops there, run a plain `yarn install` and commit the updated
-# lock with the new pin. When RANCHER_TAG changes too, follow step 3 above
-# instead of the plain `yarn install`. In either case, follow step 4 above,
-# because a new pin can change en-us.yaml. Also tag the new commit
-# rd2-shell-<its first 10 hex digits> on rancher-sandbox/dashboard, so GitHub
-# keeps serving its archive after the branch is rewritten.
+# does not have a stable checksum. A new pin also needs SHELL_SHA256 set to
+# the new archive's checksum, or `make` stops at the check. Also tag the new
+# commit rd2-shell-<its first 10 hex digits> on rancher-sandbox/dashboard, so
+# GitHub keeps serving its archive after the branch is rewritten.
+#
+# A new shell can add keys to its en-us.yaml, change their English or remove
+# them. In each YAML file under pkg/rancher-deskboard/translations, translate
+# the new and changed keys and delete the removed ones. To list them, run
+# `git diff <old> <new> -- shell/assets/translations/en-us.yaml` with the old
+# and new SHELL_COMMIT in a rancher-sandbox/dashboard checkout. But keep the
+# typeLabel and nav.group keys that en-us lacks, even the ones that en-us just
+# removed. They name types and groups that the shell would otherwise show in
+# English. If en-us's typeLabel messages change their arguments, change the
+# extra ones too.
 SHELL_COMMIT := d79889ccfab793c708c56ea973b38864396bdbcf
-RANCHER_SHA256 := 625f4e637d18ca912690774a722b8820e5638dec0125283f2208d3230db52044
+SHELL_SHA256 := 625f4e637d18ca912690774a722b8820e5638dec0125283f2208d3230db52044
+
+# Rancher's yarn.lock is a Yarn 1 lockfile. Naming the version keeps Corepack
+# from picking the Yarn 4 that the repo root's package.json names under
+# devEngines. Corepack before 0.32 doesn't read devEngines, so with no
+# packageManager field in any package.json it writes one for this version
+# into the repo root's package.json. COREPACK_ENABLE_AUTO_PIN=0 turns that off.
+YARN := COREPACK_ENABLE_AUTO_PIN=0 corepack yarn@1.22.22
 
 ARCHIVE := rancher-dashboard.tar.gz
-ARCHIVE_ROOT := dashboard-$(SHELL_COMMIT)
+TREE := rancher-dashboard
 OUTPUT := dist/embed
 STAGED := ../rdd/pkg/steve/dashboard
 
-# The git tree keeps the components under pkg/rancher-components. Rancher's
-# publish-shell.sh copies them into its npm package, so the recipe does the same.
 all:
 	curl --fail --location --silent --show-error --output $(ARCHIVE) \
 		https://github.com/rancher-sandbox/dashboard/archive/$(SHELL_COMMIT).tar.gz
-	echo "$(RANCHER_SHA256)  $(ARCHIVE)" | shasum --algorithm 256 --check
-	rm -rf vendor-shell
-	mkdir -p vendor-shell
-	tar --extract --gzip --file=$(ARCHIVE) --directory=vendor-shell --strip-components=2 \
-		$(ARCHIVE_ROOT)/shell
-	rm -rf vendor-shell/rancher-components
-	mkdir -p vendor-shell/rancher-components
-	tar --extract --gzip --file=$(ARCHIVE) --directory=vendor-shell/rancher-components \
-		--strip-components=5 $(ARCHIVE_ROOT)/pkg/rancher-components/src/components
-	yarn install --immutable
-	rm -rf dist
-	RANCHER_ENV=desktop RESOURCE_BASE=http://127.0.0.1:6120 OUTPUT_DIR=$(OUTPUT) \
-		COMMIT=$(RANCHER_TAG) DASHBOARD_VERSION=$(RANCHER_TAG) yarn build
-	find $(OUTPUT) -name '*.map' -delete
+	echo "$(SHELL_SHA256)  $(ARCHIVE)" | shasum --algorithm 256 --check
+	rm -rf $(TREE)
+	mkdir -p $(TREE)
+	tar --extract --gzip --file=$(ARCHIVE) --directory=$(TREE) --strip-components=1
+
+	# The shell's build includes every plugin under the tree's pkg/ folder, so we
+	# keep only rancher-components (the shell imports it) and add ours.
+	find $(TREE)/pkg -mindepth 1 -maxdepth 1 ! -name rancher-components -exec rm -rf {} +
+	cp -R pkg/rancher-deskboard $(TREE)/pkg/
+
+	# --ignore-scripts keeps install scripts off, as the repo root's .yarnrc.yml
+	# does for Yarn 4. Yarn 1 enforces engines fields. @achrinza/node-ipc, a Vue
+	# CLI dependency, lists Node only up to 25, so --ignore-engines lets it install
+	# on Node 26.
+	cd $(TREE) && $(YARN) install --frozen-lockfile --ignore-scripts --ignore-engines
+
+	# Rancher's package.json doesn't have a browserslist field, so Browserslist
+	# would fall back to the repo root's list. That list targets Node 26, which is
+	# too new for the Browserslist data in Rancher's lock. BROWSERSLIST=defaults
+	# gives the build the same targets as Rancher's own build.
+	cd $(TREE) && BROWSERSLIST=defaults RANCHER_ENV=desktop RESOURCE_BASE=http://127.0.0.1:6120 \
+		OUTPUT_DIR=$(OUTPUT) COMMIT=$(RANCHER_TAG) DASHBOARD_VERSION=$(RANCHER_TAG) $(YARN) build
+	find $(TREE)/$(OUTPUT) -name '*.map' -delete
 	rm -rf $(STAGED)
-	cp -R $(OUTPUT) $(STAGED)
+	cp -R $(TREE)/$(OUTPUT) $(STAGED)
 .PHONY: all

@@ -121,9 +121,8 @@ yarn dev
 The Cluster Dashboard needs a Node build of its own, which `yarn install`
 skips. To include it in a development build or a package, run
 `make --directory=dashboard`, then rebuild rdd with
-`make --directory=rdd build-rdd`. The dashboard build runs Yarn 4 through
-Corepack. Node 26 no longer bundles Corepack, so install it first with
-`npm install --global corepack` and `corepack enable yarn`.
+`make --directory=rdd build-rdd`. The dashboard build runs Yarn 1 through
+Corepack, so install Corepack as described under [Yarn](#yarn).
 
 
 ## Tests
