@@ -17,8 +17,6 @@ const { actions, mutations, plugins, state: stateFn } = await import('@pkg/store
 describe('transient-preferences', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Jest does not implement structuredClone, so we need to do so for the tests.
-    global.structuredClone ??= _.cloneDeep;
   });
 
   describe('state', () => {

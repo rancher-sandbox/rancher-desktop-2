@@ -9,9 +9,6 @@ mockModules({
   '@pkg/utils/ipcRenderer': { ipcRenderer: { on: jest.fn(), once: jest.fn(), send: jest.fn() } },
 });
 
-// jsdom doesn't provide structuredClone, and the `preferences/preferences` getter calls it.
-globalThis.structuredClone ??= (value: any) => JSON.parse(JSON.stringify(value));
-
 const i18n = await import('@pkg/store/i18n');
 const preferences = await import('@pkg/store/preferences');
 const { default: ApplicationGeneral } = await import('@pkg/components/Preferences/ApplicationGeneral.vue');
