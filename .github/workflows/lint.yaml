@@ -217,6 +217,19 @@ jobs:
         persist-credentials: false
     - uses: $/.github/actions/setup-rdd-go
     - run: make check-ltag
+  linux-package-deps:
+    name: Check Linux package dependencies
+    needs: get-pr-number
+    runs-on: ubuntu-latest
+    if: ${{ ! needs.get-pr-number.outputs.number }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - run: |
+        sudo apt-get update
+        sudo apt-get install --yes --no-install-recommends rpm
+    - run: ./scripts/check-linux-package-deps.sh
   license-check:
     name: Check licenses
     needs: get-pr-number

@@ -62,7 +62,7 @@ lint-startup-profile:
 
 # TODO: Currently, many of the scripts fail the check.
 # SHELL_FILES := $(shell git ls-files -- '**/*.sh' ':!rdd/bats/')
-SHELL_FILES := scripts/generate-rdd-client.sh
+SHELL_FILES := scripts/check-linux-package-deps.sh scripts/generate-rdd-client.sh
 
 lint-shell:
 	shellcheck --enable=all $(SHELL_FILES)
