@@ -214,7 +214,7 @@ export const actions = {
       locale = state.default;
     }
 
-    if ( !state.translations[locale] ) {
+    if ( !Object.hasOwn(state.translations, locale) ) {
       try {
         await dispatch('load', locale);
       } catch (e) {

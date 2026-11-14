@@ -242,6 +242,16 @@ describe('switchTo action', () => {
     spy.mockRestore();
     expect(document.documentElement.lang).toBe('en-us');
   });
+
+  it('falls back to English for a locale named after an Object.prototype member', async() => {
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    await switchTo(context(), 'constructor');
+
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining('"constructor"'), expect.any(Error));
+    spy.mockRestore();
+    expect(document.documentElement.lang).toBe('en-us');
+  });
 });
 
 describe('locale plugin', () => {
