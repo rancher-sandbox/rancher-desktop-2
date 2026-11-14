@@ -33,6 +33,13 @@ export default class JSDOMEnvironment extends BaseEnv {
   constructor(config: JestEnvironmentConfig, context: EnvironmentContext) {
     super(config, context, JSDOM);
 
+    // jsdom lacks structuredClone, but the app has Chromium's.  Node's
+    // version throws on a Vue proxy or a value holding a function just as
+    // Chromium's does, so a test fails where the app would.  Its clones use
+    // Node's Object and Array prototypes, though, not the test's, so
+    // `instanceof Object` is false for them inside a test.
+    this.global.structuredClone = structuredClone;
+
     // jsdom's LocalStorage implementation actually implements the origin check
     // to only allow it on HTTP-ish origins.  This interacts badly with our
     // preload script, which looks for `app://` URLs to inject.  Work around

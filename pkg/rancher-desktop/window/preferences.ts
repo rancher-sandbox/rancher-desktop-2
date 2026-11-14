@@ -1,19 +1,26 @@
 import path from 'path';
 
-import { app, dialog } from 'electron';
+import { app } from 'electron';
 
 import { webRoot, createWindow, getWindow } from '.';
 
 import { Help } from '@pkg/config/help';
 import { onLocaleChange, t } from '@pkg/main/i18n';
+import mainEvents from '@pkg/main/mainEvents';
 import paths from '@pkg/utils/paths';
 import { CommandOrControl, Shortcuts } from '@pkg/utils/shortcuts';
 import { preferencesNavItems } from '@pkg/window/preferenceConstants';
 
-let isDirty = false;
+// Destroy Preferences without unloading its page when the app quits.  With
+// unsaved changes, the page would cancel its unload to ask about them, and
+// that cancels the quit too.  The app has already stopped steve by then, so
+// it would keep running without steve.
+mainEvents.on('before-quit', () => {
+  getWindow('preferences')?.destroy();
+});
 
 /**
- * Open the main window; if it is already open, focus it.
+ * Open the Preferences window; if it is already open, focus it.
  */
 export function openPreferences() {
   const window = createWindow('preferences', `${ webRoot }/index.html#preferences`, {
@@ -25,6 +32,8 @@ export function openPreferences() {
     minimizable:     false,
     show:            false,
     icon:            path.join(paths.resources, 'icons', 'logo-square-512.png'),
+    // Closing the main window destroys this child window without unloading
+    // its page, so unsaved changes are dropped without asking.
     parent:          getWindow('main') ?? undefined,
     webPreferences:  {
       devTools:         !app.isPackaged,
@@ -104,35 +113,5 @@ export function openPreferences() {
     }
   });
 
-  window.on('close', (event) => {
-    if (!isDirty || (process.env.RD_TEST ?? '').includes('e2e')) {
-      return;
-    }
-
-    const cancelPosition = 1;
-
-    const result = dialog.showMessageBoxSync(
-      window,
-      {
-        title:    t('preferencesWindow.close.title'),
-        type:     'warning',
-        message:  t('preferencesWindow.close.message'),
-        detail:   t('preferencesWindow.close.detail'),
-        cancelId: cancelPosition,
-        buttons:  [
-          t('preferencesWindow.close.discardChanges'),
-          t('generic.cancel'),
-        ],
-      });
-
-    if (result === cancelPosition) {
-      event.preventDefault();
-    }
-  });
-
   app.dock?.show();
-}
-
-export function preferencesSetDirtyFlag(dirtyFlag: boolean) {
-  isDirty = dirtyFlag;
 }

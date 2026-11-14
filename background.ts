@@ -355,8 +355,8 @@ ipcMainProxy.on('help/preferences/open-url', async() => {
   }
 });
 
-ipcMainProxy.handle('show-message-box', (_event, options: Electron.MessageBoxOptions): Promise<Electron.MessageBoxReturnValue> => {
-  return window.showMessageBox(options, false);
+ipcMainProxy.handle('show-message-box', (event, options: Electron.MessageBoxOptions, modal = false): Promise<Electron.MessageBoxReturnValue> => {
+  return window.showMessageBox(options, modal ? Electron.BrowserWindow.fromWebContents(event.sender) : null);
 });
 
 ipcMainProxy.handle('show-message-box-rd', async(_event, options: Electron.MessageBoxOptions, modal = false) => {

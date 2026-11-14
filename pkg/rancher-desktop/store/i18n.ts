@@ -214,7 +214,7 @@ export const actions = {
       locale = state.default;
     }
 
-    if ( !state.translations[locale] ) {
+    if ( !Object.hasOwn(state.translations, locale) ) {
       try {
         await dispatch('load', locale);
       } catch (e) {
@@ -242,10 +242,11 @@ export const actions = {
 } satisfies ActionTree<I18nState, RootState, typeof mutations, typeof getters>;
 
 export const plugins: Plugin<RootState>[] = [
-  // Update the selected locale when it has been set from the preferences.
+  // Follow the App's locale, so a locale picked in Preferences takes effect
+  // on Apply.
   function(store) {
     store.watch(
-      (state, getters) => getters['preferences/preferences']?.application?.locale,
+      (state, getters) => getters['preferences/committed']?.application?.locale,
       (newLocale: LocaleString | undefined) => {
         if (newLocale && newLocale !== store.state.i18n.selected) {
           store.dispatch('i18n/switchTo', newLocale);
@@ -253,9 +254,9 @@ export const plugins: Plugin<RootState>[] = [
       },
     );
   },
-  // Update the _displayed_ locale when the local storage value has changed;
-  // this happens to the main window when the preferences dialog was changed
-  // without saving.
+  // Update the _displayed_ locale when another window switches it.  Most
+  // dialog windows don't watch the App, so this is how they follow a new
+  // locale.
   function(store) {
     addEventListener('storage', (event) => {
       if ( event.key === 'locale' ) {
