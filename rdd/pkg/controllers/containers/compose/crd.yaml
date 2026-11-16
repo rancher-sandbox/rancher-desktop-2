@@ -244,6 +244,15 @@ spec:
                 items:
                   type: string
                 type: array
+              env:
+                additionalProperties:
+                  type: string
+                description: |-
+                  Env is the set of environment variables to use when bringing up the compose
+                  project.
+                type: object
+                x-kubernetes-validations:
+                - rule: self.all(k, k.matches('^[a-zA-Z0-9_]+$'))
               name:
                 description: Name is the compose project name.  Immutable once created.
                 pattern: ^[a-z0-9][a-z0-9_-]*$

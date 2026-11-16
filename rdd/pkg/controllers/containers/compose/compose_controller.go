@@ -9,6 +9,7 @@ import (
 	_ "embed"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
@@ -73,13 +74,19 @@ func (c *controller) GetWebhookManagers() []base.WebhookManager {
 func (c *controller) setupReconciler(ctx context.Context, mgr ctrl.Manager) error {
 	mgr.GetLogger().Info("Setting up compose reconciler")
 	if err := (&reconciler{
-		Client: mgr.GetClient(),
+		ctx:          ctx,
+		Client:       mgr.GetClient(),
+		procs:        newProcessTracker(),
+		completionCh: make(chan event.TypedGenericEvent[*v1alpha1.ComposeProject], 1024),
 	}).SetupWithManager(ctx, mgr); err != nil {
 		return err
 	}
 
 	return (&upRequestReconciler{
-		Client: mgr.GetClient(),
+		ctx:          ctx,
+		Client:       mgr.GetClient(),
+		procs:        newProcessTracker(),
+		completionCh: make(chan event.TypedGenericEvent[*v1alpha1.ComposeUpRequest], 1024),
 	}).SetupWithManager(mgr)
 }
 

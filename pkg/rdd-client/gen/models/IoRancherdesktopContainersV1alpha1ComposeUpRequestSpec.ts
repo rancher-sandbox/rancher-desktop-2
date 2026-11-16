@@ -21,6 +21,10 @@ export class IoRancherdesktopContainersV1alpha1ComposeUpRequestSpec {
     */
     'configs'?: Array<string>;
     /**
+    * Env is the set of environment variables to use when bringing up the compose project.
+    */
+    'env'?: { [key: string]: string; };
+    /**
     * Name is the compose project name.  Immutable once created.
     */
     'name': string;
@@ -42,6 +46,12 @@ export class IoRancherdesktopContainersV1alpha1ComposeUpRequestSpec {
             "name": "configs",
             "baseName": "configs",
             "type": "Array<string>",
+            "format": ""
+        },
+        {
+            "name": "env",
+            "baseName": "env",
+            "type": "{ [key: string]: string; }",
             "format": ""
         },
         {
