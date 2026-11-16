@@ -100,13 +100,15 @@ to be _False_ if not given.
   <tr><td>Deleting<td><td>Extension files being deleted<td>
   <tr><td>Uninstalled<td><td>Extension was removed; object will go away<td>:heavy_check_mark:
   <tr><td>Failed<td><td>Extension installation failed<td>:heavy_check_mark:
-<tr><td rowspan=8>Extracted
+<tr><td rowspan=10>Extracted
   <td>EngineNotReady<td><td>The container engine is not available; extraction cannot continue<td>
   <tr><td>Preparing<td><td>Extraction is setting up<td>
   <tr><td>ExtractingMetadata<td><td>Extension metadata is being extracted<td>
   <tr><td>ExtractingIcon<td><td>Extension icon is being extracted<td>
   <tr><td>ExtractingUI<td><td>Extension user interface files are being extracted<td>
   <tr><td>ExtractingExecutable<td><td>Extension host executables are being extracted<td>
+  <tr><td>ExtractingContainer<td><td>Extension compose files are being extracted<td>
+  <tr><td>Finishing<td><td>Extraction complete, cleaning up<td>
   <tr><td>Completed<td>True<td>Extension has been extracted<td>:heavy_check_mark:
   <tr><td>Failed<td><td>Extension extraction has failed<td>:heavy_check_mark:
 <tr><td rowspan=6>Started
