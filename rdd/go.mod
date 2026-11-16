@@ -19,7 +19,7 @@ require (
 	github.com/distribution/reference v0.6.0
 	github.com/docker/cli v29.9.3+incompatible
 	github.com/go-logr/logr v1.4.4
-	github.com/gofrs/flock v0.13.1
+	github.com/gofrs/flock v0.13.2
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/k3s-io/kine v1.14.2
