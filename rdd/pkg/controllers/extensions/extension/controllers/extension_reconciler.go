@@ -141,6 +141,11 @@ func (r *ExtensionReconciler) reconcile(ctx context.Context, ext *v1alpha1.Exten
 				return err
 			}
 		}
+
+		// Step 3: Reconcile Started condition.
+		if err = r.reconcileStarted(ctx, ext); err != nil {
+			return err
+		}
 	}
 
 	return nil
