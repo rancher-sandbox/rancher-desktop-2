@@ -148,6 +148,11 @@ func (r *ExtensionReconciler) reconcile(ctx context.Context, ext *v1alpha1.Exten
 		}
 	}
 
+	// Step 4: Reconcile Ready condition.
+	if err = r.reconcileReady(ctx, ext); err != nil {
+		return err
+	}
+
 	return nil
 }
 
