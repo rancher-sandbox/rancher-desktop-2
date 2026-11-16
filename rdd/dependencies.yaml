@@ -10,30 +10,30 @@
 distro:
   assets:
     - arch: amd64
-      checksum: sha256:ecc34567d67bd4276a2979e0fd908c065d3022cee7f59db09f2b1bc798077052
+      checksum: sha256:82ef3083e3bf0a3caff723a8cab4da9acc63ef5c98097031def66e67496f870b
       filename: distro.raw.xz
       platform: linux
-      url: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.2.11/distro.v0.2.11.amd64.raw.xz
+      url: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.2.13/distro.v0.2.13.amd64.raw.xz
       variant: raw
     - arch: amd64
-      checksum: sha256:520bc208df9fe3beaf12e80d08e3eb66f39e5dd2fa5db29bf90d14501c4422a9
+      checksum: sha256:96fadaf29422810be2bc7955dd89f954c1947cb22fdb98ec8a43e673dfeab1dc
       filename: distro.tar.xz
       platform: linux
-      url: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.2.11/distro.v0.2.11.amd64.tar.xz
+      url: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.2.13/distro.v0.2.13.amd64.tar.xz
       variant: tar
     - arch: arm64
-      checksum: sha256:b8e175b50923823fc7aae3ecb2cc7cbe5438351b6324a50d03b1e9f7ca5cec70
+      checksum: sha256:998cf74dad925ba7ba308feb96c54aab82054eb9d86e88eaaea3a7991353a1f4
       filename: distro.raw.xz
       platform: linux
-      url: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.2.11/distro.v0.2.11.arm64.raw.xz
+      url: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.2.13/distro.v0.2.13.arm64.raw.xz
       variant: raw
     - arch: arm64
-      checksum: sha256:94d35f52cde2d622690c08666efc19d7012e315c4a14b3321e853a3a124b0ce4
+      checksum: sha256:3c1a77903fe22073d02f4b2a051b8bc061d1c0a461b678284e407e3f62add37b
       filename: distro.tar.xz
       platform: linux
-      url: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.2.11/distro.v0.2.11.arm64.tar.xz
+      url: https://github.com/rancher-sandbox/rancher-desktop-opensuse/releases/download/v0.2.13/distro.v0.2.13.arm64.tar.xz
       variant: tar
-  version: 0.2.11
+  version: 0.2.13
 mkcert:
   assets:
     - arch: amd64
