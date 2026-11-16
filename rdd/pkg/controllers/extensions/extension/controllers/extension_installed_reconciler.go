@@ -14,6 +14,7 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
+	"time"
 
 	"github.com/distribution/reference"
 
@@ -46,6 +47,10 @@ const imagePullRequestExtensionLabel = "extensions.rancherdesktop.io/extension"
 // extensionNamespace is the container namespace extension images are
 // pulled into; this matches rancher-sandbox/rancher-desktop.
 const extensionNamespace = "rancher-desktop-extensions"
+
+// deleteRetryDelay is how long to wait before retrying file deletion after
+// it fails, to avoid a tight requeue loop.
+const deleteRetryDelay = 30 * time.Second
 
 type scriptPhase string
 
@@ -381,6 +386,201 @@ func (r *ExtensionReconciler) extract(ctx context.Context, ext *v1alpha1.Extensi
 	default:
 		return nil
 	}
+}
+
+// deleteFiles removes the extension's install directory (created by
+// extract) from disk. Any pre-uninstall script is assumed to have already
+// been run (or attempted) by the time this is called; this only needs to
+// worry about the extracted files themselves.
+func (r *ExtensionReconciler) deleteFiles(ext *v1alpha1.Extension) error {
+	installDir, err := extensionInstallDir(ext)
+	if err != nil {
+		return fmt.Errorf("failed to determine extension install directory: %w", err)
+	}
+	if err := os.RemoveAll(installDir); err != nil {
+		return fmt.Errorf("failed to delete extension files: %w", err)
+	}
+
+	return nil
+}
+
+// reconcileDeleteInstalled handles uninstall: it runs the pre-uninstall script
+// and deletes extracted files, then removes installedFinalizer once cleanup has
+// finished.
+func (r *ExtensionReconciler) reconcileDeleteInstalled(ctx context.Context, ext *v1alpha1.Extension) (ctrl.Result, error) {
+	log := logf.FromContext(ctx)
+	if !controllerutil.ContainsFinalizer(ext, installedFinalizer) {
+		return ctrl.Result{}, nil
+	}
+
+	installed := apimeta.FindStatusCondition(ext.Status.Conditions,
+		v1alpha1.ExtensionConditionInstalled)
+
+	switch {
+	case installed == nil,
+		installed.Reason == v1alpha1.ExtensionInstalledReasonResolving:
+		// The images downloads never started.
+		return ctrl.Result{}, r.setInstalledCondition(ctx, ext,
+			metav1.ConditionFalse, v1alpha1.ExtensionInstalledReasonUninstalled,
+			"Extension removed")
+
+	case installed.Reason == v1alpha1.ExtensionInstalledReasonDownloading:
+		// The image was resolved, and may be partially downloaded.  Delete the
+		// download request, if any; the image should remain, as it may be locally
+		// built.
+		var pullRequests containersv1alpha1.ImagePullRequestList
+		err := r.List(
+			ctx, &pullRequests,
+			client.InNamespace(ext.Namespace),
+			client.MatchingLabels{imagePullRequestExtensionLabel: ext.Name},
+		)
+		if err != nil {
+			return ctrl.Result{},
+				fmt.Errorf("failed to list ImagePullRequests for extension %s: %w", ext.Name, err)
+		}
+
+		var errs []error
+		for _, pullRequest := range pullRequests.Items {
+			if metav1.IsControlledBy(&pullRequest, ext) {
+				err := r.Delete(ctx, &pullRequest)
+				if err != nil {
+					errs = append(errs, err)
+				}
+			}
+		}
+		if len(errs) > 0 {
+			return ctrl.Result{}, fmt.Errorf("failed to delete some ImagePullRequests for extension %s: %v", ext.Name, errs)
+		}
+
+		return ctrl.Result{}, r.setInstalledCondition(ctx, ext,
+			metav1.ConditionFalse, v1alpha1.ExtensionInstalledReasonUninstalled,
+			"Extension removed")
+
+	case installed.Reason == v1alpha1.ExtensionInstalledReasonExtracting,
+		installed.Reason == v1alpha1.ExtensionInstalledReasonExtracted:
+		// Extraction was attempted (and may have partially completed), so
+		// there could be files on disk to clean up, but there is still no
+		// pre-uninstall script to run since extraction never completed;
+		// skip straight to Deleting.
+		return ctrl.Result{}, r.setInstalledCondition(ctx, ext,
+			metav1.ConditionFalse, v1alpha1.ExtensionInstalledReasonDeleting,
+			"Removing extension")
+
+	case installed.Reason == v1alpha1.ExtensionInstalledReasonPostInstallRunning,
+		installed.Reason == v1alpha1.ExtensionInstalledReasonInstalled:
+		// Extraction has completed, so a pre-uninstall script may exist on
+		// disk to run; however, we need to remove the compose project first.
+		started := apimeta.FindStatusCondition(ext.Status.Conditions, v1alpha1.ExtensionConditionStarted)
+		if started != nil && started.Reason != v1alpha1.ExtensionStartedReasonStopped {
+			// The extension is still running; let the Started reconciler handle it.
+			return ctrl.Result{}, nil
+		}
+		return ctrl.Result{}, r.setInstalledCondition(ctx, ext,
+			metav1.ConditionFalse, v1alpha1.ExtensionInstalledReasonPreUninstallRunning,
+			"Removing extension")
+
+	case installed.Reason == v1alpha1.ExtensionInstalledReasonPreUninstallRunning:
+		pending, err := r.runScript(ext, scriptPhaseUninstall)
+		if err != nil {
+			// We do not fail the flow if the pre-uninstall script fails.
+			log.Error(err, "pre-uninstall script failed", "extension", ext.Name)
+		}
+		if pending {
+			return ctrl.Result{}, nil
+		}
+		return ctrl.Result{}, r.setInstalledCondition(ctx, ext,
+			metav1.ConditionFalse, v1alpha1.ExtensionInstalledReasonDeleting,
+			"Removing extension")
+
+	case installed.Reason == v1alpha1.ExtensionInstalledReasonDeleting:
+		if err := r.deleteFiles(ext); err != nil {
+			return ctrl.Result{}, r.setInstalledCondition(ctx, ext,
+				metav1.ConditionFalse, v1alpha1.ExtensionInstalledReasonFailed, err.Error())
+		}
+		return ctrl.Result{}, r.setInstalledCondition(ctx, ext,
+			metav1.ConditionFalse, v1alpha1.ExtensionInstalledReasonUninstalled, "Extension removed")
+
+	case installed.Reason == v1alpha1.ExtensionInstalledReasonFailed:
+		// Wait for deleteRetryDelay before handling the failed state, so that the
+		// user has a chance to see it, and so we don't flood with retries.
+		delta := time.Until(installed.LastTransitionTime.Add(deleteRetryDelay))
+		if delta > 0 {
+			return ctrl.Result{RequeueAfter: delta}, nil
+		}
+		return ctrl.Result{}, r.reconcileDeleteFailed(ctx, ext)
+
+	case installed.Reason == v1alpha1.ExtensionInstalledReasonUninstalled:
+		r.scripts.Delete(ext.GetUID())
+		return ctrl.Result{}, base.RemoveFinalizerWithRetry(ctx, r.Client, ext, installedFinalizer)
+
+	default:
+		logf.FromContext(ctx).Error(nil, "Unexpected Installed condition reason while deleting", "reason", installed.Reason)
+		return ctrl.Result{}, nil
+	}
+}
+
+// reconcileFailed handles the reconciliation logic when the Installed condition
+// is in the Failed state.
+func (r *ExtensionReconciler) reconcileDeleteFailed(ctx context.Context, ext *v1alpha1.Extension) error {
+	// We don't know why we're in the failed state; try to delete the first thing
+	// available.
+	// 1: Stop containers
+	condition := apimeta.FindStatusCondition(ext.Status.Conditions, v1alpha1.ExtensionConditionStarted)
+	switch {
+	case condition == nil,
+		condition.Reason == v1alpha1.ExtensionStartedReasonStartFailed,
+		condition.Reason == v1alpha1.ExtensionStartedReasonStopped:
+		// The extension is not started, we can continue.
+	default:
+		// The extension is starting, started, or stopping; Started condition reconciliation
+		// will handle stopping it before we can delete it.
+		return nil
+	}
+	// 2: Delete files
+	if controllerutil.ContainsFinalizer(ext, extractedFinalizer) {
+		// Extraction hasn't been aborted yet; wait for that to happen first.
+		return nil
+	}
+	if ext.Status.Image != "" {
+		dir, err := extensionInstallDir(ext)
+		if err != nil {
+			return fmt.Errorf("failed to find directory for extension %q: %w", ext.Name, err)
+		}
+		if err := os.RemoveAll(dir); err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				return fmt.Errorf("failed to remove directory for extension %q: %w", ext.Name, err)
+			}
+		}
+	}
+	// 3: Delete image pull request
+	var pullRequests containersv1alpha1.ImagePullRequestList
+	if err := r.List(
+		ctx, &pullRequests,
+		client.InNamespace(ext.Namespace),
+		client.MatchingLabels{imagePullRequestExtensionLabel: ext.Name},
+	); err != nil {
+		return fmt.Errorf("failed to list ImagePullRequests for extension %s: %w", ext.Name, err)
+	}
+	if len(pullRequests.Items) > 0 {
+		found := false
+		var errs []error
+		for _, pr := range pullRequests.Items {
+			if !metav1.IsControlledBy(&pr, ext) {
+				continue
+			}
+			found = true
+			if pr.DeletionTimestamp == nil {
+				errs = append(errs, client.IgnoreNotFound(r.Delete(ctx, &pr)))
+			}
+		}
+		if found {
+			// Because owned image pull requests are being deleted, we will reconcile
+			// when the deletion completes.
+			return errors.Join(errs...)
+		}
+	}
+
+	return nil
 }
 
 // runScript manages running an install/uninstall script; it returns a boolean
