@@ -34,7 +34,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
-	github.com/rancher/steve v0.9.23
+	github.com/rancher/steve v0.9.25
 	github.com/rancher/wrangler/v3 v3.8.0
 	github.com/sirupsen/logrus v1.10.2
 	github.com/spf13/cobra v1.10.2
@@ -184,7 +184,7 @@ require (
 	github.com/firefart/nonamedreturns v1.0.8 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/fvbommel/sortorder v1.2.0 // indirect
-	github.com/fxamacker/cbor/v2 v2.9.4 // indirect
+	github.com/fxamacker/cbor/v2 v2.9.6 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/ghostiam/protogetter v1.0.1 // indirect
@@ -196,8 +196,8 @@ require (
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
-	github.com/go-openapi/jsonpointer v1.0.0 // indirect
-	github.com/go-openapi/jsonreference v1.0.0 // indirect
+	github.com/go-openapi/jsonpointer v1.0.2 // indirect
+	github.com/go-openapi/jsonreference v1.0.3 // indirect
 	github.com/go-openapi/swag v0.28.0 // indirect
 	github.com/go-openapi/swag/cmdutils v0.28.0 // indirect
 	github.com/go-openapi/swag/conv v0.28.0 // indirect
@@ -362,7 +362,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/pquerna/cachecontrol v0.2.0 // indirect
 	github.com/prometheus/client_golang v1.24.1 // indirect
-	github.com/prometheus/client_model v0.6.2 // indirect
+	github.com/prometheus/client_model v0.6.3 // indirect
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/quasilyte/go-ruleguard v0.4.5 // indirect
@@ -371,11 +371,11 @@ require (
 	github.com/quasilyte/regex/syntax v0.0.0-20210819130434-b3f0c404a727 // indirect
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567 // indirect
 	github.com/raeperd/recvcheck v0.3.1 // indirect
-	github.com/rancher/apiserver v0.9.10 // indirect
+	github.com/rancher/apiserver v0.9.13 // indirect
 	github.com/rancher/dynamiclistener v0.9.3 // indirect
 	github.com/rancher/kubernetes-provider-detector v0.1.6-0.20240606163014-fcae75779379 // indirect
 	github.com/rancher/lasso v0.2.10 // indirect
-	github.com/rancher/norman v0.9.11 // indirect
+	github.com/rancher/norman v0.9.14 // indirect
 	github.com/rancher/remotedialer v0.6.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
@@ -437,7 +437,7 @@ require (
 	go.augendre.info/arangolint v0.4.0 // indirect
 	go.augendre.info/fatcontext v0.10.1 // indirect
 	go.etcd.io/bbolt v1.5.0 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.6.8 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.6.14 // indirect
 	go.etcd.io/etcd/client/v3 v3.6.8 // indirect
 	go.etcd.io/etcd/pkg/v3 v3.6.8 // indirect
 	go.etcd.io/etcd/server/v3 v3.6.8 // indirect
@@ -455,8 +455,8 @@ require (
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
-	go.yaml.in/yaml/v2 v2.4.4 // indirect
-	go.yaml.in/yaml/v3 v3.0.5 // indirect
+	go.yaml.in/yaml/v2 v2.4.5 // indirect
+	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.7 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
@@ -494,7 +494,7 @@ require (
 	k8s.io/endpointslice v0.36.4 // indirect
 	k8s.io/externaljwt v0.36.4 // indirect
 	k8s.io/gengo/v2 v2.0.0-20260408192533-25e2208e0dc3 // indirect
-	k8s.io/kms v0.36.4 // indirect
+	k8s.io/kms v0.36.6 // indirect
 	k8s.io/kube-controller-manager v0.36.4 // indirect
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
 	k8s.io/kube-proxy v0.36.4 // indirect
