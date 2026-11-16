@@ -158,7 +158,26 @@ func (r *ExtensionReconciler) reconcile(ctx context.Context, ext *v1alpha1.Exten
 
 // reconcileDelete coordinates teardown across all conditions when an Extension is deleted.
 func (r *ExtensionReconciler) reconcileDelete(ctx context.Context, ext *v1alpha1.Extension) (ctrl.Result, error) {
-	return ctrl.Result{}, fmt.Errorf("not implemented")
+	// First, stop and tear down containers via Started reconciler.
+	stopping, err := r.reconcileDeleteStarted(ctx, ext)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if stopping {
+		// Still waiting for compose containers to stop.
+		return ctrl.Result{}, nil
+	}
+
+	// Clean up any in-flight extraction state and finalizer.
+	if r.extractor != nil {
+		r.extractor.abort(ext.GetUID())
+	}
+	if err := base.RemoveFinalizerWithRetry(ctx, r.Client, ext, extractedFinalizer); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// Run pre-uninstall script, clean up files, and remove installed finalizer.
+	return r.reconcileDeleteInstalled(ctx, ext)
 }
 
 // SetupWithManager sets up the unified controller with the Manager using typed requests.
