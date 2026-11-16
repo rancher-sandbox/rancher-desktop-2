@@ -6,6 +6,11 @@
 
 # This script is expected to run as root and install Rancher Desktop from the
 # repository obs://isv:Rancher:dev
+#
+# The installs skip recommended packages, so the smoke test fails when the
+# Rancher Desktop package doesn't require a dependency that another package
+# only recommends.
+#
 # Expected environment variables:
 #   RD_VERSION
 #      Rancher Desktop version; either major.minor (`1.20`) or the tag (`v1.20.0`).
@@ -39,7 +44,7 @@ install_linux_debian() {
         apt-cache show --quiet "${PACKAGE_NAME}" | sed 's@^@    @' >&2
         exit 1
     fi
-    apt-get install -y "${PACKAGE_NAME}=${version}"
+    apt-get install -y --no-install-recommends "${PACKAGE_NAME}=${version}"
 }
 
 # shellcheck disable=2329 # The function is invoked dynamically
@@ -54,7 +59,7 @@ install_linux_opensuse() {
         zypper --non-interactive search --details --match-exact "${PACKAGE_NAME}" | sed 's@^@    @' >&2
         exit 1
     fi
-    zypper --non-interactive install "${PACKAGE_NAME}=${version}"
+    zypper --non-interactive install --no-recommends "${PACKAGE_NAME}=${version}"
 }
 
 # shellcheck disable=2329 # The function is invoked dynamically
@@ -69,7 +74,7 @@ install_linux_fedora() {
         dnf --quiet info --showduplicates "${PACKAGE_NAME}.$(uname -m)" | sed 's@^@    @' >&2
         exit 1
     fi
-    dnf --assumeyes install "${PACKAGE_NAME}-${version}"
+    dnf --assumeyes --setopt=install_weak_deps=False install "${PACKAGE_NAME}-${version}"
 }
 
 # Chromium only uses its setuid sandbox when the helper is setuid root, so a
