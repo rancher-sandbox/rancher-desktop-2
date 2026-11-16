@@ -62,9 +62,7 @@ export function openPreferences() {
     Shortcuts.register(
       window,
       { key: 'Escape' },
-      () => {
-        window.close();
-      },
+      closePreferences,
       'Close preferences dialog',
     );
 
@@ -114,4 +112,27 @@ export function openPreferences() {
   });
 
   app.dock?.show();
+}
+
+/**
+ * Close the Preferences window, if it is open.  With unsaved changes, the
+ * page keeps the window open and asks whether to discard them.
+ */
+export function closePreferences() {
+  const window = getWindow('preferences');
+
+  if (!window) {
+    return;
+  }
+  window.close();
+  // On macOS, close() detaches the window from its parent before the
+  // page gets a chance to cancel the close.  The page cancels it when
+  // there are unsaved changes, and the window then stays detached, so
+  // the main window can cover it.  getParentWindow() still returns the
+  // parent, so setting the same parent again reattaches the window.
+  // On Windows and Linux, setting the same parent doesn't change anything
+  // (read in Electron's source, not measured).
+  if (!window.isDestroyed()) {
+    window.setParentWindow(window.getParentWindow());
+  }
 }

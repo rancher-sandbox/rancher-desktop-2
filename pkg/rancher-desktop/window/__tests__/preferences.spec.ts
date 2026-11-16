@@ -7,6 +7,7 @@ import mockModules from '@pkg/utils/testUtils/mockModules';
 const mainEvents = new EventEmitter();
 let nextId = 1;
 let browserWindow: any;
+const mainWindow = { id: 0 };
 
 mockModules({
   electron:               { app: { isPackaged: false } },
@@ -23,9 +24,24 @@ const { openPreferences } = await import('@pkg/window/preferences');
 describe('preferences window', () => {
   beforeEach(() => {
     browserWindow = Object.assign(new EventEmitter(), {
-      id: nextId++, webContents: new EventEmitter(), show: jest.fn(), setTitle: jest.fn(), destroy: jest.fn(),
+      id:              nextId++,
+      webContents:     new EventEmitter(),
+      show:            jest.fn(),
+      setTitle:        jest.fn(),
+      destroy:         jest.fn(),
+      close:           jest.fn(),
+      isDestroyed:     () => false,
+      getParentWindow: () => mainWindow,
+      setParentWindow: jest.fn(),
     });
     openPreferences();
+  });
+
+  it('reattaches to the main window after Escape asks it to close', () => {
+    browserWindow.webContents.emit('before-input-event', { preventDefault: jest.fn() }, { key: 'Escape' });
+    expect(browserWindow.close).toHaveBeenCalled();
+    expect(browserWindow.setParentWindow).toHaveBeenCalledWith(mainWindow);
+    expect(browserWindow.setParentWindow.mock.invocationCallOrder[0]).toBeGreaterThan(browserWindow.close.mock.invocationCallOrder[0]);
   });
 
   it('registers its shortcuts once when reopened after a cancelled close', () => {
