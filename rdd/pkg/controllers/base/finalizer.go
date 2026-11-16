@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -295,4 +296,32 @@ func IsOwnedByUID(obj client.Object, ownerUID types.UID) bool {
 		}
 	}
 	return false
+}
+
+// AddFinalizerWithRetry adds a finalizer to the given object, retrying on conflict.
+func AddFinalizerWithRetry[t client.Object](ctx context.Context, c client.Client, obj t, finalizer string) error {
+	key := client.ObjectKeyFromObject(obj)
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if err := c.Get(ctx, key, obj); err != nil {
+			return client.IgnoreNotFound(err)
+		}
+		if controllerutil.AddFinalizer(obj, finalizer) {
+			return client.IgnoreNotFound(c.Update(ctx, obj))
+		}
+		return nil
+	})
+}
+
+// RemoveFinalizerWithRetry removes a finalizer from the given object, retrying on conflict.
+func RemoveFinalizerWithRetry[t client.Object](ctx context.Context, c client.Client, obj t, finalizer string) error {
+	key := client.ObjectKeyFromObject(obj)
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if err := c.Get(ctx, key, obj); err != nil {
+			return client.IgnoreNotFound(err)
+		}
+		if controllerutil.RemoveFinalizer(obj, finalizer) {
+			return client.IgnoreNotFound(c.Update(ctx, obj))
+		}
+		return nil
+	})
 }

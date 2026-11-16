@@ -8,11 +8,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/events"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -25,6 +30,7 @@ import (
 	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/extensions/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/atomicmap"
 )
 
 // ExtensionReconciler reconciles an Extension object across all of its lifecycle
@@ -37,6 +43,11 @@ type ExtensionReconciler struct {
 
 	// Extracted condition state:
 	extractor *extensionExtractor
+
+	// Installed condition state:
+	scripts  atomicmap.AtomicMap[types.UID, scriptState]
+	engine   engine
+	engineMu sync.Mutex
 }
 
 // extensionReconcileRequest identifies the resource kind and name to reconcile.
@@ -116,7 +127,23 @@ func (r *ExtensionReconciler) Reconcile(ctx context.Context, req extensionReconc
 }
 
 func (r *ExtensionReconciler) reconcile(ctx context.Context, ext *v1alpha1.Extension) error {
-	return fmt.Errorf("not implemented")
+	// Step 1: Reconcile Installed condition.
+	err := r.reconcileInstalled(ctx, ext)
+	if err != nil {
+		return err
+	}
+
+	// Step 2: Reconcile Extracted condition if currently extracting.
+	installed := apimeta.FindStatusCondition(ext.Status.Conditions, v1alpha1.ExtensionConditionInstalled)
+	if installed != nil {
+		if installed.Reason == v1alpha1.ExtensionInstalledReasonExtracting {
+			if err := r.reconcileExtracted(ctx, ext); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // reconcileDelete coordinates teardown across all conditions when an Extension is deleted.
@@ -181,4 +208,31 @@ func (r *ExtensionReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Man
 		)).
 		Named("extension-reconciler").
 		Complete(r)
+}
+
+func (r *ExtensionReconciler) setCondition(ctx context.Context, ext *v1alpha1.Extension, conditionType string, status metav1.ConditionStatus, reason, message string) error {
+	r.Eventf(ext, nil, corev1.EventTypeNormal, "ConditionChanged", conditionType, "%s: %s", reason, message)
+	key := client.ObjectKeyFromObject(ext)
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		latest := &v1alpha1.Extension{}
+		if err := r.Get(ctx, key, latest); err != nil {
+			return client.IgnoreNotFound(err)
+		}
+		changed := apimeta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:               conditionType,
+			Status:             status,
+			ObservedGeneration: latest.Generation,
+			Reason:             reason,
+			Message:            message,
+		})
+		if !changed {
+			return nil
+		}
+		if err := r.Status().Update(ctx, latest); err != nil {
+			return client.IgnoreNotFound(err)
+		}
+		// On a successful update, return immediately to avoid triggering more
+		// reconciliations.
+		return requeueError(0)
+	})
 }
