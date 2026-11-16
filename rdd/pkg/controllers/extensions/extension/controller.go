@@ -116,5 +116,9 @@ func (c *controller) RegisterWithManager(ctx context.Context, mgr ctrl.Manager) 
 		return err
 	}
 
+	if err := controllers.NewExtensionReconciler(ctx, mgr).SetupWithManager(ctx, mgr); err != nil {
+		return err
+	}
+
 	return c.setupWebhook(mgr)
 }

@@ -1,0 +1,168 @@
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: SUSE LLC
+// SPDX-FileCopyrightText: The Rancher Desktop Authors
+
+package controllers
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/events"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	appv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
+	containersv1alpha1 "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/containers/v1alpha1"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/extensions/v1alpha1"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
+)
+
+// ExtensionReconciler reconciles an Extension object across all of its lifecycle
+// conditions: Installed, Extracted, Started, and Ready.
+type ExtensionReconciler struct {
+	client.Client
+	ctx context.Context
+	events.EventRecorder
+	requeueCh chan event.TypedGenericEvent[*v1alpha1.Extension]
+}
+
+// extensionReconcileRequest identifies the resource kind and name to reconcile.
+type extensionReconcileRequest struct {
+	kind string
+	types.NamespacedName
+}
+
+// requeue is a dummy error type to trigger a requeue.
+type requeueError time.Duration
+
+func (requeueError) Error() string {
+	return "dummy"
+}
+
+// NewExtensionReconciler creates a new unified ExtensionReconciler.
+func NewExtensionReconciler(ctx context.Context, mgr ctrl.Manager) *ExtensionReconciler {
+	c := mgr.GetClient()
+
+	r := &ExtensionReconciler{
+		Client:        c,
+		ctx:           ctx,
+		EventRecorder: mgr.GetEventRecorder("extension-controller"),
+		requeueCh:     make(chan event.TypedGenericEvent[*v1alpha1.Extension], 1024),
+	}
+	return r
+}
+
+var _ reconcile.TypedReconciler[extensionReconcileRequest] = &ExtensionReconciler{}
+
+// Reconcile implements the reconcile.TypedReconciler interface for the unified ExtensionReconciler.
+func (r *ExtensionReconciler) Reconcile(ctx context.Context, req extensionReconcileRequest) (ctrl.Result, error) {
+	switch req.kind {
+	case appv1alpha1.AppKind:
+		var app appv1alpha1.App
+		err := r.Get(ctx, req.NamespacedName, &app)
+		if apierrors.IsNotFound(err) {
+			return r.reconcileApp(ctx, nil)
+		} else if err != nil {
+			return ctrl.Result{}, err
+		}
+		return r.reconcileApp(ctx, &app)
+
+	case v1alpha1.ExtensionKind:
+		ext := &v1alpha1.Extension{}
+		err := r.Get(ctx, req.NamespacedName, ext)
+		if err != nil {
+			return ctrl.Result{}, client.IgnoreNotFound(err)
+		}
+
+		if base.IsBeingDeleted(ext) {
+			return r.reconcileDelete(ctx, ext)
+		}
+
+		err = r.reconcile(ctx, ext)
+		if requeue, ok := errors.AsType[requeueError](err); ok {
+			return ctrl.Result{RequeueAfter: time.Duration(requeue)}, nil
+		}
+		return ctrl.Result{}, err
+
+	default:
+		return ctrl.Result{}, fmt.Errorf("unexpected reconcile request kind: %s", req.kind)
+	}
+}
+
+func (r *ExtensionReconciler) reconcile(ctx context.Context, ext *v1alpha1.Extension) error {
+	return fmt.Errorf("not implemented")
+}
+
+// reconcileDelete coordinates teardown across all conditions when an Extension is deleted.
+func (r *ExtensionReconciler) reconcileDelete(ctx context.Context, ext *v1alpha1.Extension) (ctrl.Result, error) {
+	return ctrl.Result{}, fmt.Errorf("not implemented")
+}
+
+// SetupWithManager sets up the unified controller with the Manager using typed requests.
+func (r *ExtensionReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+	if r.requeueCh == nil {
+		r.requeueCh = make(chan event.TypedGenericEvent[*v1alpha1.Extension], 1024)
+	}
+
+	// We need to be able to look up images by the tag, not just by ID.
+	if err := base.IndexCRDFields(ctx, &containersv1alpha1.Image{}, mgr); err != nil {
+		return err
+	}
+
+	enqueueOwner := handler.TypedEnqueueRequestsFromMapFunc(
+		func(_ context.Context, obj client.Object) []extensionReconcileRequest {
+			var requests []extensionReconcileRequest
+			for _, owner := range obj.GetOwnerReferences() {
+				if owner.Kind == v1alpha1.ExtensionKind {
+					requests = append(requests, extensionReconcileRequest{
+						kind:      v1alpha1.ExtensionKind,
+						Namespace: obj.GetNamespace(),
+						Name:      owner.Name,
+					})
+				}
+			}
+			return requests
+		},
+	)
+
+	return builder.TypedControllerManagedBy[extensionReconcileRequest](mgr).
+		Watches(&v1alpha1.Extension{}, handler.TypedEnqueueRequestsFromMapFunc(func(_ context.Context, obj client.Object) []extensionReconcileRequest {
+			return []extensionReconcileRequest{{
+				kind:           v1alpha1.ExtensionKind,
+				NamespacedName: client.ObjectKeyFromObject(obj),
+			}}
+		})).
+		Watches(&appv1alpha1.App{}, handler.TypedEnqueueRequestsFromMapFunc(func(_ context.Context, obj client.Object) []extensionReconcileRequest {
+			return []extensionReconcileRequest{{
+				kind:           appv1alpha1.AppKind,
+				NamespacedName: client.ObjectKeyFromObject(obj),
+			}}
+		})).
+		Watches(&containersv1alpha1.ImagePullRequest{}, enqueueOwner).
+		Watches(&containersv1alpha1.ComposeProject{}, enqueueOwner).
+		Watches(&containersv1alpha1.ComposeUpRequest{}, enqueueOwner).
+		WatchesRawSource(source.TypedChannel(
+			r.requeueCh,
+			handler.TypedEnqueueRequestsFromMapFunc(func(_ context.Context, ext *v1alpha1.Extension) []extensionReconcileRequest {
+				if ext == nil {
+					return nil
+				}
+				return []extensionReconcileRequest{{
+					kind:           v1alpha1.ExtensionKind,
+					NamespacedName: client.ObjectKeyFromObject(ext),
+				}}
+			}),
+		)).
+		Named("extension-reconciler").
+		Complete(r)
+}
