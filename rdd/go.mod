@@ -26,7 +26,7 @@ require (
 	github.com/lima-vm/lima/v2 v2.3.1-0.20261114234254-7af9279669ab
 	github.com/linuxkit/virtsock v0.0.0-20241009230534-cb6a20cc0422
 	github.com/mattn/go-isatty v0.0.24
-	github.com/mikefarah/yq/v4 v4.54.2
+	github.com/mikefarah/yq/v4 v4.54.3
 	github.com/moby/moby/api v1.56.1
 	github.com/moby/moby/client v0.6.2
 	github.com/muesli/reflow v0.3.0
