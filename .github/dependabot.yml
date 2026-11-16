@@ -148,6 +148,31 @@ updates:
     golang-x:
       patterns: [ golang.org/x/* ]
 
+# A limit of 0 turns off version updates for the nerdctl parse-table generator
+# and the WSL guest agent, so they get security updates only. Dependabot
+# applies the ignore rules below to security updates too.
+- package-ecosystem: gomod
+  directories:
+  - /rdd/pkg/nerdctlstub/generate
+  - /rdd/src/wsl-guestagent
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 0
+  ignore:
+  - # containerd 2.2 requires runtime-spec 1.3, which turns LinuxPids.Limit
+    # into a pointer. The generator compiles the guest's nerdctl, 2.1.2, and
+    # that does not build against runtime-spec 1.3. Drop this rule once the
+    # guest's nerdctl moves past 2.1.2 (#882).
+    dependency-name: github.com/containerd/containerd/v2
+    versions: [">= 2.2.0"]
+  - # CNI plugins 1.10 also pulls in runtime-spec 1.3, through hcsshim and
+    # cgroups. nerdctl 2.1.2 fails to build against it, and so does
+    # containerd 1.7 in the guest agent. Drop this rule once the guest's
+    # nerdctl moves past 2.1.2 (#882) and the guest agent moves to
+    # containerd 2.x.
+    dependency-name: github.com/containernetworking/plugins
+    versions: [">= 1.10.0"]
+
 # Pre-positioned: the fake-kube test fixtures are stdlib-only today, so this
 # scans for any dependency they grow later.
 - package-ecosystem: gomod
