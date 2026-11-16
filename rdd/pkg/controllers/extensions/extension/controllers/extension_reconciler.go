@@ -34,6 +34,9 @@ type ExtensionReconciler struct {
 	ctx context.Context
 	events.EventRecorder
 	requeueCh chan event.TypedGenericEvent[*v1alpha1.Extension]
+
+	// Extracted condition state:
+	extractor *extensionExtractor
 }
 
 // extensionReconcileRequest identifies the resource kind and name to reconcile.
@@ -52,12 +55,25 @@ func (requeueError) Error() string {
 // NewExtensionReconciler creates a new unified ExtensionReconciler.
 func NewExtensionReconciler(ctx context.Context, mgr ctrl.Manager) *ExtensionReconciler {
 	c := mgr.GetClient()
+	extractor := &extensionExtractor{
+		Client:        c,
+		EventRecorder: mgr.GetEventRecorder("extension-extractor"),
+		ctx:           ctx,
+	}
+	extractor.prepare = extractor.prepareImpl
+	extractor.extractMetadata = extractor.extractMetadataImpl
+	extractor.extractIcon = extractor.extractIconImpl
+	extractor.extractUI = extractor.extractUIImpl
+	extractor.extractExecutable = extractor.extractExecutableImpl
+	extractor.extractStep = extractor.extractStepImpl
+	extractor.extractContainer = extractor.extractContainerImpl
 
 	r := &ExtensionReconciler{
 		Client:        c,
 		ctx:           ctx,
 		EventRecorder: mgr.GetEventRecorder("extension-controller"),
 		requeueCh:     make(chan event.TypedGenericEvent[*v1alpha1.Extension], 1024),
+		extractor:     extractor,
 	}
 	return r
 }
