@@ -3,18 +3,17 @@
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
 import { flushPromises, mount } from '@vue/test-utils';
-import { nextTick } from 'vue';
 import { createStore } from 'vuex';
 
 import ContainerInspect from '@pkg/components/ContainerInspect.vue';
-import { switchableT, t } from '@pkg/utils/testUtils/translations';
+import { switchableT } from '@pkg/utils/testUtils/translations';
 
 describe('ContainerInspect', () => {
   it('shows the fallback error text in the current locale', async() => {
-    const translator = switchableT();
+    const { t, switchLocale } = switchableT();
     const store = createStore({
       state:   { 'container-engine': { inspectData: {} } },
-      getters: { 'i18n/t': () => translator.t },
+      getters: { 'i18n/t': () => t },
       actions: { 'container-engine/fetchContainerInspect': () => Promise.reject({}) },
     });
     const wrapper = mount(ContainerInspect, {
@@ -23,8 +22,7 @@ describe('ContainerInspect', () => {
     });
 
     await flushPromises();
-    translator.switched.value = true;
-    await nextTick();
-    expect(wrapper.get('[data-testid="info-error"]').text()).toBe(`[${ t('containerInspect.error.loadFailed') }]`);
+    await switchLocale();
+    expect(wrapper.get('[data-testid="info-error"]').text()).toBe(t('containerInspect.error.loadFailed'));
   });
 });

@@ -1,9 +1,8 @@
 import { jest } from '@jest/globals';
 import { shallowMount } from '@vue/test-utils';
-import { nextTick } from 'vue';
 
 import mockModules from '@pkg/utils/testUtils/mockModules';
-import { switchableT, t } from '@pkg/utils/testUtils/translations';
+import { switchableT } from '@pkg/utils/testUtils/translations';
 
 const componentStub = { template: '<div />' };
 const sortableTableStub = {
@@ -61,13 +60,12 @@ describe('extensions installed table', () => {
   });
 
   it('translates its headers after a locale switch', async() => {
-    const translator = switchableT();
-    const wrapper = mountTable(translator.t);
+    const { t, switchLocale } = switchableT();
+    const wrapper = mountTable(t);
 
-    translator.switched.value = true;
-    await nextTick();
+    await switchLocale();
     expect(wrapper.getComponent(sortableTableStub).props('headers'))
-      .toContainEqual(expect.objectContaining({ label: `[${ t('marketplace.installed.table.header.vendor') }]` }));
+      .toContainEqual(expect.objectContaining({ label: t('marketplace.installed.table.header.vendor') }));
   });
 });
 

@@ -1,6 +1,5 @@
 import { jest } from '@jest/globals';
 import { mount } from '@vue/test-utils';
-import { nextTick } from 'vue';
 
 import mockModules from '@pkg/utils/testUtils/mockModules';
 import { sortableTableGlobal } from '@pkg/utils/testUtils/sortableTable';
@@ -360,12 +359,11 @@ describe('Containers cell clicks', () => {
 
 describe('Containers headers', () => {
   it('follow a locale switch', async() => {
-    const translator = switchableT();
-    const wrapper = mount(Containers, { global: sortableTableGlobal({ t: translator.t }) });
+    const { t: tt, switchLocale } = switchableT();
+    const wrapper = mount(Containers, { global: sortableTableGlobal({ t: tt }) });
 
-    translator.switched.value = true;
-    await nextTick();
+    await switchLocale();
     expect(wrapper.getComponent(SortableTable).props('headers'))
-      .toContainEqual(expect.objectContaining({ label: `[${ t('containers.manage.table.header.containerName') }]` }));
+      .toContainEqual(expect.objectContaining({ label: tt('containers.manage.table.header.containerName') }));
   });
 });

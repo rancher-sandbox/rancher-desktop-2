@@ -40,24 +40,22 @@ describe('volume files', () => {
   });
 
   it('shows its error in the current locale', async() => {
-    const translator = switchableT();
-    const wrapper = mountPage('no/such volume', translator.t);
+    const { t: tt, switchLocale } = switchableT();
+    const wrapper = mountPage('no/such volume', tt);
 
-    translator.switched.value = true;
-    await nextTick();
-    expect(wrapper.text()).toContain(`[${ t('volumes.files.invalidVolumeName', { name: 'no/such volume' }) }]`);
+    await switchLocale();
+    expect(wrapper.text()).toContain(tt('volumes.files.invalidVolumeName', { name: 'no/such volume' }));
   });
 
   it('translates its headers after a locale switch', async() => {
-    const translator = switchableT();
-    const wrapper = mountPage('data', translator.t);
+    const { t: tt, switchLocale } = switchableT();
+    const wrapper = mountPage('data', tt);
 
     // Show the file table instead of the loading indicator.
     await wrapper.setData({ isLoading: false });
-    translator.switched.value = true;
-    await nextTick();
+    await switchLocale();
     expect(wrapper.getComponent({ name: 'SortableTable' }).props('headers'))
-      .toContainEqual(expect.objectContaining({ label: `[${ t('volumes.files.table.header.modified') }]` }));
+      .toContainEqual(expect.objectContaining({ label: tt('volumes.files.table.header.modified') }));
     wrapper.unmount();
   });
 });

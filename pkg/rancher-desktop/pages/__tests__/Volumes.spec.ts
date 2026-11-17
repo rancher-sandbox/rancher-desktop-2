@@ -4,7 +4,6 @@
 
 import { jest } from '@jest/globals';
 import { mount } from '@vue/test-utils';
-import { nextTick } from 'vue';
 
 import mockModules from '@pkg/utils/testUtils/mockModules';
 import { sortableTableGlobal } from '@pkg/utils/testUtils/sortableTable';
@@ -112,13 +111,12 @@ describe('Volumes methods', () => {
     });
 
     it('translates its headers after a locale switch', async() => {
-      const translator = switchableT();
-      const table = mountTable([], { t: translator.t });
+      const { t: tt, switchLocale } = switchableT();
+      const table = mountTable([], { t: tt });
 
-      translator.switched.value = true;
-      await nextTick();
+      await switchLocale();
       expect(table.props('headers'))
-        .toContainEqual(expect.objectContaining({ label: `[${ t('volumes.manage.table.header.driver') }]` }));
+        .toContainEqual(expect.objectContaining({ label: tt('volumes.manage.table.header.driver') }));
     });
 
     it('sorts by driver', () => {
