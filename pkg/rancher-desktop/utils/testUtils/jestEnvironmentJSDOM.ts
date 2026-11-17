@@ -38,7 +38,7 @@ export default class JSDOMEnvironment extends BaseEnv {
     // Chromium's does, so a test fails where the app would.  Its clones use
     // Node's Object and Array prototypes, though, not the test's, so
     // `instanceof Object` is false for them inside a test.
-    this.global.structuredClone = structuredClone;
+    this.global.structuredClone ??= structuredClone;
 
     // jsdom's LocalStorage implementation actually implements the origin check
     // to only allow it on HTTP-ish origins.  This interacts badly with our

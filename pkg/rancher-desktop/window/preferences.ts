@@ -130,8 +130,6 @@ export function closePreferences() {
   // there are unsaved changes, and the window then stays detached, so
   // the main window can cover it.  getParentWindow() still returns the
   // parent, so setting the same parent again reattaches the window.
-  // On Windows and Linux, setting the same parent doesn't change anything
-  // (read in Electron's source, not measured).
   if (!window.isDestroyed()) {
     window.setParentWindow(window.getParentWindow());
   }

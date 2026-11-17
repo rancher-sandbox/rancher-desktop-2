@@ -64,6 +64,11 @@ function confirmUnload(event: BeforeUnloadEvent) {
     askToDiscard();
   }
 }
+/** Button indexes in the discard question. */
+enum Buttons {
+  Discard,
+  Cancel,
+}
 async function askToDiscard() {
   asking = true;
   try {
@@ -72,16 +77,18 @@ async function askToDiscard() {
       type:     'warning',
       message:  t('preferencesWindow.close.message'),
       detail:   t('preferencesWindow.close.detail'),
-      cancelId: 1,
-      buttons:  [
-        t('preferencesWindow.close.discardChanges'),
-        t('generic.cancel'),
-      ],
+      cancelId: Buttons.Cancel,
+      buttons:  Object.assign([], {
+        [Buttons.Discard]: t('preferencesWindow.close.discardChanges'),
+        [Buttons.Cancel]:  t('generic.cancel'),
+      }),
     }, true);
 
-    if (result.response === 0) {
+    if (result.response === Buttons.Discard) {
       await closePreferences();
     }
+  } catch (ex) {
+    console.error('Failed to close Preferences with unsaved changes:', ex);
   } finally {
     asking = false;
   }
