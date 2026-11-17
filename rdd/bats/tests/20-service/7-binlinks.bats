@@ -1,11 +1,14 @@
 load '../../helpers/load'
 
 # Prove the daemon publishes the application's bundled binaries into
-# ~/.rd<instance>/bin only when rdd runs from inside the app bundle. A fake
-# bundle holds a real rdd copy at .../<resources>/<os>/bin/rdd next to a couple
-# of stand-in tool files; the daemon links whatever sits beside that rdd. The
-# bundle's docker CLI plugins (in a sibling docker-cli-plugins directory) are
-# mirrored into both the bin directory and a plugins-only directory.
+# ~/.rd<instance>/bin only when rdd runs from inside the app bundle, or, in
+# developer mode, from a checkout. A fake bundle holds a real rdd copy at
+# .../<resources>/<os>/bin/rdd next to a couple of stand-in tool files; the
+# daemon links whatever sits beside that rdd. A fake checkout similarly holds a
+# real rdd copy at .../rdd/bin/rdd, with stand-in tools in a sibling
+# resources/<os>/bin instead. Either source's docker CLI plugins (in a sibling
+# docker-cli-plugins directory) are mirrored into both the bin directory and a
+# plugins-only directory.
 #
 # The publish differs by platform. macOS and Linux get a symlink per tool (or a
 # hardlink where symlinks need privileges; RDD_NO_SYMLINKS forces that fallback
@@ -13,6 +16,10 @@ load '../../helpers/load'
 # rdd-forwarder.exe, beside a <tool>.shim naming the real binary. The bundle
 # must therefore carry rdd-forwarder.exe; a stand-in is enough here because these
 # tests check the published link structure, not that the forwarder runs.
+#
+# The tests exercising genuinely standalone behavior (no bundle, no checkout)
+# force RDD_DEVELOPER_MODE=0 in local_setup, because we may be running in
+# developer mode, which will try to pick up files from a checkout instead.
 
 local_setup_file() {
     # Clean up from any previous run; svc delete also removes the short dir.
@@ -46,18 +53,60 @@ local_setup_file() {
     FAKE_BIN="${fake_bin}"
     FAKE_PLUGIN_SRC="${plugin_src}"
     save_var FAKE_BIN FAKE_PLUGIN_SRC
+
+    # Mock up a checkout for developer mode's "running from a checkout" path.
+    # It holds a real rdd copy at .../rdd/bin/rdd and stand-in tools in a
+    # sibling resources/<os>/bin, the way `yarn`'s postinstall assembles them.
+    # To force that code path, checkout_rdd turns developer mode on through
+    # RDD_DEVELOPER_MODE.
+    checkout_root="${BATS_FILE_TMPDIR}/checkout"
+    checkout_bin="${checkout_root}/rdd/bin"
+    mkdir -p "${checkout_bin}"
+    cp "${PATH_REPO_ROOT}/bin/rdd${EXE}" "${checkout_bin}/rdd${EXE}"
+    is_windows && cp "${PATH_REPO_ROOT}/bin/rdd-forwarder${EXE}" "${checkout_bin}/rdd-forwarder${EXE}"
+
+    checkout_tools="${checkout_root}/resources/${OS}/bin"
+    mkdir -p "${checkout_tools}"
+    create_file "${checkout_tools}/docker${EXE}" <<<"stand-in docker"
+    create_file "${checkout_tools}/helm${EXE}" <<<"stand-in helm"
+
+    checkout_plugin_src="${checkout_root}/resources/${OS}/docker-cli-plugins"
+    mkdir -p "${checkout_plugin_src}"
+    create_file "${checkout_plugin_src}/docker-buildx${EXE}" <<<"stand-in buildx"
+    create_file "${checkout_plugin_src}/docker-compose${EXE}" <<<"stand-in compose"
+
+    CHECKOUT_BIN="${checkout_bin}"
+    CHECKOUT_TOOLS="${checkout_tools}"
+    CHECKOUT_PLUGIN_SRC="${checkout_plugin_src}"
+    save_var CHECKOUT_BIN CHECKOUT_TOOLS CHECKOUT_PLUGIN_SRC
 }
 
 local_setup() {
     # Each test starts the daemon from a chosen location, so stop any daemon a
     # previous test left running; an already-running instance rejects the start.
     rdd svc stop || :
+
+    # The tests in this file that want genuinely standalone behavior (no
+    # bundle, no checkout) run the real built rdd directly
+    # (${PATH_REPO_ROOT}/bin/rdd), which happens to be exactly the layout
+    # developer mode's own checkout heuristic looks for
+    # (../cmd/rdd/main.go next to the bin directory, which a checkout always
+    # has). Force developer mode off by default so those tests keep exercising
+    # the standalone path; checkout_rdd overrides this back on.
+    export RDD_DEVELOPER_MODE=0
 }
 
 # fake_rdd runs the bundled rdd copy. It closes BATS fds 3 and 4 so the daemon
 # it spawns cannot inherit them and hang bats, matching the rdd() helper.
 fake_rdd() {
     "${FAKE_BIN}/rdd${EXE}" "$@" 3>&- 4>&-
+}
+
+# checkout_rdd runs the checkout rdd copy with developer mode forced on. It
+# closes BATS fds 3 and 4 so the daemon it spawns cannot inherit them and hang
+# bats, matching the rdd() helper.
+checkout_rdd() {
+    RDD_DEVELOPER_MODE=1 "${CHECKOUT_BIN}/rdd${EXE}" "$@" 3>&- 4>&-
 }
 
 # assert_hardlink_to asserts that the link shares the target's file and is not a
@@ -255,4 +304,43 @@ assert_not_published() { # <name>
     run -0 "${RDD_BIN_DIR}/kubectl${EXE}" version --client
     assert_output --partial "Client Version"
     fake_rdd svc stop
+}
+
+# The checkout tests below run last, after every test that depends on a
+# FAKE_BIN publish surviving into the next test (e.g. "leaves working links
+# untouched when started standalone" and "repairs missing or dangling rdd and
+# kubectl links when started standalone" both expect the bin directory to
+# still hold the previous test's FAKE_BIN-rooted links). linkBinaries
+# unconditionally wipes and rebuilds the whole bin directory from whichever
+# source published last, so running a checkout publish in between would
+# replace those FAKE_BIN links with CHECKOUT_BIN ones and break those tests'
+# assumptions. Placing the checkout tests last avoids that ordering hazard.
+
+@test 'publishes checkout binaries when started in developer mode' {
+    load_var CHECKOUT_BIN CHECKOUT_TOOLS
+    # In developer mode, rdd mirrors the checkout's resources/<os>/bin the same
+    # way the app bundle test mirrors a bundle's bin directory, even though rdd
+    # itself lives elsewhere (beside the checkout's rdd/bin, not inside
+    # resources/<os>/bin).
+    checkout_rdd svc start
+    assert_published "${CHECKOUT_BIN}/rdd${EXE}" "rdd${EXE}"
+    assert_published "${CHECKOUT_TOOLS}/docker${EXE}" "docker${EXE}"
+    assert_published "${CHECKOUT_TOOLS}/helm${EXE}" "helm${EXE}"
+    # kubectl and nerdctl are not bundled; they forward to rdd.
+    assert_published "${CHECKOUT_BIN}/rdd${EXE}" "kubectl${EXE}"
+    assert_published "${CHECKOUT_BIN}/rdd${EXE}" "nerdctl${EXE}"
+    checkout_rdd svc stop
+}
+
+@test 'publishes checkout docker CLI plugins into the bin and plugin directories in developer mode' {
+    load_var CHECKOUT_BIN CHECKOUT_PLUGIN_SRC
+    test_plugin="docker-plugin-${RANDOM}${EXE}"
+    create_file "${CHECKOUT_PLUGIN_SRC}/${test_plugin}" <<<"stand-in test plugin"
+    checkout_rdd svc start
+    # Each checkout docker CLI plugin is reachable both as a standalone command
+    # in the bin directory and in the plugins-only directory docker searches
+    # via cliPluginsExtraDirs, the same as the bundle case.
+    assert_published_in "${RDD_BIN_DIR}" "${CHECKOUT_PLUGIN_SRC}/${test_plugin}" "${test_plugin}"
+    assert_published_in "${RDD_DOCKER_CLI_PLUGINS}" "${CHECKOUT_PLUGIN_SRC}/${test_plugin}" "${test_plugin}"
+    checkout_rdd svc stop
 }

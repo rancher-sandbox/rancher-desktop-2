@@ -13,6 +13,129 @@ import (
 	"gotest.tools/v3/assert"
 )
 
+// newPathOptions builds a pathOptions for execPath, defaulting binDir and
+// pluginDir to fresh temporary directories and leaving srcDir/pluginsSrcDir
+// empty. Each test chains the with* methods below to override only the
+// fields it actually varies.
+func newPathOptions(t *testing.T, execPath string) pathOptions {
+	t.Helper()
+	return pathOptions{
+		execPath:  execPath,
+		binDir:    filepath.Join(t.TempDir(), "bin"),
+		pluginDir: filepath.Join(t.TempDir(), "docker-cli-plugins"),
+	}
+}
+
+// withSrcDir overrides srcDir, the directory linkBinaries/linkForwarders read
+// bundled binaries from.
+func (p pathOptions) withSrcDir(srcDir string) pathOptions {
+	p.srcDir = srcDir
+	return p
+}
+
+// withPluginsSrcDir overrides pluginsSrcDir, the directory the bundled docker
+// CLI plugins are read from.
+func (p pathOptions) withPluginsSrcDir(pluginsSrcDir string) pathOptions {
+	p.pluginsSrcDir = pluginsSrcDir
+	return p
+}
+
+// withBinDir overrides binDir, the instance bin directory being populated.
+func (p pathOptions) withBinDir(binDir string) pathOptions {
+	p.binDir = binDir
+	return p
+}
+
+// withPluginDir overrides pluginDir, the instance's docker CLI plugins
+// directory.
+func (p pathOptions) withPluginDir(pluginDir string) pathOptions {
+	p.pluginDir = pluginDir
+	return p
+}
+
+// TestCheckoutSrcDirs checks that the checkout helpers derive the repository's
+// resources directory from an rdd running out of <repo>/rdd/bin, the layout
+// developer.Mode detects.
+func TestCheckoutSrcDirs(t *testing.T) {
+	repoRoot := filepath.Join("home", "me", "rancher-desktop-2")
+	execPath := filepath.Join(repoRoot, "rdd", "bin", "rdd")
+	assert.Equal(t, checkoutRoot(execPath), repoRoot)
+	assert.Equal(t, checkoutBinSrcDir(execPath, "linux"), filepath.Join(repoRoot, "resources", "linux", "bin"))
+	assert.Equal(t, checkoutPluginsSrcDir(execPath, "linux"), filepath.Join(repoRoot, "resources", "linux", "docker-cli-plugins"))
+	assert.Equal(t, checkoutBinSrcDir(execPath, "windows"), filepath.Join(repoRoot, "resources", "windows", "bin"))
+}
+
+// TestResolveSrcDirs checks LinkBundledBinaries' source-selection logic:
+// inside an app bundle it always uses the bundle's directories; in developer
+// mode it uses the checkout's assembled resources directory only once both the
+// binaries and the docker CLI plugins directories exist there (the way
+// `yarn`'s postinstall assembles them), falling back to selfOnly otherwise;
+// outside both, it reports selfOnly directly. developerMode is passed in
+// rather than read from developer.Mode(), so this case can be exercised
+// without depending on developer.Mode()'s process-wide memoized result.
+func TestResolveSrcDirs(t *testing.T) {
+	// stageCheckout lays out a fake checkout at <repo>/rdd/bin/rdd, the layout
+	// developer.Mode's own heuristic detects, optionally omitting the bin or
+	// docker CLI plugins directories to exercise the not-yet-assembled cases.
+	stageCheckout := func(t *testing.T, withBin, withPlugins bool) (execPath string) {
+		t.Helper()
+		repoRoot := t.TempDir()
+		rddBin := filepath.Join(repoRoot, "rdd", "bin")
+		assert.NilError(t, os.MkdirAll(rddBin, 0o755))
+		execPath = filepath.Join(rddBin, "rdd")
+		assert.NilError(t, os.WriteFile(execPath, []byte("binary"), 0o755))
+		assert.NilError(t, os.WriteFile(filepath.Join(rddBin, forwarderName), []byte("FORWARDER"), 0o755))
+		if withBin {
+			assert.NilError(t, os.MkdirAll(checkoutBinSrcDir(execPath, "linux"), 0o755))
+		}
+		if withPlugins {
+			assert.NilError(t, os.MkdirAll(checkoutPluginsSrcDir(execPath, "linux"), 0o755))
+		}
+		return execPath
+	}
+
+	t.Run("app bundle wins even in developer mode", func(t *testing.T) {
+		execPath := "/opt/rancher-desktop-2/resources/linux/bin/rdd"
+		srcDir, pluginsSrcDir, selfOnly := resolveSrcDirs(execPath, "linux", true)
+		assert.Assert(t, !selfOnly)
+		assert.Equal(t, srcDir, filepath.Dir(execPath))
+		assert.Equal(t, pluginsSrcDir, bundlePluginsSrcDir(execPath))
+	})
+
+	t.Run("standalone when neither bundled nor developer mode", func(t *testing.T) {
+		execPath := stageCheckout(t, true, true)
+		_, _, selfOnly := resolveSrcDirs(execPath, "linux", false)
+		assert.Assert(t, selfOnly)
+	})
+
+	t.Run("developer mode with both checkout directories assembled", func(t *testing.T) {
+		execPath := stageCheckout(t, true, true)
+		srcDir, pluginsSrcDir, selfOnly := resolveSrcDirs(execPath, "linux", true)
+		assert.Assert(t, !selfOnly)
+		assert.Equal(t, srcDir, checkoutBinSrcDir(execPath, "linux"))
+		assert.Equal(t, pluginsSrcDir, checkoutPluginsSrcDir(execPath, "linux"))
+	})
+
+	t.Run("developer mode falls back to selfOnly when the bin directory is missing", func(t *testing.T) {
+		// e.g. a developer who built rdd without ever running `yarn`.
+		execPath := stageCheckout(t, false, true)
+		_, _, selfOnly := resolveSrcDirs(execPath, "linux", true)
+		assert.Assert(t, selfOnly)
+	})
+
+	t.Run("developer mode falls back to selfOnly when the plugins directory is missing", func(t *testing.T) {
+		execPath := stageCheckout(t, true, false)
+		_, _, selfOnly := resolveSrcDirs(execPath, "linux", true)
+		assert.Assert(t, selfOnly)
+	})
+
+	t.Run("developer mode falls back to selfOnly when neither checkout directory exists", func(t *testing.T) {
+		execPath := stageCheckout(t, false, false)
+		_, _, selfOnly := resolveSrcDirs(execPath, "linux", true)
+		assert.Assert(t, selfOnly)
+	})
+}
+
 func TestInAppBundle(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -123,9 +246,13 @@ func TestLinkBinaries(t *testing.T) {
 			binDir := filepath.Join(t.TempDir(), "bin")
 			assert.NilError(t, os.MkdirAll(binDir, 0o755))
 			assert.NilError(t, os.WriteFile(filepath.Join(binDir, "stale"), []byte("old"), 0o644))
-			pluginDir := filepath.Join(t.TempDir(), "docker-cli-plugins")
+			pluginsSrc := filepath.Join(t.TempDir(), "docker-cli-plugins")
 
-			assert.NilError(t, linkBinaries(execPath, binDir, pluginDir, tc.exe, tc.useSymlink))
+			paths := newPathOptions(t, execPath).
+				withSrcDir(srcDir).
+				withPluginsSrcDir(pluginsSrc).
+				withBinDir(binDir)
+			assert.NilError(t, linkBinaries(paths, tc.exe, tc.useSymlink))
 
 			// The stale entry from the previous install is gone.
 			_, err := os.Lstat(filepath.Join(binDir, "stale"))
@@ -190,7 +317,12 @@ func TestLinkBinariesPlugins(t *testing.T) {
 
 	binDir := filepath.Join(t.TempDir(), "bin")
 	pluginDir := filepath.Join(t.TempDir(), "docker-cli-plugins")
-	assert.NilError(t, linkBinaries(execPath, binDir, pluginDir, "", true))
+	paths := newPathOptions(t, execPath).
+		withSrcDir(filepath.Dir(execPath)).
+		withPluginsSrcDir(pluginsSrc).
+		withBinDir(binDir).
+		withPluginDir(pluginDir)
+	assert.NilError(t, linkBinaries(paths, "", true))
 
 	for _, name := range plugins {
 		target := filepath.Join(pluginsSrc, name)
@@ -229,9 +361,7 @@ func TestEnsureSelfLinks(t *testing.T) {
 	docker := filepath.Join(binDir, "docker")
 	assert.NilError(t, os.Symlink(dockerTarget, docker))
 
-	assert.NilError(t, ensureSelfLinks(execPath, binDir, filepath.Join(t.TempDir(), "docker-cli-plugins"), "", true))
-
-	// The working rdd link is preserved, still pointing at the app binary.
+	assert.NilError(t, ensureSelfLinks(newPathOptions(t, execPath).withBinDir(binDir), "", true))
 	assertSymlink(t, filepath.Join(binDir, "rdd"), appRdd)
 	// The dangling kubectl link now points at the running executable.
 	assertSymlink(t, filepath.Join(binDir, "kubectl"), execPath)
@@ -252,7 +382,7 @@ func TestEnsureSelfLinksCreatesDir(t *testing.T) {
 			assert.NilError(t, os.WriteFile(execPath, []byte("binary"), 0o755))
 
 			binDir := filepath.Join(t.TempDir(), "bin")
-			assert.NilError(t, ensureSelfLinks(execPath, binDir, filepath.Join(t.TempDir(), "docker-cli-plugins"), tc.exe, tc.useSymlink))
+			assert.NilError(t, ensureSelfLinks(newPathOptions(t, execPath).withBinDir(binDir), tc.exe, tc.useSymlink))
 
 			for _, name := range append([]string{"rdd"}, multiCallLinks...) {
 				assertLink(t, filepath.Join(binDir, name+tc.exe), execPath, tc.useSymlink)
@@ -282,7 +412,7 @@ func TestEnsureSelfLinksPrunesDangling(t *testing.T) {
 	assert.NilError(t, os.Symlink(tool, filepath.Join(binDir, "helm")))
 	assert.NilError(t, os.WriteFile(filepath.Join(binDir, "notes"), []byte("keep"), 0o644))
 
-	assert.NilError(t, ensureSelfLinks(execPath, binDir, filepath.Join(t.TempDir(), "docker-cli-plugins"), "", true))
+	assert.NilError(t, ensureSelfLinks(newPathOptions(t, execPath).withBinDir(binDir), "", true))
 
 	// The dangling docker link is pruned, not repaired: rdd does not provide it.
 	_, err := os.Lstat(filepath.Join(binDir, "docker"))
@@ -318,7 +448,7 @@ func TestEnsureSelfLinksPrunesDanglingPluginForwarders(t *testing.T) {
 		assert.NilError(t, os.WriteFile(shimPath(pluginDir, name), shimContent(target), 0o644))
 	}
 
-	assert.NilError(t, ensureSelfLinks(execPath, filepath.Join(t.TempDir(), "bin"), pluginDir, "", true))
+	assert.NilError(t, ensureSelfLinks(newPathOptions(t, execPath).withPluginDir(pluginDir), "", true))
 
 	assertDirEntries(t, pluginDir, []string{"docker-buildx.exe", "docker-buildx.shim"})
 }
@@ -367,14 +497,37 @@ func TestLinkBinariesBundledMulticallWins(t *testing.T) {
 		assert.NilError(t, os.WriteFile(filepath.Join(srcDir, name), []byte("binary"), 0o755))
 	}
 	execPath := filepath.Join(srcDir, "rdd")
-	binDir := filepath.Join(t.TempDir(), "bin")
 
-	pluginDir := filepath.Join(t.TempDir(), "docker-cli-plugins")
-
-	assert.NilError(t, linkBinaries(execPath, binDir, pluginDir, "", true))
+	paths := newPathOptions(t, execPath).withSrcDir(srcDir).withPluginsSrcDir(filepath.Join(t.TempDir(), "docker-cli-plugins"))
+	assert.NilError(t, linkBinaries(paths, "", true))
 
 	// nerdctl links to the bundled nerdctl, not to rdd.
-	assertSymlink(t, filepath.Join(binDir, "nerdctl"), filepath.Join(srcDir, "nerdctl"))
+	assertSymlink(t, filepath.Join(paths.binDir, "nerdctl"), filepath.Join(srcDir, "nerdctl"))
 	// kubectl is not bundled, so it links to rdd.
-	assertSymlink(t, filepath.Join(binDir, "kubectl"), execPath)
+	assertSymlink(t, filepath.Join(paths.binDir, "kubectl"), execPath)
+}
+
+// TestLinkBinariesCheckoutLinksRdd checks the checkout layout: rdd itself is not
+// copied into srcDir (it stays beside execPath, unlike a packaged app's bundle),
+// so linkBinaries must still provide an "rdd" link in binDir pointing at
+// execPath, alongside the third-party tools read from srcDir.
+func TestLinkBinariesCheckoutLinksRdd(t *testing.T) {
+	rddDir := t.TempDir()
+	execPath := filepath.Join(rddDir, "rdd")
+	assert.NilError(t, os.WriteFile(execPath, []byte("binary"), 0o755))
+
+	// srcDir mirrors a checkout's resources/<goos>/bin: third-party tools only,
+	// no rdd.
+	srcDir := t.TempDir()
+	assert.NilError(t, os.WriteFile(filepath.Join(srcDir, "helm"), []byte("binary"), 0o755))
+
+	paths := newPathOptions(t, execPath).withSrcDir(srcDir).withPluginsSrcDir(filepath.Join(t.TempDir(), "docker-cli-plugins"))
+	assert.NilError(t, linkBinaries(paths, "", true))
+
+	// helm comes from srcDir.
+	assertSymlink(t, filepath.Join(paths.binDir, "helm"), filepath.Join(srcDir, "helm"))
+	// rdd, kubectl, and nerdctl all link back to the running executable.
+	for _, name := range append([]string{"rdd"}, multiCallLinks...) {
+		assertSymlink(t, filepath.Join(paths.binDir, name), execPath)
+	}
 }
