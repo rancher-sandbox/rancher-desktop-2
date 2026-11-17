@@ -107,6 +107,87 @@ func TestScanFilesDynamicPatternMarksKeysReferenced(t *testing.T) {
 	}
 }
 
+func TestScanFilesSkipsTestFiles(t *testing.T) {
+	dir := setupScanTestRepo(t, "<template>\n  <div />\n</template>\n")
+	for _, name := range []string{"Sample.test.ts", "Sample.spec.ts"} {
+		path := filepath.Join(dir, "pkg", "rancher-desktop", "components", name)
+		if err := os.WriteFile(path, []byte("t('only.inTest')\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	undefined, err := findUndefinedKeys(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if refs := undefined["only.inTest"]; len(refs) != 0 {
+		t.Errorf("expected test files to be skipped, got %v", refs)
+	}
+}
+
+func TestScanFilesCountsQuotedKeysInTernaries(t *testing.T) {
+	source := `<script>
+const label = this.t(this.canEdit ? 'action.edit' : 'action.view');
+const help = this.t(
+  hasIp ? 'page.help' : null,
+);
+</script>
+`
+	dir := setupScanTestRepo(t, source)
+	keys := map[string]string{
+		"action.edit": "Edit",
+		"action.view": "View",
+		"page.help":   "Help",
+		"page.other":  "Other",
+	}
+
+	refs, err := findKeyReferences(dir, keys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"action.edit", "action.view", "page.help"} {
+		if len(refs[key]) == 0 {
+			t.Errorf("expected %q to be referenced", key)
+		}
+	}
+	if len(refs["page.other"]) != 0 {
+		t.Errorf("expected page.other to have no references, got %v", refs["page.other"])
+	}
+}
+
+func TestScanFilesHonorsI18nUses(t *testing.T) {
+	source := `<script>
+// i18n-uses nav.group.*, unit.day
+const label = 'x'; // i18n-uses validation.*.min
+</script>
+`
+	dir := setupScanTestRepo(t, source)
+	keys := map[string]string{
+		"nav.group.cluster":   "Cluster",
+		`nav.group."k3s.io"`:  "K3s",
+		"unit.day":            "day",
+		"validation.port.min": "too small",
+		"unit.hour":           "hour",
+		"validation.port.max": "too large",
+		"validation.a.b.min":  "too deep",
+	}
+
+	refs, err := findKeyReferences(dir, keys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"nav.group.cluster", `nav.group."k3s.io"`, "unit.day", "validation.port.min"} {
+		if len(refs[key]) == 0 {
+			t.Errorf("expected %q to be referenced through i18n-uses", key)
+		}
+	}
+	for _, key := range []string{"unit.hour", "validation.port.max", "validation.a.b.min"} {
+		if len(refs[key]) != 0 {
+			t.Errorf("expected %q to have no references, got %v", key, refs[key])
+		}
+	}
+}
+
 func TestScanFilesUnreadableFileIsAnError(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("file modes cannot make a file unreadable on Windows")

@@ -65,6 +65,50 @@ func TestFindUntranslatedDetectsObjectLabel(t *testing.T) {
 	}
 }
 
+func TestFindUntranslatedSkipsCommentLines(t *testing.T) {
+	dir := setupUntranslatedRepo(t, map[string]string{
+		"doc.ts":  "/**\n * props: { title: 'Hello Modal' }\n */\n// label: 'Local Port',\n",
+		"doc.vue": "<template>\n  <!-- <h1>Reset Kubernetes</h1> -->\n  <div />\n</template>\n",
+	})
+	hits, err := findUntranslated(dir, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(hits) != 0 {
+		t.Errorf("got %d hits, want 0: %+v", len(hits), hits)
+	}
+}
+
+func TestFindUntranslatedLiteralShapes(t *testing.T) {
+	tests := []struct {
+		name    string
+		file    string
+		content string
+		want    int
+	}{
+		{"ternary in a template", "a.vue", "<template>\n  <span>{{ on ? \"Yes\" : \"No\" }}</span>\n</template>\n", 1},
+		{"ternary in script", "a.ts", "const label = on ? 'Yes' : 'No';\n", 1},
+		{"ternary of identifiers", "a.ts", "const state = on ? 'running' : 'stopped';\n", 0},
+		{"push of text", "a.js", "res.push('Control Plane');\n", 1},
+		{"push of an identifier", "a.js", "res.push('controlPlane');\n", 0},
+		{"array of labels", "a.ts", "return ['Custom', 'Quay.io'];\n", 1},
+		{"array of identifiers", "a.ts", "const kinds = ['pod', 'node'];\n", 0},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := setupUntranslatedRepo(t, map[string]string{tc.file: tc.content})
+			hits, err := findUntranslated(dir, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(hits) != tc.want {
+				t.Errorf("got %d hits, want %d: %+v", len(hits), tc.want, hits)
+			}
+		})
+	}
+}
+
 func TestFindUntranslatedUnreadableFileIsAnError(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("file modes cannot make a file unreadable on Windows")
@@ -97,10 +141,17 @@ func TestValuePatterns(t *testing.T) {
 		{"attr: short value skipped", attrPattern, 2, `label="ab"`, ""},
 		{"attr: bound attr not matched", attrPattern, 2, `:label="t('key')"`, ""},
 		{"attr: description attr", attrPattern, 2, `description="Some long text"`, "Some long text"},
+		{"attr: prefixed label", attrPattern, 2, `add-label="Add Resource"`, "Add Resource"},
+		{"attr: aria-label", attrPattern, 2, `aria-label="Close the dialog"`, "Close the dialog"},
+		{"attr: suffix", attrPattern, 2, `suffix="Seconds"`, "Seconds"},
+		{"attr: bound prefixed label not matched", attrPattern, 2, `:add-label="t('key')"`, ""},
+		{"attr: directive not matched", attrPattern, 2, `v-stripped-aria-label="!hasLabel && ariaLabel"`, ""},
 		{"htmlText: text between tags", htmlTextPattern, 1, `<h1>Reset Kubernetes</h1>`, "Reset Kubernetes"},
 		{"htmlText: single word", htmlTextPattern, 1, `<span>Environment</span>`, "Environment"},
 		{"htmlText: lowercase skipped", htmlTextPattern, 1, `<p>not a match</p>`, ""},
 		{"htmlText: short text", htmlTextPattern, 1, `<b>A</b>`, ""},
+		{"htmlText: trailing colon", htmlTextPattern, 1, `<label class="text-muted">Age:</label>`, "Age:"},
+		{"htmlText: parenthesized", htmlTextPattern, 1, `>(None)</a>`, "(None)"},
 		{"boundLiteral: bound label", boundLiteralPattern, 2, `:label="'Include Kubernetes services'"`, "Include Kubernetes services"},
 		{"boundLiteral: bound placeholder", boundLiteralPattern, 2, `:placeholder="'Search...'"`, "Search..."},
 		{"boundLiteral: too short", boundLiteralPattern, 2, `:label="'ab'"`, ""},
@@ -111,6 +162,9 @@ func TestValuePatterns(t *testing.T) {
 		{"objectLabel: t() call not matched", objectLabelPattern, 2, `label: this.t('containers.title'),`, ""},
 		{"objectLabel: lowercase value not matched", objectLabelPattern, 2, `label: 'name',`, ""},
 		{"objectLabel: non-label property not matched", objectLabelPattern, 2, `name: 'Namespace',`, ""},
+		{"objectLabel: inline object", objectLabelPattern, 2, `out.push({ label: 'Duration', content: label });`, "Duration"},
+		{"objectLabel: later property", objectLabelPattern, 2, `{ value: 'pool', label: 'Pool' },`, "Pool"},
+		{"objectLabel: suffix of a longer name not matched", objectLabelPattern, 2, `sublabel: 'Namespace',`, ""},
 	}
 
 	for _, tc := range tests {
@@ -169,6 +223,9 @@ func TestSingleWordTitleCase(t *testing.T) {
 		{"ABC", false},       // not Title Case
 		{"hello", false},     // lowercase start
 		{"Two Words", false}, // has space
+		{"Up-to-date", true},
+		{"Read-only", true},
+		{"K-8s", false},
 	}
 
 	for _, tc := range tests {
@@ -189,6 +246,7 @@ func TestBareTextPattern(t *testing.T) {
 		{"Cancel", true},
 		{"Reset Kubernetes", true},
 		{"Two Words Here", true},
+		{"Age:", true},
 		{"lowercase", false},
 		{"A", false},            // too short
 		{"Ab", false},           // too short
