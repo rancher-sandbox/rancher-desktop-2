@@ -42,6 +42,7 @@ rootfs
 # as in /etc/sysconfig
 sysconfig
 tarball
+usermod
 veth
 zst
 zypper
