@@ -107,7 +107,7 @@ function getHelpMenu(isMac: boolean): MenuItem {
     {
       label: t('mainMenu.help.fileABug'),
       click() {
-        shell.openExternal('https://github.com/rancher-sandbox/rancher-desktop/issues');
+        shell.openExternal('https://github.com/rancher-sandbox/rancher-desktop-2/issues');
       },
     },
     {

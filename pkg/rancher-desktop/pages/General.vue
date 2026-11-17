@@ -6,8 +6,8 @@
         <li v-clean-html="t('general.projectDiscussions')" />
         <li class="project-links">
           <span>{{ t('general.projectLinks') }}</span>
-          <a href="https://github.com/rancher-sandbox/rancher-desktop">{{ t('general.homepage') }}</a>
-          <a href="https://github.com/rancher-sandbox/rancher-desktop/issues">{{ t('general.issues') }}</a>
+          <a href="https://github.com/rancher-sandbox/rancher-desktop-2">{{ t('general.homepage') }}</a>
+          <a href="https://github.com/rancher-sandbox/rancher-desktop-2/issues">{{ t('general.issues') }}</a>
         </li>
       </ul>
     </div>
