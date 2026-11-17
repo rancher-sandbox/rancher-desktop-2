@@ -3,9 +3,10 @@
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
 import { jest } from '@jest/globals';
+import { mount } from '@vue/test-utils';
 
 import mockModules from '@pkg/utils/testUtils/mockModules';
-import { t } from '@pkg/utils/testUtils/translations';
+import { switchableT, t } from '@pkg/utils/testUtils/translations';
 
 const componentStub = { template: '<div />' };
 const showMessageBox = jest.fn<(channel: string, options: any) => Promise<{ response: number }>>();
@@ -80,5 +81,23 @@ describe('Images deleteImages', () => {
     await (Images as any).methods.deleteImages.call(ctx);
 
     expect(ctx.imageDelete).not.toHaveBeenCalled();
+  });
+});
+
+describe('Images headers', () => {
+  it('follow a locale switch', async() => {
+    const { t: tt, switchLocale } = switchableT();
+    const wrapper = mount(Images, {
+      global: {
+        directives: { tooltip: {} },
+        mocks:      { t: tt },
+        stubs:      { SortableTable: true },
+      },
+      props: { images: [], imageNamespaces: [] },
+    });
+
+    await switchLocale();
+    expect(wrapper.getComponent({ name: 'SortableTable' }).props('headers'))
+      .toContainEqual(expect.objectContaining({ label: tt('images.manager.table.header.imageId') }));
   });
 });

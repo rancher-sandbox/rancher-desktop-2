@@ -211,9 +211,18 @@ export default defineComponent({
       notation:    'compact',
     });
     return {
-      currentCommand: undefined as string | undefined,
-      headers:
-      [
+      currentCommand:                   undefined as string | undefined,
+      keepImageManagerOutputWindowOpen: false,
+      imageOutputCuller:                undefined as ImageOutputCuller | undefined,
+      mainWindowScroll:                 -1,
+      selected:                         [] as RowItem[],
+      imageToPull:                      undefined as string | undefined,
+      sizeFormatter,
+    };
+  },
+  computed: {
+    headers() {
+      return [
         {
           name:  'name',
           label: this.t('images.manager.table.header.imageName'),
@@ -234,16 +243,8 @@ export default defineComponent({
           label: this.t('images.manager.table.header.size'),
           sort:  ['size', 'name', 'tag', 'id'],
         },
-      ],
-      keepImageManagerOutputWindowOpen: false,
-      imageOutputCuller:                undefined as ImageOutputCuller | undefined,
-      mainWindowScroll:                 -1,
-      selected:                         [] as RowItem[],
-      imageToPull:                      undefined as string | undefined,
-      sizeFormatter,
-    };
-  },
-  computed: {
+      ];
+    },
     ...mapTypedState('action-menu', { menuImages: state => state.resources?.map((i: RowItem) => i._key) ?? [] }),
     main() {
       return document.getElementsByTagName('main')[0];

@@ -33,7 +33,14 @@ export default defineComponent({
   },
   data() {
     return {
-      headers: [
+      loading: true,
+
+      busy: {},
+    };
+  },
+  computed: {
+    headers() {
+      return [
         {
           name:  'icon',
           label: ' ',
@@ -65,13 +72,8 @@ export default defineComponent({
           label: ' ',
           width: 170,
         },
-      ],
-      loading: true,
-
-      busy: {},
-    };
-  },
-  computed: {
+      ];
+    },
     emptyStateIcon(): string {
       return this.t('extensions.installed.emptyState.icon');
     },

@@ -7,7 +7,7 @@ import { mount } from '@vue/test-utils';
 
 import mockModules from '@pkg/utils/testUtils/mockModules';
 import { sortableTableGlobal } from '@pkg/utils/testUtils/sortableTable';
-import { t } from '@pkg/utils/testUtils/translations';
+import { switchableT, t } from '@pkg/utils/testUtils/translations';
 import { IoRancherdesktopContainersV1alpha1Volume as Volume } from '@rdd-client';
 
 const componentStub = { template: '<div />' };
@@ -77,9 +77,10 @@ describe('Volumes methods', () => {
 
   describe('table', () => {
     /** Mount the page with the given volumes, and return its table. */
-    function mountTable(volumes: Volume[]) {
+    function mountTable(volumes: Volume[], mocks: Record<string, unknown> = {}) {
       const wrapper = mount(Volumes, {
         global: sortableTableGlobal({
+          ...mocks,
           error:              null,
           supportsNamespaces: false,
           volumes,
@@ -107,6 +108,15 @@ describe('Volumes methods', () => {
 
       table.searchQuery = query;
       expect(table.filteredRows.map((row: any) => row.status.name)).toEqual(['two']);
+    });
+
+    it('translates its headers after a locale switch', async() => {
+      const { t: tt, switchLocale } = switchableT();
+      const table = mountTable([], { t: tt });
+
+      await switchLocale();
+      expect(table.props('headers'))
+        .toContainEqual(expect.objectContaining({ label: tt('volumes.manage.table.header.driver') }));
     });
 
     it('sorts by driver', () => {
