@@ -41,10 +41,13 @@ export async function openDashboard() {
   }
 
   const window = new BrowserWindow({
-    title:  t('dashboard.windowTitle'),
-    width:  800,
-    height: 600,
-    show:   false,
+    title:           t('dashboard.windowTitle'),
+    width:           800,
+    height:          600,
+    // On Linux and Windows this window shows the app menu, and its File > Exit
+    // quits the whole app instead of closing the dashboard.
+    autoHideMenuBar: true,
+    show:            false,
   });
 
   // Record the window before the first await, so a second click finds it.
