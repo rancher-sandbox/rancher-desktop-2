@@ -82,6 +82,14 @@ Ensure you have the following installed:
 
 - A C compiler such as `gcc`, which cgo needs to build the `rdd` daemon.
 
+Rancher Desktop runs its VM under KVM, so your user needs read and write
+access to `/dev/kvm`. If `test -w /dev/kvm` fails, add yourself to the `kvm`
+group, then log out and back in:
+
+```
+sudo usermod --append --groups kvm "$USER"
+```
+
 Then you can install dependencies with:
 
 ```
@@ -163,20 +171,20 @@ To enable remote debugging, start Rancher Desktop with the `--remote-debugging-p
 On Linux, start Rancher Desktop with the following command:
 
 ``` bash
-rancher-desktop --remote-debugging-port="8315" --remote-allow-origins=http://localhost:8315
+rancher-desktop-2 --remote-debugging-port="8315" --remote-allow-origins=http://localhost:8315
 ```
 
 On macOS, start Rancher Desktop with the following command:
 
 ```
-/Applications/Rancher\ Desktop.app/Contents/MacOS/Rancher\ Desktop --remote-debugging-port="8315" --remote-allow-origins=http://localhost:8315
+/Applications/Rancher\ Desktop\ 2.app/Contents/MacOS/Rancher\ Desktop\ 2 --remote-debugging-port="8315" --remote-allow-origins=http://localhost:8315
 ```
 
 On Windows, start Rancher Desktop with the following command:
 
 ``` powershell
-cd 'C:\Program Files\Rancher Desktop\'
-& '.\Rancher Desktop.exe' --remote-debugging-port="8315" --remote-allow-origins=http://localhost:8315
+cd 'C:\Program Files\Rancher Desktop 2\'
+& '.\Rancher Desktop 2.exe' --remote-debugging-port="8315" --remote-allow-origins=http://localhost:8315
 ```
 
 After Rancher Desktop starts, open Chrome and navigate to `http://localhost:8315/`. Select the available target to start remote debugging Rancher Desktop.
@@ -263,6 +271,18 @@ package formats.
 
 `commit` is the shortened hash of the commit used to make the build.
 
+To run these packages, your user also needs access to `/dev/kvm`, as
+described under [Setup](#linux).
+
+`rdd` refuses to work with a backend that runs a different version of `rdd`.
+So before you switch versions, quit Rancher Desktop and delete the backend.
+This also deletes the VM with its containers, images and Kubernetes cluster.
+For the `.deb` and `.rpm` packages, the command is:
+
+```
+/opt/rancher-desktop-2/resources/linux/bin/rdd svc delete
+```
+
 [docs]: https://docs.rancherdesktop.io
 [OBS]: https://build.opensuse.org/
 
@@ -280,16 +300,17 @@ sudo apt update
 You can see available versions with:
 
 ```
-apt list -a rancher-desktop
+apt list -a rancher-desktop-2
 ```
 
 Once you find the version you want to install you can install it with:
 
 ```
-sudo apt install rancher-desktop=<version>
+sudo apt install rancher-desktop-2=<version>
 ```
 
-This works even if you already have a version of Rancher Desktop installed.
+If another version is already installed, delete its backend first, as
+described above.
 
 
 #### `.rpm` Development Repository
@@ -304,16 +325,17 @@ sudo zypper refresh
 You can see available versions with:
 
 ```
-zypper search -s rancher-desktop
+zypper search -s rancher-desktop-2
 ```
 
 Finally, install the version you want with:
 
 ```
-zypper install --oldpackage rancher-desktop=<version>
+sudo zypper install --oldpackage rancher-desktop-2=<version>
 ```
 
-This works even if you already have a version of Rancher Desktop installed.
+If another version is already installed, delete its backend first, as
+described above.
 
 
 #### Development AppImages
