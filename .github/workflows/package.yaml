@@ -21,10 +21,6 @@ name: Package
 
 on:
   pull_request:
-    paths-ignore:
-    - '.github/actions/spelling/**'
-    - 'docs/**'
-    - '**.md'
   push:
     branches:
     - main
@@ -182,6 +178,23 @@ jobs:
         name: rancher-desktop.${{ matrix.platform }}.${{ matrix.arch }}.zip
         path: dist/rancher-desktop-*.${{ matrix.platform }}.*.zip
         if-no-files-found: error
+
+  # The ruleset for main requires this check in place of the package legs.
+  # When check-paths skips `package` on a docs-only pull request, GitHub
+  # reports one skipped check named `package`, and the legs' checks never
+  # appear. Whether the legs ran or were skipped, this job reports its check.
+  # GitHub skips a job when one of its needs failed or was cancelled, and a
+  # skipped required check counts as passing. So this job runs under
+  # always().
+  package-result:
+    name: Package result
+    needs: [check-paths, dashboard, package]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Fail if a packaging job failed or was cancelled
+      if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+      run: exit 1
 
   obs-package-name:
     name: Package OBS artifacts
