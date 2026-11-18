@@ -26,9 +26,9 @@ The short directory contains the following files and directories:
 | --- | --- |
 | `.docker-plugins-managed` | records that rdd added `docker-cli-plugins` to Docker's `cliPluginsExtraDirs` |
 | `.path-managed` | records that rdd added `bin` to the user Path (Windows) |
-| `bin`         | links to `rdd`, `kubectl`, and `nerdctl`, plus bundled tools like `docker` and `helm` when rdd runs from the app bundle |
+| `bin`         | links to `rdd`, `kubectl`, and `nerdctl`, plus bundled tools like `docker` and `helm` when rdd runs from the app bundle or, in developer mode, a checkout |
 | `containerd.sock` | containerd socket that Lima forwards from the guest (macOS and Linux) |
-| `docker-cli-plugins` | links to bundled Docker CLI plugins like `docker-buildx` and `docker-compose` when rdd runs from the app bundle |
+| `docker-cli-plugins` | links to bundled Docker CLI plugins like `docker-buildx` and `docker-compose` when rdd runs from the app bundle or, in developer mode, a checkout |
 | `docker.sock` | Docker socket that Lima forwards from the guest (macOS and Linux) |
 | `kube.config` | Kubernetes config only containing the `rancher-desktop-2` context |
 | `lima`        | `LIMA_HOME` is located here because of socket name length restrictions |

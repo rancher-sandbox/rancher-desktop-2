@@ -46,68 +46,71 @@ func shimPath(binDir, tool string) string {
 	return filepath.Join(binDir, strings.TrimSuffix(tool, ".exe")+shimSuffix)
 }
 
-// linkForwarders publishes a forwarder per bundled tool into binDir, and a
-// forwarder per bundled docker CLI plugin into both binDir (so the plugins also
-// work as standalone commands) and pluginDir (which holds only plugins, for
-// docker's cliPluginsExtraDirs). It does not wipe either directory: the running
-// rdd reaches this code through its own forwarder, and Windows will not delete a
-// running executable. Instead it reconciles — refresh each .shim, point each
-// name at the bin directory's forwarder copy, and drop forwarders the bundle no
-// longer ships. Plugin-directory forwarders hardlink to the bin directory's
-// copy; both directories are on the same volume.
-func linkForwarders(execPath, binDir, pluginDir string) error {
-	srcDir := filepath.Dir(execPath)
-	forwarderSrc := filepath.Join(srcDir, forwarderName)
+// linkForwarders publishes a forwarder per bundled tool in srcDir into binDir,
+// and a forwarder per docker CLI plugin in pluginsSrcDir into both binDir (so
+// the plugins also work as standalone commands) and pluginDir (which holds only
+// plugins, for docker's cliPluginsExtraDirs).  It does not wipe either
+// directory: the running rdd reaches this code through its own forwarder, and
+// Windows will not delete a running executable.  Instead it reconciles —
+// refresh each .shim, point each name at the bin directory's forwarder copy,
+// and drop forwarders no longer wanted.  Plugin-directory forwarders hardlink
+// to the bin directory's copy; both directories are on the same volume.
+// The forwarder is assumed to be next to the execPath.
+func linkForwarders(paths pathOptions) error {
+	forwarderSrc := filepath.Join(filepath.Dir(paths.execPath), forwarderName)
 	if _, err := os.Stat(forwarderSrc); err != nil {
 		return fmt.Errorf("locate forwarder %q: %w", forwarderSrc, err)
 	}
 
-	entries, err := os.ReadDir(srcDir)
+	entries, err := os.ReadDir(paths.srcDir)
 	if err != nil {
-		return fmt.Errorf("read bundle directory %q: %w", srcDir, err)
+		return fmt.Errorf("read bundle directory %q: %w", paths.srcDir, err)
 	}
-	plugins := pluginTargets(execPath)
+	plugins := pluginTargets(paths.pluginsSrcDir)
 
-	// Every bundled binary forwards to itself. Each multicall name forwards to
-	// rdd, which provides it, unless the bundle ships a binary of that name. The
-	// plugins also go into the bin directory so they work as standalone commands.
+	// Every tool in srcDir forwards to itself. rdd, and each multicall name,
+	// forwards to execPath, unless srcDir ships a binary of that name — a
+	// packaged app's srcDir always does, for rdd itself; a checkout's does not,
+	// since rdd stays beside the running executable instead of being copied in.
+	// The plugins also go into the bin directory so they work as standalone
+	// commands.
 	binWant := map[string]string{}
 	for _, entry := range entries {
-		if entry.IsDir() || entry.Name() == forwarderName {
+		if !entry.Type().IsRegular() || entry.Name() == forwarderName || filepath.Ext(entry.Name()) != ".exe" {
 			continue
 		}
-		binWant[entry.Name()] = filepath.Join(srcDir, entry.Name())
+		binWant[entry.Name()] = filepath.Join(paths.srcDir, entry.Name())
 	}
-	for _, name := range multiCallLinks {
+	for _, name := range append([]string{"rdd"}, multiCallLinks...) {
 		if _, ok := binWant[name+".exe"]; !ok {
-			binWant[name+".exe"] = filepath.Join(srcDir, "rdd.exe")
+			binWant[name+".exe"] = paths.execPath
 		}
 	}
 	for name, target := range plugins {
 		binWant[name] = target
 	}
 
-	if err := os.MkdirAll(binDir, 0o755); err != nil {
-		return fmt.Errorf("create %q: %w", binDir, err)
+	if err := os.MkdirAll(paths.binDir, 0o755); err != nil {
+		return fmt.Errorf("create %q: %w", paths.binDir, err)
 	}
 
-	master := filepath.Join(binDir, forwarderName)
+	master := filepath.Join(paths.binDir, forwarderName)
 	if err := ensureForwarderCopy(forwarderSrc, master); err != nil {
 		return fmt.Errorf("stage forwarder %q: %w", master, err)
 	}
 
 	// Bin directory: match #448's reconcile (publish, drop no-longer-bundled,
 	// sweep), without the dangling-target prune, which the standalone path owns.
-	publishForwarders(binDir, master, binWant)
-	removeStaleForwarders(binDir, binWant)
-	sweepAside(binDir)
+	publishForwarders(paths.binDir, master, binWant)
+	removeStaleForwarders(paths.binDir, binWant)
+	sweepAside(paths.binDir)
 
 	// Plugin directory: the same, plus a dangling-target prune so a plugin whose
 	// bundle target moved does not shadow one docker finds in another directory.
-	publishForwarders(pluginDir, master, plugins)
-	removeStaleForwarders(pluginDir, plugins)
-	pruneDanglingForwarders(pluginDir)
-	sweepAside(pluginDir)
+	publishForwarders(paths.pluginDir, master, plugins)
+	removeStaleForwarders(paths.pluginDir, plugins)
+	pruneDanglingForwarders(paths.pluginDir)
+	sweepAside(paths.pluginDir)
 	return nil
 }
 

@@ -41,9 +41,12 @@ func TestLinkForwarders(t *testing.T) {
 	execPath := bundleDir(t, "rdd.exe", "docker.exe", "helm.exe")
 	srcDir := filepath.Dir(execPath)
 	binDir := filepath.Join(t.TempDir(), "bin")
-	pluginDir := filepath.Join(t.TempDir(), "docker-cli-plugins")
 
-	assert.NilError(t, linkForwarders(execPath, binDir, pluginDir))
+	paths := newPathOptions(t, execPath).
+		withSrcDir(srcDir).
+		withPluginsSrcDir(filepath.Join(t.TempDir(), "docker-cli-plugins")).
+		withBinDir(binDir)
+	assert.NilError(t, linkForwarders(paths))
 
 	// Each bundled tool forwards to itself; kubectl and nerdctl forward to rdd.
 	assertForwarder(t, binDir, "docker.exe", filepath.Join(srcDir, "docker.exe"))
@@ -74,14 +77,45 @@ func TestLinkForwardersBundledMulticallWins(t *testing.T) {
 	execPath := bundleDir(t, "rdd.exe", "nerdctl.exe")
 	srcDir := filepath.Dir(execPath)
 	binDir := filepath.Join(t.TempDir(), "bin")
-	pluginDir := filepath.Join(t.TempDir(), "docker-cli-plugins")
 
-	assert.NilError(t, linkForwarders(execPath, binDir, pluginDir))
+	paths := newPathOptions(t, execPath).
+		withSrcDir(srcDir).
+		withPluginsSrcDir(filepath.Join(t.TempDir(), "docker-cli-plugins")).
+		withBinDir(binDir)
+	assert.NilError(t, linkForwarders(paths))
 
 	// nerdctl forwards to the bundled nerdctl, not to rdd.
 	assertForwarder(t, binDir, "nerdctl.exe", filepath.Join(srcDir, "nerdctl.exe"))
 	// kubectl is not bundled, so it forwards to rdd.
 	assertForwarder(t, binDir, "kubectl.exe", execPath)
+}
+
+// TestLinkForwardersCheckoutLinksRdd checks the checkout layout: the forwarder
+// binary and rdd.exe stay beside execPath (rdd/bin), while srcDir (the
+// checkout's resources/<goos>/bin) holds only third-party tools. linkForwarders
+// must still forward rdd.exe, kubectl.exe, and nerdctl.exe to execPath.
+func TestLinkForwardersCheckoutLinksRdd(t *testing.T) {
+	rddDir := t.TempDir()
+	assert.NilError(t, os.WriteFile(filepath.Join(rddDir, forwarderName), []byte("FORWARDER"), 0o755))
+	execPath := filepath.Join(rddDir, "rdd.exe")
+	assert.NilError(t, os.WriteFile(execPath, []byte("binary"), 0o755))
+
+	srcDir := t.TempDir()
+	assert.NilError(t, os.WriteFile(filepath.Join(srcDir, "helm.exe"), []byte("binary:helm"), 0o755))
+
+	binDir := filepath.Join(t.TempDir(), "bin")
+	paths := newPathOptions(t, execPath).
+		withSrcDir(srcDir).
+		withPluginsSrcDir(filepath.Join(t.TempDir(), "docker-cli-plugins")).
+		withBinDir(binDir)
+	assert.NilError(t, linkForwarders(paths))
+
+	// helm comes from srcDir.
+	assertForwarder(t, binDir, "helm.exe", filepath.Join(srcDir, "helm.exe"))
+	// rdd, kubectl, and nerdctl all forward to the running executable.
+	for _, name := range append([]string{"rdd"}, multiCallLinks...) {
+		assertForwarder(t, binDir, name+".exe", execPath)
+	}
 }
 
 // TestLinkForwardersReconciles checks that a second run keeps existing
@@ -90,14 +124,17 @@ func TestLinkForwardersBundledMulticallWins(t *testing.T) {
 func TestLinkForwardersReconciles(t *testing.T) {
 	execPath := bundleDir(t, "rdd.exe", "docker.exe")
 	binDir := filepath.Join(t.TempDir(), "bin")
-	pluginDir := filepath.Join(t.TempDir(), "docker-cli-plugins")
+	paths := newPathOptions(t, execPath).
+		withSrcDir(filepath.Dir(execPath)).
+		withPluginsSrcDir(filepath.Join(t.TempDir(), "docker-cli-plugins")).
+		withBinDir(binDir)
 
-	assert.NilError(t, linkForwarders(execPath, binDir, pluginDir))
+	assert.NilError(t, linkForwarders(paths))
 	before, err := os.Stat(filepath.Join(binDir, "docker.exe"))
 	assert.NilError(t, err)
 
 	// A second run with the same bundle is a no-op for the hardlinks.
-	assert.NilError(t, linkForwarders(execPath, binDir, pluginDir))
+	assert.NilError(t, linkForwarders(paths))
 	after, err := os.Stat(filepath.Join(binDir, "docker.exe"))
 	assert.NilError(t, err)
 	assert.Assert(t, os.SameFile(before, after), "forwarder was needlessly replaced")
@@ -105,7 +142,7 @@ func TestLinkForwardersReconciles(t *testing.T) {
 	// Changing the bundled forwarder refreshes the master and re-links tools.
 	srcDir := filepath.Dir(execPath)
 	assert.NilError(t, os.WriteFile(filepath.Join(srcDir, forwarderName), []byte("FORWARDER-v2"), 0o755))
-	assert.NilError(t, linkForwarders(execPath, binDir, pluginDir))
+	assert.NilError(t, linkForwarders(paths))
 	master, err := os.ReadFile(filepath.Join(binDir, forwarderName))
 	assert.NilError(t, err)
 	assert.Equal(t, string(master), "FORWARDER-v2")
@@ -124,12 +161,14 @@ func TestLinkForwardersReconciles(t *testing.T) {
 func TestLinkForwardersPreservesOtherFiles(t *testing.T) {
 	execPath := bundleDir(t, "rdd.exe", "docker.exe")
 	binDir := filepath.Join(t.TempDir(), "bin")
-	pluginDir := filepath.Join(t.TempDir(), "docker-cli-plugins")
 	assert.NilError(t, os.MkdirAll(binDir, 0o755))
 	foreign := filepath.Join(binDir, "user-notes.txt")
 	assert.NilError(t, os.WriteFile(foreign, []byte("keep"), 0o644))
 
-	assert.NilError(t, linkForwarders(execPath, binDir, pluginDir))
+	assert.NilError(t, linkForwarders(newPathOptions(t, execPath).
+		withSrcDir(filepath.Dir(execPath)).
+		withPluginsSrcDir(filepath.Join(t.TempDir(), "docker-cli-plugins")).
+		withBinDir(binDir)))
 
 	data, err := os.ReadFile(foreign)
 	assert.NilError(t, err, "unrelated file was removed")
@@ -142,12 +181,15 @@ func TestLinkForwardersRemovesStale(t *testing.T) {
 	execPath := bundleDir(t, "rdd.exe", "docker.exe", "helm.exe")
 	srcDir := filepath.Dir(execPath)
 	binDir := filepath.Join(t.TempDir(), "bin")
-	pluginDir := filepath.Join(t.TempDir(), "docker-cli-plugins")
-	assert.NilError(t, linkForwarders(execPath, binDir, pluginDir))
+	paths := newPathOptions(t, execPath).
+		withSrcDir(srcDir).
+		withPluginsSrcDir(filepath.Join(t.TempDir(), "docker-cli-plugins")).
+		withBinDir(binDir)
+	assert.NilError(t, linkForwarders(paths))
 
 	// Drop helm from the bundle and re-run.
 	assert.NilError(t, os.Remove(filepath.Join(srcDir, "helm.exe")))
-	assert.NilError(t, linkForwarders(execPath, binDir, pluginDir))
+	assert.NilError(t, linkForwarders(paths))
 
 	for _, name := range []string{"helm.exe", "helm.shim"} {
 		_, err := os.Lstat(filepath.Join(binDir, name))
@@ -160,7 +202,8 @@ func TestLinkForwardersRemovesStale(t *testing.T) {
 func TestLinkForwardersMissingForwarder(t *testing.T) {
 	srcDir := t.TempDir()
 	assert.NilError(t, os.WriteFile(filepath.Join(srcDir, "rdd.exe"), []byte("binary"), 0o755))
-	err := linkForwarders(filepath.Join(srcDir, "rdd.exe"), filepath.Join(t.TempDir(), "bin"), filepath.Join(t.TempDir(), "docker-cli-plugins"))
+	execPath := filepath.Join(srcDir, "rdd.exe")
+	err := linkForwarders(newPathOptions(t, execPath).withSrcDir(srcDir).withPluginsSrcDir(filepath.Join(t.TempDir(), "docker-cli-plugins")))
 	assert.ErrorContains(t, err, "locate forwarder")
 }
 
@@ -183,7 +226,11 @@ func TestLinkForwardersPlugins(t *testing.T) {
 
 	binDir := filepath.Join(t.TempDir(), "bin")
 	pluginDir := filepath.Join(t.TempDir(), "docker-cli-plugins")
-	assert.NilError(t, linkForwarders(execPath, binDir, pluginDir))
+	assert.NilError(t, linkForwarders(newPathOptions(t, execPath).
+		withSrcDir(srcDir).
+		withPluginsSrcDir(pluginsSrc).
+		withBinDir(binDir).
+		withPluginDir(pluginDir)))
 
 	// In the bin directory the plugin is a standalone command forwarding to the
 	// bundle plugin (hard-linked to the bin directory's master forwarder).
