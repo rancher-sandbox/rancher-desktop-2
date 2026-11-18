@@ -25,6 +25,10 @@ BuildRoot:  %{_tmppath}/%{name}-%{version}-build
 Group:      Development/Tools/Other
 URL:        https://github.com/rancher-sandbox/rancher-desktop-2#readme
 
+# Because we have pre-built binaries, build ID isn't very useful here.
+%global _build_id_links none
+%global _enable_debug_packages 0
+
 %define RD_ARCH %{_arch}
 
 %if "%{_vendor}" == "debbuild"
