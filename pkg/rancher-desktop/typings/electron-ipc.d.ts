@@ -48,7 +48,6 @@ export interface IpcMainEvents {
   // #region Preferences
   'preferences-open':       () => void;
   'preferences-close':      () => void;
-  'preferences-set-dirty':  (isDirty: boolean) => void;
   'get-debugging-statuses': () => void;
 
   /**
@@ -94,7 +93,8 @@ export interface IpcMainEvents {
 export interface IpcMainInvokeEvents {
   'get-locked-fields':   () => import('@pkg/config/settings').LockedSettingsType;
   'settings-write':      (arg: RecursivePartial<import('@pkg/config/settings').Settings>) => void;
-  'show-message-box':    (options: Electron.MessageBoxOptions) => Electron.MessageBoxReturnValue;
+  /** `modal` attaches the box to the window that asked. */
+  'show-message-box':    (options: Electron.MessageBoxOptions, modal?: boolean) => Electron.MessageBoxReturnValue;
   'show-message-box-rd': (options: Electron.MessageBoxOptions, modal?: boolean) => any;
   /** Fetch the raw RSS XML of the Rancher Desktop blog. */
   'get-blog-feed':       () => string;

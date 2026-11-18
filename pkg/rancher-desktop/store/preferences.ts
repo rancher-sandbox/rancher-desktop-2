@@ -118,8 +118,14 @@ export const getters = {
     }
     return modified as Required<RecursiveReadonly<AppSpec>>;
   },
-  canApply: (state) => {
-    return Object.keys(state.changes).length > 0 && !state.errorStatus;
+  /**
+   * Whether there are uncommitted changes.
+   */
+  isDirty: (state) => {
+    return Object.keys(state.changes).length > 0;
+  },
+  canApply: (state, getters) => {
+    return getters.isDirty && !state.errorStatus;
   },
   isPreferenceLocked: () => (_key: RecursiveLeafKeys<AppSpec>) => {
     // TODO: deployment profiles https://github.com/rancher-sandbox/rancher-desktop-2/issues/513

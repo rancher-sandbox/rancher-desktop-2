@@ -10,6 +10,7 @@ export class PreferencesPage {
   readonly page:            Page;
   readonly body:            Locator;
   readonly alert:           Locator;
+  readonly apply:           Locator;
   readonly application:     ApplicationNav;
   readonly virtualMachine:  VirtualMachineNav;
   readonly containerEngine: ContainerEngineNav;
@@ -24,6 +25,7 @@ export class PreferencesPage {
     this.containerEngine = new ContainerEngineNav(page);
     this.kubernetes = new KubernetesNav(page);
     this.alert = page.locator('.preferences-alert');
+    this.apply = page.getByTestId('preferences-apply');
     this.wsl = new WslNav(page);
   }
 

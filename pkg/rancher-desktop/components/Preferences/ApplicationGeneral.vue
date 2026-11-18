@@ -11,7 +11,15 @@ defineOptions({ name: 'preferences-application-general' });
 const store = useStore();
 const isPreferenceLocked = computed(() => store.getters['preferences/isPreferenceLocked']);
 const availableLocales = computed(() => store.getters['i18n/availableLocales']);
-const selectedLocale = computed(() => store.getters['i18n/current']);
+// Show the App's locale, or a locale picked in Preferences but not yet
+// applied. But the API accepts any locale, so the App can hold one that
+// isn't in the list. In that case the window falls back to English, so
+// show the window's language.
+const selectedLocale = computed(() => {
+  const locale = store.getters['preferences/preferences'].application?.locale;
+
+  return Object.hasOwn(availableLocales.value, locale) ? locale : store.getters['i18n/current'];
+});
 const showLocaleDisclaimer = computed(() => selectedLocale.value !== 'en-us');
 
 function onLocaleChange(newLocale: string) {

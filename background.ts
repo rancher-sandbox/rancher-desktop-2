@@ -22,7 +22,7 @@ import { protocolsRegistered, setupProtocolHandlers } from '@pkg/utils/protocols
 import getWSLVersion from '@pkg/utils/wslVersion';
 import * as window from '@pkg/window';
 import { openDashboard } from '@pkg/window/dashboard';
-import { openPreferences } from '@pkg/window/preferences';
+import { closePreferences, openPreferences } from '@pkg/window/preferences';
 
 // https://www.electronjs.org/docs/latest/breaking-changes#changed-gtk-4-is-default-when-running-gnome
 if (process.platform === 'linux') {
@@ -298,7 +298,7 @@ ipcMainProxy.on('preferences-open', () => {
 });
 
 ipcMainProxy.on('preferences-close', () => {
-  window.getWindow('preferences')?.close();
+  closePreferences();
 });
 
 ipcMainProxy.on('error/show-logs', async(event) => {
@@ -355,8 +355,8 @@ ipcMainProxy.on('help/preferences/open-url', async() => {
   }
 });
 
-ipcMainProxy.handle('show-message-box', (_event, options: Electron.MessageBoxOptions): Promise<Electron.MessageBoxReturnValue> => {
-  return window.showMessageBox(options, false);
+ipcMainProxy.handle('show-message-box', (event, options: Electron.MessageBoxOptions, modal = false): Promise<Electron.MessageBoxReturnValue> => {
+  return window.showMessageBox(options, modal ? Electron.BrowserWindow.fromWebContents(event.sender) : null);
 });
 
 ipcMainProxy.handle('show-message-box-rd', async(_event, options: Electron.MessageBoxOptions, modal = false) => {

@@ -18,9 +18,11 @@ defineOptions({
 });
 
 const store = useStore();
+const t = (key: string) => store.getters['i18n/t'](key);
 
 const navigation = computed(() => store.state['transient-preferences'].navigation);
 const committed = computed(() => store.getters['preferences/committed']);
+const isDirty = computed(() => store.getters['preferences/isDirty']);
 const hasPreferences = computed(() => Object.keys(committed.value).length > 0);
 const currentNavItem = computed(() => navigation.value.preferences.top);
 
@@ -34,8 +36,61 @@ async function closePreferences() {
   window.close();
 }
 async function applyPreferences() {
+  const locale = store.state.preferences.changes['application.locale'];
+
   if (await store.dispatch('preferences/commit')) {
-    window.close();
+    // The commit stops waiting for the updated App after a second, and
+    // Preferences closes right after.  With the main window closed, an App
+    // that arrives later may not reach any window that would switch the
+    // language, so switch it here.
+    if (locale) {
+      await store.dispatch('i18n/switchTo', locale);
+    }
+    // `changes` keeps the applied values until the updated App arrives, so
+    // clear them before closing, or the close would ask to discard them.
+    await closePreferences();
+  }
+}
+/** True while the discard question is open, so another close doesn't ask again. */
+let asking = false;
+
+/** Keep the window open while there are unsaved changes, and ask whether to discard them. */
+function confirmUnload(event: BeforeUnloadEvent) {
+  if (!isDirty.value) {
+    return;
+  }
+  event.preventDefault();
+  if (!asking) {
+    askToDiscard();
+  }
+}
+/** Button indexes in the discard question. */
+enum Buttons {
+  Discard,
+  Cancel,
+}
+async function askToDiscard() {
+  asking = true;
+  try {
+    const result = await ipcRenderer.invoke('show-message-box', {
+      title:    t('preferencesWindow.close.title'),
+      type:     'warning',
+      message:  t('preferencesWindow.close.message'),
+      detail:   t('preferencesWindow.close.detail'),
+      cancelId: Buttons.Cancel,
+      buttons:  Object.assign([], {
+        [Buttons.Discard]: t('preferencesWindow.close.discardChanges'),
+        [Buttons.Cancel]:  t('generic.cancel'),
+      }),
+    }, true);
+
+    if (result.response === Buttons.Discard) {
+      await closePreferences();
+    }
+  } catch (ex) {
+    console.error('Failed to close Preferences with unsaved changes:', ex);
+  } finally {
+    asking = false;
   }
 }
 async function navigateToTab(_event: Electron.IpcRendererEvent, args: { name?: preferencesNavItemName, direction?: Direction }) {
@@ -59,9 +114,11 @@ async function navigateToTab(_event: Electron.IpcRendererEvent, args: { name?: p
 onBeforeMount(() => {
   store.dispatch('rdd/watchResources', ['apps']);
   ipcRenderer.on('route', navigateToTab);
+  window.addEventListener('beforeunload', confirmUnload);
 });
 onBeforeUnmount(() => {
   ipcRenderer.removeListener('route', navigateToTab);
+  window.removeEventListener('beforeunload', confirmUnload);
   store.dispatch('rdd/unwatchResources', ['apps']);
   store.dispatch('preferences/clear');
 });

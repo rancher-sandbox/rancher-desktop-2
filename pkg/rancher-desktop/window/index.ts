@@ -729,17 +729,14 @@ export async function openSudoPrompt(explanations: Record<string, string[]>): Pr
   return result;
 }
 
-export async function showMessageBox(options: Electron.MessageBoxOptions, couldBeModal = false) {
-  const mainWindow = couldBeModal ? getWindow('main') : null;
-
+export async function showMessageBox(options: Electron.MessageBoxOptions, parent: Electron.BrowserWindow | null = null) {
   // On macOS, normalizeAccessKeys removes only the "&", which would leave "削除(D)".
-  // Only dialogs shown through this function get the strip;
-  // window/preferences.ts calls Electron's dialog API directly.
+  // Only dialogs shown through this function get the strip.
   if (options.normalizeAccessKeys && process.platform === 'darwin') {
     options = { ...options, buttons: options.buttons?.map(removeParenthesizedAccessKey) };
   }
 
-  return await (mainWindow ? Electron.dialog.showMessageBox(mainWindow, options) : Electron.dialog.showMessageBox(options));
+  return await (parent ? Electron.dialog.showMessageBox(parent, options) : Electron.dialog.showMessageBox(options));
 }
 
 /**

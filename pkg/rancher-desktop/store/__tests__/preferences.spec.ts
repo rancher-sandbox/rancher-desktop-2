@@ -9,19 +9,6 @@ import { AppRancherdesktopIoV1alpha1Api as Api, IoRancherdesktopAppV1alpha1App a
 
 import type { Dispatch } from 'vuex';
 
-let oldStructuredClone: { has: boolean, value: any };
-beforeEach(() => {
-  oldStructuredClone = { has: 'structuredClone' in global, value: global.structuredClone };
-  global.structuredClone ??= (obj: any) => _.cloneDeep(obj);
-});
-afterEach(() => {
-  if (oldStructuredClone.has) {
-    global.structuredClone = oldStructuredClone.value;
-  } else {
-    delete (global as any).structuredClone;
-  }
-});
-
 describe('actions', () => {
   const commit = jest.fn(function(this: ReturnType<typeof makeContext>, type: string, payload: any) {
     if (type === 'SET_CHANGES') {

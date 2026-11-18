@@ -40,6 +40,7 @@ function apply() {
         {{ t('generic.cancel') }}
       </button>
       <button
+        data-testid="preferences-apply"
         class="btn role-primary"
         :disabled="!canApply"
         @click="apply"

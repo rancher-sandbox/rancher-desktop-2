@@ -140,7 +140,9 @@ class ShortcutsImpl {
     if (!this.windows[id]) {
       this.windows[id] = new WindowShortcuts(window);
 
-      window.on('close', () => {
+      // Unlike `close`, `closed` is emitted after the page's unload handlers
+      // have run, once the window is really gone.
+      window.on('closed', () => {
         delete this.windows[id];
       });
     }
