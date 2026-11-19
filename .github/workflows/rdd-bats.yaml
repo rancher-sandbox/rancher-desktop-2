@@ -52,9 +52,32 @@ jobs:
         | tee --append "$GITHUB_OUTPUT"
       env:
         GH_TOKEN: ${{ github.token }}
+
+  compute-bats-suites:
+    name: Compute BATS Suites
+    runs-on: ubuntu-latest
+    outputs:
+      bats-suites: ${{ steps.compute.outputs.bats-suites }}
+    steps:
+    - id: compute
+      run: |
+        # bats-app and bats-docker each run on their own runner so their VMs
+        # do not collide with bats-lima's on Windows (Lima hard-codes SSH port
+        # 22 per instance), and so each can grow independently of the rest of
+        # the suite.
+        # bats-extensions is separate because it needs to run `yarn install`.
+        suites=(
+          bats-app
+          bats-lima
+          bats-docker
+          bats-extensions
+          bats-others
+        )
+        json=$(jq --null-input --compact-output '$ARGS.positional' --args "${suites[@]}")
+        echo "bats-suites=$json" | tee --append "$GITHUB_OUTPUT"
   bats:
     name: BATS
-    needs: [get-pr-number, check-paths]
+    needs: [get-pr-number, check-paths, compute-bats-suites]
     if: ${{ ! needs.get-pr-number.outputs.number }}
     strategy:
       fail-fast: false
@@ -64,15 +87,15 @@ jobs:
         - macos-15-intel
         - ubuntu-latest
         - windows-latest
-        # bats-app and bats-docker each run on their own runner so their VMs
-        # do not collide with bats-lima's on Windows (Lima hard-codes SSH port
-        # 22 per instance), and so each can grow independently of the rest of
-        # the suite.
-        suite:
-        - bats-app
-        - bats-lima
-        - bats-docker
-        - bats-others
+        suite: ${{ fromJSON(needs.compute-bats-suites.outputs.bats-suites) }}
+        include:
+          # Only save the go cache on macOS when running bats-others; the Lint
+          # workflow does it for the other platforms.  We limit it to one suite
+          # so we don't repeat uploads.
+          - save-go-cache: false
+          - runs-on: macos-15-intel
+            suite: bats-others
+            save-go-cache: true
     # Run on ubuntu-latest if we don't need to actually run the tests, because
     # they start faster (and are cheaper).
     runs-on: ${{ case(needs.check-paths.outputs.should-run == 'true', matrix.runs-on, 'ubuntu-latest') }}
@@ -180,11 +203,13 @@ jobs:
       with:
         persist-credentials: false
         submodules: recursive
+    - uses: $/.github/actions/yarn-install
+      if: needs.check-paths.outputs.should-run && matrix.suite == 'bats-extensions'
+      # We never save the cache via bats-extensions.
     - uses: $/.github/actions/setup-rdd-go
-      if: needs.check-paths.outputs.should-run
+      if: needs.check-paths.outputs.should-run && matrix.suite != 'bats-extensions'
       with:
-        # Lint RDD writes the cache for the other platforms.
-        save: ${{ matrix.runs-on == 'macos-15-intel' }}
+        save: ${{ matrix.save-go-cache }}
 
     - name: "Windows: disable Compatibility Telemetry"
       if: needs.check-paths.outputs.should-run && runner.os == 'Windows'
@@ -258,19 +283,23 @@ jobs:
       if: needs.check-paths.outputs.should-run
       shell: bash
       run: |
-        case "${{ matrix.suite }}" in
-          bats-app|bats-lima|bats-docker)
-            echo "BATS_TARGET=${{ matrix.suite }}" >> "$GITHUB_ENV"
-            ;;
+        case "${SUITE}" in
           bats-others)
-            echo "BATS_EXCLUDES=bats-app bats-lima bats-docker" >> "$GITHUB_ENV"
+            excludes=" $(jq --raw-output 'join(" ")' <<< "${BATS_SUITES}") "
+            echo "BATS_EXCLUDES=${excludes/ bats-others / }" >> "$GITHUB_ENV"
             echo "BATS_TARGET=bats-all" >> "$GITHUB_ENV"
             ;;
+          bats-*)
+            echo "BATS_TARGET=$SUITE" >> "$GITHUB_ENV"
+            ;;
           *)
-            echo "Unknown test suite: ${{ matrix.suite }}" >&2
+            echo "Unknown test suite: $SUITE" >&2
             exit 1
             ;;
         esac
+      env:
+        SUITE: ${{ matrix.suite }}
+        BATS_SUITES: ${{ needs.compute-bats-suites.outputs.bats-suites }}
 
     # Build ahead of the test step so the timed step runs bats alone. A build
     # inside it varies with the Go cache and distorts the duration.
