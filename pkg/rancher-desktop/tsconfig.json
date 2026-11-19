@@ -24,7 +24,7 @@
       ],
       "@rdd-client": [
         "../rdd-client/index"
-      ],
+      ]
     },
     "typeRoots": [
       "../../node_modules",

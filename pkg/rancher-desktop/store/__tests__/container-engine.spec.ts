@@ -5,6 +5,7 @@ import { ActionContext } from '@pkg/store/ts-helpers';
 import mockModules from '@pkg/utils/testUtils/mockModules';
 
 import type { state as StateFunc } from '../container-engine';
+import type { HttpLibrary } from '@rdd-client';
 
 type State = ReturnType<typeof StateFunc>;
 
@@ -15,7 +16,11 @@ mockModules({
 
 const containerEngineModule = await import('../container-engine');
 const { actions: realActions } = containerEngineModule;
-const { ApiException } = await import('@rdd-client');
+const { ApiException, createConfiguration, Observable, ResponseContext, ServerConfiguration } = await import('@rdd-client');
+
+function of<T>(value: T) {
+  return new Observable<T>(Promise.resolve(value));
+}
 
 type actionContextType = ActionContext<State,
   typeof containerEngineModule.mutations,
@@ -113,14 +118,27 @@ describe('container-engine store', () => {
     });
   });
   describe.each([
-    ['containerDelete', 'deleteNamespacedContainer', 'container', 'containers'],
-    ['imageDelete', 'deleteNamespacedImage', 'image', 'images'],
-    ['volumeDelete', 'deleteNamespacedVolume', 'volume', 'volumes'],
-  ] as const)('actions.%s', (action, clientMethod, argument, source) => {
-    /** Run the action with an API client whose delete call fails with the given error. */
-    async function deleteFailingWith(error: Error) {
+    ['containerDelete', 'Container', 'container', 'containers'],
+    ['imageDelete', 'Image', 'image', 'images'],
+    ['volumeDelete', 'Volume', 'volume', 'volumes'],
+  ] as const)('actions.%s', (action, kind, argument, source) => {
+    /**
+     * Run the action against a *real* API client, mocking only the raw HTTP
+     * transport (`HttpLibrary.send`) so that the real request building,
+     * response processing, and `ObjectSerializer` deserialization all run as
+     * they would in production.
+     */
+    async function deleteResolving(status: number, responseBody: object | string) {
       const commit = jest.fn();
-      const config = { makeApiClient: () => ({ [clientMethod]: () => Promise.reject(error) }) };
+      const text = typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody);
+      const httpApi: HttpLibrary = {
+        send: () => of(new ResponseContext(status, { 'content-type': 'application/json' }, {
+          text:   () => Promise.resolve(text),
+          binary: () => Promise.resolve(new Blob([text])),
+        })),
+      };
+      const apiConfig = createConfiguration({ baseServer: new ServerConfiguration('http://example.test', {}), httpApi });
+      const config = { makeApiClient: (Api: any) => new Api(apiConfig) };
       const context = { commit, rootState: { 'rdd-connection': { config } } } as unknown as actionContextType;
       const resource = { metadata: { name: 'gone', namespace: 'default' } };
 
@@ -130,17 +148,51 @@ describe('container-engine store', () => {
     }
 
     it('should treat a resource that no longer exists as deleted', async() => {
-      const body = JSON.stringify({ kind: 'Status', status: 'Failure', reason: 'NotFound', code: 404 });
-      const commit = await deleteFailingWith(new ApiException(404, 'Unknown API Status Code!', body, {}));
+      const commit = await deleteResolving(404,
+        { kind: 'Status', status: 'Failure', reason: 'NotFound', code: 404 });
+
+      expect(commit).not.toHaveBeenCalled();
+    });
+
+    it('should accept returning a deletion status', async() => {
+      const commit = await deleteResolving(200, { kind: 'Status', status: 'Success' });
+
+      expect(commit).not.toHaveBeenCalled();
+    });
+
+    it('should accept returning a deletion status with no kind', async() => {
+      const commit = await deleteResolving(200, { status: 'Success' });
+
+      expect(commit).not.toHaveBeenCalled();
+    });
+
+    it('should accept returning the object with deletion timestamp', async() => {
+      const commit = await deleteResolving(200, {
+        kind,
+        metadata: { name: 'gone', namespace: 'default', deletionTimestamp: new Date().toISOString() },
+      });
+
+      expect(commit).not.toHaveBeenCalled();
+    });
+
+    it('should accept returning an object without deletion timestamp', async() => {
+      const commit = await deleteResolving(200, {
+        kind,
+        metadata: { name: 'gone', namespace: 'default' },
+      });
 
       expect(commit).not.toHaveBeenCalled();
     });
 
     it('should report any other failure', async() => {
-      const error = new ApiException(500, 'Unknown API Status Code!', '', {});
-      const commit = await deleteFailingWith(error);
+      const commit = await deleteResolving(500, '');
 
-      expect(commit).toHaveBeenCalledWith('SET_ERROR', { error, source });
+      expect(commit).toHaveBeenCalledWith('SET_ERROR', {
+        error:  expect.objectContaining({
+          constructor: ApiException, code: 500, body: '',
+        }),
+        source,
+      });
     });
   });
   describe('rewatchResourcesPlugin', () => {
