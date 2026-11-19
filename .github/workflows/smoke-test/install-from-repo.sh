@@ -5,7 +5,7 @@
 # SPDX-FileCopyrightText: The Rancher Desktop Authors
 
 # This script is expected to run as root and install Rancher Desktop from the
-# repository obs://isv:Rancher:dev
+# OBS project named in `OBS_PROJECT`.
 #
 # The installs skip recommended packages, so the smoke test fails when the
 # Rancher Desktop package doesn't require a dependency that another package
@@ -16,6 +16,10 @@
 #      Rancher Desktop version; either major.minor (`1.20`) or the tag (`v1.20.0`).
 #   OBS_PROJECT
 #      The openSUSE Build Service project to use, in the form `isv:Rancher:dev`.
+#   STABLE_VERSION
+#      The package version that a stable OBS project builds from the release
+#      tag (`2.0.0alpha.3` for `v2.0.0-alpha.3`).  The script accepts a package
+#      with exactly this version as well as a devel build.
 
 set -o errexit -o nounset
 
@@ -38,7 +42,7 @@ install_linux_debian() {
         > /etc/apt/sources.list.d/isv-rancher-dev.list
     apt-get update
     version=$(apt-cache show --quiet "${PACKAGE_NAME}" \
-        | awk -F': ' "/^Version: 0\.release${RD_VERSION//./\\.}\./ { print \$2 }")
+        | awk -F': ' "/^Version: (0\.release${RD_VERSION//./\\.}\.|${STABLE_VERSION//./\\.}-)/ { print \$2 }")
     if [[ -z "${version}" ]]; then
         echo "Could not find any versions of ${PACKAGE_NAME}" >&2
         apt-cache show --quiet "${PACKAGE_NAME}" | sed 's@^@    @' >&2
@@ -53,7 +57,7 @@ install_linux_opensuse() {
     zypper --non-interactive --gpg-auto-import-keys install libxml2-tools
     local version
     version=$(zypper --xmlout --non-interactive search --details --match-exact "${PACKAGE_NAME}" \
-        | xmllint --xpath "string(//solvable[@kind='package']/@edition[contains(., '0.release${RD_VERSION}.')])" -)
+        | xmllint --xpath "string(//solvable[@kind='package']/@edition[contains(., '0.release${RD_VERSION}.') or starts-with(., '${STABLE_VERSION}-')])" -)
     if [[ -z "${version}" ]]; then
         echo "Could not find any versions of ${PACKAGE_NAME}" >&2
         zypper --non-interactive search --details --match-exact "${PACKAGE_NAME}" | sed 's@^@    @' >&2
@@ -67,7 +71,7 @@ install_linux_fedora() {
     dnf config-manager addrepo --from-repofile=https://download.opensuse.org/repositories/${OBS_PROJECT//:/:/}/fedora/${OBS_PROJECT}.repo
     local version
     version=$(dnf --quiet info --showduplicates "${PACKAGE_NAME}.$(uname -m)" \
-        | awk -F: "\$1 ~ /Version/ && \$2 ~ /0\.release${RD_VERSION//./\\.}/ { print \$2 }" \
+        | awk -F: "\$1 ~ /Version/ && \$2 ~ /^ *(0\.release${RD_VERSION//./\\.}|${STABLE_VERSION//./\\.} *\$)/ { print \$2 }" \
         | tr -d '[:space:]')
     if [[ -z "${version}" ]]; then
         echo "Could not find any versions of ${PACKAGE_NAME}" >&2
@@ -90,6 +94,7 @@ verify_sandbox_helper() {
 
 main() {
     RD_VERSION=$(grep --only-matching '\([0-9]\+\.[0-9]\+\)' <<< "$RD_VERSION")
+    : "${STABLE_VERSION:?}"
     source /etc/os-release
     for id in ${ID:-} ${ID_LIKE:-}; do
         if [[ "$(type -t "install_linux_$id")" == function ]]; then
