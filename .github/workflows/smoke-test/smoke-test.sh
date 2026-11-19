@@ -5,8 +5,10 @@
 # SPDX-FileCopyrightText: The Rancher Desktop Authors
 
 # This script is expected to run from CI, and does a final smoke test.
-# There should be an installer in the current directory (or, in the case of
-# Linux, a zip file), along with its accompanying sha512sum file.
+# The current directory should hold a standalone rdd or an installer (on
+# Linux, a zip file or an AppImage), along with its accompanying sha512sum
+# file.  On macOS, it must also hold the app zip and its sha512sum file, and the
+# script checks the signature of the app inside that zip too.
 # On Windows, build/signing-config-win.yaml is also required.
 
 # Environment variables as inputs:
@@ -14,6 +16,8 @@
 #     Skip installing Rancher Desktop, and assume it was installed from the repo.
 #   RD_SKIP_SIGNING_CHECKS (macOS / Windows)
 #     Skip signature checks on downloaded artifacts.
+#   RELEASE_TAG
+#     When set, fail unless `rdd --version` prints this release tag.
 
 # Required tools:
 # - jq
@@ -26,11 +30,11 @@
 
 set -o errexit -o nounset
 shopt -s nullglob
-# On bash 4.4+, command substitution `$(command ...)` does _not_ inherit
-# errexit; set `inherit_errexit` here to make it work like older version.  We
-# want to ignore failure here because macOS may be on bash 3.2 that does not
-# support this option; that is fine, because in that case command substitution
-# does inherit errexit.
+# Bash turns errexit off inside command substitution, `$(...)`, so a command
+# that fails there does not stop the commands after it.  Bash 4.4 added
+# `inherit_errexit` to keep errexit on.  But the macOS runners run this script
+# with bash 3.2, which does not have that option.  So a function that runs
+# inside `$(...)` must exit on failure itself.
 shopt -s inherit_errexit &>/dev/null || true
 
 export MSYS2_ARG_CONV_EXCL='*'
@@ -55,7 +59,8 @@ do_cleanup() {
 
 trap do_cleanup EXIT
 
-# Locate the archive, check its checksum, and echo the file name.
+# Check the checksum of every file in the current directory that has one, then
+# echo the path of the archive to install, preferring a standalone rdd.
 get_archive() {
     local checksum archiveName
     if [[ -n "${RD_SKIP_INSTALL:-}" ]]; then
@@ -66,13 +71,22 @@ get_archive() {
     for checksum in *.sha512sum; do
         archiveName=${checksum%.sha512sum}
         if command -v sha512sum &>/dev/null; then
-            sha512sum --check --quiet --strict "$checksum" >&2
+            sha512sum --check --quiet --strict "${checksum}" >&2 || exit 1
         else
-            shasum --check --quiet --algorithm 512 "$checksum" >&2
+            shasum --check --quiet --algorithm 512 "${checksum}" >&2 || exit 1
         fi
-        grep --quiet "$archiveName" "$checksum"
-        readlink -f "$archiveName"
-        return
+        if ! grep --quiet --fixed-strings "${archiveName}" "${checksum}"; then
+            printf "%s does not contain a checksum for %s\n" "${checksum}" "${archiveName}" >&2
+            exit 1
+        fi
+    done
+    # The current directory is also the repo checkout, so only pick a file
+    # that has a checksum.
+    for archiveName in rdd.* *.dmg *.msi *.AppImage *.zip; do
+        if [[ -f "${archiveName}.sha512sum" ]]; then
+            readlink -f "${archiveName}"
+            return
+        fi
     done
     echo "Failed to find archive." >&2
     ls -l
@@ -94,6 +108,43 @@ get_platform() {
     esac
 }
 
+# Print the version of rdd, and fail unless it matches RELEASE_TAG when that is
+# set.  On an arm64 host, end the test here with success, before Rancher
+# Desktop or rdd starts.  $RDD must be set.
+check_rdd_version() {
+    local version
+    local machine
+    version=$("${RDD}" --version)
+    printf "rdd --version: %s\n" "${version}"
+    if [[ -n ${RELEASE_TAG:-} && ${version} != "${RELEASE_TAG}" ]]; then
+        printf "rdd reports version %s, but the release tag is %s\n" \
+            "${version}" "${RELEASE_TAG}" >&2
+        exit 1
+    fi
+    # GitHub's arm64 runners do not support nested virtualization, so the test
+    # cannot boot a VM there.
+    # https://github.com/actions/runner-images/issues/9460
+    # Check both `uname -m` and RUNNER_ARCH.  In Git Bash on windows-11-arm,
+    # `uname -m` does not report arm64.  The repository job runs this script
+    # under `sudo`, which drops RUNNER_ARCH, so `uname -m` is the only check
+    # there.
+    machine=$(uname -m)
+    if [[ ${machine} =~ ^(arm64|aarch64)$ || ${RUNNER_ARCH:-} == "ARM64" ]]; then
+        echo "Skipping the rest of the test because arm64 runners do not have nested virtualization" >&2
+        exit 0
+    fi
+}
+
+# Verify the signature and notarization of the macOS file given as the last
+# argument; any earlier arguments are passed on to codesign.
+darwin_verify() {
+    if [[ ${RD_SKIP_SIGNING_CHECKS:-} == "true" ]]; then
+        printf "Skipping signature checks on %s.\n" "${*: -1}" >&2
+        return
+    fi
+    codesign --verify --strict --verbose=2 --check-notarization "$@"
+}
+
 # Assume the first argument given is a path to the Rancher Desktop .dmg disk
 # image; install it, and set the global variable RDD to the path of the rdd
 # executable.
@@ -103,11 +154,7 @@ install_darwin() {
     mountpoint=$(mktemp -d -t rd-dmg-)
     cleanups+=("rm -rf '$mountpoint'")
 
-    if [[ "${RD_SKIP_SIGNING_CHECKS:-}" != "true" ]]; then
-        codesign --verify --deep --strict --verbose=2 --check-notarization "$archiveName"
-    else
-        echo "Skipping signature checks on archive." >&2
-    fi
+    darwin_verify --deep "${archiveName}"
     xattr -d -r -s -v com.apple.quarantine "$archiveName"
     hdiutil attach "$archiveName" -mountpoint "$mountpoint"
     cleanups+=("hdiutil detach '$mountpoint'")
@@ -120,10 +167,35 @@ install_darwin() {
     fi
     destApp="/Applications/$(basename "$srcApp")"
 
-    if [[ "${RD_SKIP_SIGNING_CHECKS:-}" != "true" ]]; then
-        codesign --verify --deep --strict --verbose=2 --check-notarization "$srcApp"
-    else
-        echo "Skipping signature checks on app." >&2
+    darwin_verify --deep "${srcApp}"
+    # The app zip next to the disk image is the update payload, so require it
+    # and check the signature of the app inside it too.  Only a zip with a
+    # checksum file counts, because get_archive has checked only those.
+    local appZip
+    local zipDir
+    local -a appZips=()
+    local -a zipApps
+    for appZip in *.darwin.*.zip; do
+        if [[ -f "${appZip}.sha512sum" ]]; then
+            appZips+=("${appZip}")
+        fi
+    done
+    if [[ ${#appZips[@]} -ne 1 ]]; then
+        printf "Expected one app zip with a checksum file, found %d.\n" "${#appZips[@]}" >&2
+        ls -l
+        exit 1
+    fi
+    if [[ ${RD_SKIP_SIGNING_CHECKS:-} != "true" ]]; then
+        zipDir=$(mktemp -d -t rd-zip-)
+        cleanups+=("rm -rf '${zipDir}'")
+        ditto -x -k "${appZips[0]}" "${zipDir}"
+        zipApps=("${zipDir}"/*.app)
+        if [[ ${#zipApps[@]} -ne 1 ]]; then
+            printf "Failed to find app in %s.\n" "${appZips[0]}" >&2
+            ls -l "${zipDir}"
+            exit 1
+        fi
+        darwin_verify --deep "${zipApps[0]}"
     fi
     mkdir -p "$destApp"
     cleanups+=("rm -rf '$destApp'")
@@ -142,17 +214,11 @@ install_darwin() {
         exit 1
     fi
 
-    if [[ "$(uname -m)" =~ arm ]]; then
-        # For macOS, currently only x86_64 runners support nested virtualization
-        # https://github.com/actions/runner-images/issues/9460
-        # Abort the script (gracefully) instead of trying to run RD.
-        echo "Skipping actually running on Rancher Desktop because arm64 runners do not have nested virtualization" >&2
-        exit 0
-    fi
+    RDD="${destApp}/Contents/Resources/darwin/bin/rdd"
+    check_rdd_version
 
     # Use as many CPUs as possible.
     RDD_VM_CPUS=$(sysctl -n hw.ncpu)
-    RDD="$destApp/Contents/Resources/darwin/bin/rdd"
 
     export RDD_VM_CPUS
     # `open` wouldn't pick up `RDD_VM_CPUS`, so run the executable directly.
@@ -189,6 +255,7 @@ install_linux() {
     RDD_VM_CPUS=$(($(nproc) - 1))
     RDD="/opt/rancher-desktop-2/resources/linux/bin/rdd"
     export RDD_VM_CPUS
+    check_rdd_version
 
     /opt/rancher-desktop-2/rancher-desktop-2 &
 }
@@ -266,8 +333,44 @@ install_win32() {
     # Verify that rdd exists
     win32_verify "$rdd"
     RDD=$rdd
+    check_rdd_version
 
     "$installDirectory/Rancher Desktop 2.exe" &
+}
+
+# Assume the second argument given is a path to a standalone rdd for the
+# platform given as the first argument; verify its signature (macOS and
+# Windows), set the global variable RDD to it, and start rdd.
+install_rdd() {
+    local platform=$1
+    local archiveName=$2
+
+    case "${platform}" in
+    darwin)
+        chmod a+x "${archiveName}"
+        darwin_verify "${archiveName}"
+        # Use as many CPUs as possible.
+        RDD_VM_CPUS=$(sysctl -n hw.ncpu)
+        export RDD_VM_CPUS
+        ;;
+    linux)
+        chmod a+x "${archiveName}"
+        # Use as many CPUs as possible, but leave one for GitHub runner use.
+        RDD_VM_CPUS=$(($(nproc) - 1))
+        export RDD_VM_CPUS
+        ;;
+    win32)
+        win32_verify "${archiveName}"
+        ;;
+    *)
+        printf "Unsupported platform %s\n" "${platform}" >&2
+        exit 1
+        ;;
+    esac
+    RDD=${archiveName}
+    check_rdd_version
+
+    "${RDD}" start --wait=false
 }
 
 # Wait for the backend to be alive.  $RDD must be set (from the install_*
@@ -320,7 +423,11 @@ main() {
     archive=$(get_archive)
 
     # Start the app, and wait for it to settle.
-    eval "install_${platform}" "$archive"
+    if [[ "$(basename "${archive}")" == rdd.* ]]; then
+        install_rdd "${platform}" "${archive}"
+    else
+        eval "install_${platform}" "${archive}"
+    fi
     wait_for_backend
     # Enable Kubernetes, and wait for it to settle.
     "$RDD" set --wait=false running=true kubernetes.enabled=true
