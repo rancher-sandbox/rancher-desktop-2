@@ -109,7 +109,7 @@ require (
 	github.com/alingse/asasalint v0.0.11 // indirect
 	github.com/alingse/nilnesserr v0.2.0 // indirect
 	github.com/anchore/go-lzo v0.1.0 // indirect
-	github.com/antithesishq/antithesis-sdk-go v0.6.0-default-no-op // indirect
+	github.com/antithesishq/antithesis-sdk-go v0.7.0-default-no-op // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/apparentlymart/go-cidr v1.1.1 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
@@ -316,7 +316,7 @@ require (
 	github.com/mgechev/revive v1.17.1 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/miekg/dns v1.1.73 // indirect
-	github.com/minio/highwayhash v1.0.4-0.20251030100505-070ab1a87a76 // indirect
+	github.com/minio/highwayhash v1.0.4 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -339,10 +339,10 @@ require (
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/nakabonne/nestif v0.3.1 // indirect
 	github.com/nats-io/jsm.go v0.2.4 // indirect
-	github.com/nats-io/jwt/v2 v2.8.1 // indirect
-	github.com/nats-io/nats-server/v2 v2.11.15 // indirect
-	github.com/nats-io/nats.go v1.49.0 // indirect
-	github.com/nats-io/nkeys v0.4.15 // indirect
+	github.com/nats-io/jwt/v2 v2.8.2 // indirect
+	github.com/nats-io/nats-server/v2 v2.12.12 // indirect
+	github.com/nats-io/nats.go v1.51.0 // indirect
+	github.com/nats-io/nkeys v0.4.16 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/nishanths/exhaustive v0.15.0 // indirect
