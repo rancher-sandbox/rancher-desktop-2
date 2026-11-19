@@ -21,10 +21,6 @@ name: Package
 
 on:
   pull_request:
-    paths-ignore:
-    - '.github/actions/spelling/**'
-    - 'docs/**'
-    - '**.md'
   push:
     branches:
     - main
@@ -182,6 +178,20 @@ jobs:
         name: rancher-desktop.${{ matrix.platform }}.${{ matrix.arch }}.zip
         path: dist/rancher-desktop-*.${{ matrix.platform }}.*.zip
         if-no-files-found: error
+
+  # The ruleset for main requires this check. Without always(), GitHub would
+  # skip this job when a packaging job fails, and a skipped job counts as
+  # passing.
+  # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
+  package-result:
+    name: Package result
+    needs: [check-paths, dashboard, package]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Fail if a packaging job failed or was cancelled
+      if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+      run: exit 1
 
   obs-package-name:
     name: Package OBS artifacts
