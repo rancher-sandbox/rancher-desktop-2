@@ -25,7 +25,7 @@ function resourceFieldSelector(untypedContext: any): string | undefined {
  * Whether a delete failed because the resource no longer exists. The user
  * wanted it gone, so the delete actions do not report this as an error.
  */
-function isNotFound(error: unknown): boolean {
+function isNotFound(error: unknown): error is RDDClient.ApiException<unknown> {
   return error instanceof RDDClient.ApiException && error.code === 404;
 }
 
@@ -163,25 +163,17 @@ export const actions = {
       container: RDDClient.IoRancherdesktopContainersV1alpha1Container,
     },
   ) {
-    const config: RDDClient.KubeConfig = rootState['rdd-connection'].config;
-    const client = config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api);
+    const { config } = rootState['rdd-connection'];
 
     try {
-      const status = await client.deleteNamespacedContainer({
-        name:      container.metadata!.name!,
-        namespace: container.metadata!.namespace!,
-      });
-
-      if (status.status !== 'Success') {
-        commit('SET_ERROR', {
-          error:  new Error(`Failed to delete container ${ container.metadata!.name }: ${ status.message }`),
-          source: 'containers',
-        });
-      }
+      await deleteResource(
+        config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api),
+        container,
+        container.status?.name ?? container.metadata!.name!,
+        'deleteNamespacedContainer',
+        'Container');
     } catch (error: any) {
-      if (!isNotFound(error)) {
-        commit('SET_ERROR', { error, source: 'containers' });
-      }
+      commit('SET_ERROR', { error, source: 'containers' });
     }
   },
   imagePush(
@@ -234,24 +226,17 @@ export const actions = {
       image: RDDClient.IoRancherdesktopContainersV1alpha1Image,
     },
   ) {
-    const config: RDDClient.KubeConfig = rootState['rdd-connection'].config;
-    const client = config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api);
+    const { config } = rootState['rdd-connection'];
 
     try {
-      const status = await client.deleteNamespacedImage({
-        name:      image.metadata!.name!,
-        namespace: image.metadata!.namespace!,
-      });
-      if (status.status !== 'Success') {
-        commit('SET_ERROR', {
-          error:  new Error(`Failed to delete image ${ image.metadata!.name }: ${ status.message }`),
-          source: 'images',
-        });
-      }
+      await deleteResource(
+        config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api),
+        image,
+        image.status?.repoTag ?? image.metadata!.name!,
+        'deleteNamespacedImage',
+        'Image');
     } catch (error: any) {
-      if (!isNotFound(error)) {
-        commit('SET_ERROR', { error, source: 'images' });
-      }
+      commit('SET_ERROR', { error, source: 'images' });
     }
   },
   async volumeDelete(
@@ -260,27 +245,76 @@ export const actions = {
       volume: RDDClient.IoRancherdesktopContainersV1alpha1Volume,
     },
   ) {
-    const config: RDDClient.KubeConfig = rootState['rdd-connection'].config;
-    const client = config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api);
+    const { config } = rootState['rdd-connection'];
 
     try {
-      const status = await client.deleteNamespacedVolume({
-        name:      volume.metadata!.name!,
-        namespace: volume.metadata!.namespace!,
-      });
-      if (status.status !== 'Success') {
-        commit('SET_ERROR', {
-          error:  new Error(`Failed to delete volume ${ volume.metadata!.name }: ${ status.message }`),
-          source: 'volumes',
-        });
-      }
+      await deleteResource(
+        config.makeApiClient(RDDClient.ContainersRancherdesktopIoV1alpha1Api),
+        volume,
+        volume.status?.name ?? volume.metadata!.name!,
+        'deleteNamespacedVolume',
+        'Volume');
     } catch (error: any) {
-      if (!isNotFound(error)) {
-        commit('SET_ERROR', { error, source: 'volumes' });
-      }
+      commit('SET_ERROR', { error, source: 'volumes' });
     }
   },
 } satisfies ActionTree<ContainerEngineState, any, typeof mutations>;
+
+/**
+ * Deletes a resource from the container engine.
+ *
+ * @param client The API client to use for the deletion.
+ * @param obj The object to delete.
+ * @param name The name of the object, for display purposes.
+ * @param method The method to call on the API client to delete the resource.
+ * @param kind The kind of the resource.
+ * @throws If the resource failed to delete.
+ */
+async function deleteResource<
+  M extends Exclude<
+    keyof RDDClient.ContainersRancherdesktopIoV1alpha1Api & `delete${ string }`,
+    `${ string }WithHttpInfo`>,
+>(
+  client: RDDClient.ContainersRancherdesktopIoV1alpha1Api,
+  obj: RDDClient.KubernetesObject,
+  name: string,
+  method: M,
+  kind: string,
+) {
+  const result = await (async() => {
+    try {
+      return await client[method]({
+        name:      obj.metadata!.name!,
+        namespace: obj.metadata!.namespace!,
+      }) as RDDClient.V1Status | RDDClient.KubernetesObject;
+    } catch (ex) {
+      if (isNotFound(ex)) {
+        return ex;
+      }
+      throw ex;
+    }
+  })();
+  if (isNotFound(result)) {
+    return;
+  }
+  if (result.kind === 'Status' || result.kind === undefined) {
+    const status: RDDClient.V1Status = result;
+    if (status.status !== 'Success') {
+      throw new Error(`Failed to delete ${ kind } ${ name }: ${ status.message }`);
+    }
+    return;
+  }
+  if (result.kind === kind) {
+    // This can happen if the object has a finalizer; instead of committing the
+    // delete and returning a status, it's pending instead and the full object
+    // is returned instead.  The @kubernetes/client-node package does not return
+    // the correct object in this case due to OpenAPI v2 limitations; therefore,
+    // we assume that delete succeeded.
+    // @see https://github.com/kubernetes-client/javascript/issues/263
+    return;
+  }
+  throw new Error(`Failed to delete ${ kind } ${ name }: got unexpected response kind ${ result.kind }`);
+}
 
 export const plugins: Plugin<RootState>[] = [
   // Start watching resources immediately.
