@@ -19,8 +19,11 @@ runs:
       @('W3SVC', 'docker')
       | Stop-Service
 
+  # GitHub's arm64 runners have neither WSL nor /dev/kvm, so skip this step and
+  # "Linux: Enable KVM access" there.  The smoke test does not boot a VM on
+  # those runners.
   - name: "Windows: Update any pre-installed WSL"
-    if: runner.os == 'Windows'
+    if: runner.os == 'Windows' && runner.arch != 'ARM64'
     shell: pwsh
     run: |
       # Sometimes this results in a HTTP 403 for some reason; in that case, we
@@ -65,7 +68,7 @@ runs:
       fi
 
   - name: "Linux: Enable KVM access"
-    if: runner.os == 'Linux'
+    if: runner.os == 'Linux' && runner.arch != 'ARM64'
     shell: bash
     run: ${{ steps.sudo.outputs.sudo }} chmod a+rwx /dev/kvm
 
