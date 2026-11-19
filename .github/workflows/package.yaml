@@ -179,13 +179,10 @@ jobs:
         path: dist/rancher-desktop-*.${{ matrix.platform }}.*.zip
         if-no-files-found: error
 
-  # The ruleset for main requires this check in place of the package legs.
-  # When check-paths skips `package` on a docs-only pull request, GitHub
-  # reports one skipped check named `package`, and the legs' checks never
-  # appear. Whether the legs ran or were skipped, this job reports its check.
-  # GitHub skips a job when one of its needs failed or was cancelled, and a
-  # skipped required check counts as passing. So this job runs under
-  # always().
+  # The ruleset for main requires this check. Without always(), GitHub would
+  # skip this job when a packaging job fails, and a skipped job counts as
+  # passing.
+  # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   package-result:
     name: Package result
     needs: [check-paths, dashboard, package]
