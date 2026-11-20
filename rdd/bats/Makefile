@@ -85,6 +85,10 @@ bats-containers: check-bats build-rdd build-mock-controller
 	RDD_INSTANCE=bats-containers-controller $(BATS) tests/34-containers-controllers/
 .PHONY: bats-containers
 
+bats-extensions: check-bats build-rdd
+	RDD_INSTANCE=bats-extensions-controller $(BATS) tests/35-extensions-controllers/
+.PHONY: bats-extensions
+
 # Run docker engine command tests against the moby engine. RDD_KEEP_RUNNING
 # keeps the VM up between files so it boots once for the whole suite.
 bats-docker: check-bats build-rdd
@@ -98,7 +102,7 @@ bats-nerdctl: check-bats build-rdd
 .PHONY: bats-nerdctl
 
 # Run all controller tests.
-BATS_CONTROLLERS_TARGETS := bats-builtin bats-rdd bats-app bats-lima bats-containers
+BATS_CONTROLLERS_TARGETS := bats-builtin bats-rdd bats-app bats-lima bats-containers bats-extensions
 bats-controllers: $(BATS_CONTROLLERS_TARGETS)
 .PHONY: bats-controllers
 

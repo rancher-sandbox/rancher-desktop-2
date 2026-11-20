@@ -1,0 +1,4 @@
+name: sample-compose
+services:
+  backend-service:
+    image: "${DESKTOP_PLUGIN_IMAGE}"

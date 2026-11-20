@@ -20,6 +20,7 @@ apis/CoreV1Api.ts
 apis/CustomObjectsApi.ts
 apis/EventsApi.ts
 apis/EventsV1Api.ts
+apis/ExtensionsRancherdesktopIoV1alpha1Api.ts
 apis/LimaRancherdesktopIoV1alpha1Api.ts
 apis/OpenidApi.ts
 apis/RbacAuthorizationApi.ts
@@ -49,6 +50,7 @@ docs/CoreV1Api.md
 docs/CustomObjectsApi.md
 docs/EventsApi.md
 docs/EventsV1Api.md
+docs/ExtensionsRancherdesktopIoV1alpha1Api.md
 docs/LimaRancherdesktopIoV1alpha1Api.md
 docs/OpenidApi.md
 docs/RbacAuthorizationApi.md
@@ -129,6 +131,12 @@ models/IoRancherdesktopContainersV1alpha1VolumeCreateRequestSpec.ts
 models/IoRancherdesktopContainersV1alpha1VolumeCreateRequestStatus.ts
 models/IoRancherdesktopContainersV1alpha1VolumeList.ts
 models/IoRancherdesktopContainersV1alpha1VolumeStatus.ts
+models/IoRancherdesktopExtensionsV1alpha1Extension.ts
+models/IoRancherdesktopExtensionsV1alpha1ExtensionList.ts
+models/IoRancherdesktopExtensionsV1alpha1ExtensionSpec.ts
+models/IoRancherdesktopExtensionsV1alpha1ExtensionStatus.ts
+models/IoRancherdesktopExtensionsV1alpha1ExtensionStatusUi.ts
+models/IoRancherdesktopExtensionsV1alpha1ExtensionStatusUiDashboardTab.ts
 models/IoRancherdesktopLimaV1alpha1LimaVM.ts
 models/IoRancherdesktopLimaV1alpha1LimaVMList.ts
 models/IoRancherdesktopLimaV1alpha1LimaVMSpec.ts
