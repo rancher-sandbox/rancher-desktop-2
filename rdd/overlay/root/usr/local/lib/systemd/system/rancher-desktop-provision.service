@@ -1,0 +1,14 @@
+# Runs provision.sh on every boot. Only the provision script in rdd's Lima
+# template starts it, so it doesn't have an [Install] section. Once the steps
+# succeed, RemainAfterExit= keeps the unit active until the distro stops, so
+# new settings rely on each VM start beginning from a stopped distro.
+[Unit]
+Description=Rancher Desktop provisioning
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Lima writes the host's proxy settings here; the k3s download needs them.
+EnvironmentFile=-/etc/environment
+EnvironmentFile=/etc/sysconfig/rancher-desktop
+ExecStart=/usr/local/libexec/rancher-desktop/provision.sh

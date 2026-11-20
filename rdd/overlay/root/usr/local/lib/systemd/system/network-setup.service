@@ -28,4 +28,4 @@ Type=notify
 NotifyAccess=all
 
 [Install]
-WantedBy=rancher-desktop.target
+WantedBy=multi-user.target rancher-desktop.target
