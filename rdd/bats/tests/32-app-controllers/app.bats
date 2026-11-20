@@ -207,8 +207,13 @@ local_setup_file() {
         -- rdd limavm shell "${VM_NAME}" sudo docker info
 }
 
-@test "containerd is not running with moby container engine" {
+@test "containerd is running with moby container engine" {
     run rdd limavm shell "${VM_NAME}" sudo systemctl is-active containerd
+    assert_line "active"
+}
+
+@test "buildkitd is not running with moby container engine" {
+    run rdd limavm shell "${VM_NAME}" sudo systemctl is-active buildkitd
     assert_line "inactive"
 }
 
@@ -240,12 +245,17 @@ local_setup_file() {
 }
 
 @test "wait for containerd to be ready with containerd engine" {
-    try --max 10 --delay 3 -- rdd limavm shell "${VM_NAME}" sudo nerdctl --address /run/k3s/containerd/containerd.sock info
+    try --max 10 --delay 3 -- rdd limavm shell "${VM_NAME}" sudo nerdctl info
 }
 
 @test "dockerd is not running with containerd engine" {
     run rdd limavm shell "${VM_NAME}" sudo systemctl is-active docker
     assert_line "inactive"
+}
+
+@test "buildkit is running with containerd engine" {
+    run rdd limavm shell "${VM_NAME}" sudo systemctl is-active buildkitd
+    assert_line "active"
 }
 
 @test "stop VM and restore moby engine after containerd test" {

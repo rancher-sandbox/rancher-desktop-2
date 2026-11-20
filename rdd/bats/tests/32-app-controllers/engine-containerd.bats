@@ -61,11 +61,11 @@ guest_path() { # <host-path>
 }
 
 # limavm shell runs as the same unprivileged user as Lima's SSH forward, so
-# reading the mode through it also proves the /run/k3s directories are
+# reading the mode through it also proves the /run/containerd directory is
 # traversable. 666 is the permissions drop-in's chmod; containerd itself
 # creates the socket root-only.
 assert_containerd_socket_open() {
-    run -0 rdd limavm shell "${VM_NAME}" stat --format=%a /run/k3s/containerd/containerd.sock
+    run -0 rdd limavm shell "${VM_NAME}" stat --format=%a /run/containerd/containerd.sock
     assert_output 666
 }
 
