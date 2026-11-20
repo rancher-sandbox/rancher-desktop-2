@@ -9,16 +9,27 @@
 # avoid Docker Hub pull limits, as the rancher-desktop suite does.
 IMAGE_BUSYBOX=busybox:1.36
 
+# Bring up the container engine (per $RDD_CONTAINER_ENGINE) and point the docker
+# CLI at it via DOCKER_HOST as needed.  Boots the VM on a run's first file and
+# reuses it after (marker in BATS_RUN_TMPDIR).
+start_container_engine() {
+    if using_docker; then
+        start_docker
+    else
+        start_containerd
+    fi
+}
+
 # Bring up the moby engine and point the docker CLI at it via DOCKER_HOST. Boots
 # the VM on a run's first file and reuses it after (marker in BATS_RUN_TMPDIR).
-start_docker_engine() {
+start_docker() {
     if ! load_var DOCKER_ENGINE_BOOTED; then
         rdd svc delete
         DOCKER_ENGINE_BOOTED=1
         save_var DOCKER_ENGINE_BOOTED
     fi
     # Creates and starts the instance on the first call; a fast no-op afterward.
-    rdd set running=true
+    rdd set running=true containerEngine.name=moby
     if is_windows; then
         DOCKER_HOST="npipe:////./pipe/docker_engine"
     else
@@ -26,6 +37,18 @@ start_docker_engine() {
         DOCKER_HOST="unix://${output}"
     fi
     export DOCKER_HOST
+}
+
+# Bring up the containerd engine.  Boots the VM on a run's first file and reuses
+# it after (marker in BATS_RUN_TMPDIR).
+start_containerd() {
+    if ! load_var CONTAINERD_ENGINE_BOOTED; then
+        rdd svc delete
+        CONTAINERD_ENGINE_BOOTED=1
+        save_var CONTAINERD_ENGINE_BOOTED
+    fi
+    # Creates and starts the instance on the first call; a fast no-op afterward.
+    rdd set running=true containerEngine.name=containerd
 }
 
 # skip_unless_docker skips a docker-only command when the engine is containerd.

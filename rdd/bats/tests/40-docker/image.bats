@@ -8,7 +8,7 @@ load '../../helpers/load'
 # history, save/load, rmi, prune.
 
 local_setup_file() {
-    start_docker_engine
+    start_container_engine
     ctrctl pull --quiet "${IMAGE_BUSYBOX}"
 }
 

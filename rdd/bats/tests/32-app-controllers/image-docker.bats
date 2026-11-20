@@ -7,7 +7,7 @@ load '../../helpers/load'
 # ImagePullRequest controller tests against the real moby engine.
 
 local_setup_file() {
-    start_docker_engine
+    start_container_engine
 
     # The resources under test are in the App namespace.
     RDD_NAMESPACE=${RDD_APP_NAMESPACE}

@@ -7,12 +7,14 @@ load '../../helpers/load'
 # Container lifecycle commands against the rdd Docker engine.
 
 local_setup_file() {
-    start_docker_engine
+    start_container_engine
     # Pull once so each test times the command under test, not an image pull.
     ctrctl pull --quiet "${IMAGE_BUSYBOX}"
 }
 
 @test "run executes a command and streams its output" {
+    # This intentionally does _not_ use --separate-stderr in order to catch when
+    # the command emits unexpected output to stderr.
     run -0 ctrctl run --rm "${IMAGE_BUSYBOX}" echo hello
     assert_output hello
 }
@@ -75,15 +77,15 @@ local_setup_file() {
     ctrctl run --detach --name rdd-lifecycle "${IMAGE_BUSYBOX}" sleep 300
 
     ctrctl stop --time 1 rdd-lifecycle
-    run -0 ctrctl inspect --format '{{.State.Status}}' rdd-lifecycle
+    run --separate-stderr -0 ctrctl inspect --format '{{.State.Status}}' rdd-lifecycle
     assert_output exited
 
     ctrctl start rdd-lifecycle
-    run -0 ctrctl inspect --format '{{.State.Status}}' rdd-lifecycle
+    run --separate-stderr -0 ctrctl inspect --format '{{.State.Status}}' rdd-lifecycle
     assert_output running
 
     ctrctl restart --time 1 rdd-lifecycle
-    run -0 ctrctl inspect --format '{{.State.Status}}' rdd-lifecycle
+    run --separate-stderr -0 ctrctl inspect --format '{{.State.Status}}' rdd-lifecycle
     assert_output running
 
     ctrctl rm --force rdd-lifecycle
@@ -93,11 +95,11 @@ local_setup_file() {
     ctrctl run --detach --name rdd-pause "${IMAGE_BUSYBOX}" sleep 300
 
     ctrctl pause rdd-pause
-    run -0 ctrctl inspect --format '{{.State.Status}}' rdd-pause
+    run --separate-stderr -0 ctrctl inspect --format '{{.State.Status}}' rdd-pause
     assert_output paused
 
     ctrctl unpause rdd-pause
-    run -0 ctrctl inspect --format '{{.State.Status}}' rdd-pause
+    run --separate-stderr -0 ctrctl inspect --format '{{.State.Status}}' rdd-pause
     assert_output running
 
     ctrctl rm --force rdd-pause
@@ -106,7 +108,7 @@ local_setup_file() {
 @test "kill stops a running container" {
     ctrctl run --detach --name rdd-kill "${IMAGE_BUSYBOX}" sleep 300
     ctrctl kill rdd-kill
-    run -0 ctrctl inspect --format '{{.State.Status}}' rdd-kill
+    run -0 --separate-stderr ctrctl inspect --format '{{.State.Status}}' rdd-kill
     assert_output exited
     ctrctl rm --force rdd-kill
 }

@@ -23,7 +23,7 @@ local_setup_file() {
     # once we can ensure the reconciler can find `docker compose` correctly,
     # since the test does not use it directly.
     docker_has_compose || skip "docker compose plugin is not installed"
-    start_docker_engine
+    start_container_engine
     # Pre-pull the image
     docker pull --quiet "${IMAGE_BUSYBOX}"
 }

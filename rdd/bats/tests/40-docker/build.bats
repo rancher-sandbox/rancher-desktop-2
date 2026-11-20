@@ -8,14 +8,16 @@ load '../../helpers/load'
 # buildx plugin; tests skip when it is absent.
 
 local_setup_file() {
-    start_docker_engine
-    if docker_has_build; then
+    start_container_engine
+    if using_docker && docker_has_build; then
         ctrctl pull --quiet "${IMAGE_BUSYBOX}"
     fi
 }
 
 local_setup() {
-    docker_has_build || skip "docker buildx plugin is not installed"
+    if using_docker; then
+        docker_has_build || skip "docker buildx plugin is not installed"
+    fi
 }
 
 @test "build creates an image from a Dockerfile" {

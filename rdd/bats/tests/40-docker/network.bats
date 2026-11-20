@@ -8,7 +8,7 @@ load '../../helpers/load'
 # prune, connect/disconnect, and name-based DNS on a user-defined network.
 
 local_setup_file() {
-    start_docker_engine
+    start_container_engine
     ctrctl pull --quiet "${IMAGE_BUSYBOX}"
 }
 

@@ -65,8 +65,8 @@ source "${PATH_BATS_HELPERS}/paths.bash"
 # and PATH_* variables from paths.bash
 source "${PATH_BATS_HELPERS}/commands.bash"
 
-# docker.bash depends on defaults.bash, os.bash, and utils.bash, sourced above.
-source "${PATH_BATS_HELPERS}/docker.bash"
+# container_engine.bash depends on defaults.bash, os.bash, and utils.bash, sourced above.
+source "${PATH_BATS_HELPERS}/container_engine.bash"
 
 # Add repo-root/bin directory to the PATH. This is where the Makefile puts all compiled programs.
 export PATH="${PATH_BATS_ROOT}/../bin:${PATH}"
