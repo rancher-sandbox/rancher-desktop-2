@@ -130,7 +130,7 @@
     "jest": "30.5.2",
     "jquery": "4.0.0",
     "js-yaml-loader": "1.2.2",
-    "jsdom": "31.0.0",
+    "jsdom": "31.0.1",
     "marked": "18.2.0",
     "mustache": "4.2.0",
     "node-abi": "^4.40.0",
