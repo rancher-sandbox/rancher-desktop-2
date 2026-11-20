@@ -40,12 +40,25 @@ entries:
 - path: /usr/local/bin/wsl-proxy
   source: build/guest/wsl-proxy
   mode: "0755"
+# Only rd-init.service runs this binary, and only the raw profile installs that
+# unit.
 - path: /usr/local/bin/rd-init
   source: build/guest/rd-init
   mode: "0755"
+  profiles: [raw]
 - path: /usr/local/bin/rdd-guest
   source: build/guest/rdd-guest
   mode: "0755"
+
+# The provision script and its unit, which rdd's Lima template starts.
+- path: /usr/local/libexec/rancher-desktop/provision.sh
+  source: root/usr/local/libexec/rancher-desktop/provision.sh
+  mode: "0755"
+- path: /usr/local/lib/systemd/system/rancher-desktop-provision.service
+  source: root/usr/local/lib/systemd/system/rancher-desktop-provision.service
+- path: /usr/local/lib/systemd/system/rancher-desktop-provision.service.d/network-namespace.conf
+  source: root/usr/local/lib/systemd/system/rancher-desktop-provision.service.d/network-namespace.conf
+  profiles: [wsl]
 
 # ---------------------------------------------------------------------------
 # openSUSE guest assets, moved out of the distro's `root/` tree and `config.sh`
@@ -56,6 +69,8 @@ entries:
 # its chmod block set the modes below; its raw branch deleted every
 # `*/network-namespace.conf` (so those are wsl-only) and its wsl branch deleted
 # lima-init.service.d/requires-{cidata,rd-init}.conf (so those are raw-only).
+# Four units and two .wants symlinks below depart from config.sh, and their
+# comments say why.
 # ---------------------------------------------------------------------------
 
 # /etc/sudoers.d must be 0750 (config.sh chmod'd it); its files default to 0644.
@@ -68,12 +83,23 @@ entries:
   source: root/usr/local/lib/systemd/system/buildkitd.service
 - path: /usr/local/lib/systemd/system/buildkitd.socket
   source: root/usr/local/lib/systemd/system/buildkitd.socket
+# journal-to-console.service mirrors the journal to the VM's serial console, and
+# Lima saves that console's output as a boot log. Lima's WSL2 driver doesn't
+# keep a console log, so only the raw profile needs this unit.
 - path: /usr/local/lib/systemd/system/journal-to-console.service
   source: root/usr/local/lib/systemd/system/journal-to-console.service
+  profiles: [raw]
+# lima-init.service runs Lima's boot.sh. On WSL, Lima's WSL2 driver runs
+# boot.sh itself, through wsl.exe, so only the raw profile needs this unit.
 - path: /usr/local/lib/systemd/system/lima-init.service
   source: root/usr/local/lib/systemd/system/lima-init.service
+  profiles: [raw]
+# mnt-lima\x2dcidata.mount mounts Lima's cidata disk. On WSL, Lima's WSL2
+# driver doesn't attach that disk. It points boot.sh at the instance's cidata
+# directory on the host instead, so only the raw profile needs this unit.
 - path: '/usr/local/lib/systemd/system/mnt-lima\x2dcidata.mount'
   source: root/usr/local/lib/systemd/system/mnt-lima-cidata.mount
+  profiles: [raw]
 - path: /usr/local/lib/systemd/system/network-namespace.service
   source: root/usr/local/lib/systemd/system/network-namespace.service
 - path: /usr/local/lib/systemd/system/network-setup.service
@@ -82,8 +108,11 @@ entries:
   source: root/usr/local/lib/systemd/system/rancher-desktop-guest-agent.service
 - path: /usr/local/lib/systemd/system/rancher-desktop.target
   source: root/usr/local/lib/systemd/system/rancher-desktop.target
+# Because rd-init.service has ConditionVirtualization=!wsl, systemd skips it
+# on WSL, so only the raw profile needs this unit.
 - path: /usr/local/lib/systemd/system/rd-init.service
   source: root/usr/local/lib/systemd/system/rd-init.service
+  profiles: [raw]
 - path: /usr/local/lib/systemd/system/rdd-guest.service
   source: root/usr/local/lib/systemd/system/rdd-guest.service
 - path: /usr/local/lib/systemd/system/wsl-proxy.service
@@ -136,9 +165,6 @@ entries:
   profiles: [wsl]
 - path: /usr/local/lib/systemd/system/k3s.service.d/target.conf
   source: root/usr/local/lib/systemd/system/k3s.service.d/target.conf
-- path: /usr/local/lib/systemd/system/lima-init.service.d/network-namespace.conf
-  source: root/usr/local/lib/systemd/system/lima-init.service.d/network-namespace.conf
-  profiles: [wsl]
 - path: /usr/local/lib/systemd/system/lima-init.service.d/requires-cidata.conf
   source: root/usr/local/lib/systemd/system/lima-init.service.d/requires-cidata.conf
   profiles: [raw]
@@ -181,14 +207,17 @@ entries:
   profiles: [wsl]
 
 # systemctl-enable .wants symlinks, moved out of config.sh's `systemctl enable`
-# lines. config.sh enabled ten RD units; the Lima template re-enables
-# buildkitd/containerd/docker per container engine at provision, so only the
-# other seven need a static symlink here. Each points at its unit and lands in
-# the same <target>.wants directory `systemctl enable` would use, so it stays
+# lines. config.sh enabled ten RD units; provision.sh re-enables
+# buildkitd/containerd/docker per container engine on every boot, so only the
+# other seven need static symlinks here. Each points at its unit from the same
+# <target>.wants directory that `systemctl enable` would use, so it stays
 # runtime-disableable.
+#
+# On WSL, Lima's WSL2 driver runs boot.sh itself, through wsl.exe.
 - path: /etc/systemd/system/multi-user.target.wants/lima-init.service
   type: symlink
   target: /usr/local/lib/systemd/system/lima-init.service
+  profiles: [raw]
 - path: /etc/systemd/system/multi-user.target.wants/rd-init.service
   type: symlink
   target: /usr/local/lib/systemd/system/rd-init.service
@@ -197,6 +226,11 @@ entries:
   type: symlink
   target: /usr/local/lib/systemd/system/journal-to-console.service
   profiles: [raw]
+# Start WSL networking at boot, alongside Lima's boot.
+- path: /etc/systemd/system/multi-user.target.wants/network-setup.service
+  type: symlink
+  target: /usr/local/lib/systemd/system/network-setup.service
+  profiles: [wsl]
 - path: /etc/systemd/system/rancher-desktop.target.wants/network-setup.service
   type: symlink
   target: /usr/local/lib/systemd/system/network-setup.service

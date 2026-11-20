@@ -10,6 +10,7 @@ load '../../helpers/load'
 # resources are forwarded to Docker.
 
 CONTEXT_NAME="rancher-desktop-${RDD_INSTANCE}"
+VM_NAME="rd"
 
 local_setup_file() {
     # Isolate all Docker config reads and writes from the developer's real
@@ -72,6 +73,34 @@ do_websocket() { # endpoint
     # to select from.
     run -0 rdd ctl get app app -o jsonpath='{.status.supportsNamespaces}'
     assert_output "false"
+}
+
+@test "provision unit is active" {
+    run -0 rdd limavm shell "${VM_NAME}" systemctl is-active rancher-desktop-provision.service
+    assert_output "active"
+}
+
+# Lima's WSL2 driver tees boot.sh's output into /var/log/lima-init.log, and
+# boot.sh logs "Exiting with code" last.
+assert_wsl_boot_run_finished() {
+    run -0 rdd limavm shell "${VM_NAME}" sudo cat /var/log/lima-init.log
+    assert_line --partial "Exiting with code"
+}
+
+# On WSL, only Lima's wsl.exe run executes boot.sh. provision.sh's xtrace logs
+# `systemctl stop rancher-desktop.target` once per run, under the wsl-exec
+# identifier only when the unit's drop-in runs it in RD's network namespace.
+@test "provision steps run once per boot, inside the network namespace" {
+    skip_on_unix "Only Lima's WSL2 driver runs boot.sh outside lima-init.service"
+    try assert_wsl_boot_run_finished
+    run -0 rdd limavm shell "${VM_NAME}" systemctl show --property=ActiveState --value lima-init.service
+    assert_output "inactive"
+    run -0 rdd limavm shell "${VM_NAME}" sudo cat /var/log/lima-init.log
+    assert_line --partial "+ systemctl start rancher-desktop-provision.service"
+    run -0 rdd limavm shell "${VM_NAME}" sudo journalctl --boot \
+        --unit=rancher-desktop-provision.service --identifier=wsl-exec --output=cat
+    run grep --count --fixed-strings "+ systemctl stop rancher-desktop.target" <<<"${output}"
+    assert_output "1"
 }
 
 # --- Image mirroring ---
