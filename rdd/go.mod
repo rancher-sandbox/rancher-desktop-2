@@ -28,7 +28,7 @@ require (
 	github.com/mattn/go-isatty v0.0.24
 	github.com/mikefarah/yq/v4 v4.54.3
 	github.com/moby/moby/api v1.57.0
-	github.com/moby/moby/client v0.6.2
+	github.com/moby/moby/client v0.6.3
 	github.com/muesli/reflow v0.3.0
 	github.com/nxadm/tail v1.4.11
 	github.com/opencontainers/go-digest v1.0.0
