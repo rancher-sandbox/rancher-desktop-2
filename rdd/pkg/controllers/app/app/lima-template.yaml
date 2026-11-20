@@ -65,10 +65,25 @@ provision:
         exit 0
     fi
 
-    if ! systemctl is-active --quiet rdd-journal-capture.service; then
-        systemd-run --collect --unit=rdd-journal-capture /bin/sh -c \
-            "journalctl --follow --no-tail --output=short-iso --unit=lima-init.service --unit=network-setup.service --unit=rancher-desktop-guest-agent.service --unit=rdd-guest.service --unit=wsl-proxy.service >> \"$PARAM_GUEST_LOG_DIR/guest-journal.log\""
-    fi
+    units=(
+      buildkitd
+      containerd
+      docker
+      k3s
+      lima-guestagent
+      lima-init
+      network-setup
+      rancher-desktop-guest-agent
+      rd-init
+      rdd-guest
+      wsl-proxy
+    )
+    for unit in "${units[@]}"; do
+        if ! systemctl is-active --quiet "rdd-journal-capture-${unit}.service"; then
+            systemd-run --collect --unit="rdd-journal-capture-${unit}" /bin/sh -c \
+                "journalctl --follow --no-tail --output=short-iso --unit=${unit}.service >> \"$PARAM_GUEST_LOG_DIR/guest-${unit}.log\""
+        fi
+    done
     if ! systemctl is-active --quiet rdd-lima-init-capture.service; then
         systemd-run --collect --unit=rdd-lima-init-capture /bin/sh -c \
             "tail -c +0 -F /var/log/lima-init.log >> \"$PARAM_GUEST_LOG_DIR/lima-init.log\""
