@@ -13,8 +13,15 @@ local_setup_file() {
     RDD_NAMESPACE=${RDD_APP_NAMESPACE}
     export RDD_NAMESPACE
 
-    # Ensure moby namespace exists.
-    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" ContainerNamespace/moby --timeout=60s
+    if using_containerd; then
+        CONTAINER_NAMESPACE=image-pull-namespace
+        ctrctl ns create "${CONTAINER_NAMESPACE}"
+    else
+        CONTAINER_NAMESPACE=moby
+    fi
+    export CONTAINER_NAMESPACE
+
+    rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" "ContainerNamespace/${CONTAINER_NAMESPACE}" --timeout=60s
 }
 
 @test "ImagePullRequest succeeds and sets Failed reason to Succeeded" {
@@ -26,7 +33,7 @@ metadata:
   name: ${request_name}
   namespace: ${RDD_NAMESPACE}
 spec:
-  namespace: moby
+  namespace: ${CONTAINER_NAMESPACE}
   repoTag: registry.suse.com/bci/bci-nano:latest
 EOF
 
@@ -47,7 +54,7 @@ metadata:
   name: ${request_name}
   namespace: ${RDD_NAMESPACE}
 spec:
-  namespace: moby
+  namespace: ${CONTAINER_NAMESPACE}
   repoTag: ${repo_tag}
 EOF
 

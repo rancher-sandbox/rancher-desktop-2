@@ -4,10 +4,6 @@
 
 load '../../helpers/load'
 
-# For the moby backend, container namespaces are not supported; all objects are
-# always in the "moby" namespace.
-CONTAINER_NAMESPACE="moby"
-
 # The annotation key used to allow overriding the reap delay for Compose and
 # ComposeUpRequest objects.
 REAP_ANNOTATION="containers.rancherdesktop.io/reap-after"
@@ -18,14 +14,34 @@ REAP_ANNOTATION="containers.rancherdesktop.io/reap-after"
 RDD_NAMESPACE=${RDD_APP_NAMESPACE}
 
 local_setup_file() {
-    skip_unless_docker
-    # Disable the test if we don't have `docker compose`; this needs to go away
-    # once we can ensure the reconciler can find `docker compose` correctly,
-    # since the test does not use it directly.
-    docker_has_compose || skip "docker compose plugin is not installed"
     start_container_engine
-    # Pre-pull the image
-    docker pull --quiet "${IMAGE_BUSYBOX}"
+    if using_docker; then
+        # For the moby backend, container namespaces are not supported; all
+        # objects are always in the "moby" namespace.
+        export CONTAINER_NAMESPACE="moby"
+        export NAMESPACE_ARGS=""
+
+        # Disable the test if we don't have `docker compose`; this needs to go away
+        # once we can ensure the reconciler can find `docker compose` correctly,
+        # since the test does not use it directly.
+        docker_has_compose || skip "docker compose plugin is not installed"
+
+        # Pre-pull the image
+        ctrctl pull --quiet "${IMAGE_BUSYBOX}"
+    else
+        # For containerd, use a namespace for compose to test that works.
+        export CONTAINER_NAMESPACE="bats-compose"
+        export NAMESPACE_ARGS="--namespace=${CONTAINER_NAMESPACE}"
+        ctrctl namespace create "${CONTAINER_NAMESPACE}"
+
+        # We still hard code to using `docker` in the compose implementation, so
+        # this suite will always fail.
+        # https://github.com/rancher-sandbox/rancher-desktop-2/issues/1378
+        skip "Compose does not support containerd yet"
+
+        # Pre-pull the image
+        ctrctl pull --quiet --namespace "${CONTAINER_NAMESPACE}" "${IMAGE_BUSYBOX}"
+    fi
 }
 
 # compose_project_name returns the deterministic metadata.name for a
@@ -48,7 +64,8 @@ compose_project_name() { # <valid-k8s-name-project>
 
 @test "a container with compose labels is auto-detected into a Compose with member tracking" {
     project=rdd-bats-detect
-    run_e -0 docker run --detach --name test-compose-detect \
+    run_e -0 ctrctl run --detach --name test-compose-detect \
+        ${NAMESPACE_ARGS:+${NAMESPACE_ARGS}} \
         --label "com.docker.compose.project=${project}" \
         --label "com.docker.compose.config-hash=bogus" \
         "${IMAGE_BUSYBOX}" sleep 300
@@ -72,7 +89,7 @@ compose_project_name() { # <valid-k8s-name-project>
     assert_output "${container_id}"
 
     # Test that the Compose object is reaped.
-    docker rm --force "${container_id}"
+    ctrctl rm --force ${NAMESPACE_ARGS:+${NAMESPACE_ARGS}} "${container_id}"
     rdd ctl wait --for=delete --namespace="${RDD_APP_NAMESPACE}" \
         "ComposeProject/${name}" --timeout=30s
 }
@@ -118,12 +135,13 @@ EOF
     rdd ctl annotate ComposeProject "${name}" --namespace="${RDD_APP_NAMESPACE}" \
         "${REAP_ANNOTATION}=1s" --overwrite
 
-    run -0 docker ps --filter "label=com.docker.compose.project=${project}" \
-        --quiet
+    run -0 ctrctl ps ${NAMESPACE_ARGS:+${NAMESPACE_ARGS}} \
+        --filter "label=com.docker.compose.project=${project}" --quiet
     assert_output
     container_id=${output}
 
-    run -0 docker inspect "${container_id}" --format '{{.State.Status}}'
+    run -0 ctrctl inspect ${NAMESPACE_ARGS:+${NAMESPACE_ARGS}} "${container_id}" \
+        --format '{{.State.Status}}'
     assert_output "running"
 
     # The ComposeUpRequest should automatically be deleted after it settles.
@@ -132,13 +150,15 @@ EOF
     # Delete the ComposeProject; it should automatically delete the container.
     rdd ctl delete ComposeProject "${name}" --namespace="${RDD_APP_NAMESPACE}" \
         --timeout=30s
-    run -0 docker ps --filter "id=${container_id}" --quiet
+    run -0 ctrctl ps ${NAMESPACE_ARGS:+${NAMESPACE_ARGS}} \
+        --filter "id=${container_id}" --quiet
     refute_output
 }
 
 @test "deleting a Compose runs docker compose down for its resources" {
     project=rdd-bats-down
-    run_e -0 docker run --detach --name test-compose-down \
+    run_e -0 ctrctl run --detach --name test-compose-down \
+        ${NAMESPACE_ARGS:+${NAMESPACE_ARGS}} \
         --label "com.docker.compose.project=${project}" \
         --label "com.docker.compose.config-hash=bogus" \
         "${IMAGE_BUSYBOX}" sleep inf
@@ -154,7 +174,8 @@ EOF
         --wait=false
 
     # The container should be (eventually) removed.
-    try --until-fail docker inspect "${container_id}" --format '{{.State.Status}}'
+    try --until-fail ctrctl inspect ${NAMESPACE_ARGS:+${NAMESPACE_ARGS}} \
+        "${container_id}" --format '{{.State.Status}}'
     echo "Expected 'error: no such object: ${container_id}' on previous line"
 
     # The Compose object may _already_ be gone, which means we cannot use
@@ -163,8 +184,8 @@ EOF
 }
 
 @test "Compose is not created for a container without the compose project label" {
-    run_e -0 docker run --detach --name test-compose-unlabeled \
-        "${IMAGE_BUSYBOX}" sleep inf
+    run_e -0 ctrctl run --detach ${NAMESPACE_ARGS:+${NAMESPACE_ARGS}} \
+        --name test-compose-unlabeled "${IMAGE_BUSYBOX}" sleep inf
     container_id=${output}
 
     rdd ctl wait --for=create --namespace="${RDD_APP_NAMESPACE}" --timeout=30s \
@@ -177,7 +198,7 @@ EOF
         -o jsonpath="{range .items[*]}{.status.containers[*].name}{'\n'}{end}"
     refute_output --partial "${container_id}"
 
-    docker rm --force "${container_id}"
+    ctrctl rm --force "${container_id}"
 }
 
 # assert_members_count verifies that the members array in status has the expected length.
@@ -192,13 +213,15 @@ assert_members_count() { # <name> <expected_count>
 
 @test "multiple containers with the same compose project label are auto-detected and tracked concurrently" {
     project=rdd-bats-multi-detect
-    run_e -0 docker run --detach --name test-compose-multi-1 \
+    run_e -0 ctrctl run --detach --name test-compose-multi-1 \
+        ${NAMESPACE_ARGS:+${NAMESPACE_ARGS}} \
         --label "com.docker.compose.project=${project}" \
         --label "com.docker.compose.config-hash=bogus" \
         "${IMAGE_BUSYBOX}" sleep inf
     container_id1=${output}
 
-    run_e -0 docker run --detach --name test-compose-multi-2 \
+    run_e -0 ctrctl run --detach --name test-compose-multi-2 \
+        ${NAMESPACE_ARGS:+${NAMESPACE_ARGS}} \
         --label "com.docker.compose.project=${project}" \
         --label "com.docker.compose.config-hash=bogus" \
         "${IMAGE_BUSYBOX}" sleep inf
@@ -215,11 +238,11 @@ assert_members_count() { # <name> <expected_count>
     try --max 30 --delay 1 -- assert_members_count "${name}" 2
 
     # Stop one container; members should drop to 1
-    docker rm --force "${container_id1}"
+    ctrctl rm --force ${NAMESPACE_ARGS:+${NAMESPACE_ARGS}} "${container_id1}"
     try --max 30 --delay 1 -- assert_members_count "${name}" 1
 
     # Stop the second container; project should be deleted
-    docker rm --force "${container_id2}"
+    ctrctl rm --force ${NAMESPACE_ARGS:+${NAMESPACE_ARGS}} "${container_id2}"
     rdd ctl wait --for=delete --namespace="${RDD_APP_NAMESPACE}" \
         "ComposeProject/${name}" --timeout=30s
 }
