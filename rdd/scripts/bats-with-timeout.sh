@@ -259,8 +259,9 @@ dump_windows_vm_logs() {
         timeout --kill-after=1 10 wsl.exe -d "$distro" -- \
             ps auxf 2>&1 || true
 
-        # Dump the full journal for this boot. The VM lives only as
-        # long as the bats target, so the journal is naturally bounded.
+        # Dump the journal since WSL's kernel booted. Boots of a WSL
+        # distro share the kernel's boot ID, so -b also returns the
+        # distro's earlier boots since then.
         echo
         echo "--- ${distro}: journalctl -b ---"
         timeout --kill-after=1 30 wsl.exe -d "$distro" -- \

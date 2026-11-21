@@ -102,7 +102,9 @@ setup_file() {
 # Dump each VM's boot journal and unit timings while the control plane is
 # still up. The window between "Installing k3s to /usr/local/bin/k3s" and
 # "Started Lightweight Kubernetes" tells a slow runner apart from a change in
-# our own code. Opt-in, because it costs seconds per file.
+# our own code. On WSL, boots of a distro share the boot ID of WSL's kernel, so
+# the journal can also include lines from the distro's earlier boots. Opt-in,
+# because it costs seconds per file.
 capture_guest_metrics() {
     [[ "${RDD_METRICS_GUEST:-}" == 1 ]] || return 0
     local vm
