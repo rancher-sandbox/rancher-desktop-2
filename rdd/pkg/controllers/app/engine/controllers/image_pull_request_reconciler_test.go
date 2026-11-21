@@ -31,7 +31,7 @@ import (
 
 type testEngine struct {
 	pullImageErr  error
-	pullImageHook func(ctx context.Context, repoTag string, onProgress func(int64, int64, int64, string), onComplete func(error))
+	pullImageHook func(ctx context.Context, namespace, repoTag string, onProgress func(int64, int64, int64, string), onComplete func(error))
 	pullCalled    bool
 	pullRepoTag   string
 }
@@ -54,6 +54,7 @@ func (*testEngine) getLogs(_ context.Context, _ *containersv1alpha1.Container, _
 
 func (e *testEngine) pullImage(
 	ctx context.Context,
+	namespace string,
 	repoTag string,
 	onProgress func(int64, int64, int64, string),
 	onComplete func(error),
@@ -61,7 +62,7 @@ func (e *testEngine) pullImage(
 	e.pullCalled = true
 	e.pullRepoTag = repoTag
 	if e.pullImageHook != nil {
-		e.pullImageHook(ctx, repoTag, onProgress, onComplete)
+		e.pullImageHook(ctx, namespace, repoTag, onProgress, onComplete)
 	}
 	return e.pullImageErr
 }
@@ -470,7 +471,7 @@ func TestEngineImagePullRequestReconcileSingleProgressCallbackUpdatesStatus(t *t
 		},
 	}
 	engine := &testEngine{
-		pullImageHook: func(_ context.Context, _ string, onProgress func(int64, int64, int64, string), _ func(error)) {
+		pullImageHook: func(_ context.Context, _, _ string, onProgress func(int64, int64, int64, string), _ func(error)) {
 			onProgress(1, 2, 3, "bytes")
 		},
 	}
@@ -540,7 +541,7 @@ func TestEngineImagePullRequestReconcileSingleCompleteReasonMapping(t *testing.T
 				},
 			}
 			engine := &testEngine{
-				pullImageHook: func(_ context.Context, _ string, _ func(int64, int64, int64, string), onComplete func(error)) {
+				pullImageHook: func(_ context.Context, _, _ string, _ func(int64, int64, int64, string), onComplete func(error)) {
 					onComplete(tc.pullErr)
 				},
 			}
