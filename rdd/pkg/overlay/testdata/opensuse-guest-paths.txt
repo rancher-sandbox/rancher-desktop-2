@@ -4,7 +4,7 @@
 # each. The mount carries systemd's escaped hyphen, as config.sh's rename
 # left it in the image. Regenerate from the openSUSE root/ tree, dropping
 # the two files that stay (etc/dracut.conf.d/repart.conf,
-# usr/local/lib/repart.d/50-root.conf) and the five deleted outright.
+# usr/local/lib/repart.d/50-root.conf) and the six deleted.
 /etc/cni/net.d/10-flannel.conflist
 /etc/containerd/config.toml
 /etc/sudoers.d/10-path-local
@@ -35,7 +35,6 @@
 /usr/local/lib/systemd/system/k3s.service.d/network-namespace.conf
 /usr/local/lib/systemd/system/k3s.service.d/target.conf
 /usr/local/lib/systemd/system/lima-init.service
-/usr/local/lib/systemd/system/lima-init.service.d/network-namespace.conf
 /usr/local/lib/systemd/system/lima-init.service.d/requires-cidata.conf
 /usr/local/lib/systemd/system/lima-init.service.d/requires-rd-init.conf
 /usr/local/lib/systemd/system/mnt-lima\x2dcidata.mount
