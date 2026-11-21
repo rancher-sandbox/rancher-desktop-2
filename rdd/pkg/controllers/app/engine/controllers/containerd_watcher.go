@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"runtime"
 	"runtime/debug"
 	"sync"
@@ -17,9 +18,17 @@ import (
 	apievents "github.com/containerd/containerd/api/events"
 	containerdclient "github.com/containerd/containerd/v2/client"
 	"github.com/containerd/containerd/v2/core/events"
+	"github.com/containerd/containerd/v2/core/transfer"
+	transferimage "github.com/containerd/containerd/v2/core/transfer/image"
+	"github.com/containerd/containerd/v2/core/transfer/registry"
+	"github.com/containerd/containerd/v2/defaults"
+	"github.com/containerd/containerd/v2/pkg/namespaces"
+	cerrdefs "github.com/containerd/errdefs"
 	"github.com/containerd/platforms"
 	typeurl "github.com/containerd/typeurl/v2"
+	"github.com/distribution/reference"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	"golang.org/x/sync/errgroup"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -31,6 +40,10 @@ import (
 )
 
 var _ engine = (*containerdWatcher)(nil)
+
+// unexpectedStatusRegex matches error messages indicating an unexpected status
+// from a registry, capturing the HTTP status code.
+var unexpectedStatusRegex = regexp.MustCompile(`unexpected status from [A-Z]+ request to \S+: (\d{3})\b`)
 
 // containerdWatcher manages a containerd client connection and event stream.
 // It performs a full sync on connect and then watches for incremental changes.
@@ -61,7 +74,11 @@ func newContainerdWatcher(ctx context.Context, k8s client.Client, apiNamespace s
 	// architecture. On Windows the host's default platform does not match a
 	// Linux manifest, so Image.Spec would fail for every multi-platform image.
 	guest := platforms.Only(ocispec.Platform{OS: "linux", Architecture: runtime.GOARCH})
-	cli, err := containerdclient.New(instance.ContainerdSocket(), containerdclient.WithDefaultPlatform(guest))
+	cli, err := containerdclient.New(
+		instance.ContainerdSocket(),
+		containerdclient.WithDefaultPlatform(guest),
+		containerdclient.WithDefaultNamespace(namespaces.Default),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create containerd client: %w", err)
 	}
@@ -281,10 +298,155 @@ func (w *containerdWatcher) getLogs(_ context.Context, _ *containersv1alpha1.Con
 	return nil, errLogsNotSupported
 }
 
-// pullImage is not wired for containerd; an ImagePullRequest fails with this
-// error.
-func (w *containerdWatcher) pullImage(_ context.Context, _ string, _ func(start, current, total int64, units string), _ func(error)) error {
-	return errors.New("image pulls are not supported with the containerd engine")
+// getSnapshotter returns the containerd snapshotter to use, for the given
+// container namespace.
+func (w *containerdWatcher) getSnapshotter(ctx context.Context, namespace string) (string, error) {
+	if namespace == "" {
+		namespace = w.cli.DefaultNamespace()
+	}
+	ctx = namespaces.WithNamespace(ctx, namespace)
+	snapshotter, err := w.cli.GetLabel(ctx, defaults.DefaultSnapshotterNSLabel)
+	if err != nil {
+		return "", err
+	}
+	if snapshotter != "" {
+		return snapshotter, nil
+	}
+	// Since we use a Linux VM, the fallback is "overlayfs", not the client
+	// platform default.
+	return "overlayfs", nil
+}
+
+// pullImage pulls an image using containerd, tracking progress and handling
+// completion.
+func (w *containerdWatcher) pullImage(ctx context.Context, namespace, repoTag string, onProgress func(start, current, total int64, units string), onComplete func(error)) error {
+	// We need to convert repoTag to a fully qualified reference if necessary.
+	imageRef, err := reference.ParseDockerRef(repoTag)
+	if err != nil {
+		return err
+	}
+
+	if namespace != "" {
+		ctx = namespaces.WithNamespace(ctx, namespace)
+	}
+
+	snapshotter, err := w.getSnapshotter(ctx, namespace)
+	if err != nil {
+		return err
+	}
+
+	wg, ctx := errgroup.WithContext(ctx)
+	var progressMu sync.Mutex
+	// To show progress during unpack, the progress and totals are keyed by name
+	// then event; on every progress updated, all other events for the same name
+	// are set to max.
+	progress := make(map[string]map[string]int64)
+	total := make(map[string]map[string]int64)
+
+	src, err := registry.NewOCIRegistry(ctx, imageRef.String())
+	if err != nil {
+		return err
+	}
+
+	progressCtx, progressCancel := context.WithCancel(ctx)
+
+	dest := transferimage.NewStore(
+		imageRef.String(),
+		transferimage.WithPlatforms(ocispec.Platform{OS: "linux", Architecture: runtime.GOARCH}),
+		transferimage.WithUnpack(ocispec.Platform{OS: "linux", Architecture: runtime.GOARCH}, snapshotter),
+	)
+
+	progressFn := func(p transfer.Progress) {
+		if onProgress == nil || p.Name == "" {
+			return
+		}
+		progressMu.Lock()
+		if _, ok := total[p.Name]; !ok {
+			total[p.Name] = make(map[string]int64)
+		}
+		total[p.Name][p.Event] = p.Total
+		if _, ok := progress[p.Name]; !ok {
+			progress[p.Name] = make(map[string]int64)
+		}
+		for k := range progress[p.Name] {
+			progress[p.Name][k] = total[p.Name][k]
+		}
+		progress[p.Name][p.Event] = p.Progress
+		progressMu.Unlock()
+	}
+
+	wg.Go(func() error {
+		// Pull is blocking; use a waitgroup to run it asynchronously.
+		err := w.cli.Transfer(ctx, src, dest, transfer.WithProgress(progressFn))
+		progressCancel()
+		if err != nil {
+			// Convert unexpected status errors as needed.  The error struct does not
+			// survive the gRPC connection, so it's all stringly-typed.
+			if match := unexpectedStatusRegex.FindStringSubmatch(err.Error()); len(match) > 0 {
+				switch match[1] {
+				case "401":
+					return fmt.Errorf("%w: %w", cerrdefs.ErrUnauthenticated, err)
+				case "403":
+					return fmt.Errorf("%w: %w", cerrdefs.ErrPermissionDenied, err)
+				}
+			}
+		}
+		return err
+	})
+	if onProgress != nil {
+		wg.Go(func() error {
+			// Handle progress changes.
+			ticker := time.NewTicker(500 * time.Millisecond)
+			var lastProgress, lastTotal int64
+			for {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-progressCtx.Done():
+					return nil // Pull complete
+				case <-ticker.C:
+					var allProgress int64
+					var allTotal int64
+					progressMu.Lock()
+					for name := range total {
+						for _, eventProgress := range progress[name] {
+							allProgress += eventProgress
+						}
+						for _, eventTotal := range total[name] {
+							allTotal += eventTotal
+						}
+					}
+					progressMu.Unlock()
+					if allTotal > 0 && (lastProgress != allProgress || lastTotal != allTotal) {
+						onProgress(0, allProgress, allTotal, "units")
+					}
+					lastProgress = allProgress
+					lastTotal = allTotal
+				}
+			}
+		})
+	}
+	go func() {
+		err := wg.Wait()
+		if err == nil && onProgress != nil {
+			// Emit a last progress, in case the completion events weren't triggered.
+			var allTotal int64
+			progressMu.Lock()
+			for _, singleTotal := range total {
+				for _, eventTotal := range singleTotal {
+					allTotal += eventTotal
+				}
+			}
+			progressMu.Unlock()
+			if allTotal > 0 {
+				onProgress(0, allTotal, allTotal, "units")
+			}
+		}
+		if onComplete != nil {
+			onComplete(err)
+		}
+	}()
+	return nil
 }
 
 // deleteVolume returns nil, because containerd has no native volume concept.

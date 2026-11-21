@@ -520,10 +520,6 @@ Status conditions:
 <tr><td>PullTimeout<td>True<td>the image pull has timed out
 </table>
 
-The containerd backend does not pull images, so under
-`containerEngine.name=containerd` every `ImagePullRequest` fails with reason
-`PullFailed`.
-
 #### Build image
 Not sure; do something with the `Resource` API maybe?
 
