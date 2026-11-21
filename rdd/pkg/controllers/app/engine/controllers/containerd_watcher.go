@@ -17,9 +17,13 @@ import (
 	apievents "github.com/containerd/containerd/api/events"
 	containerdclient "github.com/containerd/containerd/v2/client"
 	"github.com/containerd/containerd/v2/core/events"
+	"github.com/containerd/containerd/v2/core/images"
+	"github.com/containerd/containerd/v2/core/remotes"
+	"github.com/containerd/containerd/v2/pkg/namespaces"
 	"github.com/containerd/platforms"
 	typeurl "github.com/containerd/typeurl/v2"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	"golang.org/x/sync/errgroup"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -283,8 +287,80 @@ func (w *containerdWatcher) getLogs(_ context.Context, _ *containersv1alpha1.Con
 
 // pullImage is not wired for containerd; an ImagePullRequest fails with this
 // error.
-func (w *containerdWatcher) pullImage(_ context.Context, _ string, _ func(start, current, total int64, units string), _ func(error)) error {
-	return errors.New("image pulls are not supported with the containerd engine")
+func (w *containerdWatcher) pullImage(ctx context.Context, namespace, repoTag string, onProgress func(start, current, total int64, units string), onComplete func(error)) error {
+	if namespace != "" {
+		ctx = namespaces.WithNamespace(ctx, namespace)
+	}
+	wg, ctx := errgroup.WithContext(ctx)
+	progressCtx, progressCancel := context.WithCancel(ctx)
+	tracking := make(map[string]struct{})
+	var trackingMu sync.Mutex
+
+	wg.Go(func() error {
+		// Pull is blocking; use a waitgroup to run it asynchronously.
+		_, err := w.cli.Pull(ctx, repoTag,
+			containerdclient.WithPullUnpack,
+			containerdclient.WithImageHandler(images.HandlerFunc(func(ctx context.Context, desc ocispec.Descriptor) ([]ocispec.Descriptor, error) {
+				// Mark this descriptor as being tracked.
+				trackingMu.Lock()
+				tracking[remotes.MakeRefKey(ctx, desc)] = struct{}{}
+				trackingMu.Unlock()
+				// Don't generate custom descriptors; return nil to indicate normal handling.
+				return nil, nil
+			})))
+		progressCancel()
+		return err
+	})
+	wg.Go(func() error {
+		// Handle progress changes.
+		ticker := time.NewTicker(500 * time.Millisecond)
+
+		// Because completed layers go away, we need to keep track of them.
+		progress := make(map[string]int64)
+		total := make(map[string]int64)
+		cs := w.cli.ContentStore()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-progressCtx.Done():
+				return nil // Pull complete
+			case <-ticker.C:
+				statuses, err := cs.ListStatuses(ctx)
+				if err != nil {
+					continue // Don't abort if we fail to list statuses.
+				}
+
+				for _, status := range statuses {
+					trackingMu.Lock()
+					if _, ok := tracking[status.Ref]; !ok {
+						trackingMu.Unlock()
+						continue // Skip untracked descriptors.
+					}
+					trackingMu.Unlock()
+					progress[status.Ref] = status.Offset
+					total[status.Ref] = status.Total
+				}
+
+				if len(total) > 0 {
+					var allProgress int64
+					var allTotal int64
+					for ref := range total {
+						allProgress += progress[ref]
+						allTotal += total[ref]
+					}
+					if allTotal > 0 {
+						onProgress(0, allProgress, allTotal, "bytes")
+					}
+				}
+			}
+		}
+	})
+	go func() {
+		onComplete(wg.Wait())
+	}()
+	return nil
 }
 
 // deleteVolume returns nil, because containerd has no native volume concept.

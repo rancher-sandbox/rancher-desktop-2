@@ -107,7 +107,7 @@ type engine interface {
 	// getLogs returns a reader for the container's logs.
 	getLogs(ctx context.Context, c *containersv1alpha1.Container, opts ...engineLogOptions) (io.ReadCloser, error)
 	// pullImage pulls an image from its repository tag and reports progress.
-	pullImage(ctx context.Context, repoTag string, onProgress func(start, current, total int64, units string), onComplete func(error)) error
+	pullImage(ctx context.Context, namespace, repoTag string, onProgress func(start, current, total int64, units string), onComplete func(error)) error
 	// deleteContainer removes a container from the engine.
 	deleteContainer(ctx context.Context, c *containersv1alpha1.Container) error
 	// deleteImage removes an image from the engine.
