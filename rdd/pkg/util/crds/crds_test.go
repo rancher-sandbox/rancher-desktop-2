@@ -65,4 +65,11 @@ func TestApply(t *testing.T) {
 	stored, err := c.Get(ctx, desired.Name, metav1.GetOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, stored.Spec.Versions[0].Schema.OpenAPIV3Schema.Description, "second")
+
+	outcome, err = Apply(ctx, c, desired.DeepCopy())
+	assert.NilError(t, err)
+	assert.Equal(t, outcome, Unchanged)
+	unchanged, err := c.Get(ctx, desired.Name, metav1.GetOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, unchanged.ResourceVersion, stored.ResourceVersion)
 }

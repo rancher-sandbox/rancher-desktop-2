@@ -67,10 +67,15 @@ func Apply(ctx context.Context, c apiextensionsv1client.CustomResourceDefinition
 	if err != nil {
 		return Unchanged, fmt.Errorf("failed to get CRD %s: %w", crd.Name, err)
 	}
-	if apiequality.Semantic.DeepEqual(existing.Spec, crd.Spec) {
+	// The API server fills in defaults that controller-gen leaves out of the
+	// YAML, such as spec.conversion. Without those defaults, crd's spec never
+	// matches the stored one, so fill them in before comparing.
+	defaulted := crd.DeepCopy()
+	apiextensionsv1.SetObjectDefaults_CustomResourceDefinition(defaulted)
+	if apiequality.Semantic.DeepEqual(existing.Spec, defaulted.Spec) {
 		return Unchanged, nil
 	}
-	existing.Spec = crd.Spec
+	existing.Spec = defaulted.Spec
 	if _, err := c.Update(ctx, existing, metav1.UpdateOptions{}); err != nil {
 		return Unchanged, fmt.Errorf("failed to update CRD %s: %w", crd.Name, err)
 	}
