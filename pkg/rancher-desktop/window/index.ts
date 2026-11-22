@@ -15,6 +15,7 @@ import Latch from '@pkg/utils/latch';
 import Logging from '@pkg/utils/logging';
 import paths from '@pkg/utils/paths';
 import { CommandOrControl, Shortcuts } from '@pkg/utils/shortcuts';
+import { markStartup, reportStartup } from '@pkg/utils/startupTiming';
 import { mainRoutes } from '@pkg/window/constants';
 import { openPreferences } from '@pkg/window/preferences';
 
@@ -25,6 +26,8 @@ const console = Logging[`window_${ process.type || 'unknown' }`];
  * assigned by electron).
  */
 export const windowMapping: Record<string, number> = {};
+
+let firstWindowCreated = false;
 
 export const webRoot = `app://${ isDevBuild ? '' : '.' }`;
 
@@ -73,6 +76,24 @@ export function createWindow(name: string, url: string, options: Electron.Browse
   }
 
   window = new BrowserWindow(options);
+  if (!firstWindowCreated) {
+    firstWindowCreated = true;
+    markStartup('first-window-created');
+    // A window created hidden, such as a dialog, shows itself once its page
+    // has rendered, so its 'show' event is when the user first sees it.  The
+    // main window starts visible, so its first page load is the closest event.
+    if (options.show === false) {
+      window.once('show', () => {
+        markStartup('first-window-shown');
+        reportStartup(Logging.background);
+      });
+    } else {
+      window.webContents.once('did-finish-load', () => {
+        markStartup('first-window-loaded');
+        reportStartup(Logging.background);
+      });
+    }
+  }
   window.webContents.on('console-message', (event) => {
     const { level, sourceId, lineNumber, message } = event;
     const method = level === 'warning' ? 'warn' : level;
