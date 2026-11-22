@@ -52,14 +52,11 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("failed to reload systemd: %w", err)
 	}
 
-	// Trigger udevadm to cause the network interface to change name.
-	slog.InfoContext(ctx, "triggering udevadm to rename interfaces")
+	// Reload udev so it reads the new .link files and names any network
+	// interface that appears from now on.
+	slog.InfoContext(ctx, "reloading udev")
 	if err := runCommand(ctx, "/usr/bin/udevadm", "control", "--reload"); err != nil {
 		return fmt.Errorf("failed to reload udev: %w", err)
-	}
-	err = runCommand(ctx, "/usr/bin/udevadm", "trigger", "--type=devices", "--subsystem-match=net")
-	if err != nil {
-		return fmt.Errorf("failed to rename network devices: %w", err)
 	}
 
 	// Notify ready before we reload the other units; otherwise we end up

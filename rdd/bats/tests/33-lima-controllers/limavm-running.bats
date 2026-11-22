@@ -171,6 +171,14 @@ delete_test_vm() {
     assert_line "Linux"
 }
 
+@test "guest interface gets the name set in Lima's network-config" {
+    skip_on_windows "rd-init does not run in the WSL2 guest"
+    # The user-mode network interface's set-name in Lima's network-config is
+    # eth0. If rd-init doesn't rename it, the guest keeps the name that udev
+    # gave it, such as enp0s1.
+    rdd lima shell "${VM_NAME}" ip link show dev eth0
+}
+
 @test "shell propagates the remote exit code" {
     run -42 rdd lima shell "${VM_NAME}" sh -c 'exit 42'
 }
