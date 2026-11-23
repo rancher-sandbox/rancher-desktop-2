@@ -22,6 +22,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/yaml"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/app/v1alpha1"
@@ -791,6 +792,63 @@ func Test_Reconcile_clearsKubernetesPortOnDisable(t *testing.T) {
 	assert.NilError(t, c.Get(context.Background(), client.ObjectKey{Name: appName}, result))
 	assert.Equal(t, result.Status.KubernetesPort, 0,
 		"expected Status.KubernetesPort to be cleared when Kubernetes is disabled")
+}
+
+func Test_Reconcile_propagatesRunningOverStaleLimaVM(t *testing.T) {
+	t.Parallel()
+
+	for name, appRunning := range map[string]bool{"stop": false, "start": true} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			scheme := newTestScheme(t)
+
+			app := &v1alpha1.App{
+				Name: appName,
+				Spec: v1alpha1.AppSpec{Running: appRunning},
+			}
+			limaVM := &limav1alpha1.LimaVM{
+				Name:      limaVMName,
+				Namespace: v1alpha1.AppNamespace,
+				Spec:      limav1alpha1.LimaVMSpec{Running: !appRunning},
+			}
+			c := fake.NewClientBuilder().
+				WithScheme(scheme).
+				WithObjects(app, limaVM).
+				WithStatusSubresource(app, limaVM).
+				Build()
+
+			// Make the live LimaVM newer than the copy that the reconciler
+			// reads, as when the informer cache lags behind the API server.
+			stale := limaVM.DeepCopy()
+			limaVM.Annotations = map[string]string{"test": "newer"}
+			assert.NilError(t, c.Update(ctx, limaVM))
+
+			r := &AppReconciler{
+				Client: interceptor.NewClient(c, interceptor.Funcs{
+					Get: func(ctx context.Context, c client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+						if vm, ok := obj.(*limav1alpha1.LimaVM); ok {
+							stale.DeepCopyInto(vm)
+							return nil
+						}
+						return c.Get(ctx, key, obj, opts...)
+					},
+				}),
+				Scheme: scheme,
+			}
+
+			req := ctrl.Request{Name: appName}
+			// First reconcile adds the cleanup finalizer and returns early.
+			_, err := r.Reconcile(ctx, req)
+			assert.NilError(t, err)
+			_, err = r.Reconcile(ctx, req)
+			assert.NilError(t, err)
+
+			result := &limav1alpha1.LimaVM{}
+			assert.NilError(t, c.Get(ctx, client.ObjectKeyFromObject(limaVM), result))
+			assert.Equal(t, result.Spec.Running, appRunning)
+		})
+	}
 }
 
 func Test_networkSetupExtraArgs(t *testing.T) {
