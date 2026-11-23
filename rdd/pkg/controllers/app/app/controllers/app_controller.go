@@ -228,8 +228,8 @@ func toLinuxPath(hostPath string) string {
 }
 
 // reconcileGPUFiles keeps the host-side GPU staging directory in sync with the
-// spec. On a GPU-capable host it stages librocdxg.so + dids.conf when GPU
-// passthrough is enabled (fetching AMD's package or copying from spec.gpu.source)
+// spec. On a GPU-capable host it stages the inputs for building librocdxg.so
+// when GPU passthrough is enabled (or copies a library from spec.gpu.source)
 // and removes them when it is disabled. On other hosts it is a no-op. Errors are
 // returned so the caller can log them; staging is best-effort and must not wedge
 // reconciliation, because provisioning already degrades gracefully when the

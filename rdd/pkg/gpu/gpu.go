@@ -2,76 +2,122 @@
 // SPDX-FileCopyrightText: SUSE LLC
 // SPDX-FileCopyrightText: The Rancher Desktop Authors
 
-// Package gpu stages the AMD ROCm-on-WSL bridge files (librocdxg.so and
-// dids.conf) onto the host so that Lima provisioning can install them into the
-// guest's `/opt/rocm`. These two files ship only with a ROCm-on-WSL install and
-// are not projected by WSL, present in the Windows driver store, or bundled in
-// ROCm container images, so a privileged workload pod must bind-mount them from
-// the guest.
+// Package gpu prepares the AMD ROCm-on-WSL bridge library (librocdxg.so) so
+// that Lima provisioning can install it into the guest's `/opt/rocm`.
 //
-// The files are obtained in one of two way:
+// librocdxg is developed in https://github.com/ROCm/librocdxg. Its releases only
+// ship Debian packages, and Rancher Desktop must not redistribute binaries, so
+// when the user opts in to GPU passthrough the library is built from the
+// tagged source on their machine:
 //
-//   - Fetched (default): download AMD's official, MIT-licensed rocdxg-roct
-//     Debian package from the pinned GitHub release, verify its SHA-256, and
-//     extract `librocdxg.so` + `dids.conf` from it.
-//   - Source override: copy them from a caller-provided host directory (for
-//     air-gapped hosts, or users who already have a ROCm-on-WSL install).
+//   - Host side (this package): download the pinned build inputs, verify their
+//     SHA-256, and stage them with the build script under dir/src.
+//   - Guest side (lima-template.yaml): run build.sh in a throwaway container
+//     that writes dir/librocdxg.so, then install it into /opt/rocm/lib.
+//
+// The inputs are fetched from AMD's and Microsoft's public locations and are
+// only ever downloaded onto the machine of a user who enabled the feature.
+//
+// Alternatively, spec.gpu.source names a host directory that already holds a
+// librocdxg.so, which is copied instead of building (air-gapped hosts, or users
+// with an existing ROCm-on-WSL install).
 package gpu
 
 import (
-	"archive/tar"
 	"bytes"
-	"compress/gzip"
 	"context"
 	"crypto/sha256"
+	_ "embed"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 )
 
-// Pinned release of https://github.com/ROCm/librocdxg. librocdxg must be
-// ABI-compatible with the ROCm userspace in the workload image; v1.2.2 targets
-// the ROCm 7.2.x series. Bump Version and DebSHA256 together when moving to a
-// newer release.
-//
-// IMPORTANT: AMD driver must be present on the host, and the pinned librocdxg must be ABI-compatible with it.
-//
-// Currently pinned to the latest release of librocdxg.
 const (
-	Version = "1.2.2"
+	// ReleaseTag is the ROCm/librocdxg release whose source is built. It must
+	// be a released tag: builds of other revisions (for example the copy in the
+	// rocm-systems monorepo) are not ABI-compatible with the ROCm runtime in
+	// the workload images. Bump it together with the checksums in inputs.
+	ReleaseTag = "v1.2.2"
 
-	DebURL = "https://github.com/ROCm/librocdxg/releases/download/v" + Version + "/rocdxg-roct_" + Version + "_amd64.deb"
+	// BuildID identifies the librocdxg that is produced. Bump the suffix when
+	// build.sh or the container image changes without a ReleaseTag change.
+	BuildID = ReleaseTag + "-r2"
 
-	DebSHA256 = "28ded1254811192ebace1f76c0227580184af7b27ab2475fb9728295a702d541"
+	// BuildImage is the container image that build.sh runs in, pinned by digest.
+	BuildImage = "docker.io/library/ubuntu@sha256:f64b2ffc2f10ab8f8505aa56b2664bd846cbb9df87c7e2532e30f7667021c0e6"
 
-	// LibName is the library filename written into the staging directory and installed into the guest.
+	// LibName is the library filename written into the staging directory and
+	// installed into the guest.
 	LibName = "librocdxg.so"
 
-	// DidsName is the supplemental PCI device-ID table filename.
-	DidsName = "dids.conf"
+	// SrcDir is the staging subdirectory holding the build inputs.
+	SrcDir = "src"
 
-	// versionMarker records which release populated the staging directory so
-	// staging can be skipped when the files are already current.
-	versionMarker = ".rocdxg-version"
+	// BuildScriptName is the script run inside the build container.
+	BuildScriptName = "build.sh"
+
+	// buildIDMarker records which BuildID produced LibName (or sourceMarker when
+	// it was copied from a user-supplied directory).
+	buildIDMarker = ".build-id"
+
+	// sourceMarker is written to buildIDMarker by a source override.
+	sourceMarker = "source"
+
+	// stagedIDFile is the file under SrcDir that holds the BuildID of the staged
+	// inputs; the guest copies it to buildIDMarker after a successful build.
+	stagedIDFile = "build-id"
+
+	// imageFile is the file under SrcDir that holds BuildImage for the guest.
+	imageFile = "image"
 )
+
+const (
+	sourceURL = "https://github.com/ROCm/librocdxg/archive/refs/tags/" + ReleaseTag + ".tar.gz"
+	// Pinned commit of microsoft/win32metadata, which publishes the Windows
+	// headers that librocdxg expects from a Windows SDK.
+	winSDKBase = "https://raw.githubusercontent.com/microsoft/win32metadata/a40ed3186943620f304649a077b78f8271034736/generation/WinSDK/RecompiledIdlHeaders/shared/"
+)
+
+// input is one file the build needs, relative to the SrcDir.
+type input struct {
+	path   string
+	url    string
+	sha256 string
+}
+
+// inputs lists everything build.sh consumes. It is a var so tests can point it
+// at a local server.
+var inputs = []input{
+	{"librocdxg.tar.gz", sourceURL, "12f1eb13948ea80ebbaf4d0380184291782a1c481e3d7296dfe7ff3e80f3d71b"},
+	{"winsdk/d3dkmdt.h", winSDKBase + "d3dkmdt.h", "d8f0ec92fce79ffa208da7b4bb01b5cc901e0aba26acf93abb4be6199aad8472"},
+	{"winsdk/d3dkmthk.h", winSDKBase + "d3dkmthk.h", "0a63e5fc21446a923512108822572e6e178befda58929e8b1777ee50580cee8b"},
+	{"winsdk/d3dukmdt.h", winSDKBase + "d3dukmdt.h", "dbac0fba615da4f7e910d7dbadcd8ba03832f0a820ea660a0f5b86a192ce89da"},
+	{"winsdk/guiddef.h", winSDKBase + "guiddef.h", "7b0ff3b03ace4b2b26f2765ff7b68a925242ee13f678672491c4b347b0dcbff6"},
+	{"winsdk/no_sal2.h", winSDKBase + "no_sal2.h", "2da71d7f74704ae9074a1f5b6d68d5c69f3896c8d8bdae4e05e7590adbc61ae4"},
+	{"winsdk/ntstatus.h", winSDKBase + "ntstatus.h", "457c375cd907d235d4f036ed9262ff9f245becf55c819bb3d1d1323c03d0195f"},
+	{"winsdk/winapifamily.h", winSDKBase + "winapifamily.h", "23c2e6b0b10fd2948d230c8e9fd4cb15fa9bb7bbb4ee1808cf07f06f6d4298fc"},
+	{"winsdk/winpackagefamily.h", winSDKBase + "winpackagefamily.h", "d7d624a09b573310f2ff8c6439acc154c79e706b4c3f2f382334d3f52a254b4d"},
+}
+
+//go:embed build.sh
+var buildScript []byte
 
 var fetchTimeout = 2 * time.Minute
 
-// Stage makes dir contain the current librocdxg.so and dids.conf.
+// Stage makes dir ready for the guest to install librocdxg.so.
 //
-// When source is non-empty the files are copied from that host directory;
-// otherwise the pinned package is downloaded and its contents extracted. The
-// operation is idempotent: if dir already holds both files and a version
-// marker matching the pinned Version, Stage returns immediately without any
-// network I/O.
+// When source is non-empty the library is copied from that host directory.
+// Otherwise the build inputs are downloaded into dir/src for the guest to
+// build; a library left over from a different BuildID is removed so the guest
+// rebuilds it. The operation is idempotent and does no network I/O when the
+// inputs, or an up-to-date library, are already in place.
 func Stage(ctx context.Context, dir, source string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create GPU staging directory %s: %w", dir, err)
@@ -81,84 +127,67 @@ func Stage(ctx context.Context, dir, source string) error {
 		return stageFromSource(dir, source)
 	}
 
-	if staged(dir) {
+	if built(dir) {
 		return nil
 	}
+	// The library is stale (older build, or a source override that was since
+	// unset); drop it so the guest rebuilds.
+	if err := removeAll(filepath.Join(dir, LibName), filepath.Join(dir, buildIDMarker)); err != nil {
+		return err
+	}
 
-	deb, err := fetchDeb(ctx)
-	if err != nil {
+	src := filepath.Join(dir, SrcDir)
+	for _, in := range inputs {
+		if err := fetch(ctx, src, in); err != nil {
+			return err
+		}
+	}
+	if err := writeFile(filepath.Join(src, BuildScriptName), bytes.ReplaceAll(buildScript, []byte("\r\n"), []byte("\n")), 0o755); err != nil {
 		return err
 	}
-	lib, dids, err := extractFromDeb(deb)
-	if err != nil {
+	if err := writeFile(filepath.Join(src, imageFile), []byte(BuildImage), 0o644); err != nil {
 		return err
 	}
-	if err := writeFile(filepath.Join(dir, LibName), lib, 0o755); err != nil {
-		return err
-	}
-	if err := writeFile(filepath.Join(dir, DidsName), dids, 0o644); err != nil {
-		return err
-	}
-	return writeFile(filepath.Join(dir, versionMarker), []byte(Version), 0o644)
+	return writeFile(filepath.Join(src, stagedIDFile), []byte(BuildID), 0o644)
 }
 
-// Unstage removes the staged GPU files from dir. It is safe to call when the
-// files are not there.
+// Unstage removes everything Stage created in dir. It is safe to call when
+// nothing is staged.
 func Unstage(dir string) error {
-	for _, name := range []string{LibName, DidsName, versionMarker} {
-		if err := os.Remove(filepath.Join(dir, name)); err != nil && !os.IsNotExist(err) {
-			return fmt.Errorf("failed to remove %s: %w", name, err)
-		}
+	if err := removeAll(filepath.Join(dir, LibName), filepath.Join(dir, buildIDMarker)); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(filepath.Join(dir, SrcDir)); err != nil {
+		return fmt.Errorf("failed to remove %s: %w", SrcDir, err)
 	}
 	return nil
 }
 
-// staged reports whether dir already holds both files at the pinned Version.
-func staged(dir string) bool {
-	marker, err := os.ReadFile(filepath.Join(dir, versionMarker))
-	if err != nil || strings.TrimSpace(string(marker)) != Version {
+// built reports whether dir already holds a librocdxg.so built for BuildID.
+func built(dir string) bool {
+	marker, err := os.ReadFile(filepath.Join(dir, buildIDMarker))
+	if err != nil || strings.TrimSpace(string(marker)) != BuildID {
 		return false
 	}
-	for _, name := range []string{LibName, DidsName} {
-		if _, err := os.Stat(filepath.Join(dir, name)); err != nil {
-			return false
-		}
-	}
-	return true
+	_, err = os.Stat(filepath.Join(dir, LibName))
+	return err == nil
 }
 
 // stageFromSource copies librocdxg.so (accepting a versioned name such as
-// librocdxg.so.1.2.2) and dids.conf from source into dir.
+// librocdxg.so.1.2.2) from source into dir.
 func stageFromSource(dir, source string) error {
 	lib, err := findSourceLib(source)
 	if err != nil {
 		return err
 	}
-	dids := filepath.Join(source, DidsName)
-	if _, err := os.Stat(dids); err != nil {
-		return fmt.Errorf("%s not found in %s: %w", DidsName, source, err)
-	}
-
-	libData, err := os.ReadFile(lib)
+	data, err := os.ReadFile(lib)
 	if err != nil {
 		return fmt.Errorf("failed to read %s: %w", lib, err)
 	}
-	didsData, err := os.ReadFile(dids)
-	if err != nil {
-		return fmt.Errorf("failed to read %s: %w", dids, err)
-	}
-	if err := writeFile(filepath.Join(dir, LibName), libData, 0o755); err != nil {
+	if err := writeFile(filepath.Join(dir, LibName), data, 0o755); err != nil {
 		return err
 	}
-	if err := writeFile(filepath.Join(dir, DidsName), didsData, 0o644); err != nil {
-		return err
-	}
-	// A source override does not correspond to a pinned release; clear any
-	// marker so a later switch back to fetch mode re-downloads.
-	if err := os.Remove(filepath.Join(dir, versionMarker)); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to clear version marker: %w", err)
-	}
-	return nil
+	return writeFile(filepath.Join(dir, buildIDMarker), []byte(sourceMarker), 0o644)
 }
 
 // findSourceLib returns the path to librocdxg.so in source, accepting a
@@ -180,125 +209,58 @@ func findSourceLib(source string) (string, error) {
 	return matches[len(matches)-1], nil
 }
 
-// fetchDeb downloads the pinned package and verifies its SHA-256.
-func fetchDeb(ctx context.Context) ([]byte, error) {
+// fetch downloads in into src unless a file with the expected checksum is
+// already there. The checksum is verified before the file is put in place.
+func fetch(ctx context.Context, src string, in input) error {
+	dest := filepath.Join(src, filepath.FromSlash(in.path))
+	if data, err := os.ReadFile(dest); err == nil && checksum(data) == in.sha256 {
+		return nil
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, fetchTimeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, DebURL, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, in.url, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build request for %s: %w", DebURL, err)
+		return fmt.Errorf("failed to build request for %s: %w", in.url, err)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to download %s: %w", DebURL, err)
+		return fmt.Errorf("failed to download %s: %w", in.url, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to download %s: status %s", DebURL, resp.Status)
+		return fmt.Errorf("failed to download %s: status %s", in.url, resp.Status)
 	}
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %w", DebURL, err)
+		return fmt.Errorf("failed to read %s: %w", in.url, err)
 	}
+	if got := checksum(data); got != in.sha256 {
+		return fmt.Errorf("checksum mismatch for %s: got %s, want %s", in.url, got, in.sha256)
+	}
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return fmt.Errorf("failed to create %s: %w", filepath.Dir(dest), err)
+	}
+	return writeFile(dest, data, 0o644)
+}
+
+func checksum(data []byte) string {
 	sum := sha256.Sum256(data)
-	if got := hex.EncodeToString(sum[:]); got != DebSHA256 {
-		return nil, fmt.Errorf("checksum mismatch for %s: got %s, want %s", DebURL, got, DebSHA256)
-	}
-	return data, nil
+	return hex.EncodeToString(sum[:])
 }
 
-// extractFromDeb pulls the librocdxg shared object and dids.conf out of a
-// Debian package. A .deb is an ar archive whose data.tar.gz member holds the
-// installed tree under ./opt/rocm.
-func extractFromDeb(deb []byte) (lib, dids []byte, err error) {
-	dataTarGz, err := arMember(deb, "data.tar.gz")
-	if err != nil {
-		return nil, nil, err
-	}
-	gz, err := gzip.NewReader(bytes.NewReader(dataTarGz))
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to open data.tar.gz: %w", err)
-	}
-	defer gz.Close()
-
-	tr := tar.NewReader(gz)
-	for {
-		hdr, err := tr.Next()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to read package data: %w", err)
-		}
-		if hdr.Typeflag != tar.TypeReg {
-			continue
-		}
-		base := filepath.Base(hdr.Name)
-		switch {
-		case lib == nil && strings.HasPrefix(base, LibName+"."):
-			// The real object is versioned (librocdxg.so.1.2.2); the
-			// unversioned names in the package are symlinks, which are
-			// skipped by the TypeReg guard above.
-			if lib, err = io.ReadAll(tr); err != nil {
-				return nil, nil, fmt.Errorf("failed to read %s: %w", base, err)
-			}
-		case dids == nil && base == DidsName:
-			if dids, err = io.ReadAll(tr); err != nil {
-				return nil, nil, fmt.Errorf("failed to read %s: %w", base, err)
-			}
+func removeAll(paths ...string) error {
+	for _, p := range paths {
+		if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to remove %s: %w", p, err)
 		}
 	}
-	if lib == nil {
-		return nil, nil, fmt.Errorf("%s not found in package", LibName)
-	}
-	if dids == nil {
-		return nil, nil, fmt.Errorf("%s not found in package", DidsName)
-	}
-	return lib, dids, nil
-}
-
-// arMember returns the contents of the named member of a Unix ar archive. The
-// format is a global magic followed by fixed 60-byte member headers; only the
-// name and size fields are needed here.
-func arMember(archive []byte, name string) ([]byte, error) {
-	const (
-		magic      = "!<arch>\n"
-		headerSize = 60
-		nameLen    = 16
-		sizeOff    = 48
-		sizeLen    = 10
-	)
-	if !bytes.HasPrefix(archive, []byte(magic)) {
-		return nil, errors.New("not an ar archive")
-	}
-	off := len(magic)
-	for off+headerSize <= len(archive) {
-		hdr := archive[off : off+headerSize]
-		// GNU ar terminates member names with "/" and pads with spaces.
-		memberName := strings.TrimRight(strings.TrimSpace(string(hdr[:nameLen])), "/")
-		size, err := strconv.Atoi(strings.TrimSpace(string(hdr[sizeOff : sizeOff+sizeLen])))
-		if err != nil {
-			return nil, fmt.Errorf("invalid ar member size: %w", err)
-		}
-		start := off + headerSize
-		if start+size > len(archive) {
-			return nil, fmt.Errorf("ar member %q truncated", memberName)
-		}
-		if memberName == name {
-			return archive[start : start+size], nil
-		}
-		// Members are padded to an even offset.
-		off = start + size
-		if size%2 == 1 {
-			off++
-		}
-	}
-	return nil, fmt.Errorf("ar member %q not found", name)
+	return nil
 }
 
 // writeFile writes data to path with the given mode, truncating any existing
-// file so a stale versioned artifact cannot linger.
+// file so a stale artifact cannot linger.
 func writeFile(path string, data []byte, mode os.FileMode) error {
 	if err := os.WriteFile(path, data, mode); err != nil {
 		return fmt.Errorf("failed to write %s: %w", path, err)

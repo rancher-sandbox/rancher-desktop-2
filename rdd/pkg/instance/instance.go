@@ -162,7 +162,7 @@ var SteveDir = sync.OnceValue(func() string {
 })
 
 // GPUDir returns the path to the directory where GPU passthrough support
-// files are staged on the host (librocdxg.so + dids.conf). It lives under
+// files are staged on the host (librocdxg.so). It lives under
 // Dir(), which is inside the host home directory that the Lima VM mounts, so
 // provisioning can read the staged files from inside the guest.
 var GPUDir = sync.OnceValue(func() string {

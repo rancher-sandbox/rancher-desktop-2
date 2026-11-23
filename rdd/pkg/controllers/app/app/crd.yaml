@@ -130,8 +130,8 @@ spec:
                   source:
                     description: |-
                       source is an optional host directory containing librocdxg.so (a versioned
-                      name such as librocdxg.so.1.2.2 is accepted) and dids.conf. When set,
-                      these files are used instead of fetching AMD's published package.
+                      name such as librocdxg.so.1.2.2 is accepted). When set, it is used
+                      instead of building the library from AMD's published sources.
                     type: string
                 type: object
               kubernetes:

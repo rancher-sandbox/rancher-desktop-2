@@ -5,141 +5,120 @@
 package gpu
 
 import (
-	"archive/tar"
-	"bytes"
-	"compress/gzip"
 	"context"
-	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 
 	"gotest.tools/v3/assert"
 )
 
-// buildDataTarGz produces a gzipped tar mirroring the layout of the real
-// rocdxg-roct package: a versioned regular library, an unversioned symlink
-// that must be ignored, and dids.conf.
-func buildDataTarGz(t *testing.T, libContent, didsContent string) []byte {
+// serveInputs points inputs at a local server and returns the request counter.
+func serveInputs(t *testing.T, files map[string]string) *atomic.Int32 {
 	t.Helper()
-	var buf bytes.Buffer
-	gz := gzip.NewWriter(&buf)
-	tw := tar.NewWriter(gz)
-
-	write := func(hdr *tar.Header, body string) {
-		assert.NilError(t, tw.WriteHeader(hdr))
-		if body != "" {
-			_, err := tw.Write([]byte(body))
-			assert.NilError(t, err)
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		body, ok := files[r.URL.Path]
+		if !ok {
+			http.NotFound(w, r)
+			return
 		}
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+
+	orig := inputs
+	t.Cleanup(func() { inputs = orig })
+	inputs = nil
+	for path, body := range files {
+		inputs = append(inputs, input{path: path[1:], url: srv.URL + path, sha256: checksum([]byte(body))})
+	}
+	return &hits
+}
+
+func TestStageFetchesInputsOnce(t *testing.T) {
+	hits := serveInputs(t, map[string]string{"/a.tar.gz": "A", "/winsdk/h.h": "H"})
+	dir := t.TempDir()
+
+	assert.NilError(t, Stage(context.Background(), dir, ""))
+	for rel, want := range map[string]string{
+		"src/a.tar.gz":   "A",
+		"src/winsdk/h.h": "H",
+		"src/build-id":   BuildID,
+		"src/image":      BuildImage,
+		"src/build.sh":   string(buildScript),
+	} {
+		got, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(rel)))
+		assert.NilError(t, err)
+		assert.Equal(t, string(got), want, rel)
 	}
 
-	write(&tar.Header{
-		Name: "./opt/rocm/lib/librocdxg.so.1.2.2", Typeflag: tar.TypeReg,
-		Mode: 0o644, Size: int64(len(libContent)),
-	}, libContent)
-	// An unversioned symlink that must be skipped in favour of the real object.
-	write(&tar.Header{
-		Name: "./opt/rocm/lib/librocdxg.so", Typeflag: tar.TypeSymlink,
-		Linkname: "librocdxg.so.1.2.2", Mode: 0o777,
-	}, "")
-	write(&tar.Header{
-		Name: "./opt/rocm/share/rocdxg/dids.conf", Typeflag: tar.TypeReg,
-		Mode: 0o644, Size: int64(len(didsContent)),
-	}, didsContent)
-
-	assert.NilError(t, tw.Close())
-	assert.NilError(t, gz.Close())
-	return buf.Bytes()
+	first := hits.Load()
+	assert.NilError(t, Stage(context.Background(), dir, ""))
+	assert.Equal(t, hits.Load(), first, "second Stage must not download again")
 }
 
-// buildDeb wraps members in a minimal ar archive, matching the .deb layout.
-func buildDeb(members map[string][]byte, order []string) []byte {
-	var buf bytes.Buffer
-	buf.WriteString("!<arch>\n")
-	for _, name := range order {
-		data := members[name]
-		header := fmt.Sprintf("%-16s%-12d%-6d%-6d%-8s%-10d`\n",
-			name+"/", 0, 0, 0, "100644", len(data))
-		buf.WriteString(header)
-		buf.Write(data)
-		if len(data)%2 == 1 {
-			buf.WriteByte('\n')
-		}
-	}
-	return buf.Bytes()
+func TestStageRejectsChecksumMismatch(t *testing.T) {
+	serveInputs(t, map[string]string{"/a": "A"})
+	inputs[0].sha256 = checksum([]byte("different"))
+
+	err := Stage(context.Background(), t.TempDir(), "")
+	assert.ErrorContains(t, err, "checksum mismatch")
 }
 
-func TestExtractFromDeb(t *testing.T) {
-	dataTarGz := buildDataTarGz(t, "REAL-LIB-CONTENT", "DIDS-CONTENT")
-	deb := buildDeb(map[string][]byte{
-		"debian-binary":  []byte("2.0\n"),
-		"control.tar.gz": {0x1f, 0x8b, 0x08, 0x00}, // ignored gzip magic stub
-		"data.tar.gz":    dataTarGz,
-	}, []string{"debian-binary", "control.tar.gz", "data.tar.gz"})
+func TestStageDropsStaleLibrary(t *testing.T) {
+	serveInputs(t, map[string]string{"/a": "A"})
+	dir := t.TempDir()
+	assert.NilError(t, os.WriteFile(filepath.Join(dir, LibName), []byte("old"), 0o755))
+	assert.NilError(t, os.WriteFile(filepath.Join(dir, buildIDMarker), []byte("older-build"), 0o644))
 
-	lib, dids, err := extractFromDeb(deb)
-	assert.NilError(t, err)
-	assert.Equal(t, string(lib), "REAL-LIB-CONTENT",
-		"lib should be the versioned regular file content, not the symlink")
-	assert.Equal(t, string(dids), "DIDS-CONTENT")
+	assert.NilError(t, Stage(context.Background(), dir, ""))
+	_, err := os.Stat(filepath.Join(dir, LibName))
+	assert.Assert(t, os.IsNotExist(err), "stale library must be removed so the guest rebuilds")
 }
 
-func TestArMemberPadding(t *testing.T) {
-	// An odd-sized first member forces a pad byte before the next header.
-	deb := buildDeb(map[string][]byte{
-		"a":           []byte("odd"), // length 3 -> padded
-		"data.tar.gz": []byte("payload"),
-	}, []string{"a", "data.tar.gz"})
+func TestStageKeepsCurrentBuild(t *testing.T) {
+	hits := serveInputs(t, map[string]string{"/a": "A"})
+	dir := t.TempDir()
+	assert.NilError(t, os.WriteFile(filepath.Join(dir, LibName), []byte("lib"), 0o755))
+	assert.NilError(t, os.WriteFile(filepath.Join(dir, buildIDMarker), []byte(BuildID), 0o644))
 
-	got, err := arMember(deb, "data.tar.gz")
-	assert.NilError(t, err)
-	assert.Equal(t, string(got), "payload", "padding after an odd-sized member not handled")
+	assert.NilError(t, Stage(context.Background(), dir, ""))
+	assert.Equal(t, hits.Load(), int32(0), "a current build needs no downloads")
 }
 
-func TestEnsureFromSource(t *testing.T) {
+func TestStageFromSource(t *testing.T) {
 	src := t.TempDir()
 	dst := t.TempDir()
-	// Source has a versioned library name, as a real ROCm install does.
+	// A real ROCm install uses a versioned library name.
 	assert.NilError(t, os.WriteFile(filepath.Join(src, "librocdxg.so.1.2.2"), []byte("LIB"), 0o644))
-	assert.NilError(t, os.WriteFile(filepath.Join(src, DidsName), []byte("DIDS"), 0o644))
 
 	assert.NilError(t, Stage(context.Background(), dst, src))
 
-	gotLib, err := os.ReadFile(filepath.Join(dst, LibName))
+	got, err := os.ReadFile(filepath.Join(dst, LibName))
 	assert.NilError(t, err)
-	assert.Equal(t, string(gotLib), "LIB", "versioned lib should be normalized to %s", LibName)
-	gotDids, err := os.ReadFile(filepath.Join(dst, DidsName))
-	assert.NilError(t, err)
-	assert.Equal(t, string(gotDids), "DIDS")
+	assert.Equal(t, string(got), "LIB", "versioned lib should be normalized to %s", LibName)
+	assert.Assert(t, !built(dst), "a source override must not look like a current build")
 }
 
-func TestEnsureFromSourceMissingFiles(t *testing.T) {
+func TestStageFromSourceMissingLibrary(t *testing.T) {
 	err := Stage(context.Background(), t.TempDir(), t.TempDir())
-	assert.Assert(t, err != nil, "expected error when source lacks librocdxg.so and dids.conf")
+	assert.ErrorContains(t, err, LibName)
 }
 
-func TestStagedAndUnstage(t *testing.T) {
+func TestUnstage(t *testing.T) {
+	serveInputs(t, map[string]string{"/a": "A"})
 	dir := t.TempDir()
-	assert.Assert(t, !staged(dir), "empty dir should not be staged")
-
-	// Simulate a completed fetch: both files plus a matching version marker.
-	for name, content := range map[string]string{
-		LibName: "x", DidsName: "y", versionMarker: Version,
-	} {
-		assert.NilError(t, os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644))
-	}
-	assert.Assert(t, staged(dir), "dir with both files and matching marker should be staged")
-
-	// A version mismatch must invalidate the staging (so a bump re-fetches).
-	assert.NilError(t, os.WriteFile(filepath.Join(dir, versionMarker), []byte("0.0.0"), 0o644))
-	assert.Assert(t, !staged(dir), "mismatched version marker should not count as staged")
+	assert.NilError(t, Stage(context.Background(), dir, ""))
+	assert.NilError(t, os.WriteFile(filepath.Join(dir, LibName), []byte("lib"), 0o755))
 
 	assert.NilError(t, Unstage(dir))
-	for _, name := range []string{LibName, DidsName, versionMarker} {
-		_, err := os.Stat(filepath.Join(dir, name))
-		assert.Assert(t, os.IsNotExist(err), "%s still present after Unstage", name)
-	}
-	// Unstage is idempotent.
-	assert.NilError(t, Unstage(dir))
+	entries, err := os.ReadDir(dir)
+	assert.NilError(t, err)
+	assert.Equal(t, len(entries), 0, "Unstage must leave the directory empty")
+	assert.NilError(t, Unstage(dir), "Unstage is idempotent")
 }

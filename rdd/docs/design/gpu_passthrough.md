@@ -15,46 +15,48 @@ Halo" (Radeon 8060S, gfx1151).
 On Windows, WSL2 does not expose the native Linux AMD kernel interface
 (`/dev/kfd` + the amdgpu DRM stack). Instead it projects Microsoft's DirectX
 Graphics kernel device, **`/dev/dxg`**, into every WSL distro, and AMD's
-"ROCm on WSL" runtime talks to the GPU through it. Two extra userspace files
-bridge ROCm to `/dev/dxg`:
+"ROCm on WSL" runtime talks to the GPU through it. One extra
+userspace library bridges ROCm to `/dev/dxg`:
 
-- `librocdxg.so` — the ROCm ⇆ DXG bridge library.
-- `dids.conf` — a supplemental PCI device-ID table used by that bridge.
+- `librocdxg.so` — the ROCm ⇆ DXG bridge library. It lives in the
+  [ROCm/librocdxg](https://github.com/ROCm/librocdxg) project and enumerates adapters at runtime through DXCore, so no device-ID
+  table and no GPU-specific data is needed.
 
-These two files ship **only** with a ROCm-on-WSL install. They are *not*
+It ships **only** with a ROCm-on-WSL install. They are *not*
 projected by WSL (which only provides `libd3d12*.so` / `libdxcore.so`), *not*
 present in the Windows driver store, and *not* bundled in ROCm container images.
 So RDD must deliver them into the guest.
 
 ### File delivery
 
-When `spec.gpu.enabled` is `true` on a Windows host, the App controller stages
-the two files into the host-side instance directory (`instance.GPUDir()`), which
-is inside the mounted host home and therefore readable from within the Lima VM:
+Rancher Desktop is open source and does not redistribute binaries, and AMD
+publishes `librocdxg` only as Debian packages. So when the user opts in
+with `spec.gpu.enabled` on a Windows host, the library is built on their machine:
 
-1. **Fetch (default):** download AMD's official, MIT-licensed `rocdxg-roct`
-   Debian package from the pinned [`ROCm/librocdxg`](https://github.com/ROCm/librocdxg)
-   release, verify its SHA-256, and extract `librocdxg.so` + `dids.conf`. The
-   pinned version lives in `pkg/gpu` (`Version`, `DebURL`, `DebSHA256`); bump
-   them together to move to a newer release. Staging is idempotent — a version
-   marker means an already-staged directory does no network I/O.
-2. **Source override:** if `spec.gpu.source` points at a host directory holding
-   the two files, they are copied from there instead (for air-gapped hosts or an
-   existing ROCm-on-WSL install).
+1. **Host (controller):** `pkg/gpu` downloads the pinned build inputs into
+   `instance.GPUDir()/src` (inside the mounted host home), verifying each
+   SHA-256: the `ROCm/librocdxg` source tarball for the pinned release tag, and
+   the handful of Windows headers it expects from a Windows SDK, taken from
+   `microsoft/win32metadata`. Only released tags are used: a build of the
+   copy in the rocm-systems monorepo crashed `rocminfo` against the ROCm 7.13
+   runtime. Bump `ReleaseTag`, `BuildID` and the checksums
+   together to move versions.
+2. **Guest (provisioning):** a `mode: system` step runs the embedded `build.sh`
+   in a throwaway container (docker or nerdctl, whichever engine is enabled)
+   and caches `librocdxg.so` beside the inputs; later boots skip the build while
+   the `BuildID` matches. It then installs the library to
+   `/opt/rocm/lib/librocdxg.so`. When passthrough is disabled the step removes it.
+3. **Source override:** if `spec.gpu.source` points at a host directory holding
+   a `librocdxg.so`, it is copied instead and nothing is downloaded or built.
 
-Provisioning (a `mode: system` step in `lima-template.yaml`, driven by the
-`GPU_ENABLED` / `GPU_LIB_SOURCE` params) then installs the staged files into the
-guest's `/opt/rocm/lib/librocdxg.so` and `/opt/rocm/share/rocdxg/dids.conf` on
-every boot. When passthrough is disabled the same step **removes** them, so the
-toggle is symmetric.
-
-The download happens **host-side** (in the controller), not in the VM, because
-the RDD host has reliable network access while the guest's outbound DNS can be
-unreliable.
+The inputs are downloaded **host-side** (in the controller), not in the VM,
+because the RDD host has reliable network access while the guest's outbound DNS
+can be unreliable. The build container itself still needs guest network access
+once, to install the compiler packages.
 
 ## The pod contract
 
-Enabling `spec.gpu.enabled` only makes the bridge files available in the guest.
+Enabling `spec.gpu.enabled` only makes the bridge library available in the guest.
 A workload pod must still opt in to the GPU explicitly. The proven contract is:
 
 ```yaml
@@ -71,27 +73,25 @@ spec:
     securityContext:
       privileged: true                   # grants access to /dev/dxg
     env:
-    - name: HSA_ENABLE_DXG_DETECTION
+    - name: HSA_ENABLE_DXG_DETECTION   # only needed for ROCm < 7.13
       value: "1"
     - name: LD_LIBRARY_PATH
       value: /usr/lib/wsl/lib:/opt/rocm/lib
     volumeMounts:
     - { name: wsl-lib,  mountPath: /usr/lib/wsl/lib, readOnly: true }
     - { name: librocdxg, mountPath: /opt/rocm/lib/librocdxg.so, readOnly: true }
-    - { name: dids,      mountPath: /opt/rocm/share/rocdxg/dids.conf, readOnly: true }
   volumes:
   - { name: wsl-lib,   hostPath: { path: /usr/lib/wsl/lib } }
   - { name: librocdxg, hostPath: { path: /opt/rocm/lib/librocdxg.so } }
-  - { name: dids,      hostPath: { path: /opt/rocm/share/rocdxg/dids.conf } }
 ```
 
 Key points:
 
 - `/dev/dxg` reaches the container via `privileged: true`.
-- `/usr/lib/wsl/lib` (WSL-projected DirectX/dxcore libs) plus the two bridge
-  files are bind-mounted from the guest.
+- `/usr/lib/wsl/lib` (WSL-projected DirectX/dxcore libs) plus the bridge
+  library are bind-mounted from the guest.
 - The image must contain a ROCm userspace built for the host GPU's ISA
-  (gfx1151 for Strix Halo); the bridge files do not provide ROCm itself.
+  (gfx1151 for Strix Halo); the bridge library does not provide ROCm itself.
 
 ## Scope boundary and limitations
 

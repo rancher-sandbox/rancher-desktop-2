@@ -200,18 +200,19 @@ type VirtualMachineSpec struct {
 //
 // GPU support is experimental and currently targets AMD ROCm on WSL2
 // (Windows) only; on other host platforms the toggle is ignored. When
-// enabled, RDD stages the ROCm-on-WSL bridge files (librocdxg.so + dids.conf)
-// into the guest's /opt/rocm so that privileged workload pods can bind-mount
-// them and reach the host GPU via /dev/dxg. By default the files are fetched
-// from AMD's official librocdxg release; set source to copy them from a host
-// directory instead (for air-gapped hosts or an existing ROCm-on-WSL install).
+// enabled, RDD builds the ROCm-on-WSL bridge library (librocdxg.so) from AMD's
+// published sources in a throwaway container and installs it into the guest's
+// /opt/rocm so that privileged workload pods can bind-mount it and reach the
+// host GPU via /dev/dxg. RDD does not ship the binary. Set source to use an
+// existing library from a host directory instead (for air-gapped hosts or an
+// existing ROCm-on-WSL install).
 type GPUSpec struct {
 	// enabled specifies whether GPU passthrough should be provisioned in the VM.
 	// +optional
 	Enabled bool `json:"enabled,omitempty"`
 	// source is an optional host directory containing librocdxg.so (a versioned
-	// name such as librocdxg.so.1.2.2 is accepted) and dids.conf. When set,
-	// these files are used instead of fetching AMD's published package.
+	// name such as librocdxg.so.1.2.2 is accepted). When set, it is used
+	// instead of building the library from AMD's published sources.
 	// +optional
 	Source string `json:"source,omitempty"`
 }

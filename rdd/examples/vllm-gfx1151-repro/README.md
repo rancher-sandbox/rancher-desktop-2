@@ -31,8 +31,7 @@ These are environmental and must already be true on the machine running RDD:
    host-mounts them:
    - `/usr/lib/wsl/lib`               (WSL GPU user-mode libs)
    - `/opt/rocm/lib/librocdxg.so`     (the `/dev/dxg` HSA bridge; RDD's GPU
-     feature stages this, pinned `librocdxg 1.2.2` in this repo's `pkg/gpu`)
-   - `/opt/rocm/share/rocdxg/dids.conf`
+     feature builds this from the pinned ROCm/librocdxg release in `pkg/gpu`)
    If your guest stages these elsewhere, edit the `hostPath`s in `vllm-pod.yaml`.
 4. A working `docker` (or `nerdctl`) **inside that same WSL distro** to build the
    image.

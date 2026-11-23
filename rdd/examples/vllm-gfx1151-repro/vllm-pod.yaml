@@ -3,7 +3,7 @@
 #
 # The proven /dev/dxg contract:
 #   - privileged + hostIPC (vLLM wants a large /dev/shm)
-#   - host mounts of the WSL GPU libs + librocdxg.so + dids.conf
+#   - host mounts of the WSL GPU libs + librocdxg.so
 #   - LD_LIBRARY_PATH points at the WSL libs first
 #   - NO nvidia.com/gpu / amd.com/gpu resource request (there is no device
 #     plugin; the GPU reaches the container purely via the host mounts)
@@ -38,11 +38,8 @@ spec:
     volumeMounts:
     - { name: wsl-lib, mountPath: /usr/lib/wsl/lib,                 readOnly: true }
     - { name: rocdxg,  mountPath: /opt/rocm/lib/librocdxg.so,       readOnly: true }
-    - { name: dids,    mountPath: /opt/rocm/share/rocdxg/dids.conf, readOnly: true }
   volumes:
   - name: wsl-lib
     hostPath: { path: /usr/lib/wsl/lib, type: Directory }
   - name: rocdxg
     hostPath: { path: /opt/rocm/lib/librocdxg.so, type: File }
-  - name: dids
-    hostPath: { path: /opt/rocm/share/rocdxg/dids.conf, type: File }

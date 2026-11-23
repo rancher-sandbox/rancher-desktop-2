@@ -3,3 +3,4 @@
 resources/linux/** text=auto eol=lf
 resources/setup-spin text=auto eol=lf
 rdd/overlay/** text=auto eol=lf
+rdd/pkg/gpu/build.sh text=auto eol=lf
