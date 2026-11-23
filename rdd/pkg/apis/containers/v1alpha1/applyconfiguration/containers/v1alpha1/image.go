@@ -16,7 +16,7 @@ import (
 //
 // Image is the Schema for the images API.
 type ImageApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration `json:",inline"`
+	v1.TypeMetaApplyConfiguration `json:""`
 	// Metadata is a standard object metadata
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	// Status defines the immutable properties of an Image.

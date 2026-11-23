@@ -4,12 +4,6 @@
 
 // Package steve runs Rancher's steve API server. Builds with the with_dashboard
 // tag also embed the Cluster Explorer dashboard and serve it in front of steve.
-//
-// Steve v0.9.23 does not compile against k8s 0.37, because its
-// AccessSetAuthorizer lacks the ConditionsAwareAuthorize and EvaluateConditions
-// methods that authorizer.Authorizer has there. Moving rdd to k8s 0.37 takes
-// steve v0.10.9, or a local copy of steve's pkg/server that drops its pkg/ext
-// import.
 package steve
 
 import (

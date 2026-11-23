@@ -98,17 +98,20 @@ updates:
   - dependency-name: sigs.k8s.io/controller-tools
     dependency-type: indirect
   ignore:
-  - # etcd 3.7 regenerated its protobuf API, which kine and the embedded k8s
-    # apiserver do not yet implement, so the build breaks. Allow 3.6.x patch
-    # updates; drop this once kine and k8s move to 3.7.
+  - # A new etcd minor can change the gRPC API that kine implements, as 3.7
+    # did, so etcd moves to a new minor only together with Kubernetes and
+    # kine.
     dependency-name: go.etcd.io/etcd/*
     update-types: [version-update:semver-minor, version-update:semver-major]
-  - # Keep Steve on 0.9 to match dashboard 2.15. Steve 0.10 requires
-    # Kubernetes 1.37, controller-runtime 0.25 and etcd 3.7, but rdd builds
-    # against Kubernetes 1.36, controller-runtime 0.24 and etcd 3.6. Drop this
-    # once the dashboard moves to 2.16.
+  - # Steve moves only with the dashboard's RANCHER_TAG, as dashboard/Makefile
+    # explains.
     dependency-name: github.com/rancher/steve
-    versions: [">= 0.10.0"]
+  - # The Go module proxy still lists kine v1.14.2, a tag that kine's
+    # repository no longer has. It sorts above the maintained v0.x line, so
+    # Dependabot would offer it as an upgrade, and it does not build against
+    # etcd 3.7.
+    dependency-name: github.com/k3s-io/kine
+    versions: [">= 1.0.0"]
   - { dependency-name: k8s.io/api }
   - { dependency-name: k8s.io/apiextensions-apiserver }
   - { dependency-name: k8s.io/apimachinery }

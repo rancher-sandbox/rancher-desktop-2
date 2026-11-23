@@ -6,8 +6,10 @@
 # README.md says why the build runs inside Rancher's dashboard tree.
 
 # Rancher pairs this tag's shell with the steve version in rancher/rancher's
-# go.mod at the same tag, so rdd/go.mod pins that version. A new tag also
-# needs a new SHELL_COMMIT with our shell fixes on top of it.
+# go.mod at the same tag, so rdd/go.mod pins that version. For v2.15.3,
+# rdd/go.mod pins steve v0.10.11 instead, because that tag's v0.9.23 does not
+# build against the Kubernetes 1.37 that rdd embeds. A new tag also needs a
+# new SHELL_COMMIT with our shell fixes on top of it.
 RANCHER_TAG := v2.15.3
 # This commit on rancher-sandbox/dashboard's i18n-fixes-2.15 branch is
 # RANCHER_TAG plus our shell fixes. We pin the commit because a branch archive

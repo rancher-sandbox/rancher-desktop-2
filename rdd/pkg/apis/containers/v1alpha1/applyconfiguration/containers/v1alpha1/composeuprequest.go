@@ -24,7 +24,7 @@ import (
 // Once the underlying command has settled (successfully or not), this object is
 // expected to be deleted after a short delay.
 type ComposeUpRequestApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration `json:",inline"`
+	v1.TypeMetaApplyConfiguration `json:""`
 	// Metadata is a standard object metadata
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
 	// Spec defines the identity of the compose project to bring up.
