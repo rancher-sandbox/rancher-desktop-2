@@ -20,6 +20,7 @@ import (
 	"k8s.io/kubectl/pkg/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -224,4 +225,22 @@ func TestOwnedDeletionGuardValidateDelete(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Assert(t, warnings == nil)
 	})
+}
+
+func TestRemoveCleanupFinalizer(t *testing.T) {
+	c := fake.NewClientBuilder().Build()
+	live := &corev1.ConfigMap{
+		Name:       "test",
+		Namespace:  metav1.NamespaceDefault,
+		Finalizers: []string{CleanupFinalizerName},
+	}
+	assert.NilError(t, c.Create(t.Context(), live))
+	// stale stands for the copy that a second reconcile pass reads from the
+	// informer cache. It still has the finalizer, so RemoveCleanupFinalizer
+	// calls Update on an object that the API server has already deleted.
+	stale := live.DeepCopy()
+	assert.NilError(t, c.Delete(t.Context(), live))
+	assert.NilError(t, c.Get(t.Context(), client.ObjectKeyFromObject(live), live))
+	assert.NilError(t, RemoveCleanupFinalizer(t.Context(), c, live))
+	assert.NilError(t, RemoveCleanupFinalizer(t.Context(), c, stale))
 }

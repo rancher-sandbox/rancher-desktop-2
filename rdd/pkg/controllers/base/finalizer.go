@@ -51,9 +51,12 @@ func EnsureCleanupFinalizer(ctx context.Context, c client.Client, obj client.Obj
 }
 
 // RemoveCleanupFinalizer removes the cleanup finalizer from the object and updates it.
+// It returns nil when the object no longer exists. Removing the last finalizer lets the
+// API server delete the object, so a repeated deletion pass that works from a cached copy
+// finds it gone.
 func RemoveCleanupFinalizer(ctx context.Context, c client.Client, obj client.Object) error {
 	if controllerutil.RemoveFinalizer(obj, CleanupFinalizerName) {
-		if err := c.Update(ctx, obj); err != nil {
+		if err := client.IgnoreNotFound(c.Update(ctx, obj)); err != nil {
 			return fmt.Errorf("failed to remove cleanup finalizer: %w", err)
 		}
 	}
