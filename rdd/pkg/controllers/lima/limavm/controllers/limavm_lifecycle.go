@@ -42,11 +42,13 @@ func (r *LimaVMReconciler) handleDeletion(ctx context.Context, limaVM *v1alpha1.
 
 	r.stopWatcher(limaVM.Name)
 
-	// Stop and delete the Lima instance.
-	// Inspect may fail if the instance doesn't exist, which is fine during
-	// deletion - we just proceed to remove the finalizer.
+	// Stop and delete the Lima instance. Inspect fails with ErrNotExist when the
+	// instance is already gone, so there is nothing to stop or delete. After that
+	// or any other Inspect error, deletion still goes on to remove the finalizer.
 	existingInst, err := store.Inspect(ctx, limaVM.Name)
-	if err != nil {
+	if errors.Is(err, os.ErrNotExist) {
+		logger.V(1).Info("Lima instance already deleted", "instance", limaVM.Name)
+	} else if err != nil {
 		logger.Error(err, "Failed to inspect Lima instance for deletion")
 	}
 	if existingInst != nil {
