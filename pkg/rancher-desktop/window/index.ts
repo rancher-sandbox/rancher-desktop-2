@@ -18,6 +18,7 @@ import { CommandOrControl, Shortcuts } from '@pkg/utils/shortcuts';
 import { markStartup, reportStartup } from '@pkg/utils/startupTiming';
 import { mainRoutes } from '@pkg/window/constants';
 import { openPreferences } from '@pkg/window/preferences';
+import { closeSplash, themeBackgroundColor } from '@pkg/window/splash';
 
 const console = Logging[`window_${ process.type || 'unknown' }`];
 
@@ -63,6 +64,16 @@ function isInternalURL(url: string) {
 }
 
 /**
+ * Once the first app window is on screen, or has closed, log the startup timing
+ * and close the splash.
+ */
+function finishStartup(mark: string) {
+  markStartup(mark);
+  reportStartup(Logging.background);
+  closeSplash();
+}
+
+/**
  * Open a given window; if it is already open, focus it.
  * @param name The window identifier; this controls window re-use.
  * @param url The URL to load into the window.
@@ -82,17 +93,21 @@ export function createWindow(name: string, url: string, options: Electron.Browse
     // A window created hidden, such as a dialog, shows itself once its page
     // has rendered, so its 'show' event is when the user first sees it.  The
     // main window starts visible, so its first page load is the closest event.
+    // A failed load or a crashed page still leaves the main window on screen,
+    // so those end startup too.  A hidden window whose page fails to load never
+    // shows itself, so the splash stays up to keep something on screen.
     if (options.show === false) {
-      window.once('show', () => {
-        markStartup('first-window-shown');
-        reportStartup(Logging.background);
-      });
+      window.once('show', () => finishStartup('first-window-shown'));
     } else {
-      window.webContents.once('did-finish-load', () => {
-        markStartup('first-window-loaded');
-        reportStartup(Logging.background);
+      window.webContents.once('did-finish-load', () => finishStartup('first-window-loaded'));
+      window.webContents.on('did-fail-load', (_event, _errorCode, _errorDescription, _url, isMainFrame) => {
+        if (isMainFrame) {
+          finishStartup('first-window-failed');
+        }
       });
+      window.webContents.once('render-process-gone', () => finishStartup('first-window-crashed'));
     }
+    window.once('closed', () => finishStartup('first-window-closed'));
   }
   window.webContents.on('console-message', (event) => {
     const { level, sourceId, lineNumber, message } = event;
@@ -128,6 +143,10 @@ export function createWindow(name: string, url: string, options: Electron.Browse
 
 const mainUrl = process.env.RD_ENV_PLUGINS_DEV ? 'https://localhost:8888' : `${ webRoot }/index.html`;
 
+function updateMainBackground() {
+  getWindow('main')?.setBackgroundColor(themeBackgroundColor());
+}
+
 /**
  * Open the main window; if it is already open, focus it.
  */
@@ -143,16 +162,19 @@ export function openMain() {
     'main',
     mainUrl,
     {
-      width:          defaultWidth,
-      height:         defaultHeight,
-      resizable:      !process.env.RD_MOCK_FOR_SCREENSHOTS, // remove window's shadows while taking screenshots
-      icon:           path.join(paths.resources, 'icons', 'logo-square-512.png'),
-      webPreferences: {
+      width:           defaultWidth,
+      height:          defaultHeight,
+      resizable:       !process.env.RD_MOCK_FOR_SCREENSHOTS, // remove window's shadows while taking screenshots
+      icon:            path.join(paths.resources, 'icons', 'logo-square-512.png'),
+      backgroundColor: themeBackgroundColor(),
+      webPreferences:  {
         devTools:         !app.isPackaged,
         nodeIntegration:  true,
         contextIsolation: false,
       },
     });
+  nativeTheme.off('updated', updateMainBackground);
+  nativeTheme.on('updated', updateMainBackground);
 
   if (!Shortcuts.isRegistered(window)) {
     Shortcuts.register(

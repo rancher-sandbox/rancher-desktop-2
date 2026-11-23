@@ -24,6 +24,7 @@ import getWSLVersion from '@pkg/utils/wslVersion';
 import * as window from '@pkg/window';
 import { openDashboard } from '@pkg/window/dashboard';
 import { closePreferences, openPreferences } from '@pkg/window/preferences';
+import { hideSplash, openSplash } from '@pkg/window/splash';
 
 markStartup('main-body');
 
@@ -103,6 +104,7 @@ Electron.protocol.registerSchemesAsPrivileged([{ scheme: 'app' }, {
 
 Electron.app.whenReady().then(async() => {
   markStartup('app-ready');
+  openSplash();
   try {
     initializeTransientPreferences();
 
@@ -442,6 +444,7 @@ function showErrorDialog(title: string, message: string, fatal?: boolean) {
   if (noModalDialogs) {
     console.log(`Fatal Error:\n${ title }\n\n${ message }`);
   } else {
+    hideSplash();
     Electron.dialog.showErrorBox(title, message);
   }
   if (fatal) {

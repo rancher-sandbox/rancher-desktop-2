@@ -10,6 +10,7 @@ import Latch from '@pkg/utils/latch';
 import Logging from '@pkg/utils/logging';
 import { getRDDPath } from '@pkg/utils/paths';
 import { markStartup } from '@pkg/utils/startupTiming';
+import { hideSplash } from '@pkg/window/splash';
 
 const console = Logging.rdd;
 const CodeIncompatibleServer = 5;
@@ -111,6 +112,7 @@ async function fetchConfigWithoutCache(): Promise<string> {
           } catch { /* ignore; try next line, or use fallback message */ }
         }
         console.error(message);
+        hideSplash();
         Electron.dialog.showErrorBox('Incompatible RDD Service', message);
         Electron.app.quit();
         // We cannot recover (the user needs to restart the application), so
