@@ -156,6 +156,11 @@ var TLSDir = sync.OnceValue(func() string {
 	return filepath.Join(Dir(), "tls")
 })
 
+// SteveDir returns the directory where `rdd steve` keeps steve's cache.
+var SteveDir = sync.OnceValue(func() string {
+	return filepath.Join(Dir(), "steve")
+})
+
 // ShortDir returns the short directory path for this instance (e.g., ~/.rd2).
 // This is distinct from Dir() which returns the service directory.
 // Lima uses ShortDir() because of socket name length constraints.

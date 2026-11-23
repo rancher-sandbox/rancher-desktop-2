@@ -15,6 +15,7 @@ import (
 	genericapiserver "k8s.io/apiserver/pkg/server"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/developer"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/steve"
 )
 
@@ -30,6 +31,7 @@ func newSteveCommand() *cobra.Command {
 		Args:   cobra.NoArgs,
 		Hidden: !developer.Mode(),
 		RunE: func(*cobra.Command, []string) error {
+			opts.CacheDir = instance.SteveDir()
 			return steve.Run(genericapiserver.SetupSignalContext(), opts)
 		},
 	}
