@@ -19,21 +19,13 @@ local_setup_file() {
     export RDD_NAMESPACE
 }
 
-local_teardown() {
-    # No suite setup cleans the host home directory.
-    if [[ -n "${host_fixture_dir:-}" ]]; then
-        rm -rf "${host_fixture_dir}"
-    fi
-}
-
-# Create host_fixture_dir with "file" in it, under the home directory because
-# the guest sees it. host_fixture_src is that directory as host_path prints it.
+# Create HOST_TMPDIR with "file" in it, and set HOST_FIXTURE_SRC to that
+# directory as host_path prints it.
 create_host_fixture() {
-    run -0 mktemp -d "${HOME}/rdd-bats-nerdctl.XXXXXX"
-    host_fixture_dir=${output}
-    create_file "${host_fixture_dir}/file" <<<shared
-    run -0 host_path "${host_fixture_dir}"
-    host_fixture_src=${output}
+    create_host_tmpdir
+    create_file "${HOST_TMPDIR}/file" <<<shared
+    run -0 host_path "${HOST_TMPDIR}"
+    HOST_FIXTURE_SRC=${output}
 }
 
 # Print where the guest sees a host path, /mnt/<drive>/... on Windows.
@@ -522,7 +514,7 @@ assert_container_pid_changed() { # <container> <previous-pid>
     # Windows through WSL's /mnt/<drive> automount after the stub rewrites
     # the path.
     create_host_fixture
-    run_e -0 nerdctl run --rm --volume "${host_fixture_src}:/data" busybox cat /data/file
+    run_e -0 nerdctl run --rm --volume "${HOST_FIXTURE_SRC}:/data" busybox cat /data/file
     assert_output shared
 }
 
@@ -537,7 +529,7 @@ assert_container_pid_changed() { # <container> <previous-pid>
 @test "nerdctl bind-mounts a host directory given as a backslash path" {
     skip_on_unix
     create_host_fixture
-    run -0 cygpath -w "${host_fixture_dir}"
+    run -0 cygpath -w "${HOST_TMPDIR}"
     backslash_dir=${output}
     run_e -0 nerdctl run --rm --volume "${backslash_dir}:/data" busybox cat /data/file
     assert_output shared
@@ -545,7 +537,7 @@ assert_container_pid_changed() { # <container> <previous-pid>
 
 @test "nerdctl bind-mounts the working directory" {
     create_host_fixture
-    cd "${host_fixture_dir}"
+    cd "${HOST_TMPDIR}"
     run_e -0 nerdctl run --rm --volume .:/data busybox cat /data/file
     assert_output shared
 }
@@ -553,8 +545,8 @@ assert_container_pid_changed() { # <container> <previous-pid>
 @test "nerdctl bind-mounts a rooted path on the working directory's drive" {
     skip_on_unix
     create_host_fixture
-    cd "${host_fixture_dir}"
-    run -0 cygpath -w "${host_fixture_dir}"
+    cd "${HOST_TMPDIR}"
+    run -0 cygpath -w "${HOST_TMPDIR}"
     rooted=${output:2}
     run_e -0 nerdctl run --rm --volume "${rooted}:/data" busybox cat /data/file
     assert_output shared
@@ -562,14 +554,14 @@ assert_container_pid_changed() { # <container> <previous-pid>
 
 @test "nerdctl keeps a bind mount's mode" {
     create_host_fixture
-    run -1 nerdctl run --rm --volume "${host_fixture_src}:/data:ro" busybox touch /data/x
+    run -1 nerdctl run --rm --volume "${HOST_FIXTURE_SRC}:/data:ro" busybox touch /data/x
     assert_output --partial "Read-only file system"
-    assert_file_not_exists "${host_fixture_dir}/x"
+    assert_file_not_exists "${HOST_TMPDIR}/x"
 }
 
 @test "nerdctl bind-mounts a host directory given with --mount" {
     create_host_fixture
-    run_e -0 nerdctl run --rm --mount "type=bind,source=${host_fixture_src},target=/data" busybox cat /data/file
+    run_e -0 nerdctl run --rm --mount "type=bind,source=${HOST_FIXTURE_SRC},target=/data" busybox cat /data/file
     assert_output shared
 }
 
@@ -581,28 +573,28 @@ assert_container_pid_changed() { # <container> <previous-pid>
 @test "nerdctl rejects a drive path without a container path" {
     skip_on_unix
     create_host_fixture
-    cd "${host_fixture_dir}"
+    cd "${HOST_TMPDIR}"
     run -1 nerdctl run --rm --volume C:/data busybox true
     assert_output --partial "invalid volume mount C:/data: expected source:container-path"
     # Passed through, C:/data would make nerdctl bind-mount a "C" directory,
     # which it creates in the working directory.
-    assert_not_exists "${host_fixture_dir}/C"
+    assert_not_exists "${HOST_TMPDIR}/C"
 }
 
 @test "nerdctl reads env files from the host" {
     create_host_fixture
-    create_file "${host_fixture_dir}/env" <<<GREETING=hi
-    create_file "${host_fixture_dir}/env2" <<<NAME=bats
-    run_e -0 nerdctl run --rm --env-file "${host_fixture_src}/env" busybox printenv GREETING
+    create_file "${HOST_TMPDIR}/env" <<<GREETING=hi
+    create_file "${HOST_TMPDIR}/env2" <<<NAME=bats
+    run_e -0 nerdctl run --rm --env-file "${HOST_FIXTURE_SRC}/env" busybox printenv GREETING
     assert_output hi
-    run_e -0 nerdctl run --rm --env-file "${host_fixture_src}/env,${host_fixture_src}/env2" busybox printenv GREETING NAME
+    run_e -0 nerdctl run --rm --env-file "${HOST_FIXTURE_SRC}/env,${HOST_FIXTURE_SRC}/env2" busybox printenv GREETING NAME
     assert_output $'hi\nbats'
 }
 
 @test "nerdctl reads a label file relative to the working directory" {
     create_host_fixture
-    create_file "${host_fixture_dir}/labels" <<<com.example.test=yes
-    cd "${host_fixture_dir}"
+    create_file "${HOST_TMPDIR}/labels" <<<com.example.test=yes
+    cd "${HOST_TMPDIR}"
     nerdctl run --name rdd-bats-labels --label-file labels busybox true
     run_e -0 nerdctl container inspect --format '{{index .Config.Labels "com.example.test"}}' rdd-bats-labels
     assert_output yes
@@ -611,31 +603,31 @@ assert_container_pid_changed() { # <container> <previous-pid>
 
 @test "nerdctl writes a cidfile on the host" {
     create_host_fixture
-    nerdctl run --rm --cidfile "${host_fixture_src}/cid" busybox true
-    run -0 cat "${host_fixture_dir}/cid"
+    nerdctl run --rm --cidfile "${HOST_FIXTURE_SRC}/cid" busybox true
+    run -0 cat "${HOST_TMPDIR}/cid"
     assert_output --regexp '^[0-9a-f]{64}$'
 }
 
 @test "nerdctl exec reads an env file from the host" {
     create_host_fixture
-    create_file "${host_fixture_dir}/env" <<<GREETING=hi
+    create_file "${HOST_TMPDIR}/env" <<<GREETING=hi
     nerdctl run --detach --name rdd-bats-exec busybox sleep 300
-    run_e -0 nerdctl exec --env-file "${host_fixture_src}/env" rdd-bats-exec printenv GREETING
+    run_e -0 nerdctl exec --env-file "${HOST_FIXTURE_SRC}/env" rdd-bats-exec printenv GREETING
     assert_output hi
     nerdctl rm --force rdd-bats-exec
 }
 
 @test "nerdctl saves and loads an image through a host file" {
     create_host_fixture
-    nerdctl image save --output "${host_fixture_src}/busybox.tar" busybox
-    assert_file_not_empty "${host_fixture_dir}/busybox.tar"
-    run_e -0 nerdctl image load --input "${host_fixture_src}/busybox.tar"
+    nerdctl image save --output "${HOST_FIXTURE_SRC}/busybox.tar" busybox
+    assert_file_not_empty "${HOST_TMPDIR}/busybox.tar"
+    run_e -0 nerdctl image load --input "${HOST_FIXTURE_SRC}/busybox.tar"
     assert_output --partial "Loaded image"
 }
 
 @test "nerdctl compose resolves paths against a compose file in another directory" {
     create_host_fixture
-    create_file "${host_fixture_dir}/compose.yaml" <<'EOF'
+    create_file "${HOST_TMPDIR}/compose.yaml" <<'EOF'
 services:
   hello:
     image: busybox
@@ -644,24 +636,24 @@ services:
     command: cat /data/file
 EOF
     cd "${HOME}"
-    run -0 guest_path "${host_fixture_dir}"
+    run -0 guest_path "${HOST_TMPDIR}"
     guest_dir=${output}
-    run_e -0 nerdctl compose --file "${host_fixture_src}/compose.yaml" config
+    run_e -0 nerdctl compose --file "${HOST_FIXTURE_SRC}/compose.yaml" config
     assert_line --partial "source: ${guest_dir}/file"
     # compose run allocates a TTY whenever --interactive is on, and a bats run
     # does not have a terminal. Without a TTY, compose prefixes the output.
-    run_e -0 nerdctl compose --file "${host_fixture_src}/compose.yaml" run --rm --interactive=false hello
+    run_e -0 nerdctl compose --file "${HOST_FIXTURE_SRC}/compose.yaml" run --rm --interactive=false hello
     assert_line --regexp 'shared$'
-    nerdctl compose --file "${host_fixture_src}/compose.yaml" down
+    nerdctl compose --file "${HOST_FIXTURE_SRC}/compose.yaml" down
 }
 
 @test "nerdctl builds a context directory on the host" {
     create_host_fixture
-    create_file "${host_fixture_dir}/Dockerfile" <<'EOF'
+    create_file "${HOST_TMPDIR}/Dockerfile" <<'EOF'
 FROM busybox
 COPY file /file
 EOF
-    nerdctl build --tag rdd-bats-build "${host_fixture_src}"
+    nerdctl build --tag rdd-bats-build "${HOST_FIXTURE_SRC}"
     run_e -0 nerdctl run --rm rdd-bats-build cat /file
     assert_output shared
     nerdctl rmi rdd-bats-build
@@ -670,11 +662,11 @@ EOF
 @test "nerdctl builds a context given as a backslash path" {
     skip_on_unix
     create_host_fixture
-    create_file "${host_fixture_dir}/Dockerfile" <<'EOF'
+    create_file "${HOST_TMPDIR}/Dockerfile" <<'EOF'
 FROM busybox
 COPY file /file
 EOF
-    run -0 cygpath -w "${host_fixture_dir}"
+    run -0 cygpath -w "${HOST_TMPDIR}"
     backslash_dir=${output}
     nerdctl build --tag rdd-bats-build-backslash "${backslash_dir}"
     run_e -0 nerdctl run --rm rdd-bats-build-backslash cat /file
@@ -684,11 +676,11 @@ EOF
 
 @test "nerdctl builds the working directory" {
     create_host_fixture
-    create_file "${host_fixture_dir}/Dockerfile" <<'EOF'
+    create_file "${HOST_TMPDIR}/Dockerfile" <<'EOF'
 FROM busybox
 COPY file /file
 EOF
-    cd "${host_fixture_dir}"
+    cd "${HOST_TMPDIR}"
     nerdctl build --tag rdd-bats-build-cwd .
     run_e -0 nerdctl run --rm rdd-bats-build-cwd cat /file
     assert_output shared
@@ -697,13 +689,13 @@ EOF
 
 @test "nerdctl builds with a Dockerfile outside the context" {
     create_host_fixture
-    create_file "${host_fixture_dir}/context/file" <<<shared
-    create_file "${host_fixture_dir}/Dockerfile" <<'EOF'
+    create_file "${HOST_TMPDIR}/context/file" <<<shared
+    create_file "${HOST_TMPDIR}/Dockerfile" <<'EOF'
 FROM busybox
 COPY file /file
 EOF
-    nerdctl build --tag rdd-bats-build-file --file "${host_fixture_src}/Dockerfile" \
-        "${host_fixture_src}/context"
+    nerdctl build --tag rdd-bats-build-file --file "${HOST_FIXTURE_SRC}/Dockerfile" \
+        "${HOST_FIXTURE_SRC}/context"
     run_e -0 nerdctl run --rm rdd-bats-build-file cat /file
     assert_output shared
     nerdctl rmi rdd-bats-build-file
@@ -711,9 +703,9 @@ EOF
 
 @test "nerdctl build writes an iidfile on the host" {
     create_host_fixture
-    create_file "${host_fixture_dir}/Dockerfile" <<<'FROM busybox'
-    nerdctl build --tag rdd-bats-build-iid --iidfile "${host_fixture_src}/iid" "${host_fixture_src}"
-    run -0 cat "${host_fixture_dir}/iid"
+    create_file "${HOST_TMPDIR}/Dockerfile" <<<'FROM busybox'
+    nerdctl build --tag rdd-bats-build-iid --iidfile "${HOST_FIXTURE_SRC}/iid" "${HOST_FIXTURE_SRC}"
+    run -0 cat "${HOST_TMPDIR}/iid"
     assert_output --regexp '^sha256:[0-9a-f]{64}$'
     nerdctl rmi rdd-bats-build-iid
 }
@@ -729,12 +721,12 @@ skip_local_export_on_linux() {
 @test "nerdctl build exports a local output to the host" {
     skip_local_export_on_linux
     create_host_fixture
-    create_file "${host_fixture_dir}/Dockerfile" <<'EOF'
+    create_file "${HOST_TMPDIR}/Dockerfile" <<'EOF'
 FROM scratch
 COPY file /file
 EOF
-    nerdctl build --output "type=local,dest=${host_fixture_src}/out" "${host_fixture_src}"
-    run -0 cat "${host_fixture_dir}/out/file"
+    nerdctl build --output "type=local,dest=${HOST_FIXTURE_SRC}/out" "${HOST_FIXTURE_SRC}"
+    run -0 cat "${HOST_TMPDIR}/out/file"
     assert_output shared
 }
 
@@ -742,41 +734,41 @@ EOF
     # nerdctl wraps a bare --output value as type=local,dest=<value>.
     skip_local_export_on_linux
     create_host_fixture
-    create_file "${host_fixture_dir}/Dockerfile" <<'EOF'
+    create_file "${HOST_TMPDIR}/Dockerfile" <<'EOF'
 FROM scratch
 COPY file /file
 EOF
-    nerdctl build --output "${host_fixture_src}/out" "${host_fixture_src}"
-    run -0 cat "${host_fixture_dir}/out/file"
+    nerdctl build --output "${HOST_FIXTURE_SRC}/out" "${HOST_FIXTURE_SRC}"
+    run -0 cat "${HOST_TMPDIR}/out/file"
     assert_output shared
 }
 
 @test "nerdctl build writes and reads a local cache on the host" {
     create_host_fixture
-    create_file "${host_fixture_dir}/Dockerfile" <<'EOF'
+    create_file "${HOST_TMPDIR}/Dockerfile" <<'EOF'
 FROM busybox
 COPY file /file
 EOF
     nerdctl build --tag rdd-bats-build-cache \
-        --cache-to "type=local,dest=${host_fixture_src}/cache" "${host_fixture_src}"
-    assert_file_exists "${host_fixture_dir}/cache/index.json"
+        --cache-to "type=local,dest=${HOST_FIXTURE_SRC}/cache" "${HOST_FIXTURE_SRC}"
+    assert_file_exists "${HOST_TMPDIR}/cache/index.json"
     # buildkit only warns when it cannot read the --cache-from directory, and
     # its local cache from the first build marks the steps CACHED anyway. Only
     # the import line shows that it read the host directory.
     run -0 nerdctl build --progress=plain --tag rdd-bats-build-cache \
-        --cache-from "type=local,src=${host_fixture_src}/cache" "${host_fixture_src}"
+        --cache-from "type=local,src=${HOST_FIXTURE_SRC}/cache" "${HOST_FIXTURE_SRC}"
     assert_output --partial "importing cache manifest from"
     nerdctl rmi rdd-bats-build-cache
 }
 
 @test "nerdctl build reads a secret from the host" {
     create_host_fixture
-    create_file "${host_fixture_dir}/Dockerfile" <<'EOF'
+    create_file "${HOST_TMPDIR}/Dockerfile" <<'EOF'
 FROM busybox
 RUN --mount=type=secret,id=rdd-bats cp /run/secrets/rdd-bats /secret
 EOF
     nerdctl build --tag rdd-bats-build-secret \
-        --secret "id=rdd-bats,src=${host_fixture_src}/file" "${host_fixture_src}"
+        --secret "id=rdd-bats,src=${HOST_FIXTURE_SRC}/file" "${HOST_FIXTURE_SRC}"
     run_e -0 nerdctl run --rm rdd-bats-build-secret cat /secret
     assert_output shared
     nerdctl rmi rdd-bats-build-secret
@@ -784,13 +776,13 @@ EOF
 
 @test "nerdctl build reads a named build context from the host" {
     create_host_fixture
-    create_file "${host_fixture_dir}/named/file" <<<named
-    create_file "${host_fixture_dir}/Dockerfile" <<'EOF'
+    create_file "${HOST_TMPDIR}/named/file" <<<named
+    create_file "${HOST_TMPDIR}/Dockerfile" <<'EOF'
 FROM busybox
 COPY --from=extra file /file
 EOF
     nerdctl build --tag rdd-bats-build-context \
-        --build-context "extra=${host_fixture_src}/named" "${host_fixture_src}"
+        --build-context "extra=${HOST_FIXTURE_SRC}/named" "${HOST_FIXTURE_SRC}"
     run_e -0 nerdctl run --rm rdd-bats-build-context cat /file
     assert_output named
     nerdctl rmi rdd-bats-build-context
@@ -800,20 +792,20 @@ EOF
     # buildctl reads the key file in the guest, so the build fails when the
     # guest cannot reach the path.
     create_host_fixture
-    ssh-keygen -q -t ed25519 -N '' -f "${host_fixture_dir}/key"
-    create_file "${host_fixture_dir}/Dockerfile" <<'EOF'
+    ssh-keygen -q -t ed25519 -N '' -f "${HOST_TMPDIR}/key"
+    create_file "${HOST_TMPDIR}/Dockerfile" <<'EOF'
 FROM busybox
 RUN --mount=type=ssh,id=rdd-bats,target=/ssh.sock test -S /ssh.sock
 EOF
     nerdctl build --tag rdd-bats-build-ssh \
-        --ssh "rdd-bats=${host_fixture_src}/key" "${host_fixture_src}"
+        --ssh "rdd-bats=${HOST_FIXTURE_SRC}/key" "${HOST_FIXTURE_SRC}"
     nerdctl rmi rdd-bats-build-ssh
 }
 
 @test "nerdctl cp copies a host file into a container" {
     create_host_fixture
     nerdctl run --detach --name rdd-bats-cp-in busybox sleep 300
-    nerdctl cp "${host_fixture_src}/file" rdd-bats-cp-in:/file
+    nerdctl cp "${HOST_FIXTURE_SRC}/file" rdd-bats-cp-in:/file
     run_e -0 nerdctl exec rdd-bats-cp-in cat /file
     assert_output shared
     nerdctl rm --force rdd-bats-cp-in
@@ -823,15 +815,15 @@ EOF
     create_host_fixture
     nerdctl run --detach --name rdd-bats-cp-out busybox sleep 300
     nerdctl exec rdd-bats-cp-out sh -c 'echo inside >/file'
-    nerdctl cp rdd-bats-cp-out:/file "${host_fixture_src}/out"
-    run -0 cat "${host_fixture_dir}/out"
+    nerdctl cp rdd-bats-cp-out:/file "${HOST_FIXTURE_SRC}/out"
+    run -0 cat "${HOST_TMPDIR}/out"
     assert_output inside
     nerdctl rm --force rdd-bats-cp-out
 }
 
 @test "nerdctl cp copies a host path relative to the working directory" {
     create_host_fixture
-    cd "${host_fixture_dir}"
+    cd "${HOST_TMPDIR}"
     nerdctl run --detach --name rdd-bats-cp-cwd busybox sleep 300
     nerdctl cp file rdd-bats-cp-cwd:/file
     run_e -0 nerdctl exec rdd-bats-cp-cwd cat /file
@@ -844,17 +836,17 @@ EOF
     # argument is a host path, the stub rewrites only that one, and nerdctl
     # reads c:/file as the service.
     create_host_fixture
-    create_file "${host_fixture_dir}/compose.yaml" <<'EOF'
+    create_file "${HOST_TMPDIR}/compose.yaml" <<'EOF'
 services:
   c:
     image: busybox
     command: sleep 300
 EOF
-    cd "${host_fixture_dir}"
+    cd "${HOST_TMPDIR}"
     nerdctl compose up --detach
     nerdctl compose cp ./file c:/file
     nerdctl compose cp c:/file ./back
-    run -0 cat "${host_fixture_dir}/back"
+    run -0 cat "${HOST_TMPDIR}/back"
     assert_output shared
     nerdctl compose down
 }
@@ -862,19 +854,19 @@ EOF
 @test "nerdctl compose cp takes a backslash path as the host side" {
     skip_on_unix
     create_host_fixture
-    create_file "${host_fixture_dir}/compose.yaml" <<'EOF'
+    create_file "${HOST_TMPDIR}/compose.yaml" <<'EOF'
 services:
   c:
     image: busybox
     command: sleep 300
 EOF
-    cd "${host_fixture_dir}"
-    run -0 cygpath -w "${host_fixture_dir}"
+    cd "${HOST_TMPDIR}"
+    run -0 cygpath -w "${HOST_TMPDIR}"
     backslash_file=${output}\\file
     nerdctl compose up --detach
     nerdctl compose cp "${backslash_file}" c:/file
     nerdctl compose cp c:/file ./back
-    run -0 cat "${host_fixture_dir}/back"
+    run -0 cat "${HOST_TMPDIR}/back"
     assert_output shared
     nerdctl compose down
 }

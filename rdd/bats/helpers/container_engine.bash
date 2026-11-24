@@ -2,8 +2,9 @@
 # SPDX-FileCopyrightText: SUSE LLC
 # SPDX-FileCopyrightText: The Rancher Desktop Authors
 
-# Helpers for the docker-command suite (tests/40-docker). Tests drive the engine
-# through ctrctl() (commands.bash) so the suite can later run against nerdctl.
+# Helpers for the container-command suite (tests/40-docker). Tests drive the
+# engine through ctrctl() (commands.bash), so the suite runs against both moby
+# and containerd.
 
 # Test image, pinned to a tag. TODO: pin by digest and mirror to ghcr.io to
 # avoid Docker Hub pull limits, as the rancher-desktop suite does.
@@ -49,6 +50,15 @@ start_containerd() {
     fi
     # Creates and starts the instance on the first call; a fast no-op afterward.
     rdd set running=true containerEngine.name=containerd
+}
+
+# create_host_tmpdir sets HOST_TMPDIR to a new directory under the home
+# directory, for files that the engine CLI reads or writes. nerdctl runs in the
+# guest, and on macOS and Linux the guest mounts the home directory but not
+# BATS_TEST_TMPDIR. teardown in load.bash removes the directory.
+create_host_tmpdir() {
+    run -0 mktemp -d "${HOME}/rdd-bats.XXXXXX"
+    HOST_TMPDIR=${output}
 }
 
 # skip_unless_docker skips a docker-only command when the engine is containerd.

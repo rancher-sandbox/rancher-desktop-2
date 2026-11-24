@@ -4,7 +4,7 @@
 
 load '../../helpers/load'
 
-# Container lifecycle commands against the rdd Docker engine.
+# Container lifecycle commands against the rdd container engine.
 
 local_setup_file() {
     start_container_engine
@@ -13,10 +13,13 @@ local_setup_file() {
 }
 
 @test "run executes a command and streams its output" {
-    # This intentionally does _not_ use --separate-stderr in order to catch when
-    # the command emits unexpected output to stderr.
-    run -0 ctrctl run --rm "${IMAGE_BUSYBOX}" echo hello
+    # Check stderr too, to catch unexpected output there. The only line allowed
+    # is the signal-forwarding error that nerdctl run --rm can log.
+    run_e -0 ctrctl run --rm "${IMAGE_BUSYBOX}" echo hello
     assert_output hello
+    for line in "${stderr_lines[@]}"; do
+        assert_regex "${line}" 'msg="forward signal child exited"'
+    done
 }
 
 @test "run --detach starts a container that ps lists" {
@@ -56,10 +59,11 @@ local_setup_file() {
 @test "cp copies files between host and container" {
     ctrctl run --detach --name rdd-cp "${IMAGE_BUSYBOX}" sleep 300
 
-    echo marker >"${BATS_TEST_TMPDIR}/in.txt"
-    run -0 host_path "${BATS_TEST_TMPDIR}/in.txt"
+    create_host_tmpdir
+    echo marker >"${HOST_TMPDIR}/in.txt"
+    run -0 host_path "${HOST_TMPDIR}/in.txt"
     in_host=${output}
-    run -0 host_path "${BATS_TEST_TMPDIR}/out.txt"
+    run -0 host_path "${HOST_TMPDIR}/out.txt"
     out_host=${output}
 
     ctrctl cp "${in_host}" rdd-cp:/in.txt
@@ -67,7 +71,7 @@ local_setup_file() {
     assert_output marker
 
     ctrctl cp rdd-cp:/in.txt "${out_host}"
-    run -0 cat "${BATS_TEST_TMPDIR}/out.txt"
+    run -0 cat "${HOST_TMPDIR}/out.txt"
     assert_output marker
 
     ctrctl rm --force rdd-cp
@@ -77,15 +81,15 @@ local_setup_file() {
     ctrctl run --detach --name rdd-lifecycle "${IMAGE_BUSYBOX}" sleep 300
 
     ctrctl stop --time 1 rdd-lifecycle
-    run --separate-stderr -0 ctrctl inspect --format '{{.State.Status}}' rdd-lifecycle
+    run_e -0 ctrctl inspect --format '{{.State.Status}}' rdd-lifecycle
     assert_output exited
 
     ctrctl start rdd-lifecycle
-    run --separate-stderr -0 ctrctl inspect --format '{{.State.Status}}' rdd-lifecycle
+    run_e -0 ctrctl inspect --format '{{.State.Status}}' rdd-lifecycle
     assert_output running
 
     ctrctl restart --time 1 rdd-lifecycle
-    run --separate-stderr -0 ctrctl inspect --format '{{.State.Status}}' rdd-lifecycle
+    run_e -0 ctrctl inspect --format '{{.State.Status}}' rdd-lifecycle
     assert_output running
 
     ctrctl rm --force rdd-lifecycle
@@ -95,11 +99,11 @@ local_setup_file() {
     ctrctl run --detach --name rdd-pause "${IMAGE_BUSYBOX}" sleep 300
 
     ctrctl pause rdd-pause
-    run --separate-stderr -0 ctrctl inspect --format '{{.State.Status}}' rdd-pause
+    run_e -0 ctrctl inspect --format '{{.State.Status}}' rdd-pause
     assert_output paused
 
     ctrctl unpause rdd-pause
-    run --separate-stderr -0 ctrctl inspect --format '{{.State.Status}}' rdd-pause
+    run_e -0 ctrctl inspect --format '{{.State.Status}}' rdd-pause
     assert_output running
 
     ctrctl rm --force rdd-pause
@@ -108,7 +112,7 @@ local_setup_file() {
 @test "kill stops a running container" {
     ctrctl run --detach --name rdd-kill "${IMAGE_BUSYBOX}" sleep 300
     ctrctl kill rdd-kill
-    run -0 --separate-stderr ctrctl inspect --format '{{.State.Status}}' rdd-kill
+    run_e -0 ctrctl inspect --format '{{.State.Status}}' rdd-kill
     assert_output exited
     ctrctl rm --force rdd-kill
 }

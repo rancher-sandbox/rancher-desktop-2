@@ -153,4 +153,9 @@ setup() {
 
 teardown() {
     call_local_function
+    # create_host_tmpdir's directory is under the home directory, which
+    # outlives the test run.
+    if [[ -n "${HOST_TMPDIR:-}" ]]; then
+        rm -rf "${HOST_TMPDIR}"
+    fi
 }
