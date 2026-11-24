@@ -7,10 +7,7 @@ import (
 	"context"
 	"crypto/tls"
 	"net"
-	"os"
-	"runtime"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -19,9 +16,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/testapiserver"
 )
 
 // probeWebhookManager blocks in Setup until the test releases it.
@@ -63,22 +60,7 @@ func TestSharedControllerManagerMarksReadyAfterWebhooks(t *testing.T) {
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("RDD_INSTANCE", "test-webhook-startup-order")
 
-	env := &envtest.Environment{
-		DownloadBinaryAssets: true,
-	}
-	cfg, err := env.Start()
-	assert.NilError(t, err, "failed to start environment")
-
-	defer func() {
-		err := env.Stop()
-		if runtime.GOOS != "windows" && err != nil {
-			checkError := os.Getenv("CI") == ""
-			checkError = checkError || !strings.Contains(err.Error(), "timeout waiting for process kube-apiserver to stop")
-			if checkError {
-				assert.NilError(t, err, "failed to stop environment")
-			}
-		}
-	}()
+	cfg := testapiserver.Start(t)
 
 	client, err := kubernetes.NewForConfig(cfg)
 	assert.NilError(t, err, "failed to create kubernetes client")

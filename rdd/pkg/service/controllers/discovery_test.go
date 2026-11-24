@@ -8,9 +8,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"runtime"
-	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -18,31 +15,14 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/testapiserver"
 )
 
 func TestControllerManagerDiscoveryGroup(t *testing.T) {
 	const passthroughPort = 4321
 
-	env := &envtest.Environment{
-		DownloadBinaryAssets: true,
-	}
-	cfg, err := env.Start()
-	assert.NilError(t, err, "failed to start environment")
-
-	defer func() {
-		err := env.Stop()
-		// On Windows, `env.Stop()` will return an error because it can't kill
-		// etcd gracefully; this is not an issue for this test.
-		// Also, in CI only, ignore failure to stop kube-apiserver.
-		if runtime.GOOS != "windows" && err != nil {
-			checkError := os.Getenv("CI") == ""
-			checkError = checkError || !strings.Contains(err.Error(), "timeout waiting for process kube-apiserver to stop")
-			if checkError {
-				assert.NilError(t, err, "failed to stop environment")
-			}
-		}
-	}()
+	cfg := testapiserver.Start(t)
 
 	healthServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -184,22 +164,7 @@ func TestControllerManagerDiscoveryGroup(t *testing.T) {
 }
 
 func TestInitDiscoveryAndMarkReady(t *testing.T) {
-	env := &envtest.Environment{
-		DownloadBinaryAssets: true,
-	}
-	cfg, err := env.Start()
-	assert.NilError(t, err, "failed to start environment")
-
-	defer func() {
-		err := env.Stop()
-		if runtime.GOOS != "windows" && err != nil {
-			checkError := os.Getenv("CI") == ""
-			checkError = checkError || !strings.Contains(err.Error(), "timeout waiting for process kube-apiserver to stop")
-			if checkError {
-				assert.NilError(t, err, "failed to stop environment")
-			}
-		}
-	}()
+	cfg := testapiserver.Start(t)
 
 	client, err := kubernetes.NewForConfig(cfg)
 	assert.NilError(t, err, "failed to create kubernetes client")
