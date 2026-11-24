@@ -17,6 +17,11 @@ local_setup_file() {
     assert_output hello
 }
 
+@test "run --interactive passes stdin and its EOF to the container" {
+    run -0 ctrctl run --rm --interactive "${IMAGE_BUSYBOX}" cat <<<hello
+    assert_output hello
+}
+
 @test "run --detach starts a container that ps lists" {
     run_e -0 ctrctl run --detach --name rdd-run "${IMAGE_BUSYBOX}" sleep 300
     cid=${output}

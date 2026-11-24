@@ -6,9 +6,10 @@
 
 // Package hostswitch runs the WSL2 host-switch virtual network. It provides
 // DNS/DHCP/NAT to the WSL2 guest over a gvisor-tap-vsock network bridged to the
-// Hyper-V VM via AF_VSOCK, plus Docker and containerd socket bridges. It runs
-// inside the per-VM hostagent process so the OS reclaims every host resource
-// (vsock listeners, gvisor host ports, named pipes) when the VM stops.
+// Hyper-V VM via AF_VSOCK, plus the Docker API proxy and the containerd socket
+// bridge. It runs inside the per-VM hostagent process so the OS reclaims every
+// host resource (vsock listeners, gvisor host ports, named pipes) when the VM
+// stops.
 package hostswitch
 
 import (
@@ -33,6 +34,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sys/windows/registry"
 
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/dockerproxy"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/socketbridge"
 )
@@ -171,20 +173,36 @@ func runOnce(ctx context.Context, logger logr.Logger, subnet hostSwitchSubnet) e
 	// failure, so the caller reads ctx, not gctx.
 	g, gctx := errgroup.WithContext(ctx)
 
-	// Start the host-side socket bridges now that we have the VM GUID. Each
-	// listens on a named pipe and forwards connections over vsock to rdd-guest,
-	// which the rdd overlay installs in the VM and systemd starts.
-	for _, bridge := range []*socketbridge.HostBridge{
-		socketbridge.NewDockerHostBridge(vmGUID, logger),
-		socketbridge.NewHostBridge(instance.ContainerdSocket(), socketbridge.ContainerdVsockPort, vmGUID, logger),
-	} {
+	// Start the Docker API proxy and the containerd socket bridge now that we
+	// have the VM GUID. Each listens on a named pipe and forwards connections
+	// over vsock to rdd-guest. The rdd overlay installs rdd-guest in the VM,
+	// and systemd starts it.
+	//
+	// The Docker pipe listens in message mode, because only in that mode does
+	// go-winio give an accepted connection a CloseWrite method. After an
+	// attach or exec upgrade, the proxy passes on a half-close in either
+	// direction only when both connections have CloseWrite.
+	dockerLn, err := winio.ListenPipe(socketbridge.DockerPipeName, &winio.PipeConfig{MessageMode: true})
+	if err != nil {
+		logger.Error(err, "Docker API proxy could not listen", "pipe", socketbridge.DockerPipeName)
+	} else {
 		g.Go(func() error {
-			if err := bridge.Run(gctx); err != nil {
-				logger.Error(err, "Socket bridge exited with error")
+			dial := func(context.Context) (net.Conn, error) {
+				return socketbridge.DialVsock(vmGUID, socketbridge.VsockForwardPort)
+			}
+			if err := dockerproxy.Serve(gctx, logger.WithName("docker-proxy"), dockerLn, dial); err != nil {
+				logger.Error(err, "Docker API proxy exited with error")
 			}
 			return nil
 		})
 	}
+	containerdBridge := socketbridge.NewHostBridge(instance.ContainerdSocket(), socketbridge.ContainerdVsockPort, vmGUID, logger)
+	g.Go(func() error {
+		if err := containerdBridge.Run(gctx); err != nil {
+			logger.Error(err, "Socket bridge exited with error")
+		}
+		return nil
+	})
 
 	// Accept vsock connections and feed them into the virtual network.
 	g.Go(func() error {
