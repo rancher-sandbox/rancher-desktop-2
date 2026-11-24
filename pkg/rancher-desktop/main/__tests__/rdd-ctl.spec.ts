@@ -86,10 +86,11 @@ describe('isFirstRunNeeded', () => {
 });
 
 describe('rdd/kube-config', () => {
-  it('should hide the splash before reporting an incompatible service', async() => {
+  it('should hide the splash, report an incompatible service, then quit', async() => {
     const { spawnFile, SpawnError } = modules['@pkg/utils/childProcess'];
     const { hideSplash } = modules['@pkg/window/splash'];
     const { showErrorBox } = modules.electron.dialog;
+    const { quit } = modules.electron.app;
     const error = new (SpawnError as any)();
 
     error.code = 5;
@@ -97,6 +98,8 @@ describe('rdd/kube-config', () => {
     await expect(mainEvents.invoke('rdd/kube-config')).rejects.toThrow('Unsupported RDD service version');
     expect(showErrorBox).toHaveBeenCalled();
     expect(hideSplash).toHaveBeenCalled();
+    expect(quit).toHaveBeenCalled();
     expect(hideSplash.mock.invocationCallOrder[0]).toBeLessThan(showErrorBox.mock.invocationCallOrder[0]);
+    expect(showErrorBox.mock.invocationCallOrder[0]).toBeLessThan(quit.mock.invocationCallOrder[0]);
   });
 });

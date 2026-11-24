@@ -937,6 +937,12 @@ fatalError:
   showLogs: Show Logs
   showLogsError: Error opening logs
   showLogsErrorDetail: Please manually open {logDir}
+  # @context Native error box when the app's first window fails to load at startup
+  windowLoadFailed: |-
+    {appName} could not load its user interface ({error}) and will quit. For details, see the logs.
+
+    Log folder:
+    {logDir}
 kubernetesPrefs:
   kubernetes:
     # @no-translate Kubernetes

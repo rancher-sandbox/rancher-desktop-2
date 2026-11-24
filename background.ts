@@ -150,7 +150,7 @@ async function initUI() {
   }
 
   if (lifetimeState === LifetimeState.ShuttingDown) {
-    console.log('User triggered quit during first-run');
+    console.log('Quitting during first-run');
 
     return;
   }
