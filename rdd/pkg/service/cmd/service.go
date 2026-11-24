@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,6 +22,8 @@ import (
 	"github.com/spf13/cobra"
 
 	apiextensionapiserver "k8s.io/apiextensions-apiserver/pkg/apiserver"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -201,7 +202,7 @@ func Create(args []string) error {
 
 // checkSupportedVersion checks if the control plane is running a version that
 // is compatible with this client.
-func checkSupportedVersion(config *rest.Config) error {
+func checkSupportedVersion(ctx context.Context, config *rest.Config) error {
 	if developer.Mode() {
 		// Skip the version check in developer mode, to make working on the
 		// client against a constantly running server easier.
@@ -213,7 +214,7 @@ func checkSupportedVersion(config *rest.Config) error {
 		return fmt.Errorf("failed to create kubernetes client: %w", err)
 	}
 
-	serverVersion, err := client.Discovery().ServerVersion()
+	serverVersion, err := client.Discovery().ServerVersionWithContext(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get server version: %w", err)
 	}
@@ -228,29 +229,6 @@ func checkSupportedVersion(config *rest.Config) error {
 		}
 	}
 	return nil
-}
-
-// getRuntimeControllersFromCluster retrieves all enabled controllers from the cluster.
-func getRuntimeControllersFromCluster(ctx context.Context, config *rest.Config) ([]string, error) {
-	if config == nil {
-		return nil, errors.New("nil config provided")
-	}
-
-	discovery, err := controllers.NewControllerManagerDiscovery(config)
-	if err != nil {
-		klog.V(2).Infof("getRuntimeControllersFromCluster: discovery creation error: %v", err)
-		return nil, fmt.Errorf("could not create discovery client: %w", err)
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-
-	enabledControllers, err := discovery.GetEnabledControllers(ctx)
-	if err != nil {
-		klog.V(2).Infof("getRuntimeControllersFromCluster: discovery error: %v", err)
-		return nil, fmt.Errorf("could not discover enabled controllers: %w", err)
-	}
-	return enabledControllers, nil
 }
 
 // Start the service in a background subprocess. Callers must verify Exists()
@@ -299,7 +277,6 @@ type startupPhase int
 const (
 	phaseAPIServer startupPhase = iota
 	phaseControllers
-	phaseCRDs
 )
 
 // String returns the user-facing progress message for the phase.
@@ -308,88 +285,71 @@ func (p startupPhase) String() string {
 	case phaseAPIServer:
 		return "waiting for API server"
 	case phaseControllers:
-		return "waiting for controllers to register"
-	case phaseCRDs:
-		return "waiting for CRDs to be established"
+		return "waiting for controllers to be ready"
 	default:
 		return ""
 	}
 }
 
 // checkReadiness performs a single readiness check, reporting via onPhase the
-// phase it ends up waiting on.
-func checkReadiness(ctx context.Context, onPhase func(startupPhase)) error {
-	config, err := GetKubeRestConfig()
+// phase it ends up waiting on. The control plane is ready once the discovery
+// ConfigMap has [controllers.ReadyAnnotation] and a creationTimestamp at or
+// after since.
+func checkReadiness(ctx context.Context, loadConfig func() (*rest.Config, error), since time.Time, onPhase func(startupPhase)) error {
+	config, err := loadConfig()
 	if err != nil {
 		onPhase(phaseAPIServer)
-		klog.V(2).Infof("Waiting for kubeconfig to be available: %v", err)
+		logrus.Debugf("Waiting for kubeconfig to be available: %v", err)
 		return err
 	}
 
-	if err := checkSupportedVersion(config); err != nil {
+	if err := checkSupportedVersion(ctx, config); err != nil {
 		onPhase(phaseAPIServer)
-		klog.V(2).Infof("%v", err)
+		logrus.Debugf("%v", err)
 		return err
 	}
 
-	// Wait for the controller manager to register with the actual running controllers
-	runtimeControllers, err := getRuntimeControllersFromCluster(ctx, config)
+	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		onPhase(phaseControllers)
-		klog.V(2).Infof("getRuntimeControllersFromCluster: %v", err)
+		return fmt.Errorf("failed to create kubernetes client: %w", err)
+	}
+	cm, err := client.CoreV1().ConfigMaps(controllers.RDDSystemNamespace).Get(
+		ctx, controllers.ControllerManagerConfigMapName, metav1.GetOptions{},
+	)
+	// The serve command creates the ConfigMap only after its API server is
+	// ready, so until a ConfigMap from this run exists, serve is still
+	// waiting for its API server.
+	if apierrors.IsNotFound(err) {
+		onPhase(phaseAPIServer)
+		return errors.New("discovery ConfigMap not created yet")
+	}
+	if err != nil {
+		// In developer mode checkSupportedVersion does not contact the
+		// server, so this request is the first to test whether the API
+		// server answers.
+		onPhase(phaseAPIServer)
+		logrus.Debugf("Waiting for API server: %v", err)
 		return err
 	}
-
-	if runtimeControllers == nil {
-		// Discovery ConfigMap doesn't exist yet; the serve subprocess hasn't
-		// finished initializing. Keep polling.
+	// The serve command recreates the ConfigMap on every startup, so a
+	// creationTimestamp at or after since identifies the current run.
+	if cm.CreationTimestamp.Time.Before(since) {
+		onPhase(phaseAPIServer)
+		return errors.New("discovery ConfigMap is from a previous run")
+	}
+	if cm.Annotations[controllers.ReadyAnnotation] != "true" {
 		onPhase(phaseControllers)
-		klog.V(2).InfoS("Discovery configmap not found yet - waiting for control plane initialization")
-		return errors.New("waiting for controller manager registration")
+		return errors.New("controllers are not ready yet")
 	}
-
-	onPhase(phaseCRDs)
-	if len(runtimeControllers) == 0 {
-		// ConfigMap exists but no controllers are registered.
-		klog.V(2).InfoS("No controllers registered - checking API server readiness")
-		return readiness.WaitForReadyWithCRDs(ctx, config, []base.Controller{}, false)
-	}
-
-	klog.V(2).Infof("Waiting for %d runtime controllers to be ready", len(runtimeControllers))
-
-	// Get the controller objects for the actually running controllers
-	allControllers := base.GetAllControllers()
-	var enabledControllers []base.Controller
-
-	for _, controller := range allControllers {
-		if slices.Contains(runtimeControllers, controller.GetName()) {
-			enabledControllers = append(enabledControllers, controller)
-		}
-	}
-
-	klog.V(2).InfoS("Discovery service found running controllers", "controllers", runtimeControllers)
-
-	// Debug: Log all available controllers
-	allControllerNames := make([]string, len(allControllers))
-	for i, c := range allControllers {
-		allControllerNames[i] = c.GetName()
-	}
-	klog.V(2).InfoS("All available controllers", "controllers", allControllerNames)
-
-	// Debug: Log enabled controllers
-	enabledControllerNames := make([]string, len(enabledControllers))
-	for i, c := range enabledControllers {
-		enabledControllerNames[i] = c.GetName()
-	}
-	klog.V(2).InfoS("Enabled controllers for readiness", "controllers", enabledControllerNames)
-
-	return readiness.WaitForReadyWithCRDs(ctx, config, enabledControllers, false)
+	return nil
 }
 
-// Wait until the control plane is ready or the context is cancelled.
-func Wait(ctx context.Context) error {
+// Wait until the control plane that started at since is ready, or the context
+// is cancelled. Truncate since to whole seconds, because the discovery
+// ConfigMap's creationTimestamp drops the sub-second part.
+func Wait(ctx context.Context, since time.Time) error {
 	// Fast path: stay silent when the control plane is already ready.
-	if err := checkReadiness(ctx, func(startupPhase) {}); err == nil {
+	if err := checkReadiness(ctx, GetKubeRestConfig, since, func(startupPhase) {}); err == nil {
 		return nil
 	}
 
@@ -412,7 +372,7 @@ func Wait(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			err := checkReadiness(ctx, reportPhase)
+			err := checkReadiness(ctx, GetKubeRestConfig, since, reportPhase)
 			if err == nil {
 				return nil
 			}
@@ -863,7 +823,7 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 	if err != nil {
 		return err
 	}
-	if err := readiness.WaitForReady(ctx, restConfig, true); err != nil {
+	if err := readiness.WaitForReady(ctx, restConfig); err != nil {
 		return err
 	}
 

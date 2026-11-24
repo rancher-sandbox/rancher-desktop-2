@@ -42,22 +42,22 @@ A controller manager patches the ConfigMap on startup (adding its API group key)
 
 ## Ready annotation
 
-The annotation `rdd.rancherdesktop.io/ready=true` signals that every enabled controller has installed its CRDs **and** registered its data entry in the ConfigMap, and that its admission webhooks are configured and accept connections. Clients that depend on CRDs (for example, `rdd set`, which fetches the App CRD schema) or on the enabled-controller list (for example, `rdd set running=true`, which checks whether the engine controller is present) must wait for the annotation; otherwise they race startup and see either `the server could not find the requested resource` or a stale, empty controller list.
+The annotation `rdd.rancherdesktop.io/ready=true` signals that every enabled controller has established its CRDs **and** registered its data entry in the ConfigMap, that its admission webhooks are configured and accept connections, and that the passthrough HTTP server is ready. Clients that depend on CRDs (for example, `rdd set`, which fetches the App CRD schema) or on the enabled-controller list (for example, `rdd set running=true`, which checks whether the engine controller is present) must wait for the annotation; otherwise they race startup and see either `the server could not find the requested resource` or a stale, empty controller list.
 
 The control plane sets the annotation in one of two places:
 
 1. Immediately after creating the ConfigMap, if no controllers are enabled.
-2. Otherwise, inside the shared controller manager's startup goroutine, after `installControllerCRDs` has established every CRD, `registerDiscovery` has written the controller-manager entry into `configMap.Data`, the webhook configurations are applied, and the webhook server accepts connections.
+2. Otherwise, inside the shared controller manager's startup goroutine, after `installControllerCRDs` has established every CRD, `registerDiscovery` has written the controller-manager entry into `configMap.Data`, the webhook configurations are applied, the webhook server accepts connections, and the passthrough HTTP server is ready.
 
 Ordering every step before the annotation keeps the "ready = clients may proceed" contract consistent. Any client that waits for the annotation sees the CRDs, the enabled-controller list, and working admission webhooks.
 
-The ConfigMap is recreated on every control plane startup, so a stale `ready` from a previous crash is always cleared before CRD installation begins.
+The ConfigMap is recreated on every control plane startup, so a stale `ready` from a previous run is cleared before CRD installation begins. But a stopped control plane leaves its ConfigMap in place, annotation included, and the control plane replaces it only once the API server is ready. Until then a client sees the previous run's `ready`, so it must also check that the ConfigMap's `creationTimestamp` is at or after the control plane's start time.
 
 The annotation only covers controllers known at control plane startup. External controllers (for example, the mock controller, or a controller manager started later via `rdd svc create --controllers=...`) can attach at any time, so a client waiting for the ready annotation must not assume that every controller it cares about is already registered. Discover external controllers by reading the ConfigMap directly.
 
 ## Consumers
 
-**Service readiness** -- The control plane queries the ConfigMap to discover which controllers are running across all managers. It uses this to decide when external controllers have finished registering.
+**Service readiness** -- The CLI waits until the ConfigMap has the ready annotation and a `creationTimestamp` at or after the control plane's start time, as described under [Ready annotation](#ready-annotation).
 
 **Passthrough proxy** -- The control plane exposes a `/passthrough/<controller>/<endpoint>/...` HTTP route that looks up the target manager via the ConfigMap and reverse-proxies the request.
 

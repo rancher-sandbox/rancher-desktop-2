@@ -90,7 +90,7 @@ Runs `rdd service serve` to actually start the control plane in the background
 Additional options:
 
 *   `--wait=false`
-    Return immediately, without waiting for all controllers to be ready. Run `rdd service start`
+    Return immediately, without waiting for the control plane's controllers to be ready. Run `rdd service start`
     again with no options to wait.
 
 *   `--timeout=90s`
