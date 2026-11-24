@@ -6,6 +6,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"net/http"
 	"net/http/httptest"
@@ -139,5 +140,48 @@ func TestCheckReadinessStopsAtTheDeadlineWhenTheServerHangs(t *testing.T) {
 		assert.Assert(t, err != nil)
 	case <-time.After(10 * time.Second):
 		assert.Assert(t, false, "checkReadiness kept waiting after its context ended")
+	}
+}
+
+// waitForReady gives up as soon as the service exits after it or its caller
+// has seen the service running, or as soon as the caller's child exits while
+// no service is running. It keeps waiting while the caller's child is still
+// starting, because the child writes its PID file only some time after Start
+// returns.
+func TestWaitForReadyStopsWhenTheServiceExits(t *testing.T) {
+	noConfig := func() (*rest.Config, error) { return nil, errors.New("control plane is not running") }
+	childRunning := make(chan struct{})
+	exited := make(chan struct{})
+	close(exited)
+	tests := []struct {
+		name        string
+		childExited <-chan struct{}
+		running     []bool
+		wantTimeout bool
+	}{
+		{"exits after running", nil, []bool{true, true, false}, false},
+		{"exits before the first check", nil, []bool{false}, false},
+		{"child still starting", childRunning, []bool{false}, true},
+		{"child exits before writing its PID file", exited, []bool{false}, false},
+		{"child exits while another serve runs", exited, []bool{true}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var calls int
+			running := func() bool {
+				r := tt.running[min(calls, len(tt.running)-1)]
+				calls++
+				return r
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			err := waitForReady(ctx, time.Now(), tt.childExited, running, noConfig)
+			if tt.wantTimeout {
+				assert.ErrorIs(t, err, context.DeadlineExceeded)
+			} else {
+				assert.NilError(t, ctx.Err(), "waitForReady waited until the deadline")
+				assert.ErrorContains(t, err, "exited before it became ready")
+			}
+		})
 	}
 }

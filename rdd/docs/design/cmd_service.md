@@ -96,6 +96,7 @@ Additional options:
 *   `--timeout=90s`
     How long to wait for the control plane to become ready. Pass `0` to wait indefinitely.
     If the deadline expires, `rdd` exits with code 4.
+    If the control plane exits before it becomes ready, `rdd` exits with code 1 at once.
 
 
 ### `rdd service stop`

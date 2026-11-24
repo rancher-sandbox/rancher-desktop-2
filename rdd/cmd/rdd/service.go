@@ -101,7 +101,7 @@ func ensureServiceRunning(ctx context.Context) error {
 		}
 		ctx, cancel := watchtools.ContextWithOptionalTimeout(ctx, startWaitTimeout)
 		defer cancel()
-		return cliexit.Classify(service.Wait(ctx, startTime))
+		return cliexit.Classify(service.Wait(ctx, startTime, nil))
 	}
 	// Pass klog verbosity transiently so V(1) tracing fires when
 	// autostart launches the daemon (e.g. from `rdd set`).
@@ -115,7 +115,8 @@ func startAndWaitForReady(ctx context.Context, serveArgs []string, timeout time.
 	// during JSON serialization. Without this, a server that starts in the
 	// same second would appear to have a startTime *before* beforeStart.
 	beforeStart := time.Now().Truncate(time.Second)
-	if err := service.Start(ctx, serveArgs); err != nil {
+	childExited, err := service.Start(ctx, serveArgs)
+	if err != nil {
 		return err
 	}
 	logrus.Infof("starting %q control plane", instance.Name())
@@ -123,7 +124,7 @@ func startAndWaitForReady(ctx context.Context, serveArgs []string, timeout time.
 	ctx, cancel := watchtools.ContextWithOptionalTimeout(ctx, timeout)
 	defer cancel()
 
-	return service.Wait(ctx, beforeStart)
+	return service.Wait(ctx, beforeStart, childExited)
 }
 
 func serviceConfigAction(cmd *cobra.Command, _ []string) error {
@@ -227,7 +228,7 @@ func serviceStartAction(cmd *cobra.Command, args []string) error {
 		logrus.Infof("waiting for %q control plane to be ready", instance.Name())
 		ctx, cancel := watchtools.ContextWithOptionalTimeout(cmd.Context(), timeout)
 		defer cancel()
-		if err := service.Wait(ctx, startTime); err != nil {
+		if err := service.Wait(ctx, startTime, nil); err != nil {
 			return cliexit.Classify(err)
 		}
 		logrus.Infof("%q control plane is ready", instance.Name())
@@ -259,7 +260,7 @@ func serviceStartAction(cmd *cobra.Command, args []string) error {
 		}
 		logrus.Infof("%q control plane is ready", instance.Name())
 	} else {
-		if err := service.Start(cmd.Context(), serveArgs); err != nil {
+		if _, err := service.Start(cmd.Context(), serveArgs); err != nil {
 			return err
 		}
 		logrus.Infof("%q control plane is starting", instance.Name())

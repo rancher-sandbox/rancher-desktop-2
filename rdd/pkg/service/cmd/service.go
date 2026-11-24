@@ -232,10 +232,11 @@ func checkSupportedVersion(ctx context.Context, config *rest.Config) error {
 }
 
 // Start the service in a background subprocess. Callers must verify Exists()
-// first; Start assumes the instance exists.
-func Start(ctx context.Context, args []string) error {
+// first; Start assumes the instance exists. The returned channel closes once
+// the subprocess has exited and been reaped.
+func Start(ctx context.Context, args []string) (<-chan struct{}, error) {
 	if Running() {
-		return fmt.Errorf("%q control plane is already running", instance.Name())
+		return nil, fmt.Errorf("%q control plane is already running", instance.Name())
 	}
 
 	keepLogs := os.Getenv("RDD_KEEP_LOGS") != ""
@@ -246,11 +247,11 @@ func Start(ctx context.Context, args []string) error {
 	}
 	stdout, err := logfile.Create(instance.StdoutLog(), keepLogs, header)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	stderr, err := logfile.Create(instance.StderrLog(), keepLogs, header)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	cmdArgs := []string{"service", "serve"}
@@ -262,12 +263,20 @@ func Start(ctx context.Context, args []string) error {
 
 	cmd, err := instance.Command(ctx, cmdArgs...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	process.SetGroup(cmd)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
-	return cmd.Start()
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+	exited := make(chan struct{})
+	go func() {
+		_ = cmd.Wait()
+		close(exited)
+	}()
+	return exited, nil
 }
 
 // startupPhase identifies the control-plane startup stage the readiness
@@ -346,10 +355,18 @@ func checkReadiness(ctx context.Context, loadConfig func() (*rest.Config, error)
 
 // Wait until the control plane that started at since is ready, or the context
 // is cancelled. Truncate since to whole seconds, because the discovery
-// ConfigMap's creationTimestamp drops the sub-second part.
-func Wait(ctx context.Context, since time.Time) error {
+// ConfigMap's creationTimestamp drops the sub-second part. Pass the channel
+// from [Start] as childExited when this process started the control plane,
+// or nil when [Running] has reported it running.
+func Wait(ctx context.Context, since time.Time, childExited <-chan struct{}) error {
+	return waitForReady(ctx, since, childExited, Running, GetKubeRestConfig)
+}
+
+// waitForReady implements [Wait], with the liveness check and the config
+// loader passed in.
+func waitForReady(ctx context.Context, since time.Time, childExited <-chan struct{}, running func() bool, loadConfig func() (*rest.Config, error)) error {
 	// Fast path: stay silent when the control plane is already ready.
-	if err := checkReadiness(ctx, GetKubeRestConfig, since, func(startupPhase) {}); err == nil {
+	if err := checkReadiness(ctx, loadConfig, since, func(startupPhase) {}); err == nil {
 		return nil
 	}
 
@@ -364,6 +381,9 @@ func Wait(ctx context.Context, since time.Time) error {
 		}
 	}
 
+	// A caller that passes a nil childExited has already seen the service
+	// running.
+	seenRunning := childExited == nil
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -372,7 +392,7 @@ func Wait(ctx context.Context, since time.Time) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			err := checkReadiness(ctx, GetKubeRestConfig, since, reportPhase)
+			err := checkReadiness(ctx, loadConfig, since, reportPhase)
 			if err == nil {
 				return nil
 			}
@@ -381,7 +401,30 @@ func Wait(ctx context.Context, since time.Time) error {
 				// The error will never recover; stop waiting.
 				return err
 			}
+			// Start returns before the child writes its PID file, so
+			// running() reports false at first. Treat the service as
+			// exited when running() reports false after this function or
+			// its caller has seen it running, or after our own child has
+			// exited. If a concurrent start wins the race, our child exits
+			// without writing its PID file, but running() reports true for
+			// the winner, so we keep waiting for the winner to become ready.
+			if running() {
+				seenRunning = true
+			} else if seenRunning || isClosed(childExited) {
+				return fmt.Errorf("%q control plane exited before it became ready; see %s",
+					instance.Name(), instance.StderrLog())
+			}
 		}
+	}
+}
+
+// isClosed reports whether ch is closed; a nil channel never is.
+func isClosed(ch <-chan struct{}) bool {
+	select {
+	case <-ch:
+		return true
+	default:
+		return false
 	}
 }
 
