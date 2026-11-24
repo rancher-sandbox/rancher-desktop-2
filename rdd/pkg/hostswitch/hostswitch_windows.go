@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -263,6 +264,7 @@ func runOnce(ctx context.Context, logger logr.Logger, subnet hostSwitchSubnet) e
 			Handler:      mux,
 			ReadTimeout:  10 * time.Second,
 			WriteTimeout: 10 * time.Second,
+			ErrorLog:     slog.NewLogLogger(logr.ToSlogHandler(logger), slog.LevelError),
 		}
 		err := s.Serve(vnLn)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) && !errors.Is(err, net.ErrClosed) {
