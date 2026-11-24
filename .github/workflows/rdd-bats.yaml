@@ -64,14 +64,15 @@ jobs:
         - macos-15-intel
         - ubuntu-latest
         - windows-latest
-        # bats-app and bats-docker each run on their own runner so their VMs
-        # do not collide with bats-lima's on Windows (Lima hard-codes SSH port
-        # 22 per instance), and so each can grow independently of the rest of
-        # the suite.
+        # bats-app, bats-docker, and bats-nerdctl each run on their own runner
+        # so their VMs do not collide with bats-lima's on Windows (Lima
+        # hard-codes SSH port 22 per instance), and so each can grow
+        # independently of the rest of the suite.
         suite:
         - bats-app
         - bats-lima
         - bats-docker
+        - bats-nerdctl
         - bats-others
     # Run on ubuntu-latest if we don't need to actually run the tests, because
     # they start faster (and are cheaper).
@@ -259,7 +260,7 @@ jobs:
       shell: bash
       run: |
         case "${{ matrix.suite }}" in
-          bats-app|bats-lima|bats-docker)
+          bats-app|bats-lima|bats-docker|bats-nerdctl)
             echo "BATS_TARGET=${{ matrix.suite }}" >> "$GITHUB_ENV"
             ;;
           bats-others)
