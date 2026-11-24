@@ -39,7 +39,8 @@ func TestMungeContainersCreateBinds(t *testing.T) {
 		{"vol:/data", "vol:/data"},
 		{"/unix:/data", "/unix:/data"},
 		{`\\server\share:/s`, `\\server\share:/s`},
-		{`\\?\C:\x:/x`, `\\?\C:\x:/x`},
+		{`\\?\C:\x:/x`, "/mnt/c/x:/x"},
+		{`\\?\UNC\server\share:/s`, `\\?\UNC\server\share:/s`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.bind, func(t *testing.T) {
@@ -56,12 +57,14 @@ func TestMungeContainersCreateMounts(t *testing.T) {
 	input := `{"HostConfig": {"Mounts": [
 		null,
 		{"Type": "bind", "Source": "C:\\src", "Target": "/src", "ReadOnly": true},
+		{"Type": "bind", "Source": "\\\\?\\C:\\x", "Target": "/x"},
 		{"Type": "volume", "Source": "vol", "Target": "/v"},
 		{"Type": "bind", "Source": "/unix", "Target": "/u"}
 	]}}`
 	want := `{"HostConfig": {"Mounts": [
 		null,
 		{"Type": "bind", "Source": "/mnt/c/src", "Target": "/src", "ReadOnly": true},
+		{"Type": "bind", "Source": "/mnt/c/x", "Target": "/x"},
 		{"Type": "volume", "Source": "vol", "Target": "/v"},
 		{"Type": "bind", "Source": "/unix", "Target": "/u"}
 	]}}`

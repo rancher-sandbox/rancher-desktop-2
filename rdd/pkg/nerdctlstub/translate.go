@@ -25,9 +25,10 @@ import (
 // instead of host paths; it copies isNamedVolume in nerdctl's pkg/mountutil.
 var namedVolume = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]+$`)
 
-// windowsDrive matches a leading Windows drive, as in `C:\data` or the
-// drive-relative `d:app`. A one-letter source cannot be a volume name.
-var windowsDrive = regexp.MustCompile(`^[a-zA-Z]:`)
+// windowsDrive matches a leading Windows drive, as in `C:\data`, the
+// extended-length `\\?\C:\data` or the drive-relative `d:app`. A one-letter
+// source cannot be a volume name.
+var windowsDrive = regexp.MustCompile(`^(?:[\\/]{2}\?[\\/])?[a-zA-Z]:`)
 
 // driveCurrentDir matches the current directory of a drive, `d:` or `d:.`.
 var driveCurrentDir = regexp.MustCompile(`^[a-zA-Z]:\.?$`)

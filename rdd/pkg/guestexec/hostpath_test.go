@@ -55,6 +55,9 @@ func TestTranslateHostPath(t *testing.T) {
 		{`D:..\..\x`, "/mnt/d/x"},
 		{`d:`, "/mnt/d/proj"},
 		{`\\server\share\file`, "//server/share/file"},
+		{`\\?\C:\Users\jan\app`, "/mnt/c/Users/jan/app"},
+		{`//?/C:/data`, "/mnt/c/data"},
+		{`\\?\UNC\server\share\file`, "//?/UNC/server/share/file"},
 		{`\data`, "/mnt/c/data"},
 		{`/data`, "/mnt/c/data"},
 	}
@@ -67,13 +70,13 @@ func TestTranslateHostPath(t *testing.T) {
 	}
 }
 
-func TestTranslateHostPathRootedUnderUNCCwd(t *testing.T) {
+func TestTranslateHostPathRootedUnderUNCOrExtendedCwd(t *testing.T) {
 	cases := []struct {
 		cwd  string
 		want string
 	}{
 		{`\\server\share\dir`, "//server/share/data"},
-		{`\\?\C:\work`, "//?/C:/data"},
+		{`\\?\C:\work`, "/mnt/c/data"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.cwd, func(t *testing.T) {
@@ -102,13 +105,42 @@ func TestIsDriveAbsolute(t *testing.T) {
 		{`/data`, false},
 		{`data`, false},
 		{`\\server\share`, false},
-		{`\\?\C:\data`, false},
+		{`\\?\C:\data`, true},
+		{`//?/C:/data`, true},
+		{`\\?\C:data`, false},
+		{`\\?\UNC\server\share`, false},
 		{`1:\data`, false},
 		{"", false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.path, func(t *testing.T) {
 			assert.Equal(t, IsDriveAbsolute(tc.path), tc.want)
+		})
+	}
+}
+
+func TestCutVolumeSource(t *testing.T) {
+	cases := []struct {
+		spec   string
+		source string
+		rest   string
+		found  bool
+	}{
+		{`C:\src:/src:ro`, `C:\src`, "/src:ro", true},
+		{`\\?\C:\src:/src`, `\\?\C:\src`, "/src", true},
+		{`//?/C:/src:/src`, `//?/C:/src`, "/src", true},
+		{`\\?\UNC\server\share:/s`, `\\?\UNC\server\share`, "/s", true},
+		{"vol:/data", "vol", "/data", true},
+		{"::/data:/d", "/data", "/d", true},
+		{`C:\src`, `C:\src`, "", false},
+		{"/data", "/data", "", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.spec, func(t *testing.T) {
+			source, rest, found := CutVolumeSource(tc.spec)
+			assert.Equal(t, source, tc.source)
+			assert.Equal(t, rest, tc.rest)
+			assert.Equal(t, found, tc.found)
 		})
 	}
 }

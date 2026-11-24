@@ -24,6 +24,16 @@ local_setup() {
     assert_output marker
 }
 
+@test "--volume mounts a directory given as an extended-length drive path" {
+    run -0 winpath "${BATS_TEST_TMPDIR}/shared"
+    # docker.exe treats a colon as a drive colon only after a single letter,
+    # so it rejects an extended-length spec with options such as ":ro" on the
+    # end as having too many colons.
+    volume="\\\\?\\${output}:/data"
+    run -0 ctrctl run --rm --volume "${volume}" "${IMAGE_BUSYBOX}" cat /data/file
+    assert_output marker
+}
+
 @test "--mount type=bind mounts a directory given as a forward-slash drive path" {
     run -0 host_path "${BATS_TEST_TMPDIR}/shared"
     mount="type=bind,source=${output},target=/data"
