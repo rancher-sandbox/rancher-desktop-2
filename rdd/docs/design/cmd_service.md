@@ -76,6 +76,8 @@ Backgrounds itself (fork && exec) unless invoked with `--background=false` for e
 
 Saves its own PID into `rdd.pid` and then starts the apiserver and the controller-manager with the options on its command line.
 
+If the controller-manager fails, for example because it cannot install a CRD, `serve` shuts down and exits with an error.
+
 Once the apiserver is running the config data will be copied into the `config` map in the `rdd-system` namespace. No controller should access `args.json` directly.
 
 

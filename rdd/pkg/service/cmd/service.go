@@ -794,6 +794,12 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 	klog.Infof("Version: %+v", version.Get())
 	klog.InfoS("Golang settings", "GOGC", os.Getenv("GOGC"), "GOMAXPROCS", os.Getenv("GOMAXPROCS"), "GOTRACEBACK", os.Getenv("GOTRACEBACK"))
 
+	// When the controller manager fails, it cancels ctx with a
+	// controllerManagerError. That shuts down kine and the API server too,
+	// and Run returns the error.
+	ctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+
 	// Start kine before NewConfig because BuildGenericConfig opens gRPC
 	// connections to the etcd backend immediately. Kine uses a child context
 	// cancelled after the controller manager shuts down, so the etcd client
@@ -923,21 +929,21 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 				healthPort,
 			)
 			if err != nil {
-				klog.ErrorS(err, "Failed to create shared controller manager")
+				cancel(controllerManagerError{fmt.Errorf("failed to create shared controller manager: %w", err)})
 				return
 			}
 
 			// Register all enabled controllers
 			for _, controller := range enabledControllers {
 				if err := sharedManager.RegisterController(controller); err != nil {
-					klog.ErrorS(err, "Failed to register controller", "controller", controller.GetName())
+					cancel(controllerManagerError{fmt.Errorf("failed to register controller %q: %w", controller.GetName(), err)})
 					return
 				}
 			}
 
 			// Start the shared manager (this blocks until context is cancelled)
 			if err := sharedManager.Start(ctx); err != nil {
-				klog.ErrorS(err, "Failed to start shared controller manager")
+				cancel(controllerManagerError{fmt.Errorf("failed to start shared controller manager: %w", err)})
 			}
 		})
 	}
@@ -959,8 +965,18 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 		klog.Warningf("Controller manager did not shut down within 45s, exiting anyway")
 	}
 
+	// A signal or `rdd svc stop` cancels the parent context, which is a
+	// normal shutdown.
+	if cause, ok := errors.AsType[controllerManagerError](context.Cause(ctx)); ok {
+		return cause.error
+	}
 	return nil
 }
+
+// controllerManagerError wraps a controller manager failure, so that Run
+// can tell it apart from a normal shutdown when it reads the cancellation
+// cause.
+type controllerManagerError struct{ error }
 
 // createServerChain creates the apiserver instances connected via delegation.
 func createServerChain(config options.CompletedConfig) (*aggregatorapiserver.APIAggregator, error) {
