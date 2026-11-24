@@ -440,8 +440,7 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 	}
 
 	if limaVM.Spec.Running && !app.Spec.Running {
-		limaVM.Spec.Running = false
-		if err := r.Update(ctx, limaVM); err != nil {
+		if err := r.setLimaVMRunning(ctx, limaVM, false); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to propagate running state to LimaVM: %w", err)
 		}
 		return ctrl.Result{}, nil
@@ -491,8 +490,7 @@ func (r *AppReconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Res
 	}
 
 	if !limaVM.Spec.Running && app.Spec.Running {
-		limaVM.Spec.Running = true
-		if err := r.Update(ctx, limaVM); err != nil {
+		if err := r.setLimaVMRunning(ctx, limaVM, true); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to propagate running state to LimaVM: %w", err)
 		}
 		return ctrl.Result{}, nil
@@ -745,4 +743,15 @@ func (r *AppReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&v1alpha1.App{}, builder.WithPredicates(predicates.WatchEventLogger("app"))).
 		Owns(&limav1alpha1.LimaVM{}).
 		Complete(r)
+}
+
+// setLimaVMRunning sets the LimaVM's spec.running with a merge patch. The
+// LimaVM comes from the informer cache, which can lag behind the API server.
+// When it does, Update would send the stale resourceVersion and fail with a
+// conflict. A merge patch leaves the resourceVersion out, so the API server
+// applies it to the current object.
+func (r *AppReconciler) setLimaVMRunning(ctx context.Context, limaVM *limav1alpha1.LimaVM, running bool) error {
+	patch := client.MergeFrom(limaVM.DeepCopy())
+	limaVM.Spec.Running = running
+	return r.Patch(ctx, limaVM, patch)
 }
