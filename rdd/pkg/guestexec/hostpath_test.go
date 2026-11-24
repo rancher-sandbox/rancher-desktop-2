@@ -86,3 +86,29 @@ func TestTranslateHostPathRootedUnderUNCCwd(t *testing.T) {
 		})
 	}
 }
+
+func TestIsDriveAbsolute(t *testing.T) {
+	cases := []struct {
+		path string
+		want bool
+	}{
+		{`C:\data`, true},
+		{`C:/data`, true},
+		{`c:\`, true},
+		{`z:/`, true},
+		{`C:`, false},
+		{`C:data`, false},
+		{`\data`, false},
+		{`/data`, false},
+		{`data`, false},
+		{`\\server\share`, false},
+		{`\\?\C:\data`, false},
+		{`1:\data`, false},
+		{"", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.path, func(t *testing.T) {
+			assert.Equal(t, IsDriveAbsolute(tc.path), tc.want)
+		})
+	}
+}

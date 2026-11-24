@@ -62,6 +62,28 @@ func TranslateHostPath(arg string) (string, error) {
 	return slashed, nil
 }
 
+// IsDriveAbsolute reports whether the host path starts with a drive and a
+// slash or backslash, as in `C:\data`, `C:/data` or `c:\`. TranslateHostPath
+// resolves such a path without a working directory.
+func IsDriveAbsolute(hostPath string) bool {
+	_, _, ok := splitDrive(strings.ReplaceAll(hostPath, `\`, "/"))
+	return ok
+}
+
+// CutVolumeSource drops the leading colons of a volume spec and cuts the
+// source at the next colon, as nerdctl's splitVolumeSpec does, except that a
+// leading drive's colon stays in the source. found reports whether a colon
+// ended the source, and rest is what follows it.
+func CutVolumeSource(spec string) (source, rest string, found bool) {
+	spec = strings.TrimLeft(spec, ":")
+	drive := ""
+	if len(spec) >= 2 && spec[1] == ':' && isDriveLetter(spec[0]) {
+		drive, spec = spec[:2], spec[2:]
+	}
+	source, rest, found = strings.Cut(spec, ":")
+	return drive + source, rest, found
+}
+
 // relativeBase splits a relative host path into the host directory it
 // resolves against and the part to join to that directory.
 func relativeBase(slashed string) (base, rest string, err error) {
