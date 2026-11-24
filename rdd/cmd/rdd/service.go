@@ -24,6 +24,7 @@ import (
 	cliflag "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/flag"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/developer"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/perf"
 	service "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/cmd"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail"
@@ -129,6 +130,7 @@ func startAndWaitForReady(ctx context.Context, serveArgs []string, timeout time.
 	// during JSON serialization. Without this, a server that starts in the
 	// same second would appear to have a startTime *before* beforeStart.
 	beforeStart := time.Now().Truncate(time.Second)
+	start := time.Now()
 	if err := service.Start(ctx, serveArgs); err != nil {
 		return err
 	}
@@ -140,7 +142,11 @@ func startAndWaitForReady(ctx context.Context, serveArgs []string, timeout time.
 	if err := service.Wait(ctx); err != nil {
 		return err
 	}
-	return waitForFreshDiscoveryConfigMap(ctx, beforeStart)
+	if err := waitForFreshDiscoveryConfigMap(ctx, beforeStart); err != nil {
+		return err
+	}
+	perf.Since(ctx, "svc.start", start)
+	return nil
 }
 
 // waitForFreshDiscoveryConfigMap polls until the discovery ConfigMap
