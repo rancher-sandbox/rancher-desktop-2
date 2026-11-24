@@ -31,6 +31,11 @@ type CompletedOptions struct {
 func NewOptions() *Options {
 	return &Options{
 		Enabled: false,
+		// kine sets its defaults in its command-line flags (pkg/app/app.go),
+		// so a field that kine adds stays zero here until rdd sets it. A
+		// zero poll interval, for one, makes every watch fail. Calling
+		// kine's app.Config would fill in the defaults, but it also reads
+		// KINE_* and AWS_* variables from rdd's environment.
 		EndpointConfig: endpoint.Config{
 			// TODO Setup certs
 			CompactBatchSize:    1000,
@@ -40,6 +45,7 @@ func NewOptions() *Options {
 			EmulatedETCDVersion: etcdversion.Version,
 			NotifyInterval:      5 * time.Second,
 			PollBatchSize:       500,
+			PollInterval:        time.Second,
 		},
 	}
 }
