@@ -20,7 +20,6 @@
 
 import { Console } from 'console';
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import stream from 'stream';
 import util from 'util';
@@ -43,12 +42,12 @@ export function setLogLevel(level: logLevel): void {
 /**
  * The directory that a Log writes to unless its caller names one.  Opening a
  * log truncates its file, and under Jest paths.log_dir is the log directory
- * of a real instance.  So unit tests (Jest sets NODE_ENV to "test") get a new
- * temporary directory instead, and a test that creates a Log does not empty
+ * of a real instance.  So unit tests (Jest sets NODE_ENV to "test") write to
+ * paths.log_dir/jest instead, and a test that creates a Log does not empty
  * that instance's log of the same name.
  */
 const defaultLogDir = process.env.NODE_ENV === 'test'
-  ? fs.mkdtempSync(path.join(os.tmpdir(), 'rd-logs-'))
+  ? path.join(paths.log_dir, 'jest')
   : paths.log_dir;
 
 export class Log {

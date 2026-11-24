@@ -36,7 +36,8 @@ describe('clearLoggingDirectory', () => {
       fs.writeFileSync(path.join(logDir, name), '');
     }
     clearLoggingDirectory();
-    expect(fs.readdirSync(logDir).sort()).toEqual(['rdd.stderr.log', 'rdd.stdout.log']);
+    // Loading logging.ts under Jest creates the jest subdirectory.
+    expect(fs.readdirSync(logDir).sort()).toEqual(['jest', 'rdd.stderr.log', 'rdd.stdout.log']);
   });
 });
 
@@ -48,6 +49,7 @@ describe('Log', () => {
     const log = new Log('unit-test');
 
     await log.fdStream;
+    expect(log.path).toBe(path.join(logDir, 'jest', 'unit-test.log'));
     expect(fs.readFileSync(logFile, 'utf8')).toBe('kept');
   });
 });
