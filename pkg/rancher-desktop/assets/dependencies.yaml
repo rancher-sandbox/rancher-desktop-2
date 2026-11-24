@@ -164,30 +164,30 @@ dockerProvidedCredentialHelpers:
 electron:
   assets:
     - arch: amd64
-      checksum: sha256:64117e1344ea01b749d8ce17b2cfe850e1b321adf844ae9cbfb7a7bfdca11a20
+      checksum: sha256:151d249b646eb8b99f1bea40aff217b10d8e21246ad8c07bb3a5982e2722660f
       platform: darwin
-      url: https://github.com/electron/electron/releases/download/v45.3.2/electron-v45.3.2-darwin-x64.zip
+      url: https://github.com/electron/electron/releases/download/v45.3.3/electron-v45.3.3-darwin-x64.zip
     - arch: arm64
-      checksum: sha256:8bdf5d55fbcc2c348b5d34b9e87a364cd2947d00b7c8bfadc6cc50233cd79ac6
+      checksum: sha256:25ae0ce40ee462433c1029b8fcc485949fc8a89394b62b70887d7793898edc89
       platform: darwin
-      url: https://github.com/electron/electron/releases/download/v45.3.2/electron-v45.3.2-darwin-arm64.zip
+      url: https://github.com/electron/electron/releases/download/v45.3.3/electron-v45.3.3-darwin-arm64.zip
     - arch: amd64
-      checksum: sha256:0ae270dcca192d2f0a0e2be585307a2460f59303d76b7d19171fc6442d72a829
+      checksum: sha256:0a63ce0e2b6a69d6ced7194949934b8414a6dadeca82910f88dc8720a1433269
       platform: linux
-      url: https://github.com/electron/electron/releases/download/v45.3.2/electron-v45.3.2-linux-x64.zip
+      url: https://github.com/electron/electron/releases/download/v45.3.3/electron-v45.3.3-linux-x64.zip
     - arch: arm64
-      checksum: sha256:e869334b60a1768b2cbb0ae066d25de333511cbb1957cdac9a345e120d41e11b
+      checksum: sha256:d0f66fca246ae244b8a9e08344b1d9383534e912ef364a80c5afe6e1698705a2
       platform: linux
-      url: https://github.com/electron/electron/releases/download/v45.3.2/electron-v45.3.2-linux-arm64.zip
+      url: https://github.com/electron/electron/releases/download/v45.3.3/electron-v45.3.3-linux-arm64.zip
     - arch: amd64
-      checksum: sha256:cd1ab0d49c2f76838c0c9ff75afefb4d9d85ca59036691932bf35be8eceba98b
+      checksum: sha256:49dd2d3875944f08de03d34595cd30093c588b9edcabb41a0ac481028a3a5a8a
       platform: windows
-      url: https://github.com/electron/electron/releases/download/v45.3.2/electron-v45.3.2-win32-x64.zip
+      url: https://github.com/electron/electron/releases/download/v45.3.3/electron-v45.3.3-win32-x64.zip
     - arch: arm64
-      checksum: sha256:89dc2cf11e0913e1b6d2d41f321c4789516548be86be9af0bd607b01d6e610c2
+      checksum: sha256:86a22b905a56566a221dfc225750317e50be326b33d8bf29292bc883b78661e3
       platform: windows
-      url: https://github.com/electron/electron/releases/download/v45.3.2/electron-v45.3.2-win32-arm64.zip
-  version: 45.3.2
+      url: https://github.com/electron/electron/releases/download/v45.3.3/electron-v45.3.3-win32-arm64.zip
+  version: 45.3.3
 helm:
   assets:
     - arch: amd64
