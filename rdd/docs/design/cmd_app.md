@@ -44,7 +44,7 @@ rdd set --wait=false running=true
 
 ## `rdd start`
 
-Start Rancher Desktop by setting `running=true` on the App singleton, creating the App with default settings if it does not yet exist. This is shorthand for `rdd set running=true`, sharing its `--wait`, `--timeout`, and exit-code behavior.
+Start Rancher Desktop by setting `running=true` on the App singleton, creating the App with default settings if it does not yet exist. This is shorthand for `rdd set running=true`, sharing its `--wait`, `--timeout`, and exit-code behavior. When the wait succeeds, `rdd start` prints `Rancher Desktop is running.` to stdout. With `--wait=false`, it returns without printing that line.
 
 ## `rdd stop`
 
