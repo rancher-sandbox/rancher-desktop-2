@@ -7956,12 +7956,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cronstrue@npm:3.41.0":
-  version: 3.41.0
-  resolution: "cronstrue@npm:3.41.0"
+"cronstrue@npm:3.42.0":
+  version: 3.42.0
+  resolution: "cronstrue@npm:3.42.0"
   bin:
     cronstrue: bin/cli.js
-  checksum: 10c0/bdf915915ff91c28795649c8d9349b3c65c0b44c04cd247cf0904be5ce2b1fd4086dc4e926bd56cbf03533e6eb749a17dee5ce29d9337bb52cb0d5f2bdbac54c
+  checksum: 10c0/f119959a3ef77fe51cc764c428177923295e8c24bbe36fb0bc6c426750547f037191a77090caf6b9a01428a0e22628cf9e506fbb0822c10df6f849dad7adfefe
   languageName: node
   linkType: hard
 
@@ -14741,7 +14741,7 @@ __metadata:
     chart.js: "npm:4.6.1"
     cookie-universal: "npm:2.2.2"
     cron-validator: "npm:1.4.0"
-    cronstrue: "npm:3.41.0"
+    cronstrue: "npm:3.42.0"
     cross-env: "npm:10.1.0"
     cross-spawn: "npm:7.0.6"
     css-loader: "npm:7.1.5"
