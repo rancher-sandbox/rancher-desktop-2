@@ -14,6 +14,7 @@ This service directory contains the following files:
 | --- | --- |
 | `args.json`   | service config settings (written by `rdd service create` or `rdd service start`)
 | `rdd.pid`     | pid of the control plane process (normally a background daemon) |
+| `rdd.lock`    | lock held by the running control plane process |
 | `rdd.sqlite3` | control plane data store |
 
 "Runs `rdd service ...`" means that the command performs the functionality in-progress, with the exception of `rdd service serve`, which will launch a background process.
@@ -75,6 +76,8 @@ Configuration options (incomplete):
 Backgrounds itself (fork && exec) unless invoked with `--background=false` for easier debugging.
 
 Saves its own PID into `rdd.pid` and then starts the apiserver and the controller-manager with the options on its command line.
+
+`serve` holds a lock on `rdd.lock` while it runs, so a second `serve` for the same instance exits with an error instead of overwriting `rdd.pid`.
 
 If the controller-manager fails, for example because it cannot install a CRD, `serve` shuts down and exits with an error.
 

@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gofrs/flock"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -661,6 +662,21 @@ func shouldEnableController(controller base.Controller, spec string) bool {
 	return included && !excluded
 }
 
+// lockServe takes the exclusive service lock at path, so that only one serve
+// writes the PID file. The lock uses a file of its own, because on Windows a
+// lock on the PID file would stop [PID] from reading it.
+func lockServe(path string) (func(), error) {
+	fl := flock.New(path)
+	locked, err := fl.TryLock()
+	if err != nil {
+		return nil, fmt.Errorf("failed to lock %q: %w", path, err)
+	}
+	if !locked {
+		return nil, fmt.Errorf("control plane %q is already running", instance.Name())
+	}
+	return func() { _ = fl.Unlock() }, nil
+}
+
 // NewServeCommand creates a *cobra.Command object with default parameters.
 func NewServeCommand(ctx context.Context) *cobra.Command {
 	s := options.NewOptions(ctx, instance.Dir())
@@ -686,6 +702,11 @@ func NewServeCommand(ctx context.Context) *cobra.Command {
 					return err
 				}
 			}
+			unlock, err := lockServe(instance.ServeLockFile())
+			if err != nil {
+				return err
+			}
+			defer unlock()
 
 			// Register the interrupt event before writing the PID file so a peer can
 			// confirm our identity (`process.IsOurProcess`) as soon as the file exists.

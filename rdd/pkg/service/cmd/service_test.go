@@ -8,8 +8,10 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -22,8 +24,24 @@ import (
 	"k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
 )
+
+// Only one serve may hold the service lock at a time.
+func TestLockServeIsExclusive(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "rdd.lock")
+
+	unlock, err := lockServe(path)
+	assert.NilError(t, err)
+	_, err = lockServe(path)
+	assert.Error(t, err, fmt.Sprintf("control plane %q is already running", instance.Name()))
+
+	unlock()
+	unlock, err = lockServe(path)
+	assert.NilError(t, err)
+	unlock()
+}
 
 // Setting -v on the serve command must only update the logging
 // configuration, which logsapi.ValidateAndApply later applies to klog.
