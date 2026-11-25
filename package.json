@@ -128,7 +128,7 @@
     "floating-vue": "5.4.0",
     "globals": "17.14.0",
     "jest": "30.5.2",
-    "jquery": "4.0.0",
+    "jquery": "4.1.0",
     "js-yaml-loader": "1.2.2",
     "jsdom": "31.0.1",
     "marked": "18.2.1",
