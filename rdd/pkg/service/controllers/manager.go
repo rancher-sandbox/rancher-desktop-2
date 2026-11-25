@@ -5,11 +5,9 @@
 package controllers
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -21,12 +19,7 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apiequality "k8s.io/apimachinery/pkg/api/equality"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -40,6 +33,7 @@ import (
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/crds"
 )
 
 // SharedControllerManager manages all embedded RDD controllers using a single controller-runtime manager.
@@ -416,45 +410,25 @@ func (scm *SharedControllerManager) installControllerCRDs(ctx context.Context) e
 			continue
 		}
 
-		decoder := yaml.NewYAMLToJSONDecoder(bytes.NewBufferString(crdData))
-		for {
-			var crd apiextensionsv1.CustomResourceDefinition
-			if err := decoder.Decode(&crd); err != nil {
-				if errors.Is(err, io.EOF) {
-					break
-				}
-				return fmt.Errorf("failed to decode CRD for controller %s: %w", controllerName, err)
-			}
-			if crd.Name == "" {
-				continue // Comment block before the first document has no data.
-			}
-
+		decoded, err := crds.Decode(crdData)
+		if err != nil {
+			return fmt.Errorf("failed to decode CRD for controller %s: %w", controllerName, err)
+		}
+		for _, crd := range decoded {
 			// Update existing CRDs so new schema fields take effect on upgrade.
-			existing, err := crdClient.Get(ctx, crd.Name, metav1.GetOptions{})
-			if err == nil {
-				if !apiequality.Semantic.DeepEqual(existing.Spec, crd.Spec) {
-					existing.Spec = crd.Spec
-					if _, err := crdClient.Update(ctx, existing, metav1.UpdateOptions{}); err != nil {
-						return fmt.Errorf("failed to update CRD for controller %s: %w", controllerName, err)
-					}
-					klog.Infof("Updated %s CRD %s", controllerName, crd.Name)
-				} else {
-					klog.V(2).Infof("%s CRD %s is up to date", controllerName, crd.Name)
-				}
-				crdInfos = append(crdInfos, crdInfo{controller: controller, crd: crd, needsWait: false})
-				continue
+			outcome, err := crds.Apply(ctx, crdClient, &crd)
+			if err != nil {
+				return fmt.Errorf("failed to install CRD for controller %s: %w", controllerName, err)
 			}
-			if !apierrors.IsNotFound(err) {
-				return fmt.Errorf("failed to check if CRD exists for controller %s: %w", controllerName, err)
+			switch outcome {
+			case crds.Created:
+				klog.Infof("Installed %s CRD %s", controllerName, crd.Name)
+			case crds.Updated:
+				klog.Infof("Updated %s CRD %s", controllerName, crd.Name)
+			case crds.Unchanged:
+				klog.V(2).Infof("%s CRD %s is up to date", controllerName, crd.Name)
 			}
-
-			// Create the CRD
-			klog.Infof("Installing %s CRD %s", controllerName, crd.Name)
-			if _, err := crdClient.Create(ctx, &crd, metav1.CreateOptions{}); err != nil {
-				return fmt.Errorf("failed to create CRD for controller %s: %w", controllerName, err)
-			}
-
-			crdInfos = append(crdInfos, crdInfo{controller: controller, crd: crd, needsWait: true})
+			crdInfos = append(crdInfos, crdInfo{controller: controller, crd: crd, needsWait: outcome == crds.Created})
 		}
 	}
 
@@ -472,23 +446,7 @@ func (scm *SharedControllerManager) installControllerCRDs(ctx context.Context) e
 		controllerName := info.controller.GetName()
 		klog.Infof("Waiting for %s CRD to be established", controllerName)
 
-		err := wait.PollUntilContextTimeout(ctx, 100*time.Millisecond, 30*time.Second, true, func(ctx context.Context) (bool, error) {
-			crd, err := crdClient.Get(ctx, info.crd.Name, metav1.GetOptions{})
-			if err != nil {
-				klog.ErrorS(err, "Failed to get CRD during establishment wait", "controller", controllerName, "crd", info.crd.Name)
-				return false, err
-			}
-
-			// Debug: Log current conditions
-			klog.V(2).InfoS("Checking CRD conditions", "controller", controllerName, "conditions", len(crd.Status.Conditions))
-			for i, condition := range crd.Status.Conditions {
-				klog.V(3).InfoS("CRD condition", "controller", controllerName, "index", i, "type", condition.Type, "status", condition.Status, "reason", condition.Reason)
-				if condition.Type == apiextensionsv1.Established && condition.Status == apiextensionsv1.ConditionTrue {
-					return true, nil
-				}
-			}
-			return false, nil
-		})
+		err := crds.WaitEstablished(ctx, crdClient, info.crd.Name, 30*time.Second)
 		if err != nil {
 			return fmt.Errorf("failed to establish CRD for controller %s: %w", controllerName, err)
 		}
