@@ -1,0 +1,26 @@
+name: Runner Speed Probe
+description: >-
+  Times fixed CPU, memory, process-start and disk work on the runner and
+  prints each result as an "rdd-perf:" line in the job log, so BATS
+  timings from runs on machines of different speed can be compared.
+
+inputs:
+  when:
+    description: '"before" or "after" the BATS run, written into each record as its "when" label.'
+    required: true
+  dir:
+    description: Directory for the disk test; empty means the home directory, which holds the rdd instances.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+  - name: Run speed probe
+    shell: bash
+    run: |
+      args=(--when "${{ inputs.when }}")
+      if [[ -n "${{ inputs.dir }}" ]]; then
+        args+=(--dir "${{ inputs.dir }}")
+      fi
+      go run "${{ github.action_path }}/probe.go" "${args[@]}"
