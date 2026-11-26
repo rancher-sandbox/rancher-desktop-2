@@ -24,10 +24,8 @@ entries:
   source: build/mkcert
   mode: "0755"
 
-# Guest binaries built from the sources under src/ (rancher-desktop-2#806),
-# which used to live in rancher-desktop-opensuse and were baked into the image
-# by its Dockerfile. The Makefile cross-compiles them for the distro's
-# architecture into build/guest/.
+# Guest binaries built from the sources under src/. The Makefile
+# cross-compiles them for the distro's architecture into build/guest/.
 - path: /usr/local/bin/rancher-desktop-guest-agent
   source: build/guest/rancher-desktop-guest-agent
   mode: "0755"
@@ -40,25 +38,36 @@ entries:
 - path: /usr/local/bin/wsl-proxy
   source: build/guest/wsl-proxy
   mode: "0755"
+# Only rd-init.service runs this binary, and only the raw profile installs that
+# unit.
 - path: /usr/local/bin/rd-init
   source: build/guest/rd-init
   mode: "0755"
+  profiles: [raw]
 - path: /usr/local/bin/rdd-guest
   source: build/guest/rdd-guest
   mode: "0755"
 
+# The provision script and its unit, which rdd's Lima template starts.
+- path: /usr/local/libexec/rancher-desktop/provision.sh
+  source: root/usr/local/libexec/rancher-desktop/provision.sh
+  mode: "0755"
+- path: /usr/local/lib/systemd/system/rancher-desktop-provision.service
+  source: root/usr/local/lib/systemd/system/rancher-desktop-provision.service
+- path: /usr/local/lib/systemd/system/rancher-desktop-provision.service.d/network-namespace.conf
+  source: root/usr/local/lib/systemd/system/rancher-desktop-provision.service.d/network-namespace.conf
+  profiles: [wsl]
+
 # ---------------------------------------------------------------------------
-# openSUSE guest assets, moved out of the distro's `root/` tree and `config.sh`
-# (rancher-desktop-2#805). The overlay is now the only source of these files, so
-# the coverage check in manifest_coverage_test.go asserts every path here.
+# openSUSE guest configuration
 #
-# Modes and per-profile scoping transcribe what config.sh used to do at build:
-# its chmod block set the modes below; its raw branch deleted every
-# `*/network-namespace.conf` (so those are wsl-only) and its wsl branch deleted
-# lima-init.service.d/requires-{cidata,rd-init}.conf (so those are raw-only).
+# On WSL, network-namespace.service creates a separate network namespace for
+# RD's services. Each network-namespace.conf drop-in starts its service in that
+# namespace through wsl-exec, so the drop-ins are wsl-only.
 # ---------------------------------------------------------------------------
 
-# /etc/sudoers.d must be 0750 (config.sh chmod'd it); its files default to 0644.
+# Give /etc/sudoers.d the 0750 mode that openSUSE's sudo package uses. The
+# files in it get the manifest's default mode, 0644.
 - path: /etc/sudoers.d
   type: dir
   mode: "0750"
@@ -68,12 +77,23 @@ entries:
   source: root/usr/local/lib/systemd/system/buildkitd.service
 - path: /usr/local/lib/systemd/system/buildkitd.socket
   source: root/usr/local/lib/systemd/system/buildkitd.socket
+# journal-to-console.service mirrors the journal to the VM's serial console, and
+# Lima saves that console's output as a boot log. Lima's WSL2 driver doesn't
+# keep a console log, so only the raw profile needs this unit.
 - path: /usr/local/lib/systemd/system/journal-to-console.service
   source: root/usr/local/lib/systemd/system/journal-to-console.service
+  profiles: [raw]
+# lima-init.service runs Lima's boot.sh. On WSL, Lima's WSL2 driver runs
+# boot.sh itself, through wsl.exe, so only the raw profile needs this unit.
 - path: /usr/local/lib/systemd/system/lima-init.service
   source: root/usr/local/lib/systemd/system/lima-init.service
+  profiles: [raw]
+# mnt-lima\x2dcidata.mount mounts Lima's cidata disk. On WSL, Lima's WSL2
+# driver doesn't attach that disk. It points boot.sh at the instance's cidata
+# directory on the host instead, so only the raw profile needs this unit.
 - path: '/usr/local/lib/systemd/system/mnt-lima\x2dcidata.mount'
   source: root/usr/local/lib/systemd/system/mnt-lima-cidata.mount
+  profiles: [raw]
 - path: /usr/local/lib/systemd/system/network-namespace.service
   source: root/usr/local/lib/systemd/system/network-namespace.service
 - path: /usr/local/lib/systemd/system/network-setup.service
@@ -82,8 +102,12 @@ entries:
   source: root/usr/local/lib/systemd/system/rancher-desktop-guest-agent.service
 - path: /usr/local/lib/systemd/system/rancher-desktop.target
   source: root/usr/local/lib/systemd/system/rancher-desktop.target
+# rd-init.service applies the cloud-init data on Lima's cidata disk. Lima's
+# WSL2 driver doesn't attach that disk, so only the raw profile needs this
+# unit.
 - path: /usr/local/lib/systemd/system/rd-init.service
   source: root/usr/local/lib/systemd/system/rd-init.service
+  profiles: [raw]
 - path: /usr/local/lib/systemd/system/rdd-guest.service
   source: root/usr/local/lib/systemd/system/rdd-guest.service
 - path: /usr/local/lib/systemd/system/wsl-proxy.service
@@ -136,9 +160,6 @@ entries:
   profiles: [wsl]
 - path: /usr/local/lib/systemd/system/k3s.service.d/target.conf
   source: root/usr/local/lib/systemd/system/k3s.service.d/target.conf
-- path: /usr/local/lib/systemd/system/lima-init.service.d/network-namespace.conf
-  source: root/usr/local/lib/systemd/system/lima-init.service.d/network-namespace.conf
-  profiles: [wsl]
 - path: /usr/local/lib/systemd/system/lima-init.service.d/requires-cidata.conf
   source: root/usr/local/lib/systemd/system/lima-init.service.d/requires-cidata.conf
   profiles: [raw]
@@ -180,15 +201,16 @@ entries:
   source: root/usr/local/lib/tmpfiles.d/fs-tmp.conf
   profiles: [wsl]
 
-# systemctl-enable .wants symlinks, moved out of config.sh's `systemctl enable`
-# lines. config.sh enabled ten RD units; the Lima template re-enables
-# buildkitd/containerd/docker per container engine at provision, so only the
-# other seven need a static symlink here. Each points at its unit and lands in
-# the same <target>.wants directory `systemctl enable` would use, so it stays
-# runtime-disableable.
+# Enable units at boot. A symlink in <target>.wants/ makes the target want the
+# unit, so systemd starts the unit whenever it starts the target. These are the
+# links that `systemctl enable` creates from each unit's [Install] section, so
+# `systemctl disable` can still remove them. buildkitd, containerd and docker
+# don't need links here, because provision.sh enables the selected engine on
+# every boot.
 - path: /etc/systemd/system/multi-user.target.wants/lima-init.service
   type: symlink
   target: /usr/local/lib/systemd/system/lima-init.service
+  profiles: [raw]
 - path: /etc/systemd/system/multi-user.target.wants/rd-init.service
   type: symlink
   target: /usr/local/lib/systemd/system/rd-init.service
@@ -197,6 +219,11 @@ entries:
   type: symlink
   target: /usr/local/lib/systemd/system/journal-to-console.service
   profiles: [raw]
+# Start WSL networking at boot, alongside Lima's boot.
+- path: /etc/systemd/system/multi-user.target.wants/network-setup.service
+  type: symlink
+  target: /usr/local/lib/systemd/system/network-setup.service
+  profiles: [wsl]
 - path: /etc/systemd/system/rancher-desktop.target.wants/network-setup.service
   type: symlink
   target: /usr/local/lib/systemd/system/network-setup.service
