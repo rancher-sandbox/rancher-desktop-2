@@ -2,7 +2,7 @@ import os from 'os';
 import path from 'path';
 
 import Electron, {
-  BrowserWindow, app, shell, ipcMain, nativeTheme, screen, WebContentsView,
+  BrowserWindow, app, dialog, shell, ipcMain, nativeTheme, screen, WebContentsView,
 } from 'electron';
 
 import { getSettings } from '@pkg/config/settingsImpl';
@@ -15,8 +15,10 @@ import Latch from '@pkg/utils/latch';
 import Logging from '@pkg/utils/logging';
 import paths from '@pkg/utils/paths';
 import { CommandOrControl, Shortcuts } from '@pkg/utils/shortcuts';
+import { markStartup, reportStartup } from '@pkg/utils/startupTiming';
 import { mainRoutes } from '@pkg/window/constants';
 import { openPreferences } from '@pkg/window/preferences';
+import { closeSplash, hideSplash, themeBackgroundColor } from '@pkg/window/splash';
 
 const console = Logging[`window_${ process.type || 'unknown' }`];
 
@@ -25,6 +27,9 @@ const console = Logging[`window_${ process.type || 'unknown' }`];
  * assigned by electron).
  */
 export const windowMapping: Record<string, number> = {};
+
+let firstWindowCreated = false;
+let startupFinished = false;
 
 export const webRoot = `app://${ isDevBuild ? '' : '.' }`;
 
@@ -60,6 +65,51 @@ function isInternalURL(url: string) {
 }
 
 /**
+ * Record the event that ended startup and log the startup timing.
+ */
+function recordStartupEnd(mark: string) {
+  startupFinished = true;
+  markStartup(mark);
+  reportStartup(Logging.background);
+}
+
+/**
+ * Once the first app window is on screen, or has closed, log the startup timing
+ * and close the splash.
+ */
+function finishStartup(mark: string) {
+  recordStartupEnd(mark);
+  closeSplash();
+}
+
+/**
+ * Show a path under the home directory as `~/...`, so the narrow macOS error
+ * box fits the usual log directory on one line. Windows doesn't use `~` for
+ * the home directory, so Windows paths stay as they are.
+ */
+function shortenHomePath(filePath: string): string {
+  const home = os.homedir();
+
+  if (process.platform === 'win32' || !filePath.startsWith(`${ home }${ path.sep }`)) {
+    return filePath;
+  }
+
+  return `~${ filePath.slice(home.length) }`;
+}
+
+/**
+ * Show an error box and quit, because the first app window failed to load its
+ * page and the app has nothing usable on screen.
+ */
+function failStartup(errorCode: number, errorDescription: string, url: string) {
+  recordStartupEnd('first-window-failed');
+  console.error(`First window failed to load ${ url }: ${ errorCode } (${ errorDescription })`);
+  hideSplash();
+  dialog.showErrorBox(t('fatalError.title'), t('fatalError.windowLoadFailed', { error: errorDescription, logDir: shortenHomePath(paths.log_dir) }));
+  app.quit();
+}
+
+/**
  * Open a given window; if it is already open, focus it.
  * @param name The window identifier; this controls window re-use.
  * @param url The URL to load into the window.
@@ -73,6 +123,31 @@ export function createWindow(name: string, url: string, options: Electron.Browse
   }
 
   window = new BrowserWindow(options);
+  if (!firstWindowCreated) {
+    firstWindowCreated = true;
+    markStartup('first-window-created');
+    // A window created hidden, such as a dialog, shows itself once its page
+    // has rendered, so its 'show' event is when the user first sees it.  The
+    // main window starts visible, so its first page load is the closest event.
+    // A crashed page still leaves the main window on screen, so that ends
+    // startup too.  When the first page fails to load, a hidden window never
+    // shows itself and a visible one stays empty, so the app shows an error
+    // box and quits.
+    if (options.show === false) {
+      window.once('show', () => finishStartup('first-window-shown'));
+    } else {
+      window.webContents.once('did-finish-load', () => finishStartup('first-window-loaded'));
+      window.webContents.once('render-process-gone', () => finishStartup('first-window-crashed'));
+    }
+    // Stopping a page that is still loading reports ERR_ABORTED (-3), which is
+    // not a failure of the page.
+    window.webContents.on('did-fail-load', (_event, errorCode, errorDescription, url, isMainFrame) => {
+      if (isMainFrame && !startupFinished && errorCode !== -3) {
+        failStartup(errorCode, errorDescription, url);
+      }
+    });
+    window.once('closed', () => finishStartup('first-window-closed'));
+  }
   window.webContents.on('console-message', (event) => {
     const { level, sourceId, lineNumber, message } = event;
     const method = level === 'warning' ? 'warn' : level;
@@ -107,6 +182,10 @@ export function createWindow(name: string, url: string, options: Electron.Browse
 
 const mainUrl = process.env.RD_ENV_PLUGINS_DEV ? 'https://localhost:8888' : `${ webRoot }/index.html`;
 
+function updateMainBackground() {
+  getWindow('main')?.setBackgroundColor(themeBackgroundColor());
+}
+
 /**
  * Open the main window; if it is already open, focus it.
  */
@@ -122,16 +201,19 @@ export function openMain() {
     'main',
     mainUrl,
     {
-      width:          defaultWidth,
-      height:         defaultHeight,
-      resizable:      !process.env.RD_MOCK_FOR_SCREENSHOTS, // remove window's shadows while taking screenshots
-      icon:           path.join(paths.resources, 'icons', 'logo-square-512.png'),
-      webPreferences: {
+      width:           defaultWidth,
+      height:          defaultHeight,
+      resizable:       !process.env.RD_MOCK_FOR_SCREENSHOTS, // remove window's shadows while taking screenshots
+      icon:            path.join(paths.resources, 'icons', 'logo-square-512.png'),
+      backgroundColor: themeBackgroundColor(),
+      webPreferences:  {
         devTools:         !app.isPackaged,
         nodeIntegration:  true,
         contextIsolation: false,
       },
     });
+  nativeTheme.off('updated', updateMainBackground);
+  nativeTheme.on('updated', updateMainBackground);
 
   if (!Shortcuts.isRegistered(window)) {
     Shortcuts.register(

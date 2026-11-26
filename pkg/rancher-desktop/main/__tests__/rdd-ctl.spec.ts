@@ -18,9 +18,17 @@ const modules = mockModules({
   '@pkg/utils/paths':   {
     getRDDPath: jest.fn(() => '/dev/null'),
   },
+  '@pkg/window/splash': {
+    hideSplash: jest.fn(),
+  },
+  electron: {
+    app:    { quit: jest.fn() },
+    dialog: { showErrorBox: jest.fn() },
+  },
 });
 
 const { isFirstRunNeeded } = await import('@pkg/main/rdd-ctl');
+const { default: mainEvents } = await import('@pkg/main/mainEvents');
 
 describe('isFirstRunNeeded', () => {
   const { spawnFile } = modules['@pkg/utils/childProcess'];
@@ -74,5 +82,24 @@ describe('isFirstRunNeeded', () => {
     };
     spawnFile.mockRejectedValue(new Error('Some error'));
     await expect(isFirstRunNeeded()).resolves.toBe(false);
+  });
+});
+
+describe('rdd/kube-config', () => {
+  it('should hide the splash, report an incompatible service, then quit', async() => {
+    const { spawnFile, SpawnError } = modules['@pkg/utils/childProcess'];
+    const { hideSplash } = modules['@pkg/window/splash'];
+    const { showErrorBox } = modules.electron.dialog;
+    const { quit } = modules.electron.app;
+    const error = new (SpawnError as any)();
+
+    error.code = 5;
+    spawnFile.mockRejectedValue(error);
+    await expect(mainEvents.invoke('rdd/kube-config')).rejects.toThrow('Unsupported RDD service version');
+    expect(showErrorBox).toHaveBeenCalled();
+    expect(hideSplash).toHaveBeenCalled();
+    expect(quit).toHaveBeenCalled();
+    expect(hideSplash.mock.invocationCallOrder[0]).toBeLessThan(showErrorBox.mock.invocationCallOrder[0]);
+    expect(showErrorBox.mock.invocationCallOrder[0]).toBeLessThan(quit.mock.invocationCallOrder[0]);
   });
 });
