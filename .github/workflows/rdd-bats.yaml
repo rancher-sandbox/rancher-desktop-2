@@ -301,6 +301,7 @@ jobs:
       env:
         RDD_TRACE: true
         RDD_LOG_LEVEL: trace
+        RDD_PERF: true
 
     - name: "Unix: stop resource sampler"
       if: always() && needs.check-paths.outputs.should-run && runner.os != 'Windows'

@@ -8,6 +8,7 @@ import (
 	"context"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/perf"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/process"
 )
 
@@ -43,11 +45,12 @@ type instanceState struct {
 
 // startWatcher launches a goroutine that tails the hostagent event stream and
 // tracks lifecycle phase transitions. It also reaps the hostagent process via
-// haCmd.Wait(), preventing zombies and detecting unclean exits.
+// haCmd.Wait(), preventing zombies and detecting unclean exits. bootLabels
+// label the boot timing records.
 //
 // The watcher writes phase changes to in-memory state only; the reconciler
 // reads this state and writes K8s conditions.
-func (r *LimaVMReconciler) startWatcher(ctx context.Context, name, namespace string, haCmd *exec.Cmd, instDir string, begin time.Time) {
+func (r *LimaVMReconciler) startWatcher(ctx context.Context, name, namespace string, haCmd *exec.Cmd, instDir string, begin time.Time, bootLabels []string) {
 	watchCtx, watchCancel := context.WithCancel(ctx)
 
 	state := &instanceState{
@@ -62,13 +65,13 @@ func (r *LimaVMReconciler) startWatcher(ctx context.Context, name, namespace str
 	r.instanceStates[name] = state
 	r.instanceStatesMu.Unlock()
 
-	go r.runWatcher(watchCtx, name, namespace, instDir, begin, state)
+	go r.runWatcher(watchCtx, name, namespace, instDir, begin, bootLabels, state)
 }
 
 // runWatcher is the watcher goroutine. It races haCmd.Wait() against
 // events.Watch() so that process exit is detected even without an Exiting event
 // (e.g. SIGKILL).
-func (r *LimaVMReconciler) runWatcher(ctx context.Context, name, namespace, instDir string, begin time.Time, state *instanceState) {
+func (r *LimaVMReconciler) runWatcher(ctx context.Context, name, namespace, instDir string, begin time.Time, bootLabels []string, state *instanceState) {
 	logger := log.FromContext(ctx).WithValues("instance", name, "component", "watcher")
 	defer close(state.done)
 
@@ -94,9 +97,40 @@ func (r *LimaVMReconciler) runWatcher(ctx context.Context, name, namespace, inst
 	haStdoutPath := filepath.Join(instDir, filenames.HostAgentStdoutLog)
 	haStderrPath := filepath.Join(instDir, filenames.HostAgentStderrLog)
 
+	// The hostagent emits its first event once its VM driver has started, so
+	// that event ends limavm.boot.driver. On WSL2 the driver phase covers
+	// starting and provisioning the distro, and importing it on the first boot.
+	// On VZ it also covers the guest's boot, because the VZ driver sends the
+	// first event, a vsock event, only once the guest's SSH port opens.
+	sawEvent := false
+	reqPending := map[int]time.Time{}
+
 	onEvent := func(ev hostagentevents.Event) bool {
 		state.mu.Lock()
 		defer state.mu.Unlock()
+
+		if !sawEvent {
+			sawEvent = true
+			// A hostagent that fails to start sends Exiting as its first
+			// event. Timing that event would record the failure as a fast
+			// driver phase.
+			if !ev.Status.Exiting {
+				perf.Duration(ctx, "limavm.boot.driver", ev.Time.Sub(begin), bootLabels...)
+			}
+		}
+		if rp := ev.Status.RequirementProgress; rp != nil {
+			if !rp.Done && !rp.Failed {
+				reqPending[rp.Step] = ev.Time
+			} else if pending, ok := reqPending[rp.Step]; ok {
+				delete(reqPending, rp.Step)
+				result := "done"
+				if rp.Failed {
+					result = "failed"
+				}
+				perf.Duration(ctx, "limavm.boot.req", ev.Time.Sub(pending),
+					append(slices.Clip(bootLabels), "req", rp.Description, "result", result)...)
+			}
+		}
 
 		// Note: ev.Status.Degraded is intentionally not handled here.
 		// Lima's hostagent does not currently emit Degraded events, so there
@@ -112,6 +146,7 @@ func (r *LimaVMReconciler) runWatcher(ctx context.Context, name, namespace, inst
 		if ev.Status.Running {
 			if state.phase != phaseRunning {
 				logger.Info("Hostagent running")
+				perf.Duration(ctx, "limavm.boot.total", ev.Time.Sub(begin), bootLabels...)
 				state.phase = phaseRunning
 				r.enqueueReconcile(name, namespace)
 			}

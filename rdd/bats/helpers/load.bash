@@ -93,6 +93,7 @@ setup_file() {
     # that boots a VM in local_setup_file hides that cost from every per-test
     # number. Time it here instead. call_local_function reads FUNCNAME[2] to
     # find local_setup_file, so it must stay a direct call from this frame.
+    perf_mark file
     local start_ms
     start_ms=$(metrics_now_ms)
     call_local_function
@@ -124,6 +125,10 @@ teardown_file() {
     # Stop the control plane between files so logs survive for debugging; the
     # next run's setup creates a fresh instance. RDD_KEEP_RUNNING=1 keeps the
     # engine up across files so a VM-booting suite boots once.
+    #
+    # Mark "no test" first, so the records from stopping the service and from
+    # local_teardown_file don't count toward the file's last test.
+    perf_mark test -
     local start_ms
     start_ms=$(metrics_now_ms)
     capture_guest_metrics
@@ -136,6 +141,8 @@ teardown_file() {
 }
 
 setup() {
+    perf_mark test "${BATS_SUITE_TEST_NUMBER}"
+
     # Write test markers to RDD log files for easier debugging.
     # Skip if the log directory doesn't exist (test may not start a service).
     if [[ -d "${RDD_LOG_DIR}" ]]; then

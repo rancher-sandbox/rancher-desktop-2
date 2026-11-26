@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -72,6 +73,7 @@ import (
 	_ "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/rdd/notary"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/developer"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/perf"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/cmd/options"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/controllers"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/service/datastore"
@@ -440,6 +442,8 @@ func StopWithWait(ctx context.Context, wait bool, timeout time.Duration) error {
 		return fmt.Errorf("%q control plane is not running", instance.Name())
 	}
 
+	stopStart := time.Now()
+
 	// Try graceful shutdown first; Interrupt asks the daemon to run its orderly
 	// shutdown. Kill is the fallback when Interrupt fails. A hard kill skips the
 	// controller-manager drain, so hostagents survive in their own process groups
@@ -479,6 +483,7 @@ func StopWithWait(ctx context.Context, wait bool, timeout time.Duration) error {
 			case <-ticker.C:
 				if !Running() {
 					_ = os.Remove(instance.Config()) // Ignore error as file might not exist
+					perf.Since(ctx, "svc.stop", stopStart)
 					return nil
 				}
 			}
@@ -791,6 +796,13 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 	klog.Infof("Version: %+v", version.Get())
 	klog.InfoS("Golang settings", "GOGC", os.Getenv("GOGC"), "GOMAXPROCS", os.Getenv("GOMAXPROCS"), "GOTRACEBACK", os.Getenv("GOTRACEBACK"))
 
+	// perf logs each phase timing through the context's logger, so the
+	// context gets klog's logger. The controller manager marks the later
+	// phases on the same clock.
+	clock := perf.NewClock()
+	ctx = perf.WithClock(logr.NewContext(ctx, klog.Background()), clock)
+	clock.Mark(ctx, "cp.init")
+
 	// Start kine before NewConfig because BuildGenericConfig opens gRPC
 	// connections to the etcd backend immediately. Kine uses a child context
 	// cancelled after the controller manager shuts down, so the etcd client
@@ -808,6 +820,7 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 		if err := datastore.NewServer(dsConfig.Complete()).Run(kineCtx); err != nil {
 			return fmt.Errorf("failed to start kine server: %w", err)
 		}
+		clock.Mark(ctx, "cp.kine")
 	}
 
 	config, err := options.NewConfig(opts)
@@ -866,6 +879,7 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 	if err := readiness.WaitForReady(ctx, restConfig, true); err != nil {
 		return err
 	}
+	clock.Mark(ctx, "cp.apiserver_ready")
 
 	// Create the discovery ConfigMap before any controller managers register.
 	// Its creationTimestamp serves as the control plane start time.
@@ -876,6 +890,7 @@ func Run(ctx context.Context, opts options.CompletedOptions) error {
 	if err := controllers.InitDiscovery(ctx, initClient); err != nil {
 		return fmt.Errorf("failed to initialize discovery: %w", err)
 	}
+	clock.Mark(ctx, "cp.discovery")
 
 	// Start shared controller manager for enabled controllers
 	var enabledControllers []base.Controller
