@@ -40,7 +40,13 @@ func newStartCommand() *cobra.Command {
 		`),
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return setAction(cmd.Context(), []string{"running=true"}, false, wait, timeout)
+			if err := setAction(cmd.Context(), []string{"running=true"}, false, wait, timeout); err != nil {
+				return err
+			}
+			if wait {
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Rancher Desktop is running.")
+			}
+			return nil
 		},
 	}
 	command.Flags().BoolVar(&wait, "wait", true,

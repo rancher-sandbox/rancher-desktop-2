@@ -14,10 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes"
 	watchtools "k8s.io/client-go/tools/watch"
 
 	cliexit "github.com/rancher-sandbox/rancher-desktop-daemon/pkg/cli/exit"
@@ -29,9 +25,8 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/tail"
 )
 
-// startWaitTimeout bounds the wait for the API server, CRDs, and
-// controller-manager registration to land. Cold start can take well over 30s
-// in CI on slower runners.
+// startWaitTimeout bounds the wait for the control plane to become ready.
+// Cold start can take well over 30s in CI on slower runners.
 const startWaitTimeout = 90 * time.Second
 
 // stopWaitTimeout bounds the CLI wait for the control plane to shut down.
@@ -106,30 +101,22 @@ func ensureServiceRunning(ctx context.Context) error {
 		}
 		ctx, cancel := watchtools.ContextWithOptionalTimeout(ctx, startWaitTimeout)
 		defer cancel()
-		if err := service.Wait(ctx); err != nil {
-			return cliexit.Classify(err)
-		}
-		return cliexit.Classify(waitForFreshDiscoveryConfigMap(ctx, startTime))
+		return cliexit.Classify(service.Wait(ctx, startTime, nil))
 	}
 	// Pass klog verbosity transiently so V(1) tracing fires when
 	// autostart launches the daemon (e.g. from `rdd set`).
 	return cliexit.Classify(startAndWaitForReady(ctx, []string{"-v", logrusLevelToKlog()}, startWaitTimeout))
 }
 
-// startAndWaitForReady starts the service, waits for the API server and the
-// discovery ConfigMap to be ready. After an unclean shutdown the ConfigMap may
-// survive with stale data, so the freshness check waits for a ConfigMap whose
-// creationTimestamp is at or after the current startup.
-//
-// Pass timeout 0 to wait indefinitely. A finite timeout bounds both the API
-// server readiness poll and the ConfigMap freshness poll together, because
-// the apiserver may become ready before the serve command creates the ConfigMap.
+// startAndWaitForReady starts the service and waits until it is ready.
+// Pass timeout 0 to wait indefinitely.
 func startAndWaitForReady(ctx context.Context, serveArgs []string, timeout time.Duration) error {
 	// Truncate to second precision because metav1.Time drops sub-seconds
 	// during JSON serialization. Without this, a server that starts in the
 	// same second would appear to have a startTime *before* beforeStart.
 	beforeStart := time.Now().Truncate(time.Second)
-	if err := service.Start(ctx, serveArgs); err != nil {
+	childExited, err := service.Start(ctx, serveArgs)
+	if err != nil {
 		return err
 	}
 	logrus.Infof("starting %q control plane", instance.Name())
@@ -137,44 +124,7 @@ func startAndWaitForReady(ctx context.Context, serveArgs []string, timeout time.
 	ctx, cancel := watchtools.ContextWithOptionalTimeout(ctx, timeout)
 	defer cancel()
 
-	if err := service.Wait(ctx); err != nil {
-		return err
-	}
-	return waitForFreshDiscoveryConfigMap(ctx, beforeStart)
-}
-
-// waitForFreshDiscoveryConfigMap polls until the discovery ConfigMap
-// for the current control plane instance exists and is marked ready.
-// The serve command recreates the ConfigMap on every startup, so a
-// creationTimestamp at or after beforeStart identifies the current
-// instance. Waiting for [controllers.ReadyAnnotation] lets clients use
-// the control plane without racing startup; its doc lists what the
-// annotation covers.
-func waitForFreshDiscoveryConfigMap(ctx context.Context, beforeStart time.Time) error {
-	restConfig, err := service.GetKubeRestConfig()
-	if err != nil {
-		return err
-	}
-	client, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create kubernetes client: %w", err)
-	}
-
-	return wait.PollUntilContextCancel(ctx, 500*time.Millisecond, true, func(ctx context.Context) (bool, error) {
-		cm, err := client.CoreV1().ConfigMaps(controllers.RDDSystemNamespace).Get(
-			ctx, controllers.ControllerManagerConfigMapName, metav1.GetOptions{},
-		)
-		if apierrors.IsNotFound(err) {
-			return false, nil // ConfigMap not created yet; retry.
-		}
-		if err != nil {
-			return false, err
-		}
-		if cm.CreationTimestamp.Time.Before(beforeStart) {
-			return false, nil // Stale ConfigMap from a previous run; wait for the new one.
-		}
-		return cm.Annotations[controllers.ReadyAnnotation] == "true", nil
-	})
+	return service.Wait(ctx, beforeStart, childExited)
 }
 
 func serviceConfigAction(cmd *cobra.Command, _ []string) error {
@@ -278,10 +228,7 @@ func serviceStartAction(cmd *cobra.Command, args []string) error {
 		logrus.Infof("waiting for %q control plane to be ready", instance.Name())
 		ctx, cancel := watchtools.ContextWithOptionalTimeout(cmd.Context(), timeout)
 		defer cancel()
-		if err := service.Wait(ctx); err != nil {
-			return cliexit.Classify(err)
-		}
-		if err := waitForFreshDiscoveryConfigMap(ctx, startTime); err != nil {
+		if err := service.Wait(ctx, startTime, nil); err != nil {
 			return cliexit.Classify(err)
 		}
 		logrus.Infof("%q control plane is ready", instance.Name())
@@ -313,7 +260,7 @@ func serviceStartAction(cmd *cobra.Command, args []string) error {
 		}
 		logrus.Infof("%q control plane is ready", instance.Name())
 	} else {
-		if err := service.Start(cmd.Context(), serveArgs); err != nil {
+		if _, err := service.Start(cmd.Context(), serveArgs); err != nil {
 			return err
 		}
 		logrus.Infof("%q control plane is starting", instance.Name())

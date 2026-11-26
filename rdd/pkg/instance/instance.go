@@ -151,6 +151,11 @@ var PIDFile = sync.OnceValue(func() string {
 	return filepath.Join(Dir(), "rdd.pid")
 })
 
+// ServeLockFile returns the path to the lock file that a running service holds.
+var ServeLockFile = sync.OnceValue(func() string {
+	return filepath.Join(Dir(), "rdd.lock")
+})
+
 // TLSDir returns the path to the TLS certificate directory.
 var TLSDir = sync.OnceValue(func() string {
 	return filepath.Join(Dir(), "tls")

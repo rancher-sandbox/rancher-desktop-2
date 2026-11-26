@@ -28,14 +28,12 @@ const (
 	// RDDSystemNamespace is the namespace where RDD stores its control plane information.
 	RDDSystemNamespace = "rdd-system"
 
-	// ReadyAnnotation is set on the discovery ConfigMap after all of the known
-	// enabled controllers are ready; this includes:
-	//   - every enabled controller has installed its CRDs.
-	//   - every controller manager has registered its data entry.
-	//   - the admission webhooks are configured and answer.
-	//   - the passthrough HTTP server is ready.
-	// Clients must wait for this annotation because the ConfigMap itself exists
-	// from the moment the control plane starts, before any controller is ready.
+	// ReadyAnnotation marks the discovery ConfigMap once the control plane is
+	// ready to use. The "Ready annotation" section of docs/design/discovery.md
+	// lists what that covers. The ConfigMap exists before any controller is
+	// ready, and a stopped control plane leaves its ConfigMap in place with
+	// this annotation still set. So a client must wait for this annotation on
+	// a ConfigMap created at or after the control plane's start time.
 	ReadyAnnotation = "rdd.rancherdesktop.io/ready"
 )
 
@@ -390,9 +388,9 @@ func InitDiscovery(ctx context.Context, client kubernetes.Interface) error {
 }
 
 // MarkControlPlaneReady sets [ReadyAnnotation] on the discovery
-// ConfigMap. Call it once the conditions in the [ReadyAnnotation] doc
-// hold, or immediately after [InitDiscovery] when no controllers are
-// configured.
+// ConfigMap. Call it once the conditions listed under "Ready annotation"
+// in docs/design/discovery.md hold, or immediately after [InitDiscovery]
+// when no controllers are configured.
 func MarkControlPlaneReady(ctx context.Context, client kubernetes.Interface) error {
 	patchData, err := json.Marshal(map[string]any{
 		"metadata": map[string]any{

@@ -53,7 +53,10 @@ local_setup_file() {
 # --- rdd start creates the App with running=true ---
 
 @test "rdd start creates App with running=true" {
-    rdd start --wait=false
+    # --wait=false returns before the App settles, so rdd start does not
+    # print its success line.
+    run -0 --separate-stderr rdd start --wait=false
+    refute_output
 
     run -0 rdd ctl get app "${APP_NAME}" -o jsonpath='{.metadata.name}'
     assert_output "${APP_NAME}"

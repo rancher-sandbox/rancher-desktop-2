@@ -905,3 +905,8 @@ EOF
     rdd ctl wait --for=create --namespace="${RDD_NAMESPACE}" \
         ContainerNamespace/default --timeout=60s
 }
+
+@test "rdd start reports that Rancher Desktop is running" {
+    run -0 --separate-stderr rdd start
+    assert_output "Rancher Desktop is running."
+}

@@ -14,6 +14,7 @@ This service directory contains the following files:
 | --- | --- |
 | `args.json`   | service config settings (written by `rdd service create` or `rdd service start`)
 | `rdd.pid`     | pid of the control plane process (normally a background daemon) |
+| `rdd.lock`    | lock held by the running control plane process |
 | `rdd.sqlite3` | control plane data store |
 
 "Runs `rdd service ...`" means that the command performs the functionality in-progress, with the exception of `rdd service serve`, which will launch a background process.
@@ -76,6 +77,10 @@ Backgrounds itself (fork && exec) unless invoked with `--background=false` for e
 
 Saves its own PID into `rdd.pid` and then starts the apiserver and the controller-manager with the options on its command line.
 
+`serve` holds a lock on `rdd.lock` while it runs, so a second `serve` for the same instance exits with an error instead of overwriting `rdd.pid`.
+
+If the controller-manager fails, for example because it cannot install a CRD, `serve` shuts down and exits with an error.
+
 Once the apiserver is running the config data will be copied into the `config` map in the `rdd-system` namespace. No controller should access `args.json` directly.
 
 
@@ -90,12 +95,13 @@ Runs `rdd service serve` to actually start the control plane in the background
 Additional options:
 
 *   `--wait=false`
-    Return immediately, without waiting for all controllers to be ready. Run `rdd service start`
+    Return immediately, without waiting for the control plane's controllers to be ready. Run `rdd service start`
     again with no options to wait.
 
 *   `--timeout=90s`
     How long to wait for the control plane to become ready. Pass `0` to wait indefinitely.
     If the deadline expires, `rdd` exits with code 4.
+    If the control plane exits before it becomes ready, `rdd` exits with code 1 at once.
 
 
 ### `rdd service stop`
