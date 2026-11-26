@@ -21,7 +21,7 @@ export interface IpcMainEvents {
 
   // #region backend
   /** The app status has changed.  The input is the status conditions on the app. */
-  'backend/app-status-changed': (status: Record<string, readonly [boolean | undefined, string]>) => void;
+  'backend/app-status-changed': (status: Record<string, readonly [boolean | undefined, string, string]>) => void;
   /** Trigger the corresponding IPC renderer event. */
   'backend/steve-fetch-port':   () => void;
   // #endregion
