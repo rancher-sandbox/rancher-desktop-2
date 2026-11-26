@@ -24,9 +24,8 @@ nerdctl's `pkg/mountutil`) passes through unchanged.
 An argument that the stub rewrites always names a host path. With the working
 directory on C:, `-v /mnt/c/src:/src` mounts `C:\mnt\c\src`, not the VM's
 `/mnt/c/src`. To use a VM path in such an argument, run `rdd limavm shell rd
-sudo nerdctl --address /run/k3s/containerd/containerd.sock` with the nerdctl
-arguments instead. Flags that take a guest path, such as `--device`, pass
-through unchanged.
+sudo nerdctl` with the nerdctl arguments instead. Flags that take a guest path,
+such as `--device`, pass through unchanged.
 
 ## Runtime
 
@@ -83,14 +82,12 @@ at debug level, and leaves nerdctl to accept or reject the option.
 The stub never starts Rancher Desktop. It fails unless the App runs the
 containerd engine; `rdd run nerdctl` starts the App first. After parsing, it
 connects to the guest over SSH through `pkg/guestexec`, as `rdd limavm shell`
-does, changes to the guest path of the
-host working directory, and runs `sudo nerdctl --address
-/run/k3s/containerd/containerd.sock` with the rewritten arguments. nerdctl
-needs root there. Run as any other user, it switches to rootless mode even
-with an explicit `--address`. Relative paths inside compose files and build
-contexts resolve in the guest because the working directory maps to the same
-files; when the guest cannot see the working directory, the command runs from
-the home directory instead.
+does, changes to the guest path of the host working directory, and runs
+`sudo nerdctl` with the rewritten arguments. nerdctl needs root there. Run as
+any other user, it switches to rootless mode even with an explicit `--address`.
+Relative paths inside compose files and build contexts resolve in the guest
+because the working directory maps to the same files; when the guest cannot see
+the working directory, the command runs from the home directory instead.
 
 The 1.x stub injects `--security-opt seccomp=/etc/rancher-desktop/seccomp.json`
 into `run` and `create`; that profile is a 1.x distro asset which the

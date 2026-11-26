@@ -31,7 +31,7 @@ portForwards:
 - guestPortRange:
   - 0
   - 0
-  guestSocket: /run/k3s/containerd/containerd.sock
+  guestSocket: /run/containerd/containerd.sock
   hostPortRange:
   - 0
   - 0
@@ -107,12 +107,11 @@ provision:
 
     systemctl stop rancher-desktop.target
 
-    # Enable the requested container engine and disable the other.
-    # containerd.service has a Conflicts=docker, so we must not start both.
-    CONTAINERD_ACTION=$([[ $PARAM_CONTAINER_ENGINE = containerd ]] && echo enable || echo disable)
-    DOCKER_ACTION=$([[ $PARAM_CONTAINER_ENGINE = moby ]] && echo enable || echo disable)
-    systemctl "$CONTAINERD_ACTION" containerd.service buildkitd.service
-    systemctl "$DOCKER_ACTION" docker.service docker.socket
+    # Write out the selected container engine as a file, so that systemd units
+    # can use it as a ConditionPathExists= path.
+    mkdir -p /run/rdd/container-engine
+    rm -f /run/rdd/container-engine/*
+    touch "/run/rdd/container-engine/${PARAM_CONTAINER_ENGINE}"
 
     if [[ $PARAM_KUBERNETES_ENABLED == "true" ]]; then
         export INSTALL_K3S_VERSION="v${PARAM_KUBERNETES_VERSION}+k3s1"
@@ -155,12 +154,8 @@ provision:
             systemctl add-wants rancher-desktop.target k3s.service
         fi
 
-        if [[ $PARAM_CONTAINER_ENGINE == "containerd" ]]; then
-            echo "K3S_CONTAINER_ENGINE_OPTIONS=--container-runtime-endpoint /run/k3s/containerd/containerd.sock" \
-                >/etc/systemd/system/k3s.service.env
-        else
-            echo "K3S_CONTAINER_ENGINE_OPTIONS=--docker" >/etc/systemd/system/k3s.service.env
-        fi
+        echo "K3S_CONTAINER_ENGINE_OPTIONS=--container-runtime-endpoint /run/containerd/containerd.sock" \
+            >/etc/systemd/system/k3s.service.env
 
         # Remove stale kubeconfig so k3s regenerates it on start.
         rm -f /etc/rancher/k3s/k3s.yaml

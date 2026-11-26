@@ -142,8 +142,8 @@ test.describe.fixme('WSL Integrations', () => {
           stdout: (opts?.gamma ?? 'some error').toString(),
         },
         {
-          args: ['--distribution', 'rancher-desktop', '--exec', '/usr/local/bin/nerdctl', '--address',
-            '/run/k3s/containerd/containerd.sock', 'namespace', 'list', '--quiet'],
+          args: ['--distribution', 'rancher-desktop', '--exec', '/usr/local/bin/nerdctl',
+            'namespace', 'list', '--quiet'],
           mode:   'repeated',
           stdout: 'default',
         },

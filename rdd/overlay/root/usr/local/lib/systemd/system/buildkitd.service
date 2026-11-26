@@ -11,7 +11,7 @@ EnvironmentFile=-/etc/sysconfig/rancher-desktop
 ExecCondition=test ${CONTAINER_ENGINE} = containerd
 ExecStart=/usr/local/bin/buildkitd \
   --oci-worker=false --containerd-worker=true \
-  --containerd-worker-addr=/run/k3s/containerd/containerd.sock \
+  --containerd-worker-addr=/run/containerd/containerd.sock \
   --addr fd://
 
 [Install]
