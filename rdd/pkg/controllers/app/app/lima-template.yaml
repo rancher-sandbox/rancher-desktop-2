@@ -78,10 +78,15 @@ provision:
       rdd-guest
       wsl-proxy
     )
+    # On WSL, all runs of a distro share the kernel's boot ID, and
+    # journalctl --follow shows the whole boot, so a new capture would print
+    # the earlier runs again. When systemd stops the capture, journalctl
+    # writes the cursor of the last entry that it printed to the cursor file,
+    # and the next capture starts after that entry.
     for unit in "${units[@]}"; do
         if ! systemctl is-active --quiet "rdd-journal-capture-${unit}.service"; then
             systemd-run --collect --unit="rdd-journal-capture-${unit}" /bin/sh -c \
-                "journalctl --follow --no-tail --output=short-iso --unit=${unit}.service >> \"$PARAM_GUEST_LOG_DIR/guest-${unit}.log\""
+                "journalctl --follow --no-tail --output=short-iso --unit=${unit}.service --cursor-file=\"$PARAM_GUEST_LOG_DIR/guest-${unit}.cursor\" >> \"$PARAM_GUEST_LOG_DIR/guest-${unit}.log\""
         fi
     done
     if ! systemctl is-active --quiet rdd-lima-init-capture.service; then
