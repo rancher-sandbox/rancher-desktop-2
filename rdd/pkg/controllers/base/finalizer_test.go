@@ -5,9 +5,6 @@ package base
 
 import (
 	"fmt"
-	"os"
-	"runtime"
-	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -21,30 +18,13 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/testapiserver"
 )
 
 func TestDeleteOwnedResources(t *testing.T) {
-	env := &envtest.Environment{
-		DownloadBinaryAssets: true,
-	}
-	cfg, err := env.Start()
-	assert.NilError(t, err, "failed to start environment")
-
-	defer func() {
-		err := env.Stop()
-		// On Windows, `env.Stop()` will return an error because it can't kill
-		// etcd gracefully; this is not an issue for this test.
-		// Also, in CI only, ignore failure to stop kube-apiserver.
-		if runtime.GOOS != "windows" && err != nil {
-			checkError := os.Getenv("CI") == ""
-			checkError = checkError || !strings.Contains(err.Error(), "timeout waiting for process kube-apiserver to stop")
-			if checkError {
-				assert.NilError(t, err, "failed to stop environment")
-			}
-		}
-	}()
+	cfg := testapiserver.Start(t)
 
 	c, err := client.New(cfg, client.Options{})
 	assert.NilError(t, err, "failed to create client")
