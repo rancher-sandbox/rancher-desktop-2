@@ -19,10 +19,14 @@ import Logging, { clearLoggingDirectory } from '@pkg/utils/logging';
 import { fetchMacOsVersion, getMacOsVersion } from '@pkg/utils/osVersion';
 import paths, { pathKeys, Paths } from '@pkg/utils/paths';
 import { protocolsRegistered, setupProtocolHandlers } from '@pkg/utils/protocols';
+import { markStartup, reportStartup } from '@pkg/utils/startupTiming';
 import getWSLVersion from '@pkg/utils/wslVersion';
 import * as window from '@pkg/window';
 import { openDashboard } from '@pkg/window/dashboard';
 import { closePreferences, openPreferences } from '@pkg/window/preferences';
+import { hideSplash, openSplash } from '@pkg/window/splash';
+
+markStartup('main-body');
 
 // https://www.electronjs.org/docs/latest/breaking-changes#changed-gtk-4-is-default-when-running-gnome
 if (process.platform === 'linux') {
@@ -99,6 +103,8 @@ Electron.protocol.registerSchemesAsPrivileged([{ scheme: 'app' }, {
 }]);
 
 Electron.app.whenReady().then(async() => {
+  markStartup('app-ready');
+  openSplash();
   try {
     initializeTransientPreferences();
 
@@ -107,19 +113,24 @@ Electron.app.whenReady().then(async() => {
     // make sure we have the macOS version cached before calling getMacOsVersion()
     if (os.platform() === 'darwin') {
       await fetchMacOsVersion(console);
+      markStartup('macos-version');
     }
 
     // Needs to happen before any file is written; otherwise, that file
     // could be owned by root, which will lead to future problems.
     if (['linux', 'darwin'].includes(os.platform())) {
       await checkForRootPrivs();
+      markStartup('root-check');
     }
     // Check for required OS versions and features
     await checkPrerequisites();
+    markStartup('prerequisites');
 
     await setupNetworking();
+    markStartup('networking');
 
     initMainI18n();
+    markStartup('i18n');
     await initUI();
   } catch (ex: any) {
     console.error(`Error starting up: ${ ex }`, ex.stack);
@@ -129,7 +140,10 @@ Electron.app.whenReady().then(async() => {
 });
 
 async function initUI() {
-  if (await isFirstRunNeeded()) {
+  const firstRunNeeded = await isFirstRunNeeded();
+
+  markStartup('first-run-decided');
+  if (firstRunNeeded) {
     console.log('First run is needed');
     lifetimeState = LifetimeState.FirstRun;
     await window.openFirstRunDialog();
@@ -255,6 +269,12 @@ Electron.app.on('before-quit', (event) => {
   } finally {
     setImmediate(() => Electron.app.quit());
   }
+});
+
+Electron.app.on('will-quit', () => {
+  // Log the startup timing of a launch that quits before its first app window
+  // shows, such as one that ends at a startup error box.
+  reportStartup(console);
 });
 
 Electron.app.on('window-all-closed', () => {
@@ -424,6 +444,7 @@ function showErrorDialog(title: string, message: string, fatal?: boolean) {
   if (noModalDialogs) {
     console.log(`Fatal Error:\n${ title }\n\n${ message }`);
   } else {
+    hideSplash();
     Electron.dialog.showErrorBox(title, message);
   }
   if (fatal) {

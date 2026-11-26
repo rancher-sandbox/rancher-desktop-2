@@ -10,6 +10,7 @@ import electron from 'electron';
 import which from 'which';
 
 import { artifactPlatform } from '@pkg/utils/releaseArtifacts';
+import { markStartup } from '@pkg/utils/startupTiming';
 
 /**
  * RDDPaths are the paths provided by the RDD daemon.  These should be kept in
@@ -299,7 +300,9 @@ export function getPaths(rddOverride?: string, platformOverride?: supportedPlatf
   }
 }
 
+markStartup('rdd-paths-start');
 const paths = getPaths();
+markStartup('rdd-paths-done');
 export default paths;
 /**
  * The keys available for paths.  If we failed to get paths, this may not

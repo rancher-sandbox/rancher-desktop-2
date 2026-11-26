@@ -9,6 +9,8 @@ import { spawnFile, SpawnError } from '@pkg/utils/childProcess';
 import Latch from '@pkg/utils/latch';
 import Logging from '@pkg/utils/logging';
 import { getRDDPath } from '@pkg/utils/paths';
+import { markStartup } from '@pkg/utils/startupTiming';
+import { hideSplash } from '@pkg/window/splash';
 
 const console = Logging.rdd;
 const CodeIncompatibleServer = 5;
@@ -110,6 +112,7 @@ async function fetchConfigWithoutCache(): Promise<string> {
           } catch { /* ignore; try next line, or use fallback message */ }
         }
         console.error(message);
+        hideSplash();
         Electron.dialog.showErrorBox('Incompatible RDD Service', message);
         Electron.app.quit();
         // We cannot recover (the user needs to restart the application), so
@@ -143,6 +146,7 @@ export async function isFirstRunNeeded(): Promise<boolean> {
     const rddPath = getRDDPath();
     const { stdout: statusJSON } = await spawnFile(rddPath,
       ['service', 'status', '--output=json'], { stdio: ['ignore', 'pipe', console] });
+    markStartup('rdd-service-status');
     console.debug('RDD service status:', statusJSON);
     const status = JSON.parse(statusJSON);
     if (!status.created) {
@@ -156,6 +160,7 @@ export async function isFirstRunNeeded(): Promise<boolean> {
     // until the CRDs are registered.
     const { stdout } = await spawnFile(rddPath,
       ['ctl', 'get', 'app', '--output=name'], { stdio: ['ignore', 'pipe', console] });
+    markStartup('rdd-get-app');
     return !(stdout?.trim());
   } catch (err) {
     console.error('Error checking if first run is needed:', err);
