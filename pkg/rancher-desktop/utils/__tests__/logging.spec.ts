@@ -15,7 +15,11 @@ mockModules({
 });
 
 const { default: paths } = await import('@pkg/utils/paths');
-const { clearLoggingDirectory } = await import('../logging');
+const { clearLoggingDirectory, Log } = await import('../logging');
+
+afterAll(() => {
+  fs.rmSync(logDir, { recursive: true, force: true });
+});
 
 describe('clearLoggingDirectory', () => {
   beforeAll(() => {
@@ -23,7 +27,6 @@ describe('clearLoggingDirectory', () => {
   });
   afterAll(() => {
     delete (process as any).type;
-    fs.rmSync(logDir, { recursive: true, force: true });
   });
 
   it('keeps the rdd logs and removes stale ones', () => {
@@ -33,6 +36,20 @@ describe('clearLoggingDirectory', () => {
       fs.writeFileSync(path.join(logDir, name), '');
     }
     clearLoggingDirectory();
-    expect(fs.readdirSync(logDir).sort()).toEqual(['rdd.stderr.log', 'rdd.stdout.log']);
+    // Loading logging.ts under Jest creates the jest subdirectory.
+    expect(fs.readdirSync(logDir).sort()).toEqual(['jest', 'rdd.stderr.log', 'rdd.stdout.log']);
+  });
+});
+
+describe('Log', () => {
+  it('does not truncate a log file in paths.log_dir', async() => {
+    const logFile = path.join(logDir, 'unit-test.log');
+
+    fs.writeFileSync(logFile, 'kept');
+    const log = new Log('unit-test');
+
+    await log.fdStream;
+    expect(log.path).toBe(path.join(logDir, 'jest', 'unit-test.log'));
+    expect(fs.readFileSync(logFile, 'utf8')).toBe('kept');
   });
 });

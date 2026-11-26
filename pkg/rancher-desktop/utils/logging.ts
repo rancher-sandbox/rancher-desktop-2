@@ -39,8 +39,19 @@ export function setLogLevel(level: logLevel): void {
   LOG_LEVEL = level;
 }
 
+/**
+ * The directory that a Log writes to unless its caller names one.  Opening a
+ * log truncates its file, and under Jest paths.log_dir is the log directory
+ * of a real instance.  So unit tests (Jest sets NODE_ENV to "test") write to
+ * paths.log_dir/jest instead, and a test that creates a Log does not empty
+ * that instance's log of the same name.
+ */
+const defaultLogDir = process.env.NODE_ENV === 'test'
+  ? path.join(paths.log_dir, 'jest')
+  : paths.log_dir;
+
 export class Log {
-  constructor(topic: string, directory = paths.log_dir) {
+  constructor(topic: string, directory = defaultLogDir) {
     if (process.type === 'renderer') {
       topic = `${ topic }-renderer`;
     }
@@ -84,15 +95,7 @@ export class Log {
       this.stream.on('open', resolve);
     });
     delete this._fdStream;
-
-    // If we're running unit tests, output to the console rather than file.
-    // However, _don't_ do so for end-to-end tests in Playwright.
-    // We detect Playwright via an environment variable we set in scripts/e2e.ts
-    if (process.env.NODE_ENV === 'test' && (process.env.RD_TEST ?? '').includes('e2e')) {
-      this.console = globalThis.console;
-    } else {
-      this.console = new Console(this.stream);
-    }
+    this.console = new Console(this.stream);
   }
 
   protected fdPromise: Promise<number>;
@@ -238,4 +241,4 @@ export function reopenLogs() {
   }
 }
 
-fs.mkdirSync(paths.log_dir, { recursive: true });
+fs.mkdirSync(defaultLogDir, { recursive: true });
