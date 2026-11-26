@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/apis/lima/v1alpha1"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/perf"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/logfile"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/process"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/wsl"
@@ -39,8 +41,12 @@ const wsl2RootDisk = "ext4.vhdx"
 
 func (r *LimaVMReconciler) handleDeletion(ctx context.Context, limaVM *v1alpha1.LimaVM) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
+	deleteStart := time.Now()
 
 	r.stopWatcher(limaVM.Name)
+	r.instanceStatesMu.Lock()
+	delete(r.createdNotStarted, limaVM.Name)
+	r.instanceStatesMu.Unlock()
 
 	// Stop and delete the Lima instance. Inspect fails with ErrNotExist when the
 	// instance is already gone, so there is nothing to stop or delete. After that
@@ -84,6 +90,13 @@ func (r *LimaVMReconciler) handleDeletion(ctx context.Context, limaVM *v1alpha1.
 	}
 
 	logger.Info("Deleted Lima instance, owned resources, and finalizer")
+	// controller-runtime often reconciles again from a cached copy of the
+	// LimaVM that still has its deletion timestamp, and that pass finds the
+	// Lima instance already gone. Only the pass that deleted the instance
+	// records limavm.delete, so each deletion is counted once.
+	if existingInst != nil {
+		perf.Since(ctx, "limavm.delete", deleteStart, "vm", limaVM.Name)
+	}
 	return ctrl.Result{}, nil
 }
 
@@ -484,9 +497,15 @@ func (r *LimaVMReconciler) startInstance(ctx context.Context, limaVM *v1alpha1.L
 		return ctrl.Result{}, err
 	}
 
+	r.instanceStatesMu.Lock()
+	first := r.createdNotStarted[limaVM.Name]
+	delete(r.createdNotStarted, limaVM.Name)
+	r.instanceStatesMu.Unlock()
+	bootLabels := []string{"vm", limaVM.Name, "vmtype", string(inst.VMType), "first", strconv.FormatBool(first)}
+
 	// Start watcher goroutine to track hostagent lifecycle and reap the process.
 	// The watcher enqueues reconciles as phase transitions occur.
-	r.startWatcher(ctx, limaVM.Name, limaVM.Namespace, haCmd, inst.Dir, begin)
+	r.startWatcher(ctx, limaVM.Name, limaVM.Namespace, haCmd, inst.Dir, begin, bootLabels)
 
 	logger.Info("Hostagent started, watcher active", "instance", limaVM.Name, "pid", haCmd.Process.Pid)
 	return ctrl.Result{}, nil
@@ -550,6 +569,9 @@ func (r *LimaVMReconciler) stopInstance(ctx context.Context, limaVM *v1alpha1.Li
 // store.Inspect when needed for forceful cleanup.
 func (r *LimaVMReconciler) shutdownHostagent(ctx context.Context, name string, inst *limatype.Instance) {
 	logger := log.FromContext(ctx)
+	stopStart := time.Now()
+	mode := "forced"
+	defer func() { perf.Since(ctx, "limavm.stop", stopStart, "vm", name, "mode", mode) }()
 
 	forceStop := func() {
 		// Use a background context: the parent reconciler context may be
@@ -591,7 +613,9 @@ func (r *LimaVMReconciler) shutdownHostagent(ctx context.Context, name string, i
 		// Not tested: the forceStop fallback requires a hostagent that ignores
 		// shutdown signals. The orphaned-hostagent integration test exercises
 		// forced stop indirectly but does not isolate this timeout path.
-		if !r.waitForProcessExit(stopCtx, name) {
+		if r.waitForProcessExit(stopCtx, name) {
+			mode = "graceful"
+		} else {
 			logger.Info("Hostagent did not exit gracefully, forcing stop")
 			forceStop()
 			waitAfterKill()

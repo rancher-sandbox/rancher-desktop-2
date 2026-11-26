@@ -39,6 +39,7 @@ import (
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/embedded"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/perf"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/util/process"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/xz"
 )
@@ -139,7 +140,11 @@ type LimaVMReconciler struct {
 
 	instanceStatesMu sync.RWMutex
 	instanceStates   map[string]*instanceState
-	reconcileChan    chan event.TypedGenericEvent[*v1alpha1.LimaVM]
+	// createdNotStarted holds the instances that this process created and has
+	// not started yet. The boot timing records take their "first" label from
+	// it. It is guarded by instanceStatesMu.
+	createdNotStarted map[string]bool
+	reconcileChan     chan event.TypedGenericEvent[*v1alpha1.LimaVM]
 }
 
 // +kubebuilder:rbac:groups=lima.rancherdesktop.io,resources=limavms,verbs=get;list;watch;create;update;patch;delete
@@ -304,6 +309,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Create the Lima instance
+	createStart := time.Now()
 	inst, err := limainstance.Create(ctx, limaVM.Name, []byte(templateData), false)
 	if err != nil {
 		// If the directory exists but store.Inspect returned nil above (no valid
@@ -340,6 +346,7 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Extract an embedded image, which Lima cannot fetch; Prepare then finds it
 	// ready and skips its own download.
+	createLabels := []string{"vm", limaVM.Name, "vmtype", string(inst.VMType)}
 	if err := extractEmbeddedImage(ctx, inst); err != nil {
 		logger.Error(err, "Failed to extract the embedded image")
 		if delErr := limainstance.Delete(ctx, inst, true); delErr != nil {
@@ -363,6 +370,9 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	_, prepareErr := limainstance.Prepare(ctx, inst, "placeholder")
 	logger.Info("Prepared Lima instance",
 		"duration", time.Since(prepareStart).Round(time.Millisecond))
+	if prepareErr == nil {
+		perf.Since(ctx, "limavm.create.prepare", prepareStart, createLabels...)
+	}
 	logFileLayout(ctx, "disk", filepath.Join(inst.Dir, filenames.Disk))
 	if err := prepareErr; err != nil {
 		logger.Error(err, "Failed to prepare Lima instance")
@@ -396,6 +406,10 @@ func (r *LimaVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		logger.Error(err, "Failed to remove sentinel file after successful creation")
 		return ctrl.Result{}, err
 	}
+	perf.Since(ctx, "limavm.create.total", createStart, createLabels...)
+	r.instanceStatesMu.Lock()
+	r.createdNotStarted[limaVM.Name] = true
+	r.instanceStatesMu.Unlock()
 
 	// Return and let the next reconcile handle running state (one mutation per reconcile)
 	return ctrl.Result{}, nil
@@ -417,7 +431,7 @@ func extractEmbeddedImage(ctx context.Context, inst *limatype.Instance) error {
 	}
 
 	if _, err := os.Stat(imagePath); err != nil {
-		if err := decompressEmbeddedImage(ctx, imagePath); err != nil {
+		if err := decompressEmbeddedImage(ctx, inst, imagePath); err != nil {
 			return err
 		}
 		logFileLayout(ctx, "image", imagePath)
@@ -455,7 +469,7 @@ func usesEmbeddedImage(inst *limatype.Instance) bool {
 
 // decompressEmbeddedImage decompresses the distro image embedded in this
 // binary to imagePath.
-func decompressEmbeddedImage(ctx context.Context, imagePath string) error {
+func decompressEmbeddedImage(ctx context.Context, inst *limatype.Instance, imagePath string) error {
 	if embedded.Distro == "" {
 		return errors.New("this binary has no embedded distro image; build it with make")
 	}
@@ -466,6 +480,7 @@ func decompressEmbeddedImage(ctx context.Context, imagePath string) error {
 		return err
 	}
 	logger.Info("Decompressed the embedded distro image", "duration", time.Since(start).Round(time.Millisecond))
+	perf.Since(ctx, "limavm.create.decompress", start, "vm", inst.Name, "vmtype", string(inst.VMType))
 	return nil
 }
 
@@ -611,6 +626,7 @@ func (r *LimaVMReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	r.instanceStates = make(map[string]*instanceState)
+	r.createdNotStarted = make(map[string]bool)
 	r.reconcileChan = make(chan event.TypedGenericEvent[*v1alpha1.LimaVM], 1)
 
 	if err := mgr.Add(manager.RunnableFunc(r.waitForShutdown)); err != nil {

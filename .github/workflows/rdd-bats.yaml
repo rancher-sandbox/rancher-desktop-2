@@ -286,6 +286,13 @@ jobs:
       working-directory: rdd
       shell: run-in-shell {0}
 
+    - name: Measure runner speed before BATS
+      if: needs.check-paths.outputs.should-run
+      uses: $/.github/actions/speed-probe
+      with:
+        when: before
+      continue-on-error: true
+
     - name: "Unix: start resource sampler"
       if: needs.check-paths.outputs.should-run && runner.os != 'Windows'
       uses: $/.github/actions/unix-resource-sampler
@@ -301,6 +308,14 @@ jobs:
       env:
         RDD_TRACE: true
         RDD_LOG_LEVEL: trace
+        RDD_PERF: true
+
+    - name: Measure runner speed after BATS
+      if: always() && needs.check-paths.outputs.should-run
+      uses: $/.github/actions/speed-probe
+      with:
+        when: after
+      continue-on-error: true
 
     - name: "Unix: stop resource sampler"
       if: always() && needs.check-paths.outputs.should-run && runner.os != 'Windows'

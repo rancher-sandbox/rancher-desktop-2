@@ -40,6 +40,7 @@ import (
 
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/controllers/base"
 	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/instance"
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/perf"
 )
 
 // SharedControllerManager manages all embedded RDD controllers using a single controller-runtime manager.
@@ -231,6 +232,19 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 			return fmt.Errorf("failed to register controller %s: %w", registration.GetName(), err)
 		}
 	}
+	// Only the process that started the control plane has a clock in its
+	// context, so only that process times condition flips. An external
+	// controller manager that watches App or LimaVM would otherwise record
+	// each flip a second time whenever this process also watches the kind.
+	// But a kind that only an external manager watches doesn't get any
+	// cond.* records.
+	if clock := perf.ClockFrom(ctx); clock != nil {
+		clock.Mark(ctx, "cp.crds")
+		if err := startConditionTiming(mgrCtx, mgr); err != nil {
+			log.Error(err, "Failed to start condition timing")
+			// Don't fail startup over missing timing records
+		}
+	}
 
 	// Now that all scheme mutations are done, set up webhooks in parallel.
 	var webhookWaitGroup sync.WaitGroup
@@ -267,6 +281,7 @@ func (scm *SharedControllerManager) Start(ctx context.Context) error {
 	}
 
 	klog.InfoS("All webhook configurations created successfully")
+	perf.ClockFrom(ctx).Mark(ctx, "cp.webhooks")
 
 	scm.started = true
 

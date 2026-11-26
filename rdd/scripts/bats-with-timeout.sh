@@ -31,6 +31,9 @@ script_dir=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=rdd/scripts/metrics.bash
 source "${script_dir}/metrics.bash"
 metrics_init "$(cd "${script_dir}/.." && pwd)"
+if [[ -n "${RDD_PERF:-}" ]]; then
+    perf_init "${suite}"
+fi
 
 rdd_bin="${script_dir}/../bin/rdd"
 if [ ! -x "$rdd_bin" ] && [ -x "${rdd_bin}.exe" ]; then
@@ -519,6 +522,11 @@ metrics_record suite \
     "$((suite_end_ms - suite_start_ms))" \
     "$([ "${timed_out}" = 1 ] && echo timeout || echo completed)" \
     "${exit_code}"
+
+# This wrapper prints the records after bats exits, so a suite killed at its
+# time limit still prints them.
+perf_flush >&2 || true
+
 printf 'bats-with-timeout: suite=%s instance=%s elapsed=%ds cap=%ds outcome=%s exit=%d\n' \
     "${suite}" "${instance}" "$(((suite_end_ms - suite_start_ms) / 1000))" "${timeout_seconds}" \
     "$([ "${timed_out}" = 1 ] && echo timeout || echo completed)" \

@@ -19,6 +19,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
+
+	"github.com/rancher-sandbox/rancher-desktop-daemon/pkg/perf"
 )
 
 const (
@@ -417,5 +419,12 @@ func MarkControlPlaneReady(ctx context.Context, client kubernetes.Interface) err
 	klog.FromContext(ctx).Info("Marked control plane as ready",
 		"namespace", RDDSystemNamespace,
 		"configmap", ControllerManagerConfigMapName)
+	// External controller managers call this too, but only the process that
+	// started the control plane has a clock in its context, so only that
+	// process records cp.ready and cp.total.
+	if clock := perf.ClockFrom(ctx); clock != nil {
+		clock.Mark(ctx, "cp.ready")
+		perf.Since(ctx, "cp.total", perf.ProcessStart())
+	}
 	return nil
 }
