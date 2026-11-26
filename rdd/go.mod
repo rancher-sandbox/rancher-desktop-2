@@ -41,7 +41,7 @@ require (
 	github.com/spf13/pflag v1.1.0
 	github.com/tonistiigi/go-csvvalue v0.0.0-20240710180619-ddb21b71c0b4
 	github.com/ulikunitz/xz v0.5.17
-	go.etcd.io/etcd/api/v3 v3.7.3
+	go.etcd.io/etcd/api/v3 v3.7.4
 	golang.org/x/mod v0.43.0
 	golang.org/x/sync v0.25.0
 	golang.org/x/sys v0.50.0
