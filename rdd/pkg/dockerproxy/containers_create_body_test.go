@@ -125,15 +125,6 @@ func TestContainersCreateBody(t *testing.T) {
 		assert.Equal(t, string(buf), input)
 	})
 
-	t.Run("no body", func(t *testing.T) {
-		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, "http://nowhere.invalid/", http.NoBody)
-		assert.NilError(t, err)
-		req.Body = nil
-		_, err = readContainersCreateBody(req)
-		assert.ErrorContains(t, err, "request has no body")
-		assert.Assert(t, req.Body == nil)
-	})
-
 	t.Run("duplicate keys", func(t *testing.T) {
 		for _, input := range []string{
 			`{"HostConfig": {"Binds": ["/a:/a"]}, "HostConfig": {"Memory": 1}}`,

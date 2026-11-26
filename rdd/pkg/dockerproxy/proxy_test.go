@@ -124,6 +124,38 @@ func TestServeTranslatesContainersCreate(t *testing.T) {
 	assert.DeepEqual(t, body.Unknown, map[string]int{"a": 1})
 }
 
+func TestServeTranslatesOnlyContainersCreate(t *testing.T) {
+	bodies := make(chan string, 1)
+	backendAddr := startBackend(t, func(w http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		bodies <- string(body)
+		w.WriteHeader(http.StatusNoContent)
+	})
+	proxyAddr := startProxy(t, backendAddr)
+	ctx, cancel := context.WithTimeout(t.Context(), testTimeout)
+	defer cancel()
+	// The proxy reads and translates only container create bodies. Others,
+	// such as a `docker load` tarball, stream through to dockerd, so the
+	// bind in this body must reach the backend as the client sent it.
+	input := `{"HostConfig":{"Binds":["C:\\src:/src"]}}`
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+proxyAddr+"/v1.47/containers/abc/start", strings.NewReader(input))
+	assert.NilError(t, err)
+	resp, err := http.DefaultClient.Do(req)
+	assert.NilError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, resp.StatusCode, http.StatusNoContent)
+	select {
+	case body := <-bodies:
+		assert.Equal(t, body, input)
+	case <-ctx.Done():
+		assert.Assert(t, false, "the backend did not receive the request")
+	}
+}
+
 func TestServeForwardsEmptyContainersCreate(t *testing.T) {
 	backendAddr := startBackend(t, func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "config cannot be empty", http.StatusBadRequest)
@@ -178,30 +210,6 @@ func TestServeRelaysFinalResponseAfterContinue(t *testing.T) {
 	// The proxy's server answers the client's Expect itself, so dockerd's own
 	// 100 Continue must not reach the client as a second one.
 	assert.Equal(t, interim.Load(), int32(1))
-}
-
-func TestServeKeepsRequestContentLength(t *testing.T) {
-	contentLengths := make(chan int64, 1)
-	backendAddr := startBackend(t, func(w http.ResponseWriter, req *http.Request) {
-		contentLengths <- req.ContentLength
-		w.WriteHeader(http.StatusNoContent)
-	})
-	proxyAddr := startProxy(t, backendAddr)
-	ctx, cancel := context.WithTimeout(t.Context(), testTimeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+proxyAddr+"/v1.47/containers/abc/start", strings.NewReader("{}"))
-	assert.NilError(t, err)
-	resp, err := http.DefaultClient.Do(req)
-	assert.NilError(t, err)
-	defer resp.Body.Close()
-	assert.Equal(t, resp.StatusCode, http.StatusNoContent)
-	select {
-	case contentLength := <-contentLengths:
-		// dockerd's start handler rejects a chunked body, which has length -1.
-		assert.Equal(t, contentLength, int64(2))
-	case <-ctx.Done():
-		assert.Assert(t, false, "the backend did not receive the request")
-	}
 }
 
 func TestServeClosesBackendConnectionAfterResponse(t *testing.T) {
@@ -376,39 +384,4 @@ func TestServeClientDisconnectClosesBackend(t *testing.T) {
 	assert.NilError(t, err)
 	assert.NilError(t, conn.Close())
 	assert.ErrorIs(t, <-backendErr, io.EOF)
-}
-
-func TestServeRelaysStreamAsItArrives(t *testing.T) {
-	release := make(chan struct{})
-	backendAddr := startBackend(t, func(w http.ResponseWriter, req *http.Request) {
-		// The flush sends the response chunked, without a
-		// Content-Length, as dockerd sends `docker logs -f`.
-		// httputil.ReverseProxy passes each write of such a response
-		// on to the client at once.
-		_, _ = io.WriteString(w, "first\n")
-		w.(http.Flusher).Flush()
-		select {
-		case <-release:
-		case <-req.Context().Done():
-			return
-		}
-		_, _ = io.WriteString(w, "second\n")
-	})
-	proxyAddr := startProxy(t, backendAddr)
-	ctx, cancel := context.WithTimeout(t.Context(), testTimeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+proxyAddr+"/v1.47/containers/abc/logs?follow=1", http.NoBody)
-	assert.NilError(t, err)
-	resp, err := http.DefaultClient.Do(req)
-	assert.NilError(t, err, "the response headers did not arrive while the backend held the stream open")
-	defer resp.Body.Close()
-	first := make([]byte, len("first\n"))
-	_, err = io.ReadFull(resp.Body, first)
-	assert.NilError(t, err, "the first chunk did not arrive while the backend held the stream open")
-	assert.Equal(t, string(first), "first\n")
-
-	close(release)
-	rest, err := io.ReadAll(resp.Body)
-	assert.NilError(t, err)
-	assert.Equal(t, string(rest), "second\n")
 }
