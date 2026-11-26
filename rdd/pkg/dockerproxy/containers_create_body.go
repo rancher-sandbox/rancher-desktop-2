@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
@@ -256,6 +255,5 @@ func (body *containersCreateBody) writeTo(req *http.Request) error {
 	}
 	req.Body = io.NopCloser(bytes.NewReader(buf))
 	req.ContentLength = int64(len(buf))
-	req.Header.Set("Content-Length", strconv.Itoa(len(buf)))
 	return nil
 }
