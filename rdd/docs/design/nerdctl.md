@@ -9,10 +9,11 @@ stub as plain `nerdctl`.
 
 On macOS and Linux the guest mounts the host home directory at its original
 path, so arguments pass through unchanged. On Windows the WSL2 guest
-automounts drives under `/mnt`, so the stub rewrites `C:\src\app` to
-`/mnt/c/src/app`. It first resolves a relative path against the host working
-directory, and a drive-relative one such as `d:app` against the current
-directory of drive D:, as Windows reports it through `GetFullPathName`.
+automounts drives under `/mnt`, so the stub rewrites `C:\src\app`, and its
+extended-length form `\\?\C:\src\app`, to `/mnt/c/src/app`. It first resolves
+a relative path against the host working directory, and a drive-relative one
+such as `d:app` against the current directory of drive D:, as Windows reports
+it through `GetFullPathName`.
 Windows defines what `d:app` means, so the stub resolves it instead of
 rejecting it as ambiguous. A rooted path without a drive, such as `\data` or
 `/data`, takes the root of the working directory, its drive or its

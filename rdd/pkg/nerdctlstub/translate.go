@@ -25,26 +25,13 @@ import (
 // instead of host paths; it copies isNamedVolume in nerdctl's pkg/mountutil.
 var namedVolume = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]+$`)
 
-// windowsDrive matches a leading Windows drive, as in `C:\data` or the
-// drive-relative `d:app`. A one-letter source cannot be a volume name.
-var windowsDrive = regexp.MustCompile(`^[a-zA-Z]:`)
+// windowsDrive matches a leading Windows drive, as in `C:\data`, the
+// extended-length `\\?\C:\data` or the drive-relative `d:app`. A one-letter
+// source cannot be a volume name.
+var windowsDrive = regexp.MustCompile(`^(?:[\\/]{2}\?[\\/])?[a-zA-Z]:`)
 
 // driveCurrentDir matches the current directory of a drive, `d:` or `d:.`.
 var driveCurrentDir = regexp.MustCompile(`^[a-zA-Z]:\.?$`)
-
-// cutVolumeSource drops the leading colons of a volume spec and cuts the
-// source at the next colon, as nerdctl's splitVolumeSpec does, except that a
-// leading drive's colon stays in the source. found reports whether a colon
-// ended the source, and rest is what follows it.
-func cutVolumeSource(spec string) (source, rest string, found bool) {
-	spec = strings.TrimLeft(spec, ":")
-	drive := ""
-	if windowsDrive.MatchString(spec) {
-		drive, spec = spec[:2], spec[2:]
-	}
-	source, rest, found = strings.Cut(spec, ":")
-	return drive + source, rest, found
-}
 
 // volumeArgHandler handles the argument of `nerdctl run --volume=...`.
 func volumeArgHandler(arg string) (string, error) {
@@ -53,7 +40,7 @@ func volumeArgHandler(arg string) (string, error) {
 	// <host path or volume name>:<container path>
 	// <host path or volume name>:<container path>:<mode>
 	// The mode passes through verbatim for nerdctl to interpret.
-	hostPath, rest, found := cutVolumeSource(arg)
+	hostPath, rest, found := guestexec.CutVolumeSource(arg)
 	if !found {
 		if windowsDrive.MatchString(hostPath) {
 			// nerdctl splits at the drive's colon, so `C:/data` would create a
@@ -107,7 +94,7 @@ func mountArgHandler(arg string) (string, error) {
 		}
 		// nerdctl joins the source to the target with a colon and splits the
 		// result like a `--volume` spec.
-		source, rest, found := cutVolumeSource(value)
+		source, rest, found := guestexec.CutVolumeSource(value)
 		if namedVolume.MatchString(source) {
 			continue
 		}

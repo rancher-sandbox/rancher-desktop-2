@@ -23,6 +23,7 @@ func TestVolumeArgHandler(t *testing.T) {
 		{`C:\data:/data`, "/mnt/c/data:/data"},
 		{`C:\data:/data:ro`, "/mnt/c/data:/data:ro"},
 		{`C:\data:/data:rw`, "/mnt/c/data:/data:rw"},
+		{`\\?\C:\data:/data:ro`, "/mnt/c/data:/data:ro"},
 		{`myvol:/data`, "myvol:/data"},
 		{`my-vol_1.0:/data:ro`, "my-vol_1.0:/data:ro"},
 		// Anonymous volumes reach nerdctl unchanged.
@@ -37,7 +38,7 @@ func TestVolumeArgHandler(t *testing.T) {
 		})
 	}
 
-	for _, arg := range []string{`C:\data`, `C:/data`, `d:app`} {
+	for _, arg := range []string{`C:\data`, `C:/data`, `d:app`, `\\?\C:\data`, `//?/C:/data`} {
 		_, err := volumeArgHandler(arg)
 		assert.ErrorContains(t, err, "expected source:container-path", "%s", arg)
 	}
@@ -87,6 +88,11 @@ func TestMountArgHandler(t *testing.T) {
 			name: "bind mount with src key and bare option",
 			arg:  `type=bind,src=C:\x,target=/y,readonly`,
 			want: "type=bind,src=/mnt/c/x,target=/y,readonly",
+		},
+		{
+			name: "bind mount of an extended-length drive path",
+			arg:  `type=bind,source=\\?\C:\x,target=/y`,
+			want: "type=bind,source=/mnt/c/x,target=/y",
 		},
 		{
 			name: "volume name stays unchanged",

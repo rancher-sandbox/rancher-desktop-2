@@ -42,12 +42,6 @@ type HostBridge struct {
 	log       logr.Logger
 }
 
-// NewDockerHostBridge creates a HostBridge that forwards the Docker named pipe
-// to the guest vsock agent.
-func NewDockerHostBridge(vmGUID hvsock.GUID, log logr.Logger) *HostBridge {
-	return NewHostBridge(DockerPipeName, VsockForwardPort, vmGUID, log)
-}
-
 // NewHostBridge creates a HostBridge that forwards pipeName to vsockPort in
 // the guest.
 func NewHostBridge(pipeName string, vsockPort uint32, vmGUID hvsock.GUID, log logr.Logger) *HostBridge {
@@ -88,7 +82,7 @@ func (b *HostBridge) Run(ctx context.Context) error {
 func (b *HostBridge) handleConn(pipeConn net.Conn) {
 	defer pipeConn.Close()
 
-	vsockConn, err := dialVsock(b.vmGUID, b.vsockPort)
+	vsockConn, err := DialVsock(b.vmGUID, b.vsockPort)
 	if err != nil {
 		b.log.Error(err, "Failed to dial vsock", "port", b.vsockPort)
 		return
@@ -121,9 +115,9 @@ func (b *HostBridge) handleConn(pipeConn net.Conn) {
 	<-done
 }
 
-// dialVsock dials a Hyper-V vsock connection to the given VM and port.
+// DialVsock dials a Hyper-V vsock connection to the given VM and port.
 // Mirrors getVsockConnection in hostswitch_windows.go.
-func dialVsock(vmGUID hvsock.GUID, port uint32) (net.Conn, error) {
+func DialVsock(vmGUID hvsock.GUID, port uint32) (net.Conn, error) {
 	svcPort, err := hvsock.GUIDFromString(winio.VsockServiceID(port).String())
 	if err != nil {
 		return nil, fmt.Errorf("vsock service ID for port %d: %w", port, err)

@@ -34,7 +34,8 @@ var hostDriveCwd = func(drive string) (string, error) {
 // resolves against the host working directory, and a drive-relative one
 // (`d:foo`) against the current directory on its drive. A rooted path
 // without a drive (`\data`, `/data`) takes the root of the working
-// directory, its drive or its `\\server\share`, as Windows resolves it. UNC
+// directory, its drive or its `\\server\share`, as Windows resolves it. An
+// extended-length path such as `\\?\C:\data` translates like `C:\data`. UNC
 // paths only get their backslashes turned into forward slashes.
 func TranslateHostPath(arg string) (string, error) {
 	slashed := strings.ReplaceAll(arg, `\`, "/")
@@ -54,12 +55,56 @@ func TranslateHostPath(arg string) (string, error) {
 		}
 		slashed = strings.ReplaceAll(base, `\`, "/") + "/" + rest
 	}
-	if drive, rest, ok := splitDrive(slashed); ok {
+	if drive, rest, ok := splitDrive(trimExtendedPrefix(slashed)); ok {
 		return "/mnt/" + drive + path.Clean("/"+rest), nil
 	}
 	// UNC (//server/share/...), which includes paths resolved against a UNC
 	// working directory; nothing we can map.
 	return slashed, nil
+}
+
+// IsDriveAbsolute reports whether the host path starts with a drive and a
+// slash or backslash, as in `C:\data`, `C:/data`, `c:\` or the extended-length
+// `\\?\C:\data`. TranslateHostPath resolves such a path without a working
+// directory.
+func IsDriveAbsolute(hostPath string) bool {
+	_, _, ok := splitDrive(trimExtendedPrefix(strings.ReplaceAll(hostPath, `\`, "/")))
+	return ok
+}
+
+// CutVolumeSource drops the leading colons of a volume spec and cuts the
+// source at the next colon, as nerdctl's splitVolumeSpec does, except that
+// the colon after a leading drive stays in the source, as in `C:\src` or the
+// extended-length `\\?\C:\src`. found reports whether a colon ended the
+// source, and rest is what follows it.
+func CutVolumeSource(spec string) (source, rest string, found bool) {
+	spec = strings.TrimLeft(spec, ":")
+	driveEnd := len("c:")
+	if strings.HasPrefix(strings.ReplaceAll(spec, `\`, "/"), extendedPrefix) {
+		driveEnd += len(extendedPrefix)
+	}
+	drive := ""
+	if len(spec) >= driveEnd && spec[driveEnd-1] == ':' && isDriveLetter(spec[driveEnd-2]) {
+		drive, spec = spec[:driveEnd], spec[driveEnd:]
+	}
+	source, rest, found = strings.Cut(spec, ":")
+	return drive + source, rest, found
+}
+
+// extendedPrefix is the `\\?\` prefix of an extended-length path such as
+// `\\?\C:\data`, after the backslashes are turned into slashes.
+const extendedPrefix = "//?/"
+
+// trimExtendedPrefix drops extendedPrefix from a slashed extended-length
+// drive path, so `//?/C:/data` becomes `C:/data`. It returns any other path
+// unchanged, such as `//?/UNC/server/share`.
+func trimExtendedPrefix(slashed string) string {
+	if rest, ok := strings.CutPrefix(slashed, extendedPrefix); ok {
+		if _, _, isDrive := splitDrive(rest); isDrive {
+			return rest
+		}
+	}
+	return slashed
 }
 
 // relativeBase splits a relative host path into the host directory it
