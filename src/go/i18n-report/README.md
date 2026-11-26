@@ -232,8 +232,8 @@ i18n-report references [--format=json|text]
 
 ### dynamic
 
-Find dynamic key patterns — `t()` calls with template literals — and
-show which en-us.yaml keys they match.
+Find dynamic key patterns (`t()` calls with template literals, and
+`i18n-uses` comments) and show which en-us.yaml keys they match.
 
 ```sh
 i18n-report dynamic [--format=json|text]
@@ -381,18 +381,23 @@ markers of keys that still await retranslation.
 
 The tool walks `pkg/rancher-desktop/` and root-level source files,
 looking for `.vue`, `.ts`, and `.js` files. It skips `node_modules`,
-`.git`, `dist`, `vendor`, and `__tests__` directories.
+`.git`, `dist`, `vendor`, and `__tests__` directories, and any file with
+`.spec.` or `.test.` in its name.
 
 Key references are found by matching several regex patterns:
 - `t('key')`, `t("key")`, `` t(`key`) ``, `this.t(...)`, `$t(...)`,
   including calls with the key literal on the following line
 - `titleKey`, `descriptionKey`, `labelKey` properties
-- `k="..."` and `*-key="..."` Vue template attributes
-  (`label-key`, `no-rows-key`, ...)
+- `k="..."` and the `label-key`, `placeholder-key`, `tooltip-key`,
+  `title-key`, `message-key` and `no-rows-key` Vue template attributes,
+  with any prefix on the first five
 - `v-t="'key'"` directives
-- Indirect references: property values that match en-us.yaml keys
+- Indirect references: quoted strings that match en-us.yaml keys
+- `// i18n-uses nav.group.*, unit.day` comments, which declare the keys
+  that a dynamic reference resolves to
 
-Full-line comments are ignored; trailing comments on code lines are not.
+Apart from `i18n-uses`, full-line comments are ignored; trailing comments
+on code lines are not.
 
 ### Untranslated heuristics
 
@@ -402,10 +407,14 @@ The untranslated scanner checks:
 - Bound string literal attributes (`:label="'text'"`)
 - Electron dialog properties (`title`, `message`, `detail`)
 - Validation error messages (`errors.push('...')`)
+- Object-literal labels in script code (`label: 'Local Port'`)
+- Ternaries between Title Case strings (`on ? 'Yes' : 'No'`)
+- Title Case strings pushed onto a list (`res.push('Control Plane')`)
+- Arrays of Title Case strings (`['No', 'Once', 'Yes']`)
 
-It skips test files, lines already using `t()` or bound attributes, and
-values matching common non-translatable patterns (URLs, CSS classes,
-identifiers).
+It skips test files, comment lines, lines already using `t()` or bound
+attributes, and values matching common non-translatable patterns (URLs,
+CSS classes, identifiers).
 
 ### Merge pipeline
 
