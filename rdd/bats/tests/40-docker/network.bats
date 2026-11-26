@@ -4,11 +4,11 @@
 
 load '../../helpers/load'
 
-# Network commands against the rdd Docker engine: create, ls, inspect, rm,
+# Network commands against the rdd container engine: create, ls, inspect, rm,
 # prune, connect/disconnect, and name-based DNS on a user-defined network.
 
 local_setup_file() {
-    start_docker_engine
+    start_container_engine
     ctrctl pull --quiet "${IMAGE_BUSYBOX}"
 }
 
@@ -21,7 +21,15 @@ local_setup_file() {
 
 @test "network inspect reports the bridge driver" {
     ctrctl network create rdd-net-inspect
-    run -0 ctrctl network inspect --format '{{.Driver}}' rdd-net-inspect
+    if using_docker; then
+        run -0 docker network inspect --format '{{.Driver}}' rdd-net-inspect
+    else
+        # nerdctl's Docker-compatible output does not include a Driver field.
+        # Its native output gives the driver as the type of the first plugin
+        # in the CNI config.
+        run_e -0 nerdctl network inspect --mode native --format '{{json .CNI}}' rdd-net-inspect
+        run -0 jq_output '.plugins[0].type'
+    fi
     assert_output bridge
     ctrctl network rm rdd-net-inspect
 }

@@ -4,11 +4,11 @@
 
 load '../../helpers/load'
 
-# Image commands against the rdd Docker engine: pull, images, tag, inspect,
+# Image commands against the rdd container engine: pull, images, tag, inspect,
 # history, save/load, rmi, prune.
 
 local_setup_file() {
-    start_docker_engine
+    start_container_engine
     ctrctl pull --quiet "${IMAGE_BUSYBOX}"
 }
 
@@ -35,7 +35,8 @@ local_setup_file() {
 }
 
 @test "save and load round-trip an image" {
-    run -0 host_path "${BATS_TEST_TMPDIR}/image.tar"
+    create_host_tmpdir
+    run -0 host_path "${HOST_TMPDIR}/image.tar"
     image_tar=${output}
 
     ctrctl tag "${IMAGE_BUSYBOX}" rdd-save:v1

@@ -91,8 +91,7 @@ bats-docker: check-bats build-rdd
 	RDD_INSTANCE=bats-docker RDD_CONTAINER_ENGINE=moby RDD_KEEP_RUNNING=1 $(BATS) tests/40-docker/
 .PHONY: bats-docker
 
-# Run the same suite against containerd/nerdctl. The nerdctl engine path is not
-# wired yet; this target exists so the tests are ready when it lands.
+# Run the same suite against the containerd engine, through rdd nerdctl.
 bats-nerdctl: check-bats build-rdd
 	RDD_INSTANCE=bats-nerdctl RDD_CONTAINER_ENGINE=containerd RDD_KEEP_RUNNING=1 $(BATS) tests/40-docker/
 .PHONY: bats-nerdctl

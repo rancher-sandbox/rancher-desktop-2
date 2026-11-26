@@ -24,7 +24,9 @@ curl() {
     command "curl${EXE}" "$@"
 }
 nerdctl() {
-    rdd nerdctl "$@"
+    # Default the log level to warn, to avoid emitting debug logs that cause
+    # issues with refute_output.
+    RDD_LOG_LEVEL=warning rdd nerdctl "$@"
 }
 
 # Fetch a URL and run assert_output against the response body, forwarding any

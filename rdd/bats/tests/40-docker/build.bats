@@ -4,41 +4,46 @@
 
 load '../../helpers/load'
 
-# Build commands against the rdd Docker engine. docker build needs the host
-# buildx plugin; tests skip when it is absent.
+# Build commands against the rdd container engine. Under moby, docker build
+# needs the host buildx plugin; tests skip when it is absent.
 
 local_setup_file() {
-    start_docker_engine
-    if docker_has_build; then
+    start_container_engine
+    if ! using_docker || docker_has_build; then
         ctrctl pull --quiet "${IMAGE_BUSYBOX}"
     fi
 }
 
 local_setup() {
-    docker_has_build || skip "docker buildx plugin is not installed"
+    if using_docker; then
+        docker_has_build || skip "docker buildx plugin is not installed"
+    fi
 }
 
 @test "build creates an image from a Dockerfile" {
-    cat >"${BATS_TEST_TMPDIR}/Dockerfile" <<EOF
+    create_host_tmpdir
+    cat >"${HOST_TMPDIR}/Dockerfile" <<EOF
 FROM ${IMAGE_BUSYBOX}
 RUN echo built >/built.txt
 EOF
-    run -0 host_path "${BATS_TEST_TMPDIR}"
+    run -0 host_path "${HOST_TMPDIR}"
     ctrctl build --tag rdd-build:v1 "${output}"
-    run -0 ctrctl run --rm rdd-build:v1 cat /built.txt
+    # nerdctl run --rm can log a signal-forwarding error on stderr.
+    run_e -0 ctrctl run --rm rdd-build:v1 cat /built.txt
     assert_output built
     ctrctl rmi rdd-build:v1
 }
 
 @test "build --build-arg passes a value into the build" {
-    cat >"${BATS_TEST_TMPDIR}/Dockerfile" <<EOF
+    create_host_tmpdir
+    cat >"${HOST_TMPDIR}/Dockerfile" <<EOF
 FROM ${IMAGE_BUSYBOX}
 ARG GREETING
 RUN echo "\${GREETING}" >/greeting.txt
 EOF
-    run -0 host_path "${BATS_TEST_TMPDIR}"
+    run -0 host_path "${HOST_TMPDIR}"
     ctrctl build --build-arg GREETING=hi --tag rdd-build-arg:v1 "${output}"
-    run -0 ctrctl run --rm rdd-build-arg:v1 cat /greeting.txt
+    run_e -0 ctrctl run --rm rdd-build-arg:v1 cat /greeting.txt
     assert_output hi
     ctrctl rmi rdd-build-arg:v1
 }

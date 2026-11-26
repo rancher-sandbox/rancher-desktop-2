@@ -4,11 +4,11 @@
 
 load '../../helpers/load'
 
-# Volume commands against the rdd Docker engine: create, ls, inspect, rm,
+# Volume commands against the rdd container engine: create, ls, inspect, rm,
 # prune, and data persistence across containers.
 
 local_setup_file() {
-    start_docker_engine
+    start_container_engine
     ctrctl pull --quiet "${IMAGE_BUSYBOX}"
 }
 
@@ -29,7 +29,7 @@ local_setup_file() {
 @test "a volume persists data across containers" {
     ctrctl volume create rdd-vol-data
     ctrctl run --rm --volume rdd-vol-data:/data "${IMAGE_BUSYBOX}" sh -c 'echo persisted >/data/file'
-    run -0 ctrctl run --rm --volume rdd-vol-data:/data "${IMAGE_BUSYBOX}" cat /data/file
+    run_e -0 ctrctl run --rm --volume rdd-vol-data:/data "${IMAGE_BUSYBOX}" cat /data/file
     assert_output persisted
     ctrctl volume rm rdd-vol-data
 }

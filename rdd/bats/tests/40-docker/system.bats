@@ -4,16 +4,22 @@
 
 load '../../helpers/load'
 
-# System commands against the rdd Docker engine: version, info, events, df,
+# System commands against the rdd container engine: version, info, events, df,
 # prune.
 
 local_setup_file() {
-    start_docker_engine
+    start_container_engine
     ctrctl pull --quiet "${IMAGE_BUSYBOX}"
 }
 
 @test "version reports the server version" {
-    run -0 ctrctl version --format '{{.Server.Version}}'
+    if using_docker; then
+        format='{{.Server.Version}}'
+    else
+        # nerdctl reports the server as a list of components.
+        format='{{range .Server.Components}}{{if eq .Name "containerd"}}{{.Version}}{{end}}{{end}}'
+    fi
+    run_e -0 ctrctl version --format "${format}"
     assert_output
 }
 
@@ -23,6 +29,7 @@ local_setup_file() {
 }
 
 @test "events reports container activity in a time window" {
+    skip_unless_docker "nerdctl events does not support --since or --until"
     since=$(date +%s)
     ctrctl run --rm "${IMAGE_BUSYBOX}" true
     until=$(($(date +%s) + 1))

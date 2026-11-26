@@ -4,49 +4,63 @@
 
 load '../../helpers/load'
 
-# Compose commands against the rdd Docker engine: up, ps, logs, down. Compose is
-# a docker CLI plugin; tests skip when it is absent.
+# Compose commands against the rdd container engine: up, ps, logs, down. Under
+# moby, compose is a docker CLI plugin; tests skip when it is absent.
 
 local_setup_file() {
-    start_docker_engine
-    if using_docker && docker_has_compose; then
+    start_container_engine
+    if ! using_docker || docker_has_compose; then
         ctrctl pull --quiet "${IMAGE_BUSYBOX}"
     fi
 }
 
 local_setup() {
-    using_docker || skip "compose is driven through the docker CLI plugin"
-    docker_has_compose || skip "docker compose plugin is not installed"
+    if using_docker; then
+        docker_has_compose || skip "docker compose plugin is not installed"
+    fi
 }
 
 @test "compose up starts a project that ps lists" {
-    cat >"${BATS_TEST_TMPDIR}/compose.yaml" <<EOF
+    create_host_tmpdir
+    cat >"${HOST_TMPDIR}/compose.yaml" <<EOF
 services:
   app:
     image: ${IMAGE_BUSYBOX}
     command: sleep 300
 EOF
-    run -0 host_path "${BATS_TEST_TMPDIR}/compose.yaml"
+    run -0 host_path "${HOST_TMPDIR}/compose.yaml"
     compose_file=${output}
-    docker compose --file "${compose_file}" --project-name rdd-compose up --detach
-    run -0 docker compose --file "${compose_file}" --project-name rdd-compose ps --format "{{.State}}"
+    ctrctl compose --file "${compose_file}" --project-name rdd-compose up --detach
+    if using_docker; then
+        run -0 docker compose --file "${compose_file}" --project-name rdd-compose ps --format "{{.State}}"
+    else
+        # nerdctl compose ps formats only as table or json.
+        run_e -0 nerdctl compose --file "${compose_file}" --project-name rdd-compose ps --format json
+        run -0 jq_output '.[].State'
+    fi
     assert_output "running"
-    docker compose --file "${compose_file}" --project-name rdd-compose down
+    ctrctl compose --file "${compose_file}" --project-name rdd-compose down
+}
+
+# assert_compose_logs asserts that a compose project's logs contain the text.
+assert_compose_logs() { # <compose-file> <project> <text>
+    run -0 ctrctl compose --file "$1" --project-name "$2" logs
+    assert_output --partial "$3"
 }
 
 @test "compose logs returns service output" {
-    cat >"${BATS_TEST_TMPDIR}/compose.yaml" <<EOF
+    create_host_tmpdir
+    cat >"${HOST_TMPDIR}/compose.yaml" <<EOF
 services:
   app:
     image: ${IMAGE_BUSYBOX}
     command: echo composed
 EOF
-    run -0 host_path "${BATS_TEST_TMPDIR}/compose.yaml"
+    run -0 host_path "${HOST_TMPDIR}/compose.yaml"
     compose_file=${output}
-    # Run in the foreground so the service finishes before logs is read.
-    # --abort-on-container-exit makes a foreground `up` return once the container exits.
-    docker compose --file "${compose_file}" --project-name rdd-compose-logs up --abort-on-container-exit
-    run -0 docker compose --file "${compose_file}" --project-name rdd-compose-logs logs
-    assert_output --partial composed
-    docker compose --file "${compose_file}" --project-name rdd-compose-logs down
+    # nerdctl's up --abort-on-container-exit fails whenever a container exits,
+    # so start detached and wait for the output to reach the logs.
+    ctrctl compose --file "${compose_file}" --project-name rdd-compose-logs up --detach
+    try --max 10 --delay 1 -- assert_compose_logs "${compose_file}" rdd-compose-logs composed
+    ctrctl compose --file "${compose_file}" --project-name rdd-compose-logs down
 }
