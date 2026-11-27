@@ -388,7 +388,7 @@ func (r *EngineReconciler) reconcileSingleImagePullRequest(
 	}
 
 	// Actually start the pull asynchronously.
-	err = e.pullImage(pullContext, imagePullRequest.Spec.RepoTag, onProgress, progressCancel)
+	err = e.pullImage(pullContext, imagePullRequest.Spec.Namespace, imagePullRequest.Spec.RepoTag, onProgress, progressCancel)
 	if err != nil {
 		cancel := r.setImagePullRequestTerminalReasonFromError(imagePullRequest, err)
 		cancel()

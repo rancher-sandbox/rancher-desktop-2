@@ -31,8 +31,9 @@ import (
 
 type testEngine struct {
 	pullImageErr  error
-	pullImageHook func(ctx context.Context, repoTag string, onProgress func(int64, int64, int64, string), onComplete func(error))
+	pullImageHook func(ctx context.Context, namespace, repoTag string, onProgress func(int64, int64, int64, string), onComplete func(error))
 	pullCalled    bool
+	pullNamespace string
 	pullRepoTag   string
 }
 
@@ -54,14 +55,16 @@ func (*testEngine) getLogs(_ context.Context, _ *containersv1alpha1.Container, _
 
 func (e *testEngine) pullImage(
 	ctx context.Context,
+	namespace string,
 	repoTag string,
 	onProgress func(int64, int64, int64, string),
 	onComplete func(error),
 ) error {
 	e.pullCalled = true
+	e.pullNamespace = namespace
 	e.pullRepoTag = repoTag
 	if e.pullImageHook != nil {
-		e.pullImageHook(ctx, repoTag, onProgress, onComplete)
+		e.pullImageHook(ctx, namespace, repoTag, onProgress, onComplete)
 	}
 	return e.pullImageErr
 }
@@ -99,12 +102,10 @@ func TestEngineImagePullRequestReconcileEngineNotReady(t *testing.T) {
 		Client: newEngineImagePullReconcilerTestClient(t),
 	}
 	result, err := r.reconcileImagePullRequest(t.Context(), engineRequest{
-		Kind: containersv1alpha1.ImagePullRequestKind,
-		NamespacedName: types.NamespacedName{
-			Namespace: appv1alpha1.AppNamespace,
-			Name:      "pull-request",
-		},
-		UID: types.UID("pull-request-uid"),
+		Kind:      containersv1alpha1.ImagePullRequestKind,
+		Namespace: appv1alpha1.AppNamespace,
+		Name:      "pull-request",
+		UID:       types.UID("pull-request-uid"),
 	})
 	assert.NilError(t, err)
 	assert.Equal(t, result, ctrl.Result{})
@@ -116,11 +117,9 @@ func TestEngineImagePullRequestReconcileEngineNotReady(t *testing.T) {
 func TestEngineImagePullRequestReconcileUIDMismatchCancelsExistingState(t *testing.T) {
 	reqUID := types.UID("pull-request-uid")
 	liveReq := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-			UID:       types.UID("different-uid"),
-		},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
+		UID:       types.UID("different-uid"),
 	}
 	cancelContext, cancel := context.WithCancelCause(context.Background())
 	r := &EngineReconciler{
@@ -132,12 +131,10 @@ func TestEngineImagePullRequestReconcileUIDMismatchCancelsExistingState(t *testi
 	}
 
 	result, err := r.reconcileImagePullRequest(t.Context(), engineRequest{
-		Kind: containersv1alpha1.ImagePullRequestKind,
-		NamespacedName: types.NamespacedName{
-			Namespace: appv1alpha1.AppNamespace,
-			Name:      "pull-request",
-		},
-		UID: reqUID,
+		Kind:      containersv1alpha1.ImagePullRequestKind,
+		Namespace: appv1alpha1.AppNamespace,
+		Name:      "pull-request",
+		UID:       reqUID,
 	})
 	assert.NilError(t, err)
 	assert.Equal(t, result, ctrl.Result{})
@@ -150,13 +147,12 @@ func TestEngineImagePullRequestReconcileUIDMismatchCancelsExistingState(t *testi
 // the req.UID == "" path lists and starts pending pull requests in namespace.
 func TestEngineImagePullRequestReconcileBulkProcessesPendingRequests(t *testing.T) {
 	req := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-			UID:       types.UID("pull-request-uid"),
-		},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
+		UID:       types.UID("pull-request-uid"),
 		Spec: containersv1alpha1.ImagePullRequestSpec{
-			RepoTag: "alpine:latest",
+			Namespace: "surname",
+			RepoTag:   "alpine:latest",
 		},
 	}
 	engine := &testEngine{}
@@ -168,14 +164,13 @@ func TestEngineImagePullRequestReconcileBulkProcessesPendingRequests(t *testing.
 	}
 
 	result, err := r.reconcileImagePullRequest(t.Context(), engineRequest{
-		Kind: containersv1alpha1.ImagePullRequestKind,
-		NamespacedName: types.NamespacedName{
-			Namespace: appv1alpha1.AppNamespace,
-		},
+		Kind:      containersv1alpha1.ImagePullRequestKind,
+		Namespace: appv1alpha1.AppNamespace,
 	})
 	assert.NilError(t, err)
 	assert.Assert(t, result.RequeueAfter > 0, "requeue expected")
 	assert.Assert(t, engine.pullCalled)
+	assert.Equal(t, engine.pullNamespace, "surname")
 	assert.Equal(t, engine.pullRepoTag, "alpine:latest")
 	state := r.imagePullRequestState[req.UID]
 	assert.Assert(t, state.cancel != nil)
@@ -191,11 +186,9 @@ func TestEngineImagePullRequestReconcileBulkProcessesPendingRequests(t *testing.
 // Failed=False (Succeeded).
 func TestEngineImagePullRequestReconcileTerminalReasonSuccess(t *testing.T) {
 	req := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-			UID:       types.UID("pull-request-uid"),
-		},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
+		UID:       types.UID("pull-request-uid"),
 	}
 	c := newEngineImagePullReconcilerTestClient(t, req)
 	r := &EngineReconciler{
@@ -222,11 +215,9 @@ func TestEngineImagePullRequestReconcileTerminalReasonSuccess(t *testing.T) {
 func TestEngineImagePullRequestReconcileTerminalReasonFailure(t *testing.T) {
 	now := metav1.NewTime(time.Now().UTC())
 	req := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-			UID:       types.UID("pull-request-uid"),
-		},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
+		UID:       types.UID("pull-request-uid"),
 		Status: containersv1alpha1.ImagePullRequestStatus{
 			LastUpdateTime: now,
 			Start:          1,
@@ -271,12 +262,10 @@ func TestEngineImagePullRequestReconcileDeletedRequestCancelsPull(t *testing.T) 
 	}
 
 	result, err := r.reconcileImagePullRequest(t.Context(), engineRequest{
-		Kind: containersv1alpha1.ImagePullRequestKind,
-		NamespacedName: types.NamespacedName{
-			Namespace: appv1alpha1.AppNamespace,
-			Name:      "pull-request",
-		},
-		UID: reqUID,
+		Kind:      containersv1alpha1.ImagePullRequestKind,
+		Namespace: appv1alpha1.AppNamespace,
+		Name:      "pull-request",
+		UID:       reqUID,
 	})
 	assert.NilError(t, err)
 	assert.Equal(t, result, ctrl.Result{})
@@ -291,11 +280,9 @@ func TestEngineImagePullRequestReconcileDeletedRequestCancelsPull(t *testing.T) 
 func TestEngineImagePullRequestReconcileSinglePullingTimeoutQueuesTerminalReason(t *testing.T) {
 	reqUID := types.UID("pull-request-uid")
 	req := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-			UID:       reqUID,
-		},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
+		UID:       reqUID,
 		Spec: containersv1alpha1.ImagePullRequestSpec{
 			RepoTag: "alpine:latest",
 		},
@@ -326,11 +313,9 @@ func TestEngineImagePullRequestReconcileSinglePullingTimeoutQueuesTerminalReason
 func TestEngineImagePullRequestReconcileSinglePullingRequeuesHalfTimeout(t *testing.T) {
 	reqUID := types.UID("pull-request-uid")
 	req := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-			UID:       reqUID,
-		},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
+		UID:       reqUID,
 		Spec: containersv1alpha1.ImagePullRequestSpec{
 			RepoTag: "alpine:latest",
 		},
@@ -363,11 +348,9 @@ func TestEngineImagePullRequestReconcileSinglePullingRequeuesHalfTimeout(t *test
 func TestEngineImagePullRequestReconcileSinglePullingUntrackedClearsStatus(t *testing.T) {
 	reqUID := types.UID("pull-request-uid")
 	req := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-			UID:       reqUID,
-		},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
+		UID:       reqUID,
 		Spec: containersv1alpha1.ImagePullRequestSpec{
 			RepoTag: "alpine:latest",
 		},
@@ -399,11 +382,9 @@ func TestEngineImagePullRequestReconcileSinglePullingUntrackedClearsStatus(t *te
 // and requeues for post-terminal TTL handling.
 func TestEngineImagePullRequestReconcileSingleQueuedTerminalReason(t *testing.T) {
 	req := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-			UID:       types.UID("pull-request-uid"),
-		},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
+		UID:       types.UID("pull-request-uid"),
 	}
 	r := &EngineReconciler{
 		Client: newEngineImagePullReconcilerTestClient(t, req),
@@ -431,11 +412,9 @@ func TestEngineImagePullRequestReconcileSingleQueuedTerminalReason(t *testing.T)
 // immediate engine pull failure queues PullFailed and requeues shortly.
 func TestEngineImagePullRequestReconcileSingleImmediatePullError(t *testing.T) {
 	req := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-			UID:       types.UID("pull-request-uid"),
-		},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
+		UID:       types.UID("pull-request-uid"),
 		Spec: containersv1alpha1.ImagePullRequestSpec{
 			RepoTag: "alpine:latest",
 		},
@@ -460,17 +439,15 @@ func TestEngineImagePullRequestReconcileSingleImmediatePullError(t *testing.T) {
 // Settled=False/Pulling.
 func TestEngineImagePullRequestReconcileSingleProgressCallbackUpdatesStatus(t *testing.T) {
 	req := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-			UID:       types.UID("pull-request-uid"),
-		},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
+		UID:       types.UID("pull-request-uid"),
 		Spec: containersv1alpha1.ImagePullRequestSpec{
 			RepoTag: "alpine:latest",
 		},
 	}
 	engine := &testEngine{
-		pullImageHook: func(_ context.Context, _ string, onProgress func(int64, int64, int64, string), _ func(error)) {
+		pullImageHook: func(_ context.Context, _, _ string, onProgress func(int64, int64, int64, string), _ func(error)) {
 			onProgress(1, 2, 3, "bytes")
 		},
 	}
@@ -530,17 +507,15 @@ func TestEngineImagePullRequestReconcileSingleCompleteReasonMapping(t *testing.T
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			req := &containersv1alpha1.ImagePullRequest{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pull-request",
-					Namespace: appv1alpha1.AppNamespace,
-					UID:       types.UID("pull-request-uid"),
-				},
+				Name:      "pull-request",
+				Namespace: appv1alpha1.AppNamespace,
+				UID:       types.UID("pull-request-uid"),
 				Spec: containersv1alpha1.ImagePullRequestSpec{
 					RepoTag: "alpine:latest",
 				},
 			}
 			engine := &testEngine{
-				pullImageHook: func(_ context.Context, _ string, _ func(int64, int64, int64, string), onComplete func(error)) {
+				pullImageHook: func(_ context.Context, _, _ string, _ func(int64, int64, int64, string), onComplete func(error)) {
 					onComplete(tc.pullErr)
 				},
 			}
@@ -576,11 +551,9 @@ func TestEngineImagePullRequestReconcileSingleCompleteReasonMapping(t *testing.T
 // desired terminal state.
 func TestSetImagePullRequestTerminalReasonCancelsExistingPull(t *testing.T) {
 	req := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-			UID:       types.UID("pull-request-uid"),
-		},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
+		UID:       types.UID("pull-request-uid"),
 	}
 	cancelContext, cancel := context.WithCancelCause(context.Background())
 	r := &EngineReconciler{
@@ -602,11 +575,9 @@ func TestSetImagePullRequestTerminalReasonCancelsExistingPull(t *testing.T) {
 // terminal reason reconciliation is a no-op when no desired reason exists.
 func TestEngineImagePullRequestReconcileTerminalReasonNoDesiredNoop(t *testing.T) {
 	req := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-			UID:       types.UID("pull-request-uid"),
-		},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
+		UID:       types.UID("pull-request-uid"),
 	}
 	r := &EngineReconciler{
 		Client:                newEngineImagePullReconcilerTestClient(t, req),
@@ -624,10 +595,8 @@ func TestEngineImagePullRequestReconcileTerminalReasonNoDesiredNoop(t *testing.T
 // has elapsed.
 func TestEngineImagePullRequestReconcileTerminalDeletesOwnerlessAfterTimer(t *testing.T) {
 	req := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-		},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
 	}
 	c := newEngineImagePullReconcilerTestClient(t, req)
 	r := &EngineReconciler{Client: c}
@@ -647,12 +616,10 @@ func TestEngineImagePullRequestReconcileTerminalDeletesOwnerlessAfterTimer(t *te
 // terminalRequestTTL has elapsed.
 func TestEngineImagePullRequestReconcileTerminalOwnedNoDelete(t *testing.T) {
 	req := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{UID: types.UID("owner-uid")},
-			},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
+		OwnerReferences: []metav1.OwnerReference{
+			{UID: types.UID("owner-uid")},
 		},
 	}
 	c := newEngineImagePullReconcilerTestClient(t, req)
@@ -672,12 +639,10 @@ func TestEngineImagePullRequestReconcileTerminalOwnedNoDelete(t *testing.T) {
 // for later processing regardless of ownership.
 func TestEngineImagePullRequestReconcileTerminalRequeuesBeforeTimerEvenIfOwned(t *testing.T) {
 	req := &containersv1alpha1.ImagePullRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pull-request",
-			Namespace: appv1alpha1.AppNamespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{UID: types.UID("owner-uid")},
-			},
+		Name:      "pull-request",
+		Namespace: appv1alpha1.AppNamespace,
+		OwnerReferences: []metav1.OwnerReference{
+			{UID: types.UID("owner-uid")},
 		},
 	}
 	c := newEngineImagePullReconcilerTestClient(t, req)

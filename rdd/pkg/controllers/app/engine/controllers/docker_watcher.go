@@ -440,6 +440,7 @@ func (w *dockerWatcher) getLogs(ctx context.Context, c *containersv1alpha1.Conta
 
 func (w *dockerWatcher) pullImage(
 	ctx context.Context,
+	_ string,
 	repoTag string,
 	onProgress func(start, current, total int64, units string),
 	onComplete func(err error),

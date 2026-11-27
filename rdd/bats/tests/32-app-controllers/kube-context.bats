@@ -44,7 +44,8 @@ local_setup_file() {
     mkdir -p "$(dirname "${KUBECONFIG}")"
 
     rdd svc delete
-    rdd set --wait=false running=true kubernetes.enabled=true kubernetes.version="${K3S_VERSION}"
+    rdd set --wait=false running=true containerEngine.name="${RDD_CONTAINER_ENGINE}" \
+        kubernetes.enabled=true kubernetes.version="${K3S_VERSION}"
     # VM boot plus k3s startup can run several minutes on a slow CI runner, so
     # allow up to 900s to match app.bats. The outer bats-with-timeout still caps
     # the overall suite.
@@ -206,10 +207,14 @@ wait_for_k3s_bootstrap() {
     # The 240s rollout below is tight on a slow CI runner. coredns and traefik
     # are still starting (KubernetesReady gates on node-Ready only), and a cold
     # image pull would also eat the budget, so drain the herd and warm nginx
-    # before deploying. moby pulls via cri-dockerd, so rdd run docker picks the
-    # right context.
+    # before deploying.
     wait_for_k3s_bootstrap
-    rdd run docker pull --quiet nginx
+    if using_docker; then
+        # moby pulls via cri-dockerd, so `rdd run docker` picks the right context.
+        rdd run docker pull --quiet nginx
+    else
+        ctrctl pull --namespace k8s.io --quiet nginx
+    fi
 
     rdd kubectl --context "${CONTEXT_NAME}" create deployment test-connect --image=nginx
     rdd kubectl --context "${CONTEXT_NAME}" expose deployment test-connect \

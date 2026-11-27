@@ -84,7 +84,7 @@ func TestDockerWatcherPullImageStreamErrorClassification(t *testing.T) {
 			w := newTestDockerWatcher(t, server)
 
 			errCh := make(chan error, 1)
-			err := w.pullImage(t.Context(), "alpine:latest", nil, func(err error) {
+			err := w.pullImage(t.Context(), "", "alpine:latest", nil, func(err error) {
 				errCh <- err
 			})
 			assert.NilError(t, err)
