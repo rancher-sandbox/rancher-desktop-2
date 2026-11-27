@@ -141,7 +141,7 @@
     "ps-tree": "1.2.0",
     "rancher-icons": "rancher/icons#v2.0.21",
     "sass": "1.108.2",
-    "sass-loader": "17.1.0",
+    "sass-loader": "17.1.1",
     "ts-jest": "29.4.15",
     "ts-loader": "^9.6.2",
     "tsx": "4.23.15",
