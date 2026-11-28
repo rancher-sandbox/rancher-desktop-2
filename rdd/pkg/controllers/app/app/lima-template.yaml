@@ -110,6 +110,60 @@ provision:
 
     systemctl start rancher-desktop-provision.service || true
 
+# Install or remove the AMD ROCm-on-WSL bridge library (librocdxg.so) based on
+# GPU passthrough state. No prebuilt binary is published and RDD does not
+# redistribute one, so RDD stages the pinned build inputs on the host into
+# GPU_LIB_SOURCE (under the mounted host home) and this step builds the library
+# in a throwaway container the first time, caching it next to the inputs. A
+# library supplied through spec.gpu.source is installed as is. The step is
+# idempotent and runs on every boot; when disabled it removes the library so the
+# toggle is symmetric. Failures warn and never fail provisioning.
+- mode: system
+  script: |
+    #!/bin/bash
+
+    set -o errexit -o nounset -o pipefail -o xtrace
+
+    LIB_DST=/opt/rocm/lib/librocdxg.so
+
+    if [[ $PARAM_GPU_ENABLED != "true" ]]; then
+        rm -f "$LIB_DST"
+        exit 0
+    fi
+
+    SRC=$PARAM_GPU_LIB_SOURCE
+    LIB=$SRC/librocdxg.so
+
+    if [[ ! -f $LIB && -f $SRC/src/build-id ]]; then
+        if systemctl is-enabled --quiet docker.service; then
+            ENGINE=docker
+        else
+            ENGINE=nerdctl
+        fi
+        # The engine restarts asynchronously at the end of the previous step.
+        for _ in $(seq 60); do
+            "$ENGINE" info >/dev/null 2>&1 && break
+            sleep 2
+        done
+        if "$ENGINE" run --rm \
+                -v "$SRC/src:/in:ro" -v "$SRC:/out" \
+                "$(cat "$SRC/src/image")" bash /in/build.sh; then
+            cp "$SRC/src/build-id" "$SRC/.build-id"
+        else
+            echo "Building librocdxg.so failed; GPU passthrough unavailable." >&2
+            rm -f "$LIB"
+            exit 0
+        fi
+    fi
+
+    if [[ ! -f $LIB ]]; then
+        echo "GPU passthrough enabled but no librocdxg.so under $SRC;" \
+             "skipping install." >&2
+        exit 0
+    fi
+
+    install -D -m 0755 "$LIB" "$LIB_DST"
+
 probes:
 - description: Write k3s kubeconfig to instance config path
   script: |

@@ -1,0 +1,81 @@
+# AMD "LLM Chat" Solution Blueprint app (OpenWebUI), wired to the local
+# vLLM-on-gfx1151 endpoint instead of an AMD Inference Microservice (AIM).
+#
+# This is the SAME application component the AMD `aimsb-llm-chat` blueprint
+# deploys (open-webui image + version, same env flags). The only change is that
+# OPENAI_API_BASE_URLS points at our vLLM Service (served on the gfx1151 iGPU via
+# WSL /dev/dxg) rather than the AIM's in-cluster service, because the AIM
+# containers target Instinct GPUs and require the AMD GPU operator / device
+# plugin, neither of which exists on the /dev/dxg passthrough build.
+# Limitation of https://github.com/ROCm/k8s-device-plugin which will be investigated in
+# https://github.com/rancher-sandbox/rancher-desktop-2/issues/636
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-webui
+  labels: { app: open-webui }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: open-webui }
+  template:
+    metadata:
+      labels: { app: open-webui }
+    spec:
+      containers:
+      - name: open-webui
+        # Same image/tag the AMD llm-chat blueprint uses.
+        image: ghcr.io/open-webui/open-webui:v0.9.6
+        imagePullPolicy: IfNotPresent
+        ports:
+        - { name: http, containerPort: 8080 }
+        env:
+        # point at our gfx1151 vLLM, not an AIM endpoint
+        - { name: OPENAI_API_BASE_URLS, value: "http://vllm-gfx1151.default.svc.cluster.local:8000/v1" }
+        # vLLM in vllm-pod.yaml runs without --api-key, so any non-empty key is
+        # accepted. Replace for a real one if vLLM is started with --api-key.
+        - { name: OPENAI_API_KEYS, value: "sk-noauth" }
+        # Real flags from Blueprint's own OpenWebUI flags (from llm-chat/values.yaml)
+        - { name: ENABLE_OPENAI_API, value: "true" }
+        - { name: ENABLE_OLLAMA_API, value: "false" }
+        - { name: WEBUI_AUTH, value: "false" }           # no login wall for the demo
+        - { name: ENABLE_SIGNUP, value: "false" }
+        - { name: ANONYMIZED_TELEMETRY, value: "false" }
+        - { name: DO_NOT_TRACK, value: "true" }
+        - { name: SCARF_NO_ANALYTICS, value: "true" }
+        - { name: ENABLE_EVALUATION_ARENA_MODELS, value: "false" }
+        - { name: ENABLE_PERSISTENT_CONFIG, value: "false" }
+        volumeMounts:
+        - { name: data, mountPath: /app/backend/data }
+        startupProbe:
+          httpGet: { path: /health, port: http }
+          initialDelaySeconds: 20
+          periodSeconds: 5
+          failureThreshold: 30
+        readinessProbe:
+          httpGet: { path: /health, port: http }
+          periodSeconds: 10
+      volumes:
+      # Ephemeral for the demo; the blueprint uses a PVC on the "mlstorage"
+      # StorageClass, which this build doesn't have. Swap for a PVC on k3s's
+      # local-path class if you want chat history to survive restarts.
+      - name: data
+        emptyDir: {}
+---
+# NodePort so you can open the UI from the Windows host. `kubectl port-forward`
+# is avoided on purpose: the RDD guest ships no socat (same reason the vLLM
+# example uses exec). Browse to http://<node-ip>:30080 — get <node-ip> from
+#   rdd kubectl get node -o wide      (INTERNAL-IP)
+apiVersion: v1
+kind: Service
+metadata:
+  name: open-webui
+  labels: { app: open-webui }
+spec:
+  type: NodePort
+  selector: { app: open-webui }
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    nodePort: 30080
