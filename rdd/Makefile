@@ -19,6 +19,15 @@ RDD_VERSION := $(shell git$(EXE) describe --match 'v[0-9]*' --dirty='.m' --alway
 RDD_VERSION_TRIMMED := $(RDD_VERSION:v%=%)
 # A replace (a Lima fork) has its own version; a directory replace does not.
 LIMA_VERSION := $(shell go$(EXE) list -m -f '{{with .Replace}}{{or .Version $$.Version}}{{else}}{{.Version}}{{end}}' 'github.com/lima-vm/lima/v2')
+# $(shell) ignores the exit status. When go list fails, the version comes out
+# empty, and without these checks make would link the empty version into rdd
+# and the controllers. go list has already printed why it failed.
+ifeq ($(KUBE_VERSION),)
+$(error Cannot read the k8s.io/kubernetes module version)
+endif
+ifeq ($(LIMA_VERSION),)
+$(error Cannot read the github.com/lima-vm/lima/v2 module version)
+endif
 BUILD_DATE := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 PACKAGE := github.com/rancher-sandbox/rancher-desktop-daemon
 LDFLAGS := \
